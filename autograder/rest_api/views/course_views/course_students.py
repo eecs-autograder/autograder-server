@@ -19,17 +19,22 @@ class _Schema(AGRetrieveViewSchemaMixin, CustomViewSchema):
 class CourseStudentsViewSet(NestedModelView):
     schema = _Schema(tags=[APITags.rosters], api_class=User, data={
         'POST': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'required': ['new_students'],
-                    'properties': {
-                        'new_students': {
-                            'type': 'array',
-                            'items': {'type': 'string', 'format': 'username'},
-                            'description': (
-                                'Usernames to be granted student privileges for the course.'
-                            )
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['new_students'],
+                            'properties': {
+                                'new_students': {
+                                    'type': 'array',
+                                    'items': {'type': 'string', 'format': 'username'},
+                                    'description': (
+                                        'Usernames to be granted student '
+                                        'privileges for the course.'
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -37,17 +42,22 @@ class CourseStudentsViewSet(NestedModelView):
             'responses': {'204': None}
         },
         'PUT': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'required': ['new_students'],
-                    'properties': {
-                        'new_students': {
-                            'type': 'array',
-                            'items': {'type': 'string', 'format': 'username'},
-                            'description': (
-                                'Usernames to be granted student privileges for the course.'
-                            )
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['new_students'],
+                            'properties': {
+                                'new_students': {
+                                    'type': 'array',
+                                    'items': {'type': 'string', 'format': 'username'},
+                                    'description': (
+                                        'Usernames to be granted student '
+                                        'privileges for the course.'
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -55,19 +65,24 @@ class CourseStudentsViewSet(NestedModelView):
             'responses': {'204': None}
         },
         'PATCH': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'required': ['remove_students'],
-                    'properties': {
-                        'remove_students': {
-                            'type': 'array',
-                            'items': {
-                                '$ref': as_schema_ref(User)
-                            },
-                            'description': (
-                                'Users whose student privileges should be revoked for the course.'
-                            )
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['remove_students'],
+                            'properties': {
+                                'remove_students': {
+                                    'type': 'array',
+                                    'items': {
+                                        '$ref': as_schema_ref(User)
+                                    },
+                                    'description': (
+                                        'Users whose student privileges should be '
+                                        'revoked for the course.'
+                                    )
+                                }
+                            }
                         }
                     }
                 }

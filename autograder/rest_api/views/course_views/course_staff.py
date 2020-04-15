@@ -19,17 +19,21 @@ class _Schema(AGRetrieveViewSchemaMixin, CustomViewSchema):
 class CourseStaffViewSet(NestedModelView):
     schema = _Schema(tags=[APITags.rosters], api_class=User, data={
         'POST': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'required': ['new_staff'],
-                    'properties': {
-                        'new_staff': {
-                            'type': 'array',
-                            'items': {'type': 'string', 'format': 'username'},
-                            'description': (
-                                'Usernames who should be granted staff privileges for the course.'
-                            )
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['new_staff'],
+                            'properties': {
+                                'new_staff': {
+                                    'type': 'array',
+                                    'items': {'type': 'string', 'format': 'username'},
+                                    'description': (
+                                        'Usernames to be granted staff privileges for the course.'
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -37,19 +41,24 @@ class CourseStaffViewSet(NestedModelView):
             'responses': {'204': None}
         },
         'PATCH': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'required': ['remove_staff'],
-                    'properties': {
-                        'remove_staff': {
-                            'type': 'array',
-                            'items': {
-                                '$ref': as_schema_ref(User)
-                            },
-                            'description': (
-                                'Users whose staff privileges should be revoked for the course.'
-                            )
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['remove_staff'],
+                            'properties': {
+                                'remove_staff': {
+                                    'type': 'array',
+                                    'items': {
+                                        '$ref': as_schema_ref(User)
+                                    },
+                                    'description': (
+                                        'Users whose staff privileges should be '
+                                        'revoked for the course.'
+                                    )
+                                }
+                            }
                         }
                     }
                 }

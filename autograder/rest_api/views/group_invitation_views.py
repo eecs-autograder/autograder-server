@@ -12,7 +12,7 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.utils.testing as test_ut
 from autograder import utils
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator, AGListViewSchemaMixin,
-                                        APITags, CustomViewSchema, as_schema_ref)
+                                        APITags, CustomViewSchema, as_content_obj)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       NestedModelView,
                                                       convert_django_validation_error,
@@ -50,15 +50,19 @@ class ListCreateGroupInvitationView(NestedModelView):
         api_class=ag_models.GroupInvitation,
         data={
             'POST': {
-                'request_payload': {
-                    'body': {
-                        'type': 'object',
-                        'properties': {
-                            'invited_usernames': {
-                                'type': 'array',
-                                'items': {
-                                    'type': 'string',
-                                    'format': 'username'
+                'request': {
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                'type': 'object',
+                                'properties': {
+                                    'invited_usernames': {
+                                        'type': 'array',
+                                        'items': {
+                                            'type': 'string',
+                                            'format': 'username'
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -66,7 +70,7 @@ class ListCreateGroupInvitationView(NestedModelView):
                 },
                 'responses': {
                     '201': {
-                        'body': as_schema_ref(ag_models.GroupInvitation)
+                        'content': as_content_obj(ag_models.GroupInvitation)
                     }
                 }
             }
@@ -147,11 +151,11 @@ class AcceptGroupInvitationView(AGModelAPIView):
             'responses': {
                 '200': {
                     'description': 'You have accepted the invitation.',
-                    'body': as_schema_ref(ag_models.GroupInvitation)
+                    'content': as_content_obj(ag_models.GroupInvitation)
                 },
                 '201': {
                     'description': 'All invited users have accepted the invitation.',
-                    'body': as_schema_ref(ag_models.Group)
+                    'content': as_content_obj(ag_models.Group)
                 }
             }
         }

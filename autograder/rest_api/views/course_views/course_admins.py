@@ -20,17 +20,21 @@ class _Schema(AGRetrieveViewSchemaMixin, CustomViewSchema):
 class CourseAdminViewSet(NestedModelView):
     schema = _Schema(tags=[APITags.rosters], api_class=User, data={
         'POST': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'required': ['new_admins'],
-                    'properties': {
-                        'new_admins': {
-                            'type': 'array',
-                            'items': {'type': 'string', 'format': 'username'},
-                            'description': (
-                                'Usernames who should be granted admin privileges for the course.'
-                            )
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['new_admins'],
+                            'properties': {
+                                'new_admins': {
+                                    'type': 'array',
+                                    'items': {'type': 'string', 'format': 'username'},
+                                    'description': (
+                                        'Usernames to be granted admin privileges for the course.'
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -38,19 +42,23 @@ class CourseAdminViewSet(NestedModelView):
             'responses': {'204': None}
         },
         'PATCH': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'required': ['remove_admins'],
-                    'properties': {
-                        'remove_admins': {
-                            'type': 'array',
-                            'items': {
-                                '$ref': as_schema_ref(User)
-                            },
-                            'description': (
-                                'Users whose admin privileges should be revoked for the course.'
-                            )
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['remove_admins'],
+                            'properties': {
+                                'remove_admins': {
+                                    'type': 'array',
+                                    'items': {
+                                        '$ref': as_schema_ref(User)
+                                    },
+                                    'description': (
+                                        'Users to revoke admin privileges from for the course.'
+                                    )
+                                }
+                            }
                         }
                     }
                 }

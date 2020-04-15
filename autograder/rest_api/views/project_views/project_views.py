@@ -20,7 +20,7 @@ from autograder.rest_api import tasks as api_tasks
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APITags, CustomViewSchema,
-                                        as_schema_ref)
+                                        as_content_obj, as_schema_ref)
 from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       AGModelGenericViewSet, NestedModelView,
@@ -94,22 +94,26 @@ class ProjectDetailView(SerializeProjectMixin, AGModelDetailView):
 class CopyProjectView(AGModelAPIView):
     schema = CustomViewSchema([APITags.projects], {
         'POST': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'properties': {
-                        'new_project_name': {
-                            'type': 'string',
-                            'description': '''The name for the new project.
-                                Only required if the target course is the same as the
-                                one the project belongs to.
-                            '''
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'properties': {
+                                'new_project_name': {
+                                    'type': 'string',
+                                    'description': '''The name for the new project.
+                                        Only required if the target course is the same as the
+                                        one the project belongs to.
+                                    '''
+                                }
+                            }
                         }
                     }
                 }
             },
             'responses': {
-                '201': {'body': as_schema_ref(ag_models.Project)}
+                '201': {'content': as_content_obj(ag_models.Project)}
             }
         }
     })
@@ -147,7 +151,7 @@ class ImportHandgradingRubricView(AGModelAPIView):
         'POST': {
             'responses': {
                 '201': {
-                    'body': as_schema_ref(hg_models.HandgradingRubric)
+                    'content': as_content_obj(hg_models.HandgradingRubric)
                 }
             }
         }
@@ -184,7 +188,11 @@ class NumQueuedSubmissionsView(AGModelAPIView):
         'GET': {
             'responses': {
                 '200': {
-                    'body': {'type': 'integer'}
+                    'content': {
+                        'application/json': {
+                            'schema': {'type': 'integer'}
+                        }
+                    }
                 }
             }
         }
@@ -330,42 +338,47 @@ class EditBonusSubmissionsView(AGModelAPIView):
                     'schema': {'type': 'integer', 'format': 'id'}
                 }
             ],
-            'request_payload': {
-                'body': {
-                    'oneOf': [
-                        {
-                            'type': 'object',
-                            'properties': {
-                                'add': {
-                                    'type': 'integer',
-                                    'description': '''
-                                        How many bonus submissions to add to each group's total.
-                                    '''.strip(),
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'oneOf': [
+                                {
+                                    'type': 'object',
+                                    'properties': {
+                                        'add': {
+                                            'type': 'integer',
+                                            'description': '''
+                                                How many bonus submissions to add
+                                                to each group's total.
+                                            '''.strip(),
+                                        },
+                                    }
                                 },
-                            }
-                        },
-                        {
-                            'type': 'object',
-                            'properties': {
-                                'subtract': {
-                                    'type': 'integer',
-                                    'description': '''
-                                        How many bonus submissions to subtract from
-                                        each group's total.
-                                    '''.strip(),
+                                {
+                                    'type': 'object',
+                                    'properties': {
+                                        'subtract': {
+                                            'type': 'integer',
+                                            'description': '''
+                                                How many bonus submissions to subtract from
+                                                each group's total.
+                                            '''.strip(),
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                    ],
-                },
-                'examples': {
-                    'addExample': {
-                        'summary': 'Give every group 2 extra bonus submissions.',
-                        'value': {'add': 2}
-                    },
-                    'subtractExample': {
-                        'summary': 'Take away 1 bonus submission from every group.',
-                        'value': {'subtract': 1}
+                            ],
+                        },
+                        'examples': {
+                            'addExample': {
+                                'summary': 'Give every group 2 extra bonus submissions.',
+                                'value': {'add': 2}
+                            },
+                            'subtractExample': {
+                                'summary': 'Take away 1 bonus submission from every group.',
+                                'value': {'subtract': 1}
+                            },
+                        },
                     },
                 },
             },
@@ -395,7 +408,7 @@ class EditBonusSubmissionsView(AGModelAPIView):
             queryset.update(
                 bonus_submissions_remaining=(
                     F('bonus_submissions_remaining') + self.request.data.get('add')))
-        if 'subtract' in self.request.data:
+        elif 'subtract' in self.request.data:
             to_subtract = self.request.data.get('subtract')
             queryset.update(
                 bonus_submissions_remaining=Case(

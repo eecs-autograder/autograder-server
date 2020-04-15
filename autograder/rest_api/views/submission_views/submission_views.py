@@ -20,7 +20,8 @@ from autograder.core.submission_feedback import (AGTestPreLoader, StudentTestSui
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
-                                        APITags, CustomViewDict, CustomViewSchema, as_schema_ref)
+                                        APITags, CustomViewDict, CustomViewSchema, as_content_obj,
+                                        as_schema_ref)
 from autograder.rest_api.serialize_ultimate_submission_results import \
     get_submission_data_with_results
 from autograder.rest_api.size_file_response import SizeFileResponse
@@ -53,24 +54,27 @@ class _ListCreateSubmissionSchema(AGListViewSchemaMixin, CustomViewSchema):
 class ListCreateSubmissionViewSet(NestedModelView):
     schema = _ListCreateSubmissionSchema({
         'POST': {
-            'request_payload': {
-                'description': 'The files being submitted, as multipart/form-data.',
-                'content_type': 'multipart/form-data',
-                'body': {
-                    'properties': {
-                        'submitted_files': {
-                            'type': 'array',
-                            'items': {
-                                'type': 'string',
-                                'format': 'binary'
+            'request': {
+                'content': {
+                    'multipart/form-data': {
+                        'schema': {
+                            'properties': {
+                                'submitted_files': {
+                                    'type': 'array',
+                                    'items': {
+                                        'type': 'string',
+                                        'format': 'binary'
+                                    }
+                                }
                             }
                         }
                     }
-                }
+                },
+                'description': 'The files being submitted, as multipart/form-data.',
             },
             'responses': {
                 '201': {
-                    'body': as_schema_ref(ag_models.Submission)
+                    'content': as_content_obj(ag_models.Submission)
                 }
             }
         }
@@ -246,9 +250,13 @@ class ListSubmissionsWithResults(AGModelAPIView):
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
-                    'body': {
-                        'type': 'array',
-                        'items': {'$ref': '#/components/schemas/SubmissionWithResults'}
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                'type': 'array',
+                                'items': {'$ref': '#/components/schemas/SubmissionWithResults'}
+                            }
+                        }
                     }
                 }
             }
@@ -339,8 +347,11 @@ class GetSubmittedFileView(AGModelAPIView):
             ],
             'responses': {
                 '200': {
-                    'content_type': 'application/octet-stream',
-                    'body': {'type': 'string', 'format': 'binary'},
+                    'content': {
+                        'application/octet-stream': {
+                            'schema': {'type': 'string', 'format': 'binary'}
+                        }
+                    }
                 }
             }
         }
@@ -349,19 +360,10 @@ class GetSubmittedFileView(AGModelAPIView):
     model_manager = ag_models.Submission.objects.select_related('group__project__course')
 
     permission_classes = [
-        # P(ag_permissions.is_admin()) | P(ag_permissions.IsReadOnly),
         ag_permissions.can_view_project(),
         ag_permissions.is_staff_or_group_member()
     ]
 
-    # @swagger_auto_schema(
-    #     manual_parameters=[
-    #         Parameter(
-    #             name='filename', in_='query',
-    #             description='The name of the file to return.',
-    #             required=True, type='str')
-    #     ],
-    #     responses={'200': 'Returns the file contents.'})
     @method_decorator(require_query_params('filename'))
     @transaction.atomic
     def get(self, request, *args, **kwargs):
@@ -379,7 +381,7 @@ class RemoveSubmissionFromQueueView(AGModelAPIView):
         'POST': {
             'responses': {
                 '200': {
-                    'body': as_schema_ref(ag_models.Submission)
+                    'content': as_content_obj(ag_models.Submission)
                 }
             }
         }

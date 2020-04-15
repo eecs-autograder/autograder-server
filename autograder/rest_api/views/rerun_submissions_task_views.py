@@ -17,7 +17,7 @@ from autograder.core.caching import clear_submission_results_cache
 from autograder.grading_tasks import tasks
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APITags, CustomViewSchema,
-                                        as_schema_ref)
+                                        as_content_obj)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       NestedModelView,
                                                       convert_django_validation_error)
@@ -112,7 +112,7 @@ class CancelRerunSubmissionsTaskView(AGModelAPIView):
         'POST': {
             'responses': {
                 '200': {
-                    'body': as_schema_ref(ag_models.RerunSubmissionsTask)
+                    'content': as_content_obj(ag_models.RerunSubmissionsTask)
                 }
             }
         }
