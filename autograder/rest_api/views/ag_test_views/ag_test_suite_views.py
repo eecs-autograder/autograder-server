@@ -6,11 +6,8 @@ import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.caching import clear_submission_results_cache
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator,
-                                        APITags, CustomViewSchema,
-                                        OrderViewSchema)
-from autograder.rest_api.views.ag_model_views import (AGModelAPIView,
-                                                      AGModelDetailView,
+                                        AGListCreateViewSchemaGenerator, APITags, OrderViewSchema)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       NestedModelView)
 
 

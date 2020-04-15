@@ -19,17 +19,22 @@ class _Schema(AGRetrieveViewSchemaMixin, CustomViewSchema):
 class CourseHandgradersViewSet(NestedModelView):
     schema = _Schema(tags=[APITags.rosters], api_class=User, data={
         'POST': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'required': ['new_handgraders'],
-                    'properties': {
-                        'new_handgraders': {
-                            'type': 'array',
-                            'items': {'type': 'string', 'format': 'username'},
-                            'description': (
-                                'Usernames to be granted handgrading privileges for the course.'
-                            )
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['new_handgraders'],
+                            'properties': {
+                                'new_handgraders': {
+                                    'type': 'array',
+                                    'items': {'type': 'string', 'format': 'username'},
+                                    'description': (
+                                        'Usernames to be granted handgrading '
+                                        'privileges for the course.'
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -37,19 +42,23 @@ class CourseHandgradersViewSet(NestedModelView):
             'responses': {'204': None}
         },
         'PATCH': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'required': ['remove_handgraders'],
-                    'properties': {
-                        'remove_handgraders': {
-                            'type': 'array',
-                            'items': {
-                                '$ref': as_schema_ref(User)
-                            },
-                            'description': (
-                                'Users to revoke handgrading privileges from.'
-                            )
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['remove_handgraders'],
+                            'properties': {
+                                'remove_handgraders': {
+                                    'type': 'array',
+                                    'items': {
+                                        '$ref': as_schema_ref(User)
+                                    },
+                                    'description': (
+                                        'Users to revoke handgrading privileges from.'
+                                    )
+                                }
+                            }
                         }
                     }
                 }

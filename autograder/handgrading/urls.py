@@ -51,12 +51,14 @@ urlpatterns = [
          views.CriterionOrderView.as_view(), name='criterion_order'),
     url(r'', include(criterion_detail_router.urls)),
 
-    url(r'^groups/(?P<group_pk>[0-9]+)/handgrading_result/$',
-        views.HandgradingResultView.as_view(
-            {'get': 'retrieve', 'post': 'create', 'patch': 'partial_update', 'delete': 'destroy'}),
-        name='handgrading_result'),
+    path('groups/<int:group_pk>/handgrading_result/',
+         views.HandgradingResultView.as_view(),
+         name='handgrading_result'),
+    path('groups/<int:group_pk>/handgrading_result/file/',
+         views.HandgradingResultFileContentView.as_view(),
+         name='handgrading-result-file'),
     path('groups/<int:group_pk>/handgrading_result/has_correct_submission/',
-         views.HandgradingResultView.as_view({'get': 'has_correct_submission'}),
+         views.HandgradingResultHasCorrectSubmissionView.as_view(),
          name='handgrading-result-has-correct-submission'),
 
     url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/applied_annotations/$',

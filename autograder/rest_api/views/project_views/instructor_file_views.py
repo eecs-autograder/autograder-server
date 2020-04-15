@@ -1,3 +1,5 @@
+from typing import Dict
+
 from django.core import exceptions
 from django.db import transaction
 from django.utils.decorators import method_decorator
@@ -9,26 +11,30 @@ import autograder.rest_api.serializers as ag_serializers
 from autograder.core import constants
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator, AGListViewSchemaMixin,
-                                        CustomViewSchema, as_schema_ref)
+                                        APITags, ContentTypeVal, CustomViewSchema, MediaTypeObject,
+                                        as_content_obj, as_schema_ref)
 from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       NestedModelView,
                                                       convert_django_validation_error,
                                                       require_body_params)
-from autograder.rest_api.views.schema_generation import APITags
 
 
 class _Schema(AGListViewSchemaMixin, CustomViewSchema):
     pass
 
 
-_INSTRUCTOR_FILE_BODY_SCHEMA = {
-    'type': 'object',
-    'properties': {
-        'file_obj': {
-            'type': 'string',
-            'format': 'binary',
-            'description': 'The form-encoded file.'
+_INSTRUCTOR_FILE_BODY_SCHEMA: Dict[ContentTypeVal, MediaTypeObject] = {
+    'multipart/form-data': {
+        'schema': {
+            'type': 'object',
+            'properties': {
+                'file_obj': {
+                    'type': 'string',
+                    'format': 'binary',
+                    'description': 'The form-encoded file.'
+                }
+            }
         }
     }
 }
@@ -37,13 +43,12 @@ _INSTRUCTOR_FILE_BODY_SCHEMA = {
 class ListCreateInstructorFileView(NestedModelView):
     schema = _Schema([APITags.instructor_files], api_class=ag_models.InstructorFile, data={
         'POST': {
-            'request_payload': {
-                'content_type': 'multipart/form-data',
-                'body': _INSTRUCTOR_FILE_BODY_SCHEMA,
+            'request': {
+                'content': _INSTRUCTOR_FILE_BODY_SCHEMA
             },
             'responses': {
                 '201': {
-                    'body': as_schema_ref(ag_models.InstructorFile)
+                    'content': as_content_obj(ag_models.InstructorFile)
                 }
             }
         }
@@ -88,12 +93,16 @@ class InstructorFileDetailView(AGModelDetailView):
 class RenameInstructorFileView(AGModelAPIView):
     schema = CustomViewSchema([APITags.instructor_files], {
         'PUT': {
-            'request_payload': {
-                'body': {'type': 'string'},
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {'type': 'string'}
+                    }
+                },
             },
             'responses': {
                 '200': {
-                    'body': as_schema_ref(ag_models.InstructorFile)
+                    'content': as_content_obj(ag_models.InstructorFile)
                 }
             }
         }
@@ -119,19 +128,21 @@ class InstructorFileContentView(AGModelAPIView):
         'GET': {
             'responses': {
                 '200': {
-                    'content_type': 'application/octet-stream',
-                    'body': {'type': 'string', 'format': 'binary'},
+                    'content': {
+                        'application/octet-stream': {
+                            'schema': {'type': 'string', 'format': 'binary'}
+                        }
+                    }
                 }
             }
         },
         'PUT': {
-            'request_payload': {
-                'content_type': 'multipart/form-data',
-                'body': _INSTRUCTOR_FILE_BODY_SCHEMA,
+            'request': {
+                'content': _INSTRUCTOR_FILE_BODY_SCHEMA
             },
             'responses': {
                 '201': {
-                    'body': as_schema_ref(ag_models.InstructorFile)
+                    'content': as_content_obj(ag_models.InstructorFile)
                 }
             }
         }

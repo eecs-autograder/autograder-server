@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Mapping, Sequence
 
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -11,15 +11,12 @@ from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator,
-                                        APITags, CustomViewSchema,
-                                        RequestParam)
+from autograder.rest_api.schema import AGDetailViewSchemaGenerator, AGListCreateViewSchemaGenerator, APITags, ContentObj, ContentTypeVal, CustomViewSchema, MediaTypeObject, RequestParam
 from autograder.rest_api.serialize_user import serialize_user
-from autograder.rest_api.views.ag_model_views import (
-    AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
-    AlwaysIsAuthenticatedMixin, NestedModelView, require_body_params,
-    require_query_params)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      AGModelGenericViewSet,
+                                                      AlwaysIsAuthenticatedMixin, NestedModelView,
+                                                      require_body_params, require_query_params)
 
 
 class _Permissions(permissions.BasePermission):
@@ -121,7 +118,11 @@ class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
         'GET': {
             'responses': {
                 '200': {
-                    'body': {'type': 'boolean'}
+                    'content': {
+                        'application/json': {
+                            'schema': {'type': 'boolean'}
+                        }
+                    }
                 }
             }
         }
@@ -135,15 +136,19 @@ class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
 
 
 class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
-    _LATE_DAYS_REMAINING_BODY = {
-        'type': 'object',
-        'required': ['late_days_remaining'],
-        'properties': {
-            'late_days_remaining': {'type': 'integer'}
+    _LATE_DAYS_REMAINING_BODY: ContentObj = {
+        'application/json': {
+            'schema': {
+                'type': 'object',
+                'required': ['late_days_remaining'],
+                'properties': {
+                    'late_days_remaining': {'type': 'integer'}
+                }
+            }
         }
     }
 
-    _PARAMS: List[RequestParam] = [
+    _PARAMS: Sequence[RequestParam] = [
         {
             'name': 'username_or_id',
             'in': 'path',
@@ -170,14 +175,14 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
         'GET': {
             'parameters': _PARAMS,
             'responses': {
-                '200': {'body': _LATE_DAYS_REMAINING_BODY}
+                '200': {'content': _LATE_DAYS_REMAINING_BODY}
             }
         },
         'PUT': {
             'parameters': _PARAMS,
-            'request_payload': {'body': _LATE_DAYS_REMAINING_BODY},
+            'request': {'content': _LATE_DAYS_REMAINING_BODY},
             'responses': {
-                '200': {'body': _LATE_DAYS_REMAINING_BODY}
+                '200': {'content': _LATE_DAYS_REMAINING_BODY}
             }
         }
     })

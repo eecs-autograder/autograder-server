@@ -36,7 +36,6 @@ class GetCreateHandgradingRubricView(AGModelAPIView):
     nested_field_name = 'handgrading_rubric'
     parent_obj_field_name = 'project'
 
-    @transaction.atomic
     def get(self, *args, **kwargs):
         project = self.get_object()
         try:

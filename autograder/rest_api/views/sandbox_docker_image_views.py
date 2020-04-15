@@ -8,7 +8,8 @@ from autograder.core.tasks import build_sandbox_docker_image
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
-                                        CustomViewMethodData, CustomViewSchema, as_schema_ref)
+                                        CustomViewMethodData, CustomViewSchema, as_content_obj,
+                                        as_schema_ref)
 from autograder.rest_api.views.ag_model_views import convert_django_validation_error
 from autograder.rest_api.views.schema_generation import APITags
 
@@ -21,25 +22,29 @@ class IsAdminForAnyCourse(permissions.BasePermission):
 
 
 _BUILD_IMAGE_SCHEMA: CustomViewMethodData = {
-    'request_payload': {
-        'content_type': 'multipart/form-data',
-        'body': {
-            'type': 'object',
-            'properties': {
-                'files': {
-                    'type': 'array',
-                    'items': {
-                        'type': 'string',
-                        'format': 'binary',
-                    },
-                    'description': 'The form-encoded files. One file must be named "Dockerfile"'
+    'request': {
+        'content': {
+            'multipart/form-data': {
+                'schema': {
+                    'type': 'object',
+                    'properties': {
+                        'files': {
+                            'description': (
+                                'The form-encoded files. One file must be named "Dockerfile"'),
+                            'type': 'array',
+                            'items': {
+                                'type': 'string',
+                                'format': 'binary',
+                            },
+                        }
+                    }
                 }
             }
-        },
+        }
     },
     'responses': {
         '202': {
-            'body': as_schema_ref(ag_models.BuildSandboxDockerImageTask)
+            'content': as_content_obj(ag_models.BuildSandboxDockerImageTask)
         }
     }
 }
@@ -53,9 +58,13 @@ class ListCreateGlobalSandboxDockerImageView(ag_views.AGModelAPIView):
             'GET': {
                 'responses': {
                     '200': {
-                        'body': {
-                            'type': 'array',
-                            'items': as_schema_ref(ag_models.SandboxDockerImage)
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    'type': 'array',
+                                    'items': as_schema_ref(ag_models.SandboxDockerImage)
+                                }
+                            }
                         }
                     }
                 }
@@ -180,7 +189,7 @@ class CancelBuildTaskView(ag_views.AGModelAPIView):
         'POST': {
             'responses': {
                 '200': {
-                    'body': as_schema_ref(ag_models.BuildSandboxDockerImageTask)
+                    'content': as_content_obj(ag_models.BuildSandboxDockerImageTask)
                 }
             }
         }

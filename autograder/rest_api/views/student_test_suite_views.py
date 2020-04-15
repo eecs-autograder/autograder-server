@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from rest_framework import response
 from rest_framework.views import APIView
@@ -8,11 +8,8 @@ import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.caching import clear_submission_results_cache
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator,
-                                        APITags, CustomViewSchema,
-                                        OrderViewSchema)
-from autograder.rest_api.views.ag_model_views import (AGModelAPIView,
-                                                      AGModelDetailView,
+                                        AGListCreateViewSchemaGenerator, APITags, OrderViewSchema)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       NestedModelView)
 
 

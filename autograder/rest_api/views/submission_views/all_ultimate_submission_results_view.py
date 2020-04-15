@@ -11,7 +11,7 @@ import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
 from autograder.core.submission_feedback import AGTestPreLoader
-from autograder.rest_api.schema import APITags, CustomViewSchema
+from autograder.rest_api.schema import APITags, CustomViewSchema, as_paginated_content_obj
 from autograder.rest_api.serialize_ultimate_submission_results import \
     serialize_ultimate_submission_results
 from autograder.rest_api.views.ag_model_views import AGModelAPIView
@@ -33,13 +33,7 @@ class AllUltimateSubmissionResults(AGModelAPIView):
     schema = CustomViewSchema([APITags.submissions], {
         'GET': {
             'parameters': [
-                {
-                    'name': 'page',
-                    'in': 'query',
-                    'schema': {
-                        'type': 'integer',
-                    }
-                },
+                {'$ref': '#/components/parameters/page'},
                 {
                     'name': 'groups_per_page',
                     'in': 'query',
@@ -65,32 +59,13 @@ class AllUltimateSubmissionResults(AGModelAPIView):
                         'default': 'false',
                     }
                 },
-                {
-                    'name': 'include_staff',
-                    'in': 'query',
-                    'description': ('When "false", excludes staff and admin users '
-                                    'from the results. Defaults to "true".'),
-                    'schema': {
-                        'type': 'string',
-                        'enum': ['true', 'false'],
-                        'default': 'true',
-                    }
-                }
+                {'$ref': '#/components/parameters/includeStaff'}
             ],
             'responses': {
                 '200': {
-                    'body': {
-                        'type': 'object',
-                        'properties': {
-                            'count': {'type': 'integer'},
-                            'next': {'type': 'string', 'format': 'url'},
-                            'previous': {'type': 'string', 'format': 'url'},
-                            'results': {
-                                'type': 'array',
-                                'items': {'$ref': '#/components/schemas/SubmissionWithResults'}
-                            }
-                        }
-                    }
+                    'content': as_paginated_content_obj({
+                        '$ref': '#/components/schemas/SubmissionWithResults'
+                    })
                 }
             }
         }

@@ -84,7 +84,13 @@ class CourseUserRolesView(AGModelAPIView):
     schema = CustomViewSchema([APITags.courses, APITags.users], {
         'GET': {
             'responses': {
-                '200': {'body': {'$ref': '#/components/schemas/UserRoles'}}
+                '200': {
+                    'content': {
+                        'application/json': {
+                            'schema': {'$ref': '#/components/schemas/UserRoles'}
+                        }
+                    }
+                }
             }
         }
     })

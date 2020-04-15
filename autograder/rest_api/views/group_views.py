@@ -20,20 +20,26 @@ from autograder.core.models.get_ultimate_submissions import get_ultimate_submiss
 from autograder.rest_api import permissions as ag_permissions
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGListViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags,
-                                        CustomViewSchema, as_schema_ref)
+                                        CustomViewSchema, RequestBody, as_content_obj)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       NestedModelView,
                                                       convert_django_validation_error,
                                                       require_body_params, require_query_params)
 
-_MEMBER_NAMES_REQUEST_BODY = {
-    'type': 'object',
-    'properties': {
-        'member_names': {
-            'type': 'array',
-            'items': {
-                'type': 'string',
-                'format': 'username'
+_MEMBER_NAMES_REQUEST_BODY: RequestBody = {
+    'content': {
+        'application/json': {
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'member_names': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'string',
+                            'format': 'username'
+                        }
+                    }
+                }
             }
         }
     }
@@ -47,12 +53,10 @@ class _ListCreateGroupSchema(AGListViewSchemaMixin, CustomViewSchema):
 class ListCreateGroupsView(NestedModelView):
     schema = _ListCreateGroupSchema([APITags.groups], api_class=ag_models.Group, data={
         'POST': {
-            'request_payload': {
-                'body': _MEMBER_NAMES_REQUEST_BODY
-            },
+            'request': _MEMBER_NAMES_REQUEST_BODY,
             'responses': {
                 '201': {
-                    'body': as_schema_ref(ag_models.Group)
+                    'content': as_content_obj(ag_models.Group)
                 }
             }
         }
@@ -125,7 +129,7 @@ class CreateSoloGroupView(AGModelAPIView):
         'POST': {
             'responses': {
                 '201': {
-                    'body': as_schema_ref(ag_models.Group)
+                    'content': as_content_obj(ag_models.Group)
                 }
             }
         }
@@ -183,12 +187,10 @@ class _GroupDetailSchema(AGRetrieveViewSchemaMixin, CustomViewSchema):
 class GroupDetailView(AGModelDetailView):
     schema = _GroupDetailSchema([APITags.groups], {
         'PATCH': {
-            'request_payload': {
-                'body': _MEMBER_NAMES_REQUEST_BODY
-            },
+            'request': _MEMBER_NAMES_REQUEST_BODY,
             'responses': {
                 '200': {
-                    'body': as_schema_ref(ag_models.Group)
+                    'content': as_content_obj(ag_models.Group)
                 }
             }
         }
@@ -250,7 +252,7 @@ class GroupUltimateSubmissionView(AGModelAPIView):
         'GET': {
             'responses': {
                 '200': {
-                    'body': as_schema_ref(ag_models.Submission)
+                    'content': as_content_obj(ag_models.Submission)
                 }
             }
         }
@@ -287,7 +289,7 @@ class MergeGroupsView(AGModelAPIView):
         'POST': {
             'responses': {
                 '201': {
-                    'body': as_schema_ref(ag_models.Group)
+                    'content': as_content_obj(ag_models.Group)
                 }
             }
         }

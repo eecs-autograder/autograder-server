@@ -6,9 +6,8 @@ from abc import abstractmethod
 from decimal import Decimal
 from enum import Enum
 from functools import singledispatch
-from typing import (Any, Dict, List, Literal, Optional, Sequence, Tuple, Type,
-                    TypedDict, Union, cast, get_args, get_origin,
-                    get_type_hints)
+from typing import (Any, Dict, Generic, List, Literal, Mapping, Optional, Sequence, Tuple, Type,
+                    TypedDict, TypeVar, Union, cast, get_args, get_origin, get_type_hints)
 
 import django.contrib.postgres.fields as pg_fields
 from django.conf import settings
@@ -24,8 +23,7 @@ import autograder.core.fields as ag_fields
 import autograder.core.models as ag_models
 import autograder.handgrading.models as hg_models
 from autograder import utils
-from autograder.core.models.ag_model_base import (AutograderModel,
-                                                  DictSerializableMixin,
+from autograder.core.models.ag_model_base import (AutograderModel, DictSerializableMixin,
                                                   ToDictMixin)
 from autograder.core.submission_feedback import (AGTestCaseResultFeedback,
                                                  AGTestCommandResultFeedback,
@@ -132,10 +130,33 @@ values:
         required_fdbk_category: dict = dict(fdbk_category)
         required_fdbk_category['required'] = True
 
-        return {'feedbackCategory': fdbk_category, 'requiredFeedbackCategory': fdbk_category}
+        include_staff = {
+            'name': 'include_staff',
+            'in': 'query',
+            'description': ('When "false", excludes staff and admin users '
+                            'from the results. Defaults to "true".'),
+            'schema': {
+                'type': 'string',
+                'enum': ['true', 'false'],
+                'default': 'true',
+            }
+        }
+
+        page = {
+            'name': 'page',
+            'in': 'query',
+            'schema': {'type': 'integer'}
+        }
+
+        return {
+            'feedbackCategory': fdbk_category,
+            'requiredFeedbackCategory': fdbk_category,
+            'includeStaff': include_staff,
+            'page': page
+        }
 
 
-API_OBJ_TYPE_NAMES = {
+API_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     User: 'User',
     ag_models.Course: ag_models.Course.__name__,
     ag_models.Semester: ag_models.Semester.__name__,
@@ -193,18 +214,22 @@ API_OBJ_TYPE_NAMES = {
     hg_models.NewLocation: 'Location',
 }
 
-
 APIClassType = Union[
     Type[AutograderModel],
     Type[ToDictMixin],
     Type[DictSerializableMixin],
-    Type[User]
+    # Type[User]  # FIXME: Type[User] is Any; we need a type definition for it
+    Type[Enum]
 ]
 FieldType = Union[Field, ForeignObjectRel, property, cached_property]
 
 
-class APIClassSchemaGenerator:
-    _class: APIClassType
+SchemaGenClassType = TypeVar('SchemaGenClassType', bound=APIClassType)
+
+
+class APIClassSchemaGenerator(Generic[SchemaGenClassType]):
+    def __init__(self, class_: SchemaGenClassType):
+        self._class = class_
 
     @classmethod
     def factory(cls, class_: APIClassType) -> APIClassSchemaGenerator:
@@ -244,18 +269,18 @@ class APIClassSchemaGenerator:
         return []
 
 
-class HasToDictMixinSchemaGenerator(APIClassSchemaGenerator):
-    def __init__(self, class_: Type[ToDictMixin]):
-        self._class = class_
+HasToDictMixinType = TypeVar('HasToDictMixinType', bound=Type[ToDictMixin])
 
+
+class HasToDictMixinSchemaGenerator(
+    Generic[HasToDictMixinType],
+    APIClassSchemaGenerator[HasToDictMixinType]
+):
     def _field_names(self) -> Sequence[str]:
         return self._class.get_serializable_fields()
 
 
-class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
-    def __init__(self, class_: Type[AutograderModel]):
-        self._class = class_
-
+class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator[Type[AutograderModel]]):
     def generate_request_body_schema(self, *, include_required: bool):
         result = {
             'type': 'object',
@@ -295,12 +320,7 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
             return False
 
 
-class DictSerializableSchemaGenerator(HasToDictMixinSchemaGenerator):
-    _class: Type[DictSerializableMixin]
-
-    def __init__(self, class_: Type[DictSerializableMixin]):
-        self._class = class_
-
+class DictSerializableSchemaGenerator(HasToDictMixinSchemaGenerator[Type[DictSerializableMixin]]):
     def generate(self) -> dict:
         return {
             'type': 'object',
@@ -314,7 +334,7 @@ class DictSerializableSchemaGenerator(HasToDictMixinSchemaGenerator):
         }
 
 
-class UserSchemaGenerator(APIClassSchemaGenerator):
+class UserSchemaGenerator(APIClassSchemaGenerator[Type[User]]):
     _fields = (
         'pk',
         'username',
@@ -322,9 +342,6 @@ class UserSchemaGenerator(APIClassSchemaGenerator):
         'last_name',
         'is_superuser'
     )
-
-    def __init__(self, class_: Type[User]):
-        self._class = class_
 
     def generate(self) -> dict:
         result = super().generate()
@@ -338,12 +355,7 @@ class UserSchemaGenerator(APIClassSchemaGenerator):
         return self._fields
 
 
-class EnumSchemaGenerator(APIClassSchemaGenerator):
-    _class: Type[Enum]
-
-    def __init__(self, class_: Type[Enum]):
-        self._class = class_
-
+class EnumSchemaGenerator(APIClassSchemaGenerator[Type[Enum]]):
     def generate(self) -> dict:
         return {
             'type': 'string',
@@ -549,7 +561,7 @@ _PK_SCHEMA_READ_ONLY: dict = {
 }
 
 
-def _get_py_type_schema(type_: type) -> dict:
+def _get_py_type_schema(type_: type) -> SchemaObjType:
     origin = get_origin(type_)
     if origin is Union:
         result: dict = {}
@@ -772,23 +784,45 @@ class CustomViewDict(TypedDict, total=False):
 
 
 class CustomViewMethodData(TypedDict, total=False):
-    parameters: List[Union[RequestParam, RefDict]]
+    parameters: Sequence[Union[RequestParam, RefDict]]
     # Key = param name, Value = schema dict
     # Use for fixing the types of DRF-generated URL params.
-    param_schema_overrides: Dict[str, dict]
-    request_payload: RequestBodyData
+    param_schema_overrides: Mapping[str, dict]
+    request: RequestBody
     # Key = response status
-    responses: Dict[str, Optional[ResponseSchemaData]]
+    responses: Mapping[str, Optional[ResponseBody]]
+
+
+# Where appropriate, types are defined from the OpenAPI 3 spec:
+# https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md
+# These types are not exhaustive and may need to be added to to enable
+# additional OpenAPI features.
+
+
+class SchemaDict(TypedDict, total=False):
+    description: str
+    type: str
+    format: str
+    items: dict  # mypy doesn't support recursive types
+    required: bool
+    nullable: bool
+    readOnly: bool
+
+    enum: List[str]
+    anyOf: List[dict]  # mypy doesn't support recursive types
+    allOf: List[dict]  # mypy doesn't support recursive types
+    oneOf: List[dict]  # mypy doesn't support recursive types
+
+    maximum: Union[int, float]
 
 
 RefDict = TypedDict('RefDict', {'$ref': str})
+SchemaObjType = Union[dict, RefDict]
 
-
-# https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md#parameter-object
 RequestParam = TypedDict('RequestParam', {
     'name': str,
     'in': str,
-    'schema': dict,
+    'schema': SchemaObjType,
     'description': str,
     'required': bool,
     'deprecated': bool,
@@ -796,24 +830,93 @@ RequestParam = TypedDict('RequestParam', {
 }, total=False)
 
 
-class RequestBodyData(TypedDict, total=False):
-    # Defaults to 'application/json'
-    content_type: str
-    # Stored under the 'schema' key
-    body: dict
+# Add to this as needed
+ContentTypeVal = Literal['application/json', 'multipart/form-data', 'application/octet-stream']
 
-    examples: dict
+
+class RequestBody(TypedDict, total=False):
     description: str
+    content: ContentObj
+    required: bool
 
 
-class ResponseSchemaData(TypedDict, total=False):
-    # Defaults to 'application/json'
-    content_type: str
-    # Stored under the 'schema' key
-    body: dict
-
-    examples: dict
+class ResponseBody(TypedDict, total=False):
     description: str
+    content: ContentObj
+
+
+class MediaTypeObject(TypedDict, total=False):
+    schema: SchemaObjType
+    examples: Mapping[str, Union[ExampleObject, RefDict]]
+
+
+ContentObj = Mapping[ContentTypeVal, MediaTypeObject]
+
+
+class ExampleObject(TypedDict, total=False):
+    summary: str
+    value: object
+
+
+def as_content_obj(type_: APIClassType) -> ContentObj:
+    """
+    Returns a value suitable for use under the "content" key of a
+    RequestBody or ResponseBody, but that uses a $ref to the given APIClassType
+    as its "schema" value.
+    """
+    return {
+        'application/json': {
+            'schema': as_schema_ref(type_)
+        }
+    }
+
+
+def as_paginated_content_obj(type_: Union[APIClassType, RefDict, dict]) -> ContentObj:
+    if isinstance(type_, dict):
+        obj_dict = type_
+    else:
+        assert type_ in API_OBJ_TYPE_NAMES
+        obj_dict = as_schema_ref(cast(APIClassType, type_))
+
+    return {
+        'application/json': {
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'count': {'type': 'integer'},
+                    'next': {'type': 'string', 'format': 'url'},
+                    'previous': {'type': 'string', 'format': 'url'},
+                    'results': {
+                        'type': 'array',
+                        'items': obj_dict
+                    }
+                }
+            }
+        }
+    }
+
+
+# class RequestBodyData(TypedDict, total=False):
+#     # Defaults to 'application/json'
+#     content_type: str
+#     # Stored under the 'schema' key
+#     body: dict
+
+#     examples: dict
+#     description: str
+
+
+# class ResponseSchemaData(TypedDict, total=False):
+#     # Defaults to 'application/json'
+#     content_type: str
+#     # Stored under the 'schema' key
+#     body: dict
+
+#     examples: dict
+#     description: str
+
+
+# class MediaType
 
 
 HTTPMethodName = Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
@@ -840,39 +943,41 @@ class CustomViewSchema(AGViewSchemaGenerator):
             param = utils.find_if(result['parameters'], lambda item: item['name'] == param_name)
             param['schema'] = schema
 
-        if 'request_payload' in method_data:
-            request_data = method_data['request_payload']
-            body = {
-                'schema': request_data['body'],
-            }
-            if 'examples' in request_data:
-                body['examples'] = request_data['examples']
-            result['requestBody'] = {
-                'required': True,
-                'content': {
-                    request_data.get('content_type', 'application/json'): body
-                }
-            }
-            if 'description' in request_data:
-                result['description'] = request_data['description']
+        if 'request' in method_data:
+            result.setdefault('requestBody', {})
+            result['requestBody'].update({'required': True})
+            result['requestBody'].update(method_data['request'])
+            # request_data = method_data['request']
+            # body = {
+            #     'schema': request_data['body'],
+            # }
+            # if 'examples' in request_data:
+            #     body['examples'] = request_data['examples']
+            # result['requestBody'] = {
+            #     'required': True,
+            #     'content': {
+            #         request_data.get('content_type', 'application/json'): body
+            #     }
+            # }
+            # if 'description' in request_data:
+            #     result['description'] = request_data['description']
 
-        responses: Dict[str, dict] = {}
+        responses: Dict[str, ResponseBody] = {}
         for status, response_data in method_data.get('responses', {}).items():
-            if response_data is None:
-                responses[status] = {}
-            elif 'body' in response_data:
-                body = {
-                    'schema': response_data['body']
-                }
-                if 'examples' in response_data:
-                    body['examples'] = response_data['examples']
-                responses[status] = {
-                    'content': {
-                        response_data.get('content_type', 'application/json'): body
-                    }
-                }
-                if 'description' in response_data:
-                    responses[status]['description'] = response_data['description']
+            responses[status] = {} if response_data is None else response_data
+            # elif 'body' in response_data:
+            #     body = {
+            #         'schema': response_data['body']
+            #     }
+            #     if 'examples' in response_data:
+            #         body['examples'] = response_data['examples']
+            #     responses[status] = {
+            #         'content': {
+            #             response_data.get('content_type', 'application/json'): body
+            #         }
+            #     }
+            #     if 'description' in response_data:
+            #         responses[status]['description'] = response_data['description']
 
         if responses:
             result['responses'] = responses
@@ -886,25 +991,37 @@ class OrderViewSchema(CustomViewSchema):
             'GET': {
                 'responses': {
                     '200': {
-                        'body': {
-                            'type': 'array',
-                            'items': {'type': 'integer', 'format': 'id'}
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    'type': 'array',
+                                    'items': {'type': 'integer', 'format': 'id'}
+                                }
+                            }
                         }
                     }
                 }
             },
             'PUT': {
-                'request_payload': {
-                    'body': {
-                        'type': 'array',
-                        'items': {'type': 'integer', 'format': 'id'}
+                'request': {
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                'type': 'array',
+                                'items': {'type': 'integer', 'format': 'id'}
+                            }
+                        }
                     }
                 },
                 'responses': {
                     '200': {
-                        'body': {
-                            'type': 'array',
-                            'items': {'type': 'integer', 'format': 'id'}
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    'type': 'array',
+                                    'items': {'type': 'integer', 'format': 'id'}
+                                }
+                            }
                         }
                     }
                 }

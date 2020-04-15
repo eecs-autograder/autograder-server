@@ -17,7 +17,7 @@ from autograder.core.submission_feedback import (AGTestCommandResultFeedback, AG
                                                  AGTestSuiteResultFeedback,
                                                  StudentTestSuitePreLoader,
                                                  SubmissionResultFeedback)
-from autograder.rest_api.schema import APITags, CustomViewSchema, as_schema_ref
+from autograder.rest_api.schema import APITags, CustomViewSchema, as_content_obj, as_schema_ref
 from autograder.rest_api.serialize_ultimate_submission_results import \
     get_submission_data_with_results
 from autograder.rest_api.views.ag_model_views import AGModelAPIView, require_query_params
@@ -64,9 +64,7 @@ class SubmissionResultsView(SubmissionResultsViewBase):
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
-                    'body': {
-                        '$ref': as_schema_ref(SubmissionResultFeedback)
-                    }
+                    'content': as_content_obj(SubmissionResultFeedback)
                 }
             }
         }
@@ -105,14 +103,17 @@ class SubmissionResultsView(SubmissionResultsViewBase):
 
 
 class _OutputViewSchema(CustomViewSchema):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__([APITags.submission_output], {
             'GET': {
                 'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
                 'responses': {
                     '200': {
-                        'content_type': 'application/octet-stream',
-                        'body': {'type': 'string', 'format': 'binary'},
+                        'content': {
+                            'application/octet-stream': {
+                                'schema': {'type': 'string', 'format': 'binary'},
+                            },
+                        }
                     }
                 }
             }
@@ -147,25 +148,29 @@ class AGTestSuiteResultsOutputSizeView(SubmissionResultsViewBase):
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
-                    'body': {
-                        'type': 'object',
-                        'properties': {
-                            'setup_stdout_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'setup_stdout_truncated': {
-                                'type': 'boolean',
-                                'nullable': True,
-                            },
-                            'setup_stderr_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'setup_stderr_truncated': {
-                                'type': 'boolean',
-                                'nullable': True,
-                            },
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                'type': 'object',
+                                'properties': {
+                                    'setup_stdout_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'setup_stdout_truncated': {
+                                        'type': 'boolean',
+                                        'nullable': True,
+                                    },
+                                    'setup_stderr_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'setup_stderr_truncated': {
+                                        'type': 'boolean',
+                                        'nullable': True,
+                                    },
+                                }
+                            }
                         }
                     }
                 }
@@ -250,33 +255,37 @@ class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
-                    'body': {
-                        'type': 'object',
-                        'properties': {
-                            'stdout_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'stdout_truncated': {
-                                'type': 'boolean',
-                                'nullable': True,
-                            },
-                            'stderr_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'stderr_truncated': {
-                                'type': 'boolean',
-                                'nullable': True,
-                            },
-                            'stdout_diff_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'stderr_diff_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                'type': 'object',
+                                'properties': {
+                                    'stdout_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'stdout_truncated': {
+                                        'type': 'boolean',
+                                        'nullable': True,
+                                    },
+                                    'stderr_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'stderr_truncated': {
+                                        'type': 'boolean',
+                                        'nullable': True,
+                                    },
+                                    'stdout_diff_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'stderr_diff_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                }
+                            }
                         }
                     }
                 }
@@ -494,41 +503,45 @@ class StudentTestSuiteOutputSizeView(SubmissionResultsViewBase):
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
-                    'body': {
-                        'type': 'object',
-                        'properties': {
-                            'setup_stdout_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'setup_stderr_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'get_student_test_names_stdout_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'get_student_test_names_stderr_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'validity_check_stdout_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'validity_check_stderr_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'grade_buggy_impls_stdout_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
-                            'grade_buggy_impls_stderr_size': {
-                                'type': 'integer',
-                                'nullable': True,
-                            },
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                'type': 'object',
+                                'properties': {
+                                    'setup_stdout_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'setup_stderr_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'get_student_test_names_stdout_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'get_student_test_names_stderr_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'validity_check_stdout_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'validity_check_stderr_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'grade_buggy_impls_stdout_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                    'grade_buggy_impls_stderr_size': {
+                                        'type': 'integer',
+                                        'nullable': True,
+                                    },
+                                }
+                            }
                         }
                     }
                 }
