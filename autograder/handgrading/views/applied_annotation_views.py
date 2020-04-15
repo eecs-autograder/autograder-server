@@ -1,5 +1,4 @@
 import autograder.handgrading.models as hg_models
-import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APITags, OrderViewSchema)

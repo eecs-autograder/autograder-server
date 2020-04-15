@@ -4,12 +4,6 @@ from rest_framework import routers
 
 from . import views
 
-comment_detail_router = routers.SimpleRouter()
-comment_detail_router.register(r'comments',
-                               views.CommentDetailViewSet,
-                               basename='comment')
-
-
 urlpatterns = [
     path('projects/<int:project_pk>/handgrading_rubric/',
          views.GetCreateHandgradingRubricView.as_view(),
@@ -45,9 +39,10 @@ urlpatterns = [
     path('applied_annotations/<int:pk>/', views.AppliedAnnotationDetailView.as_view(),
          name='applied-annotation-detail'),
 
-    url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/comments/$',
-        views.CommentListCreateView.as_view(), name='comments'),
-    url(r'', include(comment_detail_router.urls)),
+    path('handgrading_results/<int:handgrading_result_pk>/comments/',
+         views.ListCreateCommentView.as_view(), name='comments'),
+    path('comments/<int:pk>/', views.CommentDetailView.as_view(),
+         name='comment-detail'),
 
     path('handgrading_results/<int:handgrading_result_pk>/criterion_results/',
          views.ListCreateCriterionResultView.as_view(), name='criterion_results'),
