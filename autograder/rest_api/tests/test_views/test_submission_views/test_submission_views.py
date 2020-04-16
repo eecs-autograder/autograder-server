@@ -153,6 +153,21 @@ class CreateSubmissionTestCase(test_data.Client,
         group = self.non_enrolled_group(self.visible_public_project)
         self.do_normal_submit_test(group, group.members.first())
 
+    def test_no_files_submitted(self) -> None:
+        group = obj_build.make_group()
+        group.project.validate_and_update(visible_to_students=True)
+        response = self.do_create_object_test(
+            ag_models.Submission.objects, self.client, group.members.first(),
+            self.submissions_url(group),
+            {'submitted_files': []},
+            format='multipart', check_data=False
+        )
+
+        submission = ag_models.Submission.objects.get(pk=response.data['pk'])
+        self.assertEqual(submission.to_dict(), response.data)
+
+        self.assertEqual([], submission.submitted_filenames)
+
     def test_all_submit_no_closing_time(self):
         for group in self.all_groups(self.visible_public_project):
             self.do_normal_submit_test(group, group.members.first())
@@ -400,9 +415,6 @@ class CreateSubmissionTestCase(test_data.Client,
         self.assertIn('count_towards_daily_limit', response.data['invalid_fields'])
         self.assertIn('count_towards_total_limit', response.data['invalid_fields'])
 
-    def test_no_files_submitted(self) -> None:
-        self.fail()
-
     def do_normal_submit_test(self, group, user) -> ag_models.Submission:
         self.add_expected_patterns(group.project)
         response = self.do_create_object_test(
@@ -541,8 +553,11 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
         other_project = obj_build.make_project(
             self.course, closing_time=self.closing_time, visible_to_students=True,
             allow_late_days=True)
-        other_group = obj_build.make_group(
-            project=other_project, members=list(self.group.members.all()))
+        other_group = ag_models.Group.objects.validate_and_create(
+            members=list(self.group.members.all()),
+            check_group_size_limits=False,
+            project=other_project
+        )
 
         submitter = self.group.members.first()
         self.submit(self.group, submitter,
