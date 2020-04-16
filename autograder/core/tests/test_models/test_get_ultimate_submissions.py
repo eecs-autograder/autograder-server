@@ -297,9 +297,10 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         self.counts_for_user = obj_build.make_student_user(self.course)
         self.does_not_count_for_user = obj_build.make_student_user(self.course)
 
-        self.group = obj_build.make_group(
+        self.group = ag_models.Group.objects.validate_and_create(
             members=[self.counts_for_user, self.does_not_count_for_user],
-            project=self.project
+            project=self.project,
+            check_group_size_limits=False,
         )
 
     def test_most_recent_does_not_count_for_user(self):
