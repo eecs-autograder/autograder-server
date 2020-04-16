@@ -79,11 +79,6 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
             project=self.project,
             **group_kwargs
         )
-        # obj_build.make_group(
-        #     members=members,
-        #     members_role=members_role,
-        #     project=self.project,
-        #     **group_kwargs)
 
         # The first submission gets correct results so that it's the best.
         # The others get incorrect results.
