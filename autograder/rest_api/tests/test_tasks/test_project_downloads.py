@@ -74,26 +74,26 @@ class DownloadSubmissionFilesTestCase(UnitTestBase):
         [self.admin] = obj_build.make_admin_users(self.project.course, 1)
 
     def test_download_all_files(self):
-        url = reverse('project-all-submission-files', kwargs={'pk': self.project.pk})
+        url = reverse('all-submission-files-task', kwargs={'pk': self.project.pk})
         self.do_download_submissions_test(
             url, [self.group1_submission1, self.group1_submission2, self.group2_submission1])
 
     def test_download_ultimate_submission_files(self):
-        url = reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk})
+        url = reverse('ultimate-submission-files-task', kwargs={'pk': self.project.pk})
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
         most_recent_submissions = [self.group1_submission2, self.group2_submission1]
         self.do_download_submissions_test(url, most_recent_submissions)
 
     def test_all_files_include_staff(self):
-        url = reverse('project-all-submission-files', kwargs={'pk': self.project.pk})
+        url = reverse('all-submission-files-task', kwargs={'pk': self.project.pk})
         url += '?include_staff=true'
         self.do_download_submissions_test(
             url, [self.group1_submission1, self.group1_submission2,
                   self.group2_submission1, self.staff_submission1])
 
     def test_ultimate_submission_files_include_staff(self):
-        url = reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk})
+        url = reverse('ultimate-submission-files-task', kwargs={'pk': self.project.pk})
         url += '?include_staff=true'
         staff_submission2 = obj_build.make_finished_submission(
             submitted_files=self.files[:-1],
@@ -105,7 +105,7 @@ class DownloadSubmissionFilesTestCase(UnitTestBase):
     def test_download_all_submission_files_no_submissions(self):
         ag_models.Submission.objects.all().delete()
 
-        url = reverse('project-all-submission-files', kwargs={'pk': self.project.pk})
+        url = reverse('all-submission-files-task', kwargs={'pk': self.project.pk})
         self.do_download_submissions_test(url, [])
 
     def test_download_ultimate_submission_files_no_submissions(self):
@@ -115,7 +115,7 @@ class DownloadSubmissionFilesTestCase(UnitTestBase):
         self.student_group2.delete()
         self.no_submissions_group.delete()
 
-        url = reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk})
+        url = reverse('ultimate-submission-files-task', kwargs={'pk': self.project.pk})
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
         self.do_download_submissions_test(url, [])
@@ -128,18 +128,18 @@ class DownloadSubmissionFilesTestCase(UnitTestBase):
         obj_build.make_finished_submission(group)
 
         # Exclude staff
-        url = reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk})
+        url = reverse('ultimate-submission-files-task', kwargs={'pk': self.project.pk})
         self.do_download_submissions_test(url, [])
 
     def test_non_admin_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.project.course, 1)
         self.client.force_authenticate(staff)
         response = self.client.post(
-            reverse('project-all-submission-files', kwargs={'pk': self.project.pk}))
+            reverse('all-submission-files-task', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
         response = self.client.post(
-            reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk}))
+            reverse('ultimate-submission-files-task', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_unfinished_and_error_submissions_ignored(self):
@@ -171,11 +171,11 @@ class DownloadSubmissionFilesTestCase(UnitTestBase):
                          self.project.ultimate_submission_policy)
 
         self.do_download_submissions_test(
-            reverse('project-all-submission-files', kwargs={'pk': self.project.pk}),
+            reverse('all-submission-files-task', kwargs={'pk': self.project.pk}),
             [self.group1_submission1, self.group1_submission2, self.group2_submission1])
 
         self.do_download_submissions_test(
-            reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk}),
+            reverse('ultimate-submission-files-task', kwargs={'pk': self.project.pk}),
             [self.group1_submission2, self.group2_submission1])
 
     def do_download_submissions_test(self, url,
@@ -196,7 +196,7 @@ class DownloadSubmissionFilesTestCase(UnitTestBase):
             self._check_zip_content(result, expected_filenames)
 
         # Check the content returned by the result endpoint
-        result_content_url = reverse('download_tasks-result', kwargs={'pk': task.pk})
+        result_content_url = reverse('download-task-result', kwargs={'pk': task.pk})
         response = self.client.get(result_content_url)
 
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -255,7 +255,7 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.most_recent,
         )
 
-        self.url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
+        self.url = reverse('ultimate-submission-scores-task', kwargs={'pk': self.project.pk})
 
         self.admin = obj_build.make_admin_user(self.project.course)
 
@@ -487,7 +487,7 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
     def test_download_ultimate_submission_scores_no_submissions(self):
         ag_models.Submission.objects.all().delete()
 
-        url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
+        url = reverse('ultimate-submission-scores-task', kwargs={'pk': self.project.pk})
         self.do_ultimate_submission_scores_csv_test(self.url, [])
 
     def test_download_all_ultimate_submission_scores_with_handgrading(self):
@@ -711,7 +711,7 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
         self.assertEqual(expected_rows, actual_result)
 
         # Check the content returned by the result endpoint
-        result_content_url = reverse('download_tasks-result', kwargs={'pk': task.pk})
+        result_content_url = reverse('download-task-result', kwargs={'pk': task.pk})
         response = self.client.get(result_content_url)
         _check_csv_response(self, response, expected_rows)
 
@@ -831,7 +831,7 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
         self.maxDiff = None
 
     def test_download_all_scores(self):
-        url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
+        url = reverse('all-submission-scores-task', kwargs={'pk': self.project.pk})
         self.do_download_scores_test(
             url, self.project,
             [self.group1_submission1_best, self.group1_submission2, self.group2_only_submission])
@@ -843,7 +843,7 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
         obj_build.make_submission(
             group=self.student_group2,
             status=ag_models.Submission.GradingStatus.error)
-        url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
+        url = reverse('all-submission-scores-task', kwargs={'pk': self.project.pk})
         self.assertEqual(2, ag_models.Submission.objects.filter(
             group__project=self.project
         ).exclude(
@@ -855,11 +855,11 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
     def test_download_all_scores_no_submissions(self):
         ag_models.Submission.objects.all().delete()
 
-        url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
+        url = reverse('all-submission-scores-task', kwargs={'pk': self.project.pk})
         self.do_download_scores_test(url, self.project, [])
 
     def test_include_staff_all_scores(self):
-        url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
+        url = reverse('all-submission-scores-task', kwargs={'pk': self.project.pk})
         url += '?include_staff=true'
         self.do_download_scores_test(
             url, self.project,
@@ -870,11 +870,11 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
         [staff] = obj_build.make_staff_users(self.project.course, 1)
         self.client.force_authenticate(staff)
         response = self.client.post(
-            reverse('project-all-submission-scores', kwargs={'pk': self.project.pk}))
+            reverse('all-submission-scores-task', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
         response = self.client.post(
-            reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk}))
+            reverse('ultimate-submission-scores-task', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_unfinished_and_error_submissions_ignored(self):
@@ -907,7 +907,7 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
         self.do_download_scores_test(
-            reverse('project-all-submission-scores', kwargs={'pk': self.project.pk}),
+            reverse('all-submission-scores-task', kwargs={'pk': self.project.pk}),
             self.project,
             [self.group1_submission1_best, self.group1_submission2, self.group2_only_submission])
 
@@ -935,7 +935,7 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
         self.assertCountEqual(expected_result, actual_result)
 
         # Check the content returned by the result endpoint
-        result_content_url = reverse('download_tasks-result', kwargs={'pk': task.pk})
+        result_content_url = reverse('download-task-result', kwargs={'pk': task.pk})
         response = self.client.get(result_content_url)
         _check_csv_response(self, response, expected_result)
 
