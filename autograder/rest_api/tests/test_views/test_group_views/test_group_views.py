@@ -361,7 +361,8 @@ class RetrieveGroupTestCase(AGViewTestBase):
 
     def test_guest_get_group_project_private_permission_denied(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
-        group = obj_build.make_group(project=self.project, members=[obj_build.make_user()])
+        group = ag_models.Group.objects.validate_and_create(
+            project=self.project, members=[obj_build.make_user()])
         self.project.validate_and_update(guests_can_submit=False)
 
         self.do_permission_denied_get_test(
