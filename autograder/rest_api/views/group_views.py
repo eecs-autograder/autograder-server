@@ -13,7 +13,6 @@ from rest_framework import decorators, mixins, permissions, response, status
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
-import autograder.rest_api.serializers as ag_serializers
 import autograder.utils.testing as test_ut
 from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission

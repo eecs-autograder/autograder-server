@@ -13,7 +13,6 @@ from rest_framework import decorators, exceptions, mixins, response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
 import autograder.utils.testing as test_ut
 from autograder.core.submission_feedback import (AGTestPreLoader, StudentTestSuitePreLoader,
                                                  SubmissionResultFeedback)
