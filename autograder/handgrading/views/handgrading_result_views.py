@@ -270,8 +270,10 @@ class ListHandgradingResultsView(AGModelAPIView):
                                 'type': 'object',
                                 'properties': {
                                     'handgrading_result': {
-                                        'description': 'When this value is null, indicates that '
-                                                    'handgrading has not started for this group.',
+                                        'description': (
+                                            'When this value is null, indicates that '
+                                            'handgrading has not started for this group.'
+                                        ),
                                         'type': 'object',
                                         'properties': {
                                             'finished_grading': {'type': 'boolean'},
