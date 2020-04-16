@@ -11,7 +11,10 @@ from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-from autograder.rest_api.schema import AGDetailViewSchemaGenerator, AGListCreateViewSchemaGenerator, APITags, ContentObj, ContentTypeVal, CustomViewSchema, MediaTypeObject, RequestParam
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator, APITags, ContentObj,
+                                        ContentTypeVal, CustomViewSchema, MediaTypeObject,
+                                        RequestParam)
 from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       AGModelGenericViewSet,

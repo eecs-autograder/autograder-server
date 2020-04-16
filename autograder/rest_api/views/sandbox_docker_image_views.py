@@ -8,10 +8,9 @@ from autograder.core.tasks import build_sandbox_docker_image
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
-                                        CustomViewMethodData, CustomViewSchema, as_content_obj,
-                                        as_schema_ref)
+                                        APITags, CustomViewMethodData, CustomViewSchema,
+                                        as_content_obj, as_schema_ref)
 from autograder.rest_api.views.ag_model_views import convert_django_validation_error
-from autograder.rest_api.views.schema_generation import APITags
 
 from . import ag_model_views as ag_views
 

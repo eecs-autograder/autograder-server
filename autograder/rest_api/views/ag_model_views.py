@@ -1,24 +1,20 @@
-from functools import wraps
 from abc import abstractmethod
-from typing import Optional, List, Protocol
+from functools import wraps
+from typing import List, Optional, Protocol
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, permissions, mixins, response, status
+from rest_framework import mixins, permissions, response, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from autograder.rest_api.views.schema_generation import (
-
-    APITags)
-from ..transaction_mixins import (
-    TransactionCreateMixin, TransactionPartialUpdateMixin,
-    TransactionDestroyMixin)
-from rest_framework.response import Response
+from ..transaction_mixins import (TransactionCreateMixin, TransactionDestroyMixin,
+                                  TransactionPartialUpdateMixin)
 
 
 def convert_django_validation_error(func):

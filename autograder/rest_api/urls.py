@@ -71,7 +71,8 @@ urlpatterns = [
          name='groups-is-member-of'),
     path('users/<int:pk>/group_invitations_sent/', views.GroupInvitationsSentView.as_view(),
          name='group-invitations-sent'),
-    path('users/<int:pk>/group_invitations_received/', views.GroupInvitationsReceivedView.as_view(),
+    path('users/<int:pk>/group_invitations_received/',
+         views.GroupInvitationsReceivedView.as_view(),
          name='group-invitations-received'),
 
 
