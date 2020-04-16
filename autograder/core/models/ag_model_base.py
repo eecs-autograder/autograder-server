@@ -7,7 +7,6 @@ from collections import OrderedDict
 
 from django.db import models, transaction
 from django.core import exceptions
-# from drf_yasg.openapi import Schema, Parameter
 
 from autograder.core.fields import ValidatedJSONField
 

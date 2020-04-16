@@ -615,7 +615,6 @@ class APITags(enum.Enum):
     users = 'users'
     courses = 'courses'
     rosters = 'rosters'
-    # permissions = 'permissions'
 
     projects = 'projects'
     instructor_files = 'instructor_files'
