@@ -10,6 +10,7 @@ import autograder.rest_api.serializers as ag_serializers
 from autograder.core.models.course import clear_cached_user_roles
 from autograder.rest_api.schema import (AGRetrieveViewSchemaMixin, APITags, CustomViewSchema,
                                         as_schema_ref)
+from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import NestedModelView, require_body_params
 
 
@@ -77,6 +78,9 @@ class CourseAdminViewSet(NestedModelView):
 
     def get(self, *args, **kwargs):
         return self.do_list()
+
+    def serialize_object(self, obj):
+        return serialize_user(obj)
 
     @transaction.atomic()
     @method_decorator(require_body_params('new_admins'))
