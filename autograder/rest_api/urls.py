@@ -6,51 +6,6 @@ from rest_framework.schemas import get_schema_view
 
 from autograder.rest_api import views
 
-# schema_view = get_schema_view(
-#     openapi.Info(
-#         title="Autograder API",
-#         default_version=settings.VERSION,
-#         description="""
-# <h3>Welcome to the Autograder API documentation!</h3>
-# <div>
-#   To authenticate:
-# </div>
-# <ol>
-#   <li>
-#     If you'll be using the API a lot, you might want to request a dedicated access token.
-#     To get one, send an email to jameslp at umich.edu, and we'll see about securely sending you
-#     a new token.
-#   </li>
-#   <li>
-#     Otherwise, you can snag the token from your user account.
-#     Head over to <a href="autograder.io">autograder.io</a>, log in,
-#     and open up the developer console.</li>
-#   <li>
-#     Under the "Network" tab, select any of the requests to the
-#     "/users/current/my_roles/" endpoint. Find the "Authorization" header and copy the value
-#     "Token &lt;token&gt;", where &lt;token&gt; is your authorization
-#     token.
-#   </li>
-#   <li>
-#     When sending requests from your own code, set the "Authorization" header with the value
-#     "Token &lt;token&gt;"
-#   </li>
-#   <li>
-#     When you click on the "Authorize" or "Try it out" buttons on this page,
-#     enter "Token &lt;token&gt;" into the "Value" field.
-#   </li>
-# </ol>
-#         """,
-#         # terms_of_service="https://www.google.com/policies/terms/",
-#         # contact=openapi.Contact(email="contact@snippets.local"),
-#         # license=openapi.License(name="BSD License"),
-#     ),
-#     public=True,
-#     permission_classes=(permissions.AllowAny,),
-#     generator_class=AGSchemaGenerator,
-# )
-
-
 urlpatterns = [
     path('oauth2callback/', views.oauth2_callback, name='oauth2callback'),
     path('users/current/', views.CurrentUserView.as_view(), name='current-user'),
@@ -74,7 +29,6 @@ urlpatterns = [
     path('users/<int:pk>/group_invitations_received/',
          views.GroupInvitationsReceivedView.as_view(),
          name='group-invitations-received'),
-
 
     path('courses/', views.ListCreateCourseView.as_view(), name='list-create-courses'),
     path('courses/<int:pk>/', views.CourseDetailView.as_view(), name='course-detail'),

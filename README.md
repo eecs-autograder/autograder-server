@@ -80,7 +80,7 @@ If you are running the full development stack, you may skip the next step.
 To render and serve the API using Swagger UI, run (requires Docker):
 ```
 # Run from the project root directory, i.e. "autograder-server"
-docker run -d --name ag_schema -p 8080:8080 -e SWAGGER_JSON=/root/schema.yml -v $(pwd)/schema:/root swaggerapi/swagger-ui
+docker run -d --name ag_schema -p 8080:8080 --env-file schema/env -v $(pwd)/schema:/root swaggerapi/swagger-ui
 ```
 Then navigate to localhost:8080 in your browser. To change the port, change `8080:8080` to `<your port>:8080`, e.g. `9001:8080`.
 
