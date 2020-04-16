@@ -225,7 +225,7 @@ class _DownloadViewBase(AGModelAPIView):
     model_manager = ag_models.Project.objects
     permission_classes = [ag_permissions.is_admin()]
 
-    def post(self):
+    def post(self, *args, **kwargs):
         # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
         with transaction.atomic():
             project = self.get_object()  # type: ag_models.Project
