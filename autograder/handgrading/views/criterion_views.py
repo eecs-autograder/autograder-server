@@ -6,10 +6,7 @@ import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APITags, OrderViewSchema)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      AGModelGenericViewSet,
-                                                      ListCreateNestedModelViewSet,
                                                       NestedModelView,
-                                                      TransactionRetrievePatchDestroyMixin,
                                                       convert_django_validation_error)
 
 

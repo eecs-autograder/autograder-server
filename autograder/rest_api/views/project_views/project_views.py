@@ -23,7 +23,7 @@ from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSch
                                         as_content_obj, as_schema_ref)
 from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      AGModelGenericViewSet, NestedModelView,
+                                                      NestedModelView,
                                                       convert_django_validation_error,
                                                       handle_object_does_not_exist_404)
 
