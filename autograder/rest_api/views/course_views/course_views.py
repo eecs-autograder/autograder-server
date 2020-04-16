@@ -16,9 +16,7 @@ from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSch
                                         AGListCreateViewSchemaGenerator, AGRetrieveViewSchemaMixin,
                                         APITags, CustomViewSchema, as_schema_ref)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      AGModelGenericViewSet,
-                                                      AlwaysIsAuthenticatedMixin,
-                                                      CreateNestedModelMixin, NestedModelView,
+                                                      AlwaysIsAuthenticatedMixin, NestedModelView,
                                                       convert_django_validation_error,
                                                       require_body_params)
 

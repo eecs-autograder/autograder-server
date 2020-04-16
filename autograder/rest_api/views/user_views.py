@@ -17,7 +17,6 @@ from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         RequestParam)
 from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      AGModelGenericViewSet,
                                                       AlwaysIsAuthenticatedMixin, NestedModelView,
                                                       require_body_params, require_query_params)
 
