@@ -1,15 +1,13 @@
-from django.urls import reverse
 from django.contrib.auth.models import User
-
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
-
-from autograder.utils.testing import UnitTestBase
-import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.rest_api.serialize_user import serialize_user
+from autograder.utils.testing import UnitTestBase
 
 
 class _SetUp(UnitTestBase):
@@ -38,8 +36,7 @@ class ListStudentsTestCase(test_impls.ListObjectsTest, _SetUp):
     # accessible to enrolled students (such as for autocomplete when
     # sending group invitations).
     def test_admin_or_staff_list_students(self):
-        expected_content = ag_serializers.UserSerializer(
-            self.students, many=True).data
+        expected_content = [serialize_user(user) for user in self.students]
 
         for user in self.staff, self.admin:
             self.do_list_objects_test(
@@ -152,8 +149,7 @@ class RemoveStudentsTestCase(_SetUp):
         self.course.students.add(*self.all_enrolled)
 
         self.request_body = {
-            'remove_students':
-                ag_serializers.UserSerializer(self.students_to_remove, many=True).data
+            'remove_students': [serialize_user(user) for user in self.students_to_remove]
         }
 
     def test_admin_remove_students(self):

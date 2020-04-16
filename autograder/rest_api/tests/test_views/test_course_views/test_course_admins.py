@@ -1,15 +1,13 @@
 import itertools
 
 from django.urls import reverse
-
 from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
-
-from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.rest_api.serialize_user import serialize_user
+from autograder.utils.testing import UnitTestBase
 
 
 class _SetUp(UnitTestBase):
@@ -28,11 +26,8 @@ class _SetUp(UnitTestBase):
 
 class ListCourseAdminsTestCase(_SetUp):
     def test_superuser_admin_or_staff_list_admins(self):
-        admins = obj_build.create_dummy_users(3)
-        self.course.admins.add(*admins)
-
-        expected_content = ag_serializers.UserSerializer(admins,
-                                                         many=True).data
+        admins = obj_build.make_admin_users(self.course, 3)
+        expected_content = [serialize_user(user) for user in admins]
 
         for user in self.superuser, admins[0], self.staff, self.handgrader:
             self.client.force_authenticate(user)
@@ -110,16 +105,13 @@ class RemoveCourseAdminsTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
-        self.remaining_admin = obj_build.create_dummy_user()
-        self.current_admins = obj_build.create_dummy_users(3)
+        self.remaining_admin = obj_build.make_admin_user(self.course)
+        self.current_admins = obj_build.make_admin_users(self.course, 3)
         self.all_admins = [self.remaining_admin] + self.current_admins
         self.total_num_admins = len(self.all_admins)
 
-        self.course.admins.add(*self.all_admins)
-
         self.request_body = {
-            'remove_admins': ag_serializers.UserSerializer(
-                self.current_admins, many=True).data
+            'remove_admins': [serialize_user(user) for user in self.current_admins]
         }
 
     def test_superuser_or_admin_remove_admins(self):
@@ -147,9 +139,7 @@ class RemoveCourseAdminsTestCase(_SetUp):
     def test_error_admin_remove_self_from_admin_list(self):
         self.client.force_authenticate(self.remaining_admin)
         response = self.client.patch(
-            self.url,
-            {'remove_admins':
-                ag_serializers.UserSerializer([self.remaining_admin], many=True).data})
+            self.url, {'remove_admins': [serialize_user(self.remaining_admin)]})
 
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 

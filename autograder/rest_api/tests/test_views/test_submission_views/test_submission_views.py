@@ -13,7 +13,6 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -41,8 +40,8 @@ class ListSubmissionsTestCase(test_data.Client,
     def test_admin_or_staff_list_submissions(self):
         for project in self.all_projects:
             for group in self.at_least_enrolled_groups(project):
-                expected_data = ag_serializers.SubmissionSerializer(
-                    self.build_submissions(group), many=True).data
+                expected_data = [
+                    submission.to_dict() for submission in self.build_submissions(group)]
                 for user in self.admin, self.staff:
                     self.do_list_objects_test(
                         self.client, user, self.submissions_url(group),
@@ -50,8 +49,7 @@ class ListSubmissionsTestCase(test_data.Client,
 
         for project in self.hidden_public_project, self.visible_public_project:
             group = self.non_enrolled_group(project)
-            expected_data = ag_serializers.SubmissionSerializer(
-                self.build_submissions(group), many=True).data
+            expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
             for user in self.admin, self.staff:
                 self.do_list_objects_test(
                     self.client, user, self.submissions_url(group),
@@ -60,8 +58,7 @@ class ListSubmissionsTestCase(test_data.Client,
     def test_enrolled_list_submissions(self):
         for project in self.visible_projects:
             group = self.enrolled_group(project)
-            expected_data = ag_serializers.SubmissionSerializer(
-                self.build_submissions(group), many=True).data
+            expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
             self.do_list_objects_test(
                 self.client, self.enrolled, self.submissions_url(group),
                 expected_data)
@@ -69,15 +66,13 @@ class ListSubmissionsTestCase(test_data.Client,
     def test_handgrader_list_student_group_submissions_permission_denied(self):
         for project in self.visible_projects:
             group = self.enrolled_group(project)
-            expected_data = ag_serializers.SubmissionSerializer(
-                self.build_submissions(group), many=True).data
+            expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
             self.do_permission_denied_get_test(
                 self.client, self.handgrader, self.submissions_url(group), expected_data)
 
     def test_non_enrolled_list_submissions(self):
         group = self.non_enrolled_group(self.visible_public_project)
-        expected_data = ag_serializers.SubmissionSerializer(
-            self.build_submissions(group), many=True).data
+        expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
         self.do_list_objects_test(
             self.client, self.nobody, self.submissions_url(group),
             expected_data)

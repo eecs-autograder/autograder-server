@@ -5,7 +5,6 @@ from rest_framework import response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
 from autograder.core.models.course import clear_cached_user_roles
 from autograder.rest_api.schema import (AGRetrieveViewSchemaMixin, APITags, CustomViewSchema,
                                         as_schema_ref)

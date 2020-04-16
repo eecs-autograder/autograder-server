@@ -2,7 +2,6 @@ from rest_framework import permissions
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APITags)
 from autograder.rest_api.views.ag_model_views import AGModelDetailView, NestedModelView

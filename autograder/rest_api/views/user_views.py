@@ -10,7 +10,6 @@ from rest_framework.request import Request
 from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APITags, ContentObj,
                                         ContentTypeVal, CustomViewSchema, MediaTypeObject,

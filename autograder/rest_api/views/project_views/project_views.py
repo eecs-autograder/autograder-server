@@ -10,9 +10,7 @@ from rest_framework.response import Response
 
 import autograder.core.models as ag_models
 import autograder.handgrading.models as hg_models
-import autograder.handgrading.serializers as hg_serializers
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
 from autograder.core.caching import clear_submission_results_cache
 from autograder.core.models.copy_project_and_course import copy_project
 from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
