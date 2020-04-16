@@ -120,14 +120,23 @@ class UserGroupsTestCase(AGViewTestBase):
         self.client = APIClient()
 
     def test_self_list_groups_is_member_of(self):
-        group1 = obj_build.make_group(members_role=obj_build.UserRole.guest)
-        group2 = obj_build.make_group(members=list(group1.members.all()))
-
-        user = group1.members.first()
-
+        student_group1 = obj_build.make_group()
+        student_group2 = ag_models.Group.objects.validate_and_create(
+            members=list(student_group1.members.all()),
+            project=obj_build.make_project(student_group1.project.course)
+        )
+        user = student_group1.members.first()
         self.do_list_objects_test(
-            self.client, user,
-            user_url(user, 'groups-is-member-of'), [group1.to_dict(), group2.to_dict()])
+            self.client,
+            user,
+            user_url(user, 'groups-is-member-of'),
+            [student_group1.to_dict(), student_group2.to_dict()]
+        )
+
+        guest_group = obj_build.make_group(members_role=obj_build.UserRole.guest)
+        user = guest_group.members.first()
+        self.do_list_objects_test(
+            self.client, user, user_url(user, 'groups-is-member-of'), [guest_group.to_dict()])
 
         other_user = obj_build.make_user()
         self.do_list_objects_test(

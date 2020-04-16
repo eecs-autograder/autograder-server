@@ -118,7 +118,7 @@ urlpatterns = [
          name='download-task-result'),
 
     path('projects/<int:pk>/results_cache/', views.ClearResultsCacheView.as_view(),
-         name='results-cache'),
+         name='project-results-cache'),
 
     path('projects/<int:project_pk>/import_handgrading_rubric_from/<int:import_from_project_pk>/',
          views.ImportHandgradingRubricView.as_view(), name='import-handgrading-rubric'),

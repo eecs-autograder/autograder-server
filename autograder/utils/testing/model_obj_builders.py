@@ -276,22 +276,22 @@ class UserRole(core_ut.OrderedEnum):
 def make_group(num_members: int=1,
                members_role: UserRole=UserRole.student,
                project: ag_models.Project=None,
-               members: Optional[Sequence[User]]=None,
+            #    members: Optional[Sequence[User]]=None,
                **group_kwargs) -> ag_models.Group:
     if project is None:
         project = make_project()
 
-    if members is None:
-        members = make_users(num_members)
+    # if members is None:
+    members = make_users(num_members)
 
-        if members_role == UserRole.guest:
-            project.validate_and_update(guests_can_submit=True)
-        elif members_role == UserRole.student:
-            project.course.students.add(*members)
-        elif members_role == UserRole.staff:
-            project.course.staff.add(*members)
-        elif members_role == UserRole.admin:
-            project.course.admins.add(*members)
+    if members_role == UserRole.guest:
+        project.validate_and_update(guests_can_submit=True)
+    elif members_role == UserRole.student:
+        project.course.students.add(*members)
+    elif members_role == UserRole.staff:
+        project.course.staff.add(*members)
+    elif members_role == UserRole.admin:
+        project.course.admins.add(*members)
 
     return ag_models.Group.objects.validate_and_create(
         members=members,
@@ -301,8 +301,8 @@ def make_group(num_members: int=1,
 
 
 def make_group_invitation(
-    sender: User=None,
-    recipients: Sequence[User]=None,
+    # sender: User=None,
+    # recipients: Sequence[User]=None,
     project: ag_models.Project=None,
     num_recipients: int=1,
     users_role: UserRole=UserRole.student,
@@ -310,11 +310,11 @@ def make_group_invitation(
     if project is None:
         project = make_project()
 
-    if sender is None:
-        sender = make_user()
+    # if sender is None:
+    sender = make_user()
 
-    if recipients is None:
-        recipients = make_users(num_recipients)
+    # if recipients is None:
+    recipients = make_users(num_recipients)
 
     project.max_group_size = 1 + len(recipients)
     project.save()

@@ -63,11 +63,27 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
                 User.objects.create(username=f'group{self._num_groups}_user{i}')
                 for i in range(num_members)
             ]
-        group = obj_build.make_group(
-            members=members,
-            members_role=members_role,
+
+        if members_role == obj_build.UserRole.guest:
+            self.project.validate_and_update(guests_can_submit=True)
+        elif members_role == obj_build.UserRole.student:
+            self.course.students.add(*members)
+        elif members_role == obj_build.UserRole.staff:
+            self.course.staff.add(*members)
+        elif members_role == obj_build.UserRole.admin:
+            self.course.admins.add(*members)
+
+        group = ag_models.Group.objects.validate_and_create(
+            members,
+            check_group_size_limits=False,
             project=self.project,
-            **group_kwargs)
+            **group_kwargs
+        )
+        # obj_build.make_group(
+        #     members=members,
+        #     members_role=members_role,
+        #     project=self.project,
+        #     **group_kwargs)
 
         # The first submission gets correct results so that it's the best.
         # The others get incorrect results.
