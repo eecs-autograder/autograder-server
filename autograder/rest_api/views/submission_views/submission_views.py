@@ -50,9 +50,10 @@ class _ListCreateSubmissionSchema(AGListViewSchemaMixin, CustomViewSchema):
         super().__init__([APITags.submissions], api_class=ag_models.Submission, data=data)
 
 
-class ListCreateSubmissionViewSet(NestedModelView):
+class ListCreateSubmissionView(NestedModelView):
     schema = _ListCreateSubmissionSchema({
         'POST': {
+            'operation_id': 'createSubmission',
             'request': {
                 'content': {
                     'multipart/form-data': {
@@ -246,6 +247,7 @@ class ListCreateSubmissionViewSet(NestedModelView):
 class ListSubmissionsWithResults(AGModelAPIView):
     schema = CustomViewSchema([APITags.submissions], {
         'GET': {
+            'operation_id': 'listSubmissionsWithResults',
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
@@ -335,6 +337,7 @@ class SubmissionDetailView(AGModelDetailView):
 class GetSubmittedFileView(AGModelAPIView):
     schema = CustomViewSchema([APITags.submissions], {
         'GET': {
+            'operation_id': 'getSubmittedFile',
             'parameters': [
                 {
                     'name': 'filename',
@@ -378,6 +381,7 @@ class GetSubmittedFileView(AGModelAPIView):
 class RemoveSubmissionFromQueueView(AGModelAPIView):
     schema = CustomViewSchema([APITags.submissions], {
         'POST': {
+            'operation_id': 'removeSubmissionFromQueue',
             'responses': {
                 '200': {
                     'content': as_content_obj(ag_models.Submission)

@@ -80,6 +80,7 @@ class CourseDetailView(AGModelDetailView):
 class CourseUserRolesView(AGModelAPIView):
     schema = CustomViewSchema([APITags.courses, APITags.users], {
         'GET': {
+            'operation_id': 'getUserRoles',
             'responses': {
                 '200': {
                     'content': {
@@ -118,9 +119,7 @@ class CopyCourseView(AGModelAPIView):
                         'new_name': {
                             'type': 'string'
                         },
-                        'new_semester': {
-                            '$ref': as_schema_ref(ag_models.Semester)
-                        },
+                        'new_semester': as_schema_ref(ag_models.Semester),
                         'new_year': {
                             'type': 'integer'
                         }

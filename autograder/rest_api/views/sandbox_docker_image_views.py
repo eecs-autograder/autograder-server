@@ -21,6 +21,7 @@ class IsAdminForAnyCourse(permissions.BasePermission):
 
 
 _BUILD_IMAGE_SCHEMA: CustomViewMethodData = {
+    'operation_id': 'createGlobalSandboxDockerImage',
     'request': {
         'content': {
             'multipart/form-data': {
@@ -55,6 +56,7 @@ class ListCreateGlobalSandboxDockerImageView(ag_views.AGModelAPIView):
         api_class=ag_models.SandboxDockerImage,
         data={
             'GET': {
+                'operation_id': 'listGlobalSandboxDockerImages',
                 'responses': {
                     '200': {
                         'content': {
@@ -186,6 +188,7 @@ class BuildTaskDetailView(ag_views.AGModelDetailView):
 class CancelBuildTaskView(ag_views.AGModelAPIView):
     schema = CustomViewSchema([APITags.sandbox_docker_images], {
         'POST': {
+            'operation_id': 'cancelBuildImageTask',
             'responses': {
                 '200': {
                     'content': as_content_obj(ag_models.BuildSandboxDockerImageTask)

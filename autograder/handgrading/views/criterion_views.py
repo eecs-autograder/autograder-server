@@ -66,7 +66,7 @@ class CriterionDetailView(AGModelDetailView):
 
 
 class CriterionOrderView(AGModelAPIView):
-    schema = OrderViewSchema([APITags.criteria])
+    schema = OrderViewSchema([APITags.criteria], hg_models.Criterion)
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(

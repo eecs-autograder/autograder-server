@@ -50,6 +50,7 @@ class ListCreateGroupInvitationView(NestedModelView):
         api_class=ag_models.GroupInvitation,
         data={
             'POST': {
+                'operation_id': 'createGroupInvitation',
                 'request': {
                     'content': {
                         'application/json': {
@@ -148,6 +149,7 @@ class GroupInvitationDetailView(AGModelDetailView):
 class AcceptGroupInvitationView(AGModelAPIView):
     schema = CustomViewSchema([APITags.group_invitations], {
         'POST': {
+            'operation_id': 'acceptGroupInvitation',
             'responses': {
                 '200': {
                     'description': 'You have accepted the invitation.',

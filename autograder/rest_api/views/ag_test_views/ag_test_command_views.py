@@ -33,7 +33,7 @@ class AGTestCommandListCreateView(NestedModelView):
 
 
 class AGTestCommandOrderView(AGModelAPIView):
-    schema = OrderViewSchema([APITags.ag_test_commands])
+    schema = OrderViewSchema([APITags.ag_test_commands], ag_models.AGTestCommand)
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(

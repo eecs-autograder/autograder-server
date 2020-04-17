@@ -32,6 +32,7 @@ class UltimateSubmissionPaginator(PageNumberPagination):
 class AllUltimateSubmissionResults(AGModelAPIView):
     schema = CustomViewSchema([APITags.submissions], {
         'GET': {
+            'operation_id': 'getAllUltimateSubmissionResults',
             'parameters': [
                 {'$ref': '#/components/parameters/page'},
                 {

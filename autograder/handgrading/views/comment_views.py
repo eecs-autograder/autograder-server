@@ -4,7 +4,7 @@ from rest_framework import permissions
 
 import autograder.handgrading.models as hg_models
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator, APITags, OrderViewSchema)
+                                        AGListCreateViewSchemaGenerator, APITags)
 from autograder.rest_api.views.ag_model_views import AGModelDetailView, NestedModelView
 
 GetRubricFnType = Callable[[Any], hg_models.HandgradingRubric]

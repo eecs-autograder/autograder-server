@@ -53,7 +53,7 @@ class AGTestSuiteListCreateView(NestedModelView):
 
 
 class AGTestSuiteOrderView(AGModelAPIView):
-    schema = OrderViewSchema([APITags.ag_test_suites])
+    schema = OrderViewSchema([APITags.ag_test_suites], ag_models.AGTestSuite)
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)

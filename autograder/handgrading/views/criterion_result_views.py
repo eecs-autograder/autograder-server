@@ -1,7 +1,7 @@
 import autograder.handgrading.models as hg_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator, APITags, OrderViewSchema)
+                                        AGListCreateViewSchemaGenerator, APITags)
 from autograder.rest_api.views.ag_model_views import AGModelDetailView, NestedModelView
 
 

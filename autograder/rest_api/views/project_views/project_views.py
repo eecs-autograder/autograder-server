@@ -92,6 +92,7 @@ class ProjectDetailView(SerializeProjectMixin, AGModelDetailView):
 class CopyProjectView(AGModelAPIView):
     schema = CustomViewSchema([APITags.projects], {
         'POST': {
+            'operation_id': 'copyProject',
             'request': {
                 'content': {
                     'application/json': {
@@ -147,6 +148,7 @@ class CopyProjectView(AGModelAPIView):
 class ImportHandgradingRubricView(AGModelAPIView):
     schema = CustomViewSchema([APITags.projects, APITags.handgrading_rubrics], {
         'POST': {
+            'operation_id': 'importHandgradingRubric',
             'responses': {
                 '201': {
                     'content': as_content_obj(hg_models.HandgradingRubric)
@@ -184,6 +186,7 @@ class ImportHandgradingRubricView(AGModelAPIView):
 class NumQueuedSubmissionsView(AGModelAPIView):
     schema = CustomViewSchema([APITags.projects, APITags.submissions], {
         'GET': {
+            'operation_id': 'getNumQueuedSubmissions',
             'responses': {
                 '200': {
                     'content': {
@@ -325,6 +328,7 @@ class DownloadTaskResultView(AGModelAPIView):
 class EditBonusSubmissionsView(AGModelAPIView):
     schema = CustomViewSchema([APITags.projects, APITags.groups], {
         'PATCH': {
+            'operation_id': 'massEditBonusSubmissions',
             'parameters': [
                 {
                     'name': 'group_pk',

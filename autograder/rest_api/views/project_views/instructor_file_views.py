@@ -42,6 +42,7 @@ _INSTRUCTOR_FILE_BODY_SCHEMA: Dict[ContentTypeVal, MediaTypeObject] = {
 class ListCreateInstructorFileView(NestedModelView):
     schema = _Schema([APITags.instructor_files], api_class=ag_models.InstructorFile, data={
         'POST': {
+            'operation_id': 'createInstructorFile',
             'request': {
                 'content': _INSTRUCTOR_FILE_BODY_SCHEMA
             },
@@ -92,6 +93,7 @@ class InstructorFileDetailView(AGModelDetailView):
 class RenameInstructorFileView(AGModelAPIView):
     schema = CustomViewSchema([APITags.instructor_files], {
         'PUT': {
+            'operation_id': 'renameInstructorFile',
             'request': {
                 'content': {
                     'application/json': {
@@ -125,6 +127,7 @@ class RenameInstructorFileView(AGModelAPIView):
 class InstructorFileContentView(AGModelAPIView):
     schema = CustomViewSchema([APITags.instructor_files], {
         'GET': {
+            'operation_id': 'getInstructorFileContent',
             'responses': {
                 '200': {
                     'content': {
@@ -136,6 +139,7 @@ class InstructorFileContentView(AGModelAPIView):
             }
         },
         'PUT': {
+            'operation_id': 'setInstructorFileContent',
             'request': {
                 'content': _INSTRUCTOR_FILE_BODY_SCHEMA
             },

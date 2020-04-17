@@ -117,6 +117,7 @@ class GroupInvitationsReceivedView(_InvitationViewBase):
 class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
     schema = CustomViewSchema([APITags.users], {
         'GET': {
+            'operation_id': 'currentUserCanCreateCourses',
             'responses': {
                 '200': {
                     'content': {
@@ -174,12 +175,14 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
 
     schema = CustomViewSchema([APITags.courses, APITags.users], {
         'GET': {
+            'operation_id': 'getUserLateDaysRemaining',
             'parameters': _PARAMS,
             'responses': {
                 '200': {'content': _LATE_DAYS_REMAINING_BODY}
             }
         },
         'PUT': {
+            'operation_id': 'setUserLateDaysRemaining',
             'parameters': _PARAMS,
             'request': {'content': _LATE_DAYS_REMAINING_BODY},
             'responses': {
