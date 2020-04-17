@@ -5,7 +5,7 @@ info:
 paths:
   /api/users/current/:
     get:
-      operationId: listCurrentUsers
+      operationId: getUser
       description: ''
       parameters: []
       responses:
@@ -19,7 +19,7 @@ paths:
       - users
   /api/users/current/can_create_courses/:
     get:
-      operationId: listCurrentUserCanCreateCourses
+      operationId: currentUserCanCreateCourses
       description: Indicates whether the current user can create empty courses.
       parameters: []
       responses:
@@ -32,7 +32,7 @@ paths:
       - users
   /api/users/{id}/:
     get:
-      operationId: RetrieveUserDetail
+      operationId: getUser
       description: ''
       parameters:
       - name: id
@@ -52,7 +52,7 @@ paths:
       - users
   /api/users/{username_or_id}/late_days/:
     get:
-      operationId: listUserLateDays
+      operationId: getUserLateDaysRemaining
       description: ''
       parameters:
       - name: username_or_id
@@ -94,7 +94,7 @@ paths:
       - courses
       - users
     put:
-      operationId: UpdateUserLateDays
+      operationId: setUserLateDaysRemaining
       description: ''
       parameters:
       - name: username_or_id
@@ -114,7 +114,7 @@ paths:
       tags: *id004
   /api/users/{id}/courses_is_admin_for/:
     get:
-      operationId: listCoursesIsAdminFors
+      operationId: listCourses
       description: ''
       parameters:
       - name: id
@@ -137,7 +137,7 @@ paths:
       - courses
   /api/users/{id}/courses_is_staff_for/:
     get:
-      operationId: listCoursesIsStaffFors
+      operationId: listCourses
       description: ''
       parameters:
       - name: id
@@ -158,7 +158,7 @@ paths:
       tags: *id005
   /api/users/{id}/courses_is_enrolled_in/:
     get:
-      operationId: listCoursesIsEnrolledIns
+      operationId: listCourses
       description: ''
       parameters:
       - name: id
@@ -179,7 +179,7 @@ paths:
       tags: *id005
   /api/users/{id}/courses_is_handgrader_for/:
     get:
-      operationId: listCoursesIsHandgraderFors
+      operationId: listCourses
       description: ''
       parameters:
       - name: id
@@ -200,7 +200,7 @@ paths:
       tags: *id005
   /api/users/{id}/groups_is_member_of/:
     get:
-      operationId: listGroupsIsMemberOfs
+      operationId: listGroups
       description: ''
       parameters:
       - name: id
@@ -223,7 +223,7 @@ paths:
       - groups
   /api/users/{id}/group_invitations_sent/:
     get:
-      operationId: listGroupInvitationsSents
+      operationId: listGroupInvitations
       description: ''
       parameters:
       - name: id
@@ -246,7 +246,7 @@ paths:
       - groups
   /api/users/{id}/group_invitations_received/:
     get:
-      operationId: listGroupInvitationsReceiveds
+      operationId: listGroupInvitations
       description: ''
       parameters:
       - name: id
@@ -267,7 +267,7 @@ paths:
       tags: *id006
   /api/courses/:
     get:
-      operationId: listListCreateCourses
+      operationId: listCourses
       description: ''
       parameters: []
       responses:
@@ -282,7 +282,7 @@ paths:
       tags: &id007
       - courses
     post:
-      operationId: CreateListCreateCourse
+      operationId: createCourse
       description: ''
       parameters: []
       responses:
@@ -352,7 +352,7 @@ paths:
       tags: *id007
   /api/courses/{id}/:
     get:
-      operationId: RetrieveCourseDetail
+      operationId: getCourse
       description: ''
       parameters:
       - name: id
@@ -371,7 +371,7 @@ paths:
       tags: &id009
       - courses
     patch:
-      operationId: PartialUpdateCourseDetail
+      operationId: updateCourse
       description: ''
       parameters:
       - name: id
@@ -442,7 +442,7 @@ paths:
       tags: *id009
   /api/courses/{id}/my_roles/:
     get:
-      operationId: listCourseUserRoles
+      operationId: getUserRoles
       description: ''
       parameters:
       - name: id
@@ -462,7 +462,7 @@ paths:
       - users
   /api/course/{name}/{semester}/{year}/:
     get:
-      operationId: RetrieveCourseByNameSemesterYear
+      operationId: getCourse
       description: ''
       parameters:
       - name: name
@@ -494,7 +494,7 @@ paths:
       - courses
   /api/courses/{id}/admins/:
     get:
-      operationId: listCourseAdminViewSets
+      operationId: listCourseAdmins
       description: ''
       parameters:
       - name: id
@@ -508,12 +508,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-          description: ''
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
       tags: &id010
       - rosters
     post:
-      operationId: CreateCourseAdminViewSet
+      operationId: addCourseAdmins
       description: ''
       parameters:
       - name: id
@@ -541,7 +542,7 @@ paths:
                   description: Usernames to be granted admin privileges for the course.
       tags: *id010
     patch:
-      operationId: PartialUpdateCourseAdminViewSet
+      operationId: removeCourseAdmins
       description: ''
       parameters:
       - name: id
@@ -564,13 +565,12 @@ paths:
                 remove_admins:
                   type: array
                   items:
-                    $ref:
-                      $ref: '#/components/schemas/User'
+                    $ref: '#/components/schemas/User'
                   description: Users to revoke admin privileges from for the course.
       tags: *id010
   /api/courses/{id}/staff/:
     get:
-      operationId: listCourseStaffViewSets
+      operationId: listCourseStaff
       description: ''
       parameters:
       - name: id
@@ -584,12 +584,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-          description: ''
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
       tags: &id011
       - rosters
     post:
-      operationId: CreateCourseStaffViewSet
+      operationId: addCourseStaff
       description: ''
       parameters:
       - name: id
@@ -617,7 +618,7 @@ paths:
                   description: Usernames to be granted staff privileges for the course.
       tags: *id011
     patch:
-      operationId: PartialUpdateCourseStaffViewSet
+      operationId: removeCourseStaff
       description: ''
       parameters:
       - name: id
@@ -640,14 +641,13 @@ paths:
                 remove_staff:
                   type: array
                   items:
-                    $ref:
-                      $ref: '#/components/schemas/User'
+                    $ref: '#/components/schemas/User'
                   description: Users whose staff privileges should be revoked for
                     the course.
       tags: *id011
   /api/courses/{id}/students/:
     get:
-      operationId: listCourseStudentsViewSets
+      operationId: listCourseStudents
       description: ''
       parameters:
       - name: id
@@ -661,12 +661,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-          description: ''
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
       tags: &id012
       - rosters
     post:
-      operationId: CreateCourseStudentsViewSet
+      operationId: addCourseStudents
       description: ''
       parameters:
       - name: id
@@ -695,7 +696,7 @@ paths:
                     course.
       tags: *id012
     put:
-      operationId: UpdateCourseStudentsViewSet
+      operationId: setCourseStudents
       description: 'Completely REPLACES the student roster with the usernames
 
         included in the request.'
@@ -726,7 +727,7 @@ paths:
                     course.
       tags: *id012
     patch:
-      operationId: PartialUpdateCourseStudentsViewSet
+      operationId: removeCourseStudents
       description: ''
       parameters:
       - name: id
@@ -749,14 +750,13 @@ paths:
                 remove_students:
                   type: array
                   items:
-                    $ref:
-                      $ref: '#/components/schemas/User'
+                    $ref: '#/components/schemas/User'
                   description: Users whose student privileges should be revoked for
                     the course.
       tags: *id012
   /api/courses/{id}/handgraders/:
     get:
-      operationId: listCourseHandgradersViewSets
+      operationId: listCourseHandgraders
       description: ''
       parameters:
       - name: id
@@ -770,12 +770,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-          description: ''
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
       tags: &id013
       - rosters
     post:
-      operationId: CreateCourseHandgradersViewSet
+      operationId: addCourseHandgraders
       description: ''
       parameters:
       - name: id
@@ -804,7 +805,7 @@ paths:
                     the course.
       tags: *id013
     patch:
-      operationId: PartialUpdateCourseHandgradersViewSet
+      operationId: removeCourseHandgraders
       description: ''
       parameters:
       - name: id
@@ -827,13 +828,12 @@ paths:
                 remove_handgraders:
                   type: array
                   items:
-                    $ref:
-                      $ref: '#/components/schemas/User'
+                    $ref: '#/components/schemas/User'
                   description: Users to revoke handgrading privileges from.
       tags: *id013
   /api/courses/{id}/projects/:
     get:
-      operationId: listListCreateProjects
+      operationId: listProjects
       description: ''
       parameters:
       - name: id
@@ -854,7 +854,7 @@ paths:
       tags: &id014
       - projects
     post:
-      operationId: CreateListCreateProject
+      operationId: createProject
       description: ''
       parameters:
       - name: id
@@ -1057,7 +1057,7 @@ paths:
       tags: *id014
   /api/projects/{id}/:
     get:
-      operationId: RetrieveProjectDetail
+      operationId: getProject
       description: ''
       parameters:
       - name: id
@@ -1076,7 +1076,7 @@ paths:
       tags: &id015
       - projects
     patch:
-      operationId: PartialUpdateProjectDetail
+      operationId: updateProject
       description: ''
       parameters:
       - name: id
@@ -1276,7 +1276,7 @@ paths:
       tags: *id015
   /api/projects/{id}/num_queued_submissions/:
     get:
-      operationId: listNumQueuedSubmissions
+      operationId: getNumQueuedSubmissions
       description: The number of submissions for this project with grading status
         "queued".
       parameters:
@@ -1297,7 +1297,7 @@ paths:
       - submissions
   /api/projects/{id}/instructor_files/:
     get:
-      operationId: listListCreateInstructorFiles
+      operationId: listInstructorFiles
       description: ''
       parameters:
       - name: id
@@ -1318,7 +1318,7 @@ paths:
       tags: &id016
       - instructor_files
     post:
-      operationId: CreateListCreateInstructorFile
+      operationId: createInstructorFile
       description: ''
       parameters:
       - name: id
@@ -1347,7 +1347,7 @@ paths:
       tags: *id016
   /api/instructor_files/{id}/:
     get:
-      operationId: RetrieveInstructorFileDetail
+      operationId: getInstructorFile
       description: ''
       parameters:
       - name: id
@@ -1366,7 +1366,7 @@ paths:
       tags: &id017
       - instructor_files
     patch:
-      operationId: PartialUpdateInstructorFileDetail
+      operationId: updateInstructorFile
       description: ''
       parameters:
       - name: id
@@ -1413,7 +1413,7 @@ paths:
                   type: integer
       tags: *id017
     delete:
-      operationId: DestroyInstructorFileDetail
+      operationId: deleteInstructorFile
       description: ''
       parameters:
       - name: id
@@ -1428,7 +1428,7 @@ paths:
       tags: *id017
   /api/instructor_files/{id}/content/:
     get:
-      operationId: listInstructorFileContents
+      operationId: getInstructorFileContent
       description: ''
       parameters:
       - name: id
@@ -1447,7 +1447,7 @@ paths:
       tags: &id019
       - instructor_files
     put:
-      operationId: UpdateInstructorFileContent
+      operationId: setInstructorFileContent
       description: ''
       parameters:
       - name: id
@@ -1468,7 +1468,7 @@ paths:
       tags: *id019
   /api/projects/{id}/expected_student_files/:
     get:
-      operationId: listListCreateExpectedStudentFiles
+      operationId: listExpectedStudentFiles
       description: ''
       parameters:
       - name: id
@@ -1489,7 +1489,7 @@ paths:
       tags: &id020
       - expected_student_files
     post:
-      operationId: CreateListCreateExpectedStudentFile
+      operationId: createExpectedStudentFile
       description: ''
       parameters:
       - name: id
@@ -1554,7 +1554,7 @@ paths:
       tags: *id020
   /api/expected_student_files/{id}/:
     get:
-      operationId: RetrieveExpectedStudentFileDetail
+      operationId: getExpectedStudentFile
       description: ''
       parameters:
       - name: id
@@ -1573,7 +1573,7 @@ paths:
       tags: &id021
       - expected_student_files
     patch:
-      operationId: PartialUpdateExpectedStudentFileDetail
+      operationId: updateExpectedStudentFile
       description: ''
       parameters:
       - name: id
@@ -1634,7 +1634,7 @@ paths:
                   format: date-time
       tags: *id021
     delete:
-      operationId: DestroyExpectedStudentFileDetail
+      operationId: deleteExpectedStudentFile
       description: ''
       parameters:
       - name: id
@@ -1649,7 +1649,7 @@ paths:
       tags: *id021
   /api/projects/{id}/group_invitations/:
     get:
-      operationId: listListCreateGroupInvitations
+      operationId: listGroupInvitations
       description: ''
       parameters:
       - name: id
@@ -1670,7 +1670,7 @@ paths:
       tags: &id022
       - group_invitations
     post:
-      operationId: CreateListCreateGroupInvitation
+      operationId: createGroupInvitation
       description: ''
       parameters:
       - name: id
@@ -1700,7 +1700,7 @@ paths:
       tags: *id022
   /api/group_invitations/{id}/:
     get:
-      operationId: RetrieveGroupInvitationDetail
+      operationId: getGroupInvitation
       description: ''
       parameters:
       - name: id
@@ -1719,7 +1719,7 @@ paths:
       tags: &id023
       - group_invitations
     delete:
-      operationId: DestroyGroupInvitationDetail
+      operationId: deleteGroupInvitation
       description: Revoke or reject this invitation.
       parameters:
       - name: id
@@ -1734,7 +1734,7 @@ paths:
       tags: *id023
   /api/projects/{project_pk}/groups/:
     get:
-      operationId: listListCreateGroups
+      operationId: listGroups
       description: ''
       parameters:
       - name: project_pk
@@ -1755,7 +1755,7 @@ paths:
       tags: &id024
       - groups
     post:
-      operationId: CreateListCreateGroups
+      operationId: createGroup
       description: 'Create a new group with the specified members.
 
         Size restrictions are ignored.
@@ -1789,7 +1789,7 @@ paths:
       tags: *id024
   /api/groups/{id}/:
     get:
-      operationId: RetrieveGroupDetail
+      operationId: getGroup
       description: ''
       parameters:
       - name: id
@@ -1808,7 +1808,7 @@ paths:
       tags: &id026
       - groups
     patch:
-      operationId: PartialUpdateGroupDetail
+      operationId: updateGroup
       description: ''
       parameters:
       - name: id
@@ -1828,7 +1828,7 @@ paths:
         content: *id025
       tags: *id026
     delete:
-      operationId: DestroyGroupDetail
+      operationId: pseudoDeleteGroup
       description: '"Deletes" a group by removing all of its members. Each group
 
         member is replaced with a dummy user whose username contains
@@ -1849,7 +1849,7 @@ paths:
       tags: *id026
   /api/groups/{id}/ultimate_submission/:
     get:
-      operationId: listGroupUltimateSubmissions
+      operationId: getUltimateSubmissionForGroup
       description: "Permissions details:\n- The normal group and submission viewing\
         \ permissions apply\n  first.\n- Staff members can always view their own ultimate\
         \ submission.\n- Staff members can only view student and other staff ultimate\n\
@@ -1876,7 +1876,7 @@ paths:
       - submissions
   /api/groups/{id}/submissions/:
     get:
-      operationId: listListCreateSubmissionViewSets
+      operationId: listSubmissions
       description: ''
       parameters:
       - name: id
@@ -1897,7 +1897,7 @@ paths:
       tags: &id027
       - submissions
     post:
-      operationId: CreateListCreateSubmissionViewSet
+      operationId: createSubmission
       description: ''
       parameters:
       - name: id
@@ -1927,7 +1927,7 @@ paths:
       tags: *id027
   /api/submissions/{id}/:
     get:
-      operationId: RetrieveSubmissionDetail
+      operationId: getSubmission
       description: ''
       parameters:
       - name: id
@@ -1946,7 +1946,7 @@ paths:
       tags: &id029
       - submissions
     patch:
-      operationId: PartialUpdateSubmissionDetail
+      operationId: updateSubmission
       description: ''
       parameters:
       - name: id
@@ -2073,7 +2073,7 @@ paths:
       tags: *id029
   /api/submissions/{id}/file/:
     get:
-      operationId: listGetSubmittedFiles
+      operationId: getSubmittedFile
       description: ''
       parameters:
       - name: id
@@ -2099,7 +2099,7 @@ paths:
       - submissions
   /api/sandbox_docker_images/:
     get:
-      operationId: listListCreateGlobalSandboxDockerImages
+      operationId: listGlobalSandboxDockerImages
       description: Lists all global sandbox images (ones that don't belong to a course).
       parameters: []
       responses:
@@ -2113,7 +2113,7 @@ paths:
       tags: &id030
       - sandbox_docker_images
     post:
-      operationId: CreateListCreateGlobalSandboxDockerImage
+      operationId: createGlobalSandboxDockerImage
       description: Build a new global sandbox image.
       parameters: []
       responses:
@@ -2138,7 +2138,7 @@ paths:
       tags: *id030
   /api/courses/{id}/sandbox_docker_images/:
     get:
-      operationId: listListCreateSandboxDockerImageForCourses
+      operationId: listSandboxDockerImages
       description: ''
       parameters:
       - name: id
@@ -2159,7 +2159,7 @@ paths:
       tags: &id033
       - sandbox_docker_images
     post:
-      operationId: CreateListCreateSandboxDockerImageForCourse
+      operationId: createGlobalSandboxDockerImage
       description: List all sandbox images for the specified course.
       parameters:
       - name: id
@@ -2176,7 +2176,7 @@ paths:
       tags: *id033
   /api/image_build_tasks/:
     get:
-      operationId: listListGlobalBuildTasks
+      operationId: listBuildSandboxDockerImageTasks
       description: List all global (not belonging to a course) image build tasks.
       parameters: []
       responses:
@@ -2192,7 +2192,7 @@ paths:
       - sandbox_docker_images
   /api/courses/{id}/image_build_tasks/:
     get:
-      operationId: listListBuildTasksForCourses
+      operationId: listBuildSandboxDockerImageTasks
       description: List all image build tasks for the specified course.
       parameters:
       - name: id
@@ -2214,7 +2214,7 @@ paths:
       - sandbox_docker_images
   /api/image_build_tasks/{id}/:
     get:
-      operationId: RetrieveBuildTaskDetail
+      operationId: getBuildSandboxDockerImageTask
       description: ''
       parameters:
       - name: id
@@ -2234,7 +2234,7 @@ paths:
       - sandbox_docker_images
   /api/sandbox_docker_images/{id}/:
     get:
-      operationId: RetrieveSandboxDockerImageDetail
+      operationId: getSandboxDockerImage
       description: ''
       parameters:
       - name: id
@@ -2253,7 +2253,7 @@ paths:
       tags: &id034
       - sandbox_docker_images
     patch:
-      operationId: PartialUpdateSandboxDockerImageDetail
+      operationId: updateSandboxDockerImage
       description: ''
       parameters:
       - name: id
@@ -2293,7 +2293,7 @@ paths:
       tags: *id034
   /api/projects/{project_pk}/ag_test_suites/:
     get:
-      operationId: listAGTestSuiteListCreates
+      operationId: listAGTestSuites
       description: ''
       parameters:
       - name: project_pk
@@ -2314,7 +2314,7 @@ paths:
       tags: &id035
       - ag_test_suites
     post:
-      operationId: CreateAGTestSuiteList
+      operationId: createAGTestSuite
       description: ''
       parameters:
       - name: project_pk
@@ -2454,7 +2454,7 @@ paths:
       tags: *id035
   /api/projects/{project_pk}/ag_test_suites/order/:
     get:
-      operationId: listAGTestSuiteOrders
+      operationId: getAGTestSuiteOrder
       description: ''
       parameters:
       - name: project_pk
@@ -2475,7 +2475,7 @@ paths:
       tags: &id036
       - ag_test_suites
     put:
-      operationId: UpdateAGTestSuiteOrder
+      operationId: setAGTestSuiteOrder
       description: ''
       parameters:
       - name: project_pk
@@ -2505,7 +2505,7 @@ paths:
       tags: *id036
   /api/ag_test_suites/{id}/:
     get:
-      operationId: RetrieveAGTestSuiteDetail
+      operationId: getAGTestSuite
       description: ''
       parameters:
       - name: id
@@ -2524,7 +2524,7 @@ paths:
       tags: &id037
       - ag_test_suites
     patch:
-      operationId: PartialUpdateAGTestSuiteDetail
+      operationId: updateAGTestSuite
       description: ''
       parameters:
       - name: id
@@ -2660,7 +2660,7 @@ paths:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
       tags: *id037
     delete:
-      operationId: DestroyAGTestSuiteDetail
+      operationId: deleteAGTestSuite
       description: ''
       parameters:
       - name: id
@@ -2675,7 +2675,7 @@ paths:
       tags: *id037
   /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/:
     get:
-      operationId: listAGTestCaseListCreates
+      operationId: listAGTestCases
       description: ''
       parameters:
       - name: ag_test_suite_pk
@@ -2696,7 +2696,7 @@ paths:
       tags: &id038
       - ag_test_cases
     post:
-      operationId: CreateAGTestCaseList
+      operationId: createAGTestCase
       description: ''
       parameters:
       - name: ag_test_suite_pk
@@ -2778,7 +2778,7 @@ paths:
       tags: *id038
   /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/order/:
     get:
-      operationId: listAGTestCaseOrders
+      operationId: getAGTestCaseOrder
       description: ''
       parameters:
       - name: ag_test_suite_pk
@@ -2799,7 +2799,7 @@ paths:
       tags: &id039
       - ag_test_cases
     put:
-      operationId: UpdateAGTestCaseOrder
+      operationId: setAGTestCaseOrder
       description: ''
       parameters:
       - name: ag_test_suite_pk
@@ -2829,7 +2829,7 @@ paths:
       tags: *id039
   /api/ag_test_cases/{id}/:
     get:
-      operationId: RetrieveAGTestCaseDetail
+      operationId: getAGTestCase
       description: ''
       parameters:
       - name: id
@@ -2848,7 +2848,7 @@ paths:
       tags: &id040
       - ag_test_cases
     patch:
-      operationId: PartialUpdateAGTestCaseDetail
+      operationId: updateAGTestCase
       description: ''
       parameters:
       - name: id
@@ -2926,7 +2926,7 @@ paths:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
       tags: *id040
     delete:
-      operationId: DestroyAGTestCaseDetail
+      operationId: deleteAGTestCase
       description: ''
       parameters:
       - name: id
@@ -2941,7 +2941,7 @@ paths:
       tags: *id040
   /api/ag_test_cases/{ag_test_case_pk}/ag_test_commands/:
     get:
-      operationId: listAGTestCommandListCreates
+      operationId: listAGTestCommands
       description: ''
       parameters:
       - name: ag_test_case_pk
@@ -2962,7 +2962,7 @@ paths:
       tags: &id041
       - ag_test_commands
     post:
-      operationId: CreateAGTestCommandList
+      operationId: createAGTestCommand
       description: ''
       parameters:
       - name: ag_test_case_pk
@@ -3241,7 +3241,7 @@ paths:
       tags: *id041
   /api/ag_test_cases/{ag_test_case_pk}/ag_test_commands/order/:
     get:
-      operationId: listAGTestCommandOrders
+      operationId: getAGTestCommandOrder
       description: ''
       parameters:
       - name: ag_test_case_pk
@@ -3262,7 +3262,7 @@ paths:
       tags: &id042
       - ag_test_commands
     put:
-      operationId: UpdateAGTestCommandOrder
+      operationId: setAGTestCommandOrder
       description: ''
       parameters:
       - name: ag_test_case_pk
@@ -3292,7 +3292,7 @@ paths:
       tags: *id042
   /api/ag_test_commands/{id}/:
     get:
-      operationId: RetrieveAGTestCommandDetail
+      operationId: getAGTestCommand
       description: ''
       parameters:
       - name: id
@@ -3311,7 +3311,7 @@ paths:
       tags: &id043
       - ag_test_commands
     patch:
-      operationId: PartialUpdateAGTestCommandDetail
+      operationId: updateAGTestCommand
       description: ''
       parameters:
       - name: id
@@ -3585,7 +3585,7 @@ paths:
                   type: integer
       tags: *id043
     delete:
-      operationId: DestroyAGTestCommandDetail
+      operationId: deleteAGTestCommand
       description: ''
       parameters:
       - name: id
@@ -3600,7 +3600,7 @@ paths:
       tags: *id043
   /api/projects/{project_pk}/student_test_suites/:
     get:
-      operationId: listStudentTestSuiteListCreates
+      operationId: listStudentTestSuites
       description: ''
       parameters:
       - name: project_pk
@@ -3621,7 +3621,7 @@ paths:
       tags: &id044
       - student_test_suites
     post:
-      operationId: CreateStudentTestSuiteList
+      operationId: createStudentTestSuite
       description: ''
       parameters:
       - name: project_pk
@@ -3825,7 +3825,7 @@ paths:
       tags: *id044
   /api/projects/{project_pk}/student_test_suites/order/:
     get:
-      operationId: listStudentTestSuiteOrders
+      operationId: getStudentTestSuiteOrder
       description: ''
       parameters:
       - name: project_pk
@@ -3846,7 +3846,7 @@ paths:
       tags: &id045
       - student_test_suites
     put:
-      operationId: UpdateStudentTestSuiteOrder
+      operationId: setStudentTestSuiteOrder
       description: ''
       parameters:
       - name: project_pk
@@ -3876,7 +3876,7 @@ paths:
       tags: *id045
   /api/student_test_suites/{id}/:
     get:
-      operationId: RetrieveStudentTestSuiteDetail
+      operationId: getStudentTestSuite
       description: ''
       parameters:
       - name: id
@@ -3895,7 +3895,7 @@ paths:
       tags: &id046
       - student_test_suites
     patch:
-      operationId: PartialUpdateStudentTestSuiteDetail
+      operationId: updateStudentTestSuite
       description: ''
       parameters:
       - name: id
@@ -4095,7 +4095,7 @@ paths:
                   format: date-time
       tags: *id046
     delete:
-      operationId: DestroyStudentTestSuiteDetail
+      operationId: deleteStudentTestSuite
       description: ''
       parameters:
       - name: id
@@ -4110,7 +4110,7 @@ paths:
       tags: *id046
   /api/projects/{project_pk}/rerun_submissions_tasks/:
     get:
-      operationId: listRerunSubmissionsTaskListCreates
+      operationId: listRerunSubmissionsTasks
       description: ''
       parameters:
       - name: project_pk
@@ -4131,7 +4131,7 @@ paths:
       tags: &id047
       - rerun_submissions_tasks
     post:
-      operationId: CreateRerunSubmissionsTaskList
+      operationId: createRerunSubmissionsTask
       description: ''
       parameters:
       - name: project_pk
@@ -4257,7 +4257,7 @@ paths:
       tags: *id047
   /api/rerun_submissions_tasks/{id}/:
     get:
-      operationId: RetrieveRerunSubmissionsTaskDetail
+      operationId: getRerunSubmissionsTask
       description: ''
       parameters:
       - name: id
@@ -4277,7 +4277,7 @@ paths:
       - rerun_submissions_tasks
   /api/groups/{id}/submissions_with_results/:
     get:
-      operationId: listListSubmissionsWithResults
+      operationId: listSubmissionsWithResults
       description: ''
       parameters:
       - name: id
@@ -4299,7 +4299,7 @@ paths:
       - submissions
   /api/submissions/{id}/results/:
     get:
-      operationId: listSubmissionResults
+      operationId: getSubmissionResults
       description: ''
       parameters:
       - name: id
@@ -4319,7 +4319,7 @@ paths:
       - submissions
   /api/projects/{project_pk}/all_ultimate_submission_results/:
     get:
-      operationId: listAllUltimateSubmissionResults
+      operationId: getAllUltimateSubmissionResults
       description: ''
       parameters:
       - name: project_pk
@@ -4372,7 +4372,7 @@ paths:
       - submissions
   /api/submissions/{id}/ag_test_suite_results/{result_pk}/stdout/:
     get:
-      operationId: listAGTestSuiteResultsStdouts
+      operationId: getAGTestSuiteResultStdout
       description: ''
       parameters:
       - name: id
@@ -4399,7 +4399,7 @@ paths:
       - submission_output
   /api/submissions/{id}/ag_test_suite_results/{result_pk}/stderr/:
     get:
-      operationId: listAGTestSuiteResultsStderrs
+      operationId: getAGTestSuiteResultStderr
       description: ''
       parameters:
       - name: id
@@ -4426,7 +4426,7 @@ paths:
       - submission_output
   /api/submissions/{id}/ag_test_suite_results/{result_pk}/output_size/:
     get:
-      operationId: listAGTestSuiteResultsOutputSizes
+      operationId: getAGTestSuiteResultOutputSize
       description: ''
       parameters:
       - name: id
@@ -4465,7 +4465,7 @@ paths:
       - submission_output
   /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stdout/:
     get:
-      operationId: listAGTestCommandResultStdouts
+      operationId: getAGTestCommandResultStdout
       description: ''
       parameters:
       - name: id
@@ -4492,7 +4492,7 @@ paths:
       - submission_output
   /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stderr/:
     get:
-      operationId: listAGTestCommandResultStderrs
+      operationId: getAGTestCommandResultStderr
       description: ''
       parameters:
       - name: id
@@ -4519,7 +4519,7 @@ paths:
       - submission_output
   /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stdout_diff/:
     get:
-      operationId: listAGTestCommandResultStdoutDiffs
+      operationId: getAGTestCommandResultStdoutDiff
       description: ''
       parameters:
       - name: id
@@ -4546,7 +4546,7 @@ paths:
       - submission_output
   /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stderr_diff/:
     get:
-      operationId: listAGTestCommandResultStderrDiffs
+      operationId: getAGTestCommandResultStderrDiff
       description: ''
       parameters:
       - name: id
@@ -4573,7 +4573,7 @@ paths:
       - submission_output
   /api/submissions/{id}/ag_test_cmd_results/{result_pk}/output_size/:
     get:
-      operationId: listAGTestCommandResultOutputSizes
+      operationId: getAGTestCommandResultOutputSize
       description: ''
       parameters:
       - name: id
@@ -4618,7 +4618,7 @@ paths:
       - submission_output
   /api/submissions/{id}/student_test_suite_results/{result_pk}/setup_stdout/:
     get:
-      operationId: listStudentTestSuiteResultSetupStdouts
+      operationId: getStudentTestSuiteResultSetupStdout
       description: ''
       parameters:
       - name: id
@@ -4645,7 +4645,7 @@ paths:
       - submission_output
   /api/submissions/{id}/student_test_suite_results/{result_pk}/setup_stderr/:
     get:
-      operationId: listStudentTestSuiteResultSetupStderrs
+      operationId: getStudentTestSuiteResultSetupStderr
       description: ''
       parameters:
       - name: id
@@ -4672,7 +4672,7 @@ paths:
       - submission_output
   /api/submissions/{id}/student_test_suite_results/{result_pk}/get_student_test_names_stdout/:
     get:
-      operationId: listStudentTestSuiteResultGetStudentTestsStdouts
+      operationId: getStudentTestSuiteResultTestDiscoveryStdout
       description: ''
       parameters:
       - name: id
@@ -4699,7 +4699,7 @@ paths:
       - submission_output
   /api/submissions/{id}/student_test_suite_results/{result_pk}/get_student_test_names_stderr/:
     get:
-      operationId: listStudentTestSuiteResultGetStudentTestsStderrs
+      operationId: getStudentTestSuiteResultTestDiscoveryStderr
       description: ''
       parameters:
       - name: id
@@ -4726,7 +4726,7 @@ paths:
       - submission_output
   /api/submissions/{id}/student_test_suite_results/{result_pk}/validity_check_stdout/:
     get:
-      operationId: listStudentTestSuiteResultValidityCheckStdouts
+      operationId: getStudentTestSuiteResultValidityCheckStdout
       description: ''
       parameters:
       - name: id
@@ -4753,7 +4753,7 @@ paths:
       - submission_output
   /api/submissions/{id}/student_test_suite_results/{result_pk}/validity_check_stderr/:
     get:
-      operationId: listStudentTestSuiteResultValidityCheckStderrs
+      operationId: getStudentTestSuiteResultValidityCheckStderr
       description: ''
       parameters:
       - name: id
@@ -4780,7 +4780,7 @@ paths:
       - submission_output
   /api/submissions/{id}/student_test_suite_results/{result_pk}/grade_buggy_impls_stdout/:
     get:
-      operationId: listStudentTestSuiteResultGradeBuggyImplsStdouts
+      operationId: getStudentTestSuiteResultGradeBuggyImplsStdout
       description: ''
       parameters:
       - name: id
@@ -4807,7 +4807,7 @@ paths:
       - submission_output
   /api/submissions/{id}/student_test_suite_results/{result_pk}/grade_buggy_impls_stderr/:
     get:
-      operationId: listStudentTestSuiteResultGradeBuggyImplsStderrs
+      operationId: getStudentTestSuiteResultGradeBuggyImplsStderr
       description: ''
       parameters:
       - name: id
@@ -4834,7 +4834,7 @@ paths:
       - submission_output
   /api/submissions/{id}/student_test_suite_results/{result_pk}/output_size/:
     get:
-      operationId: listStudentTestSuiteOutputSizes
+      operationId: getStudentTestSuiteResultOutputSize
       description: ''
       parameters:
       - name: id
@@ -4885,7 +4885,7 @@ paths:
       - submission_output
   /api/projects/{project_pk}/handgrading_rubric/:
     get:
-      operationId: listGetCreateHandgradingRubrics
+      operationId: getHandgradingRubric
       description: ''
       parameters:
       - name: project_pk
@@ -4904,7 +4904,7 @@ paths:
       tags: &id048
       - handgrading_rubrics
     post:
-      operationId: CreateGetCreateHandgradingRubric
+      operationId: createHandgradingRubric
       description: ''
       parameters:
       - name: project_pk
@@ -4992,7 +4992,7 @@ paths:
       tags: *id048
   /api/handgrading_rubrics/{id}/:
     get:
-      operationId: RetrieveHandgradingRubricDetail
+      operationId: getHandgradingRubric
       description: ''
       parameters:
       - name: id
@@ -5011,7 +5011,7 @@ paths:
       tags: &id049
       - handgrading_rubrics
     patch:
-      operationId: PartialUpdateHandgradingRubricDetail
+      operationId: updateHandgradingRubric
       description: ''
       parameters:
       - name: id
@@ -5096,7 +5096,7 @@ paths:
                     $ref: '#/components/schemas/Annotation'
       tags: *id049
     delete:
-      operationId: DestroyHandgradingRubricDetail
+      operationId: deleteHandgradingRubric
       description: ''
       parameters:
       - name: id
@@ -5111,7 +5111,7 @@ paths:
       tags: *id049
   /api/handgrading_rubrics/{handgrading_rubric_pk}/annotations/:
     get:
-      operationId: listListCreateAnnotations
+      operationId: listAnnotations
       description: ''
       parameters:
       - name: handgrading_rubric_pk
@@ -5132,7 +5132,7 @@ paths:
       tags: &id050
       - annotations
     post:
-      operationId: CreateListCreateAnnotation
+      operationId: createAnnotation
       description: ''
       parameters:
       - name: handgrading_rubric_pk
@@ -5199,7 +5199,7 @@ paths:
       tags: *id050
   /api/annotations/{id}/:
     get:
-      operationId: RetrieveAnnotationDetail
+      operationId: getAnnotation
       description: ''
       parameters:
       - name: id
@@ -5218,7 +5218,7 @@ paths:
       tags: &id051
       - annotations
     patch:
-      operationId: PartialUpdateAnnotationDetail
+      operationId: updateAnnotation
       description: ''
       parameters:
       - name: id
@@ -5282,7 +5282,7 @@ paths:
                   format: date-time
       tags: *id051
     delete:
-      operationId: DestroyAnnotationDetail
+      operationId: deleteAnnotation
       description: ''
       parameters:
       - name: id
@@ -5297,7 +5297,7 @@ paths:
       tags: *id051
   /api/handgrading_rubrics/{handgrading_rubric_pk}/annotations/order/:
     get:
-      operationId: listAnnotationOrders
+      operationId: getAnnotationOrder
       description: ''
       parameters:
       - name: handgrading_rubric_pk
@@ -5318,7 +5318,7 @@ paths:
       tags: &id052
       - annotations
     put:
-      operationId: UpdateAnnotationOrder
+      operationId: setAnnotationOrder
       description: ''
       parameters:
       - name: handgrading_rubric_pk
@@ -5348,7 +5348,7 @@ paths:
       tags: *id052
   /api/handgrading_rubrics/{handgrading_rubric_pk}/criteria/:
     get:
-      operationId: listListCreateCriterions
+      operationId: listCriterions
       description: ''
       parameters:
       - name: handgrading_rubric_pk
@@ -5369,7 +5369,7 @@ paths:
       tags: &id053
       - criteria
     post:
-      operationId: CreateListCreateCriterion
+      operationId: createCriterion
       description: ''
       parameters:
       - name: handgrading_rubric_pk
@@ -5429,7 +5429,7 @@ paths:
       tags: *id053
   /api/criteria/{id}/:
     get:
-      operationId: RetrieveCriterionDetail
+      operationId: getCriterion
       description: ''
       parameters:
       - name: id
@@ -5448,7 +5448,7 @@ paths:
       tags: &id054
       - criteria
     patch:
-      operationId: PartialUpdateCriterionDetail
+      operationId: updateCriterion
       description: ''
       parameters:
       - name: id
@@ -5505,7 +5505,7 @@ paths:
                   type: number
       tags: *id054
     delete:
-      operationId: DestroyCriterionDetail
+      operationId: deleteCriterion
       description: ''
       parameters:
       - name: id
@@ -5520,7 +5520,7 @@ paths:
       tags: *id054
   /api/handgrading_rubrics/{handgrading_rubric_pk}/criteria/order/:
     get:
-      operationId: listCriterionOrders
+      operationId: getCriterionOrder
       description: ''
       parameters:
       - name: handgrading_rubric_pk
@@ -5541,7 +5541,7 @@ paths:
       tags: &id055
       - criteria
     put:
-      operationId: UpdateCriterionOrder
+      operationId: setCriterionOrder
       description: ''
       parameters:
       - name: handgrading_rubric_pk
@@ -5571,7 +5571,7 @@ paths:
       tags: *id055
   /api/groups/{group_pk}/handgrading_result/:
     get:
-      operationId: listHandgradingResults
+      operationId: getHandgradingResult
       description: ''
       parameters:
       - name: group_pk
@@ -5586,10 +5586,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HandgradingResult'
+          description: ''
       tags: &id056
       - handgrading_results
     post:
-      operationId: CreateHandgradingResult
+      operationId: getOrCreateHandgradingResult
       description: 'Creates a new HandgradingResult for the specified Group, or returns
 
         an already existing one.'
@@ -5616,7 +5617,7 @@ paths:
                 $ref: '#/components/schemas/HandgradingResult'
       tags: *id056
     patch:
-      operationId: PartialUpdateHandgradingResult
+      operationId: updateHandgradingResult
       description: ''
       parameters:
       - name: group_pk
@@ -5719,7 +5720,7 @@ paths:
                   type: number
       tags: *id056
     delete:
-      operationId: DestroyHandgradingResult
+      operationId: deleteHandgradingResult
       description: ''
       parameters:
       - name: group_pk
@@ -5734,7 +5735,7 @@ paths:
       tags: *id056
   /api/groups/{group_pk}/handgrading_result/file/:
     get:
-      operationId: listHandgradingResultFileContents
+      operationId: getHandgradingResultFile
       description: ''
       parameters:
       - name: group_pk
@@ -5759,7 +5760,7 @@ paths:
       - handgrading_results
   /api/groups/{group_pk}/handgrading_result/has_correct_submission/:
     get:
-      operationId: listHandgradingResultHasCorrectSubmissions
+      operationId: handgradingResultHasCorrectSubmission
       description: 'Returns true if the submission linked to the group''s handgrading
         result
 
@@ -5781,7 +5782,7 @@ paths:
       - handgrading_results
   /api/handgrading_results/{handgrading_result_pk}/applied_annotations/:
     get:
-      operationId: listListCreateAppliedAnnotations
+      operationId: listAppliedAnnotations
       description: ''
       parameters:
       - name: handgrading_result_pk
@@ -5802,7 +5803,7 @@ paths:
       tags: &id057
       - applied_annotations
     post:
-      operationId: CreateListCreateAppliedAnnotation
+      operationId: createAppliedAnnotation
       description: ''
       parameters:
       - name: handgrading_result_pk
@@ -5858,7 +5859,7 @@ paths:
       tags: *id057
   /api/applied_annotations/{id}/:
     get:
-      operationId: RetrieveAppliedAnnotationDetail
+      operationId: getAppliedAnnotation
       description: ''
       parameters:
       - name: id
@@ -5877,7 +5878,7 @@ paths:
       tags: &id058
       - applied_annotations
     patch:
-      operationId: PartialUpdateAppliedAnnotationDetail
+      operationId: updateAppliedAnnotation
       description: ''
       parameters:
       - name: id
@@ -5928,7 +5929,7 @@ paths:
                   format: id
       tags: *id058
     delete:
-      operationId: DestroyAppliedAnnotationDetail
+      operationId: deleteAppliedAnnotation
       description: ''
       parameters:
       - name: id
@@ -5943,7 +5944,7 @@ paths:
       tags: *id058
   /api/handgrading_results/{handgrading_result_pk}/comments/:
     get:
-      operationId: listListCreateComments
+      operationId: listComments
       description: ''
       parameters:
       - name: handgrading_result_pk
@@ -5964,7 +5965,7 @@ paths:
       tags: &id059
       - comments
     post:
-      operationId: CreateListCreateComment
+      operationId: createComment
       description: ''
       parameters:
       - name: handgrading_result_pk
@@ -6018,7 +6019,7 @@ paths:
       tags: *id059
   /api/comments/{id}/:
     get:
-      operationId: RetrieveCommentDetail
+      operationId: getComment
       description: ''
       parameters:
       - name: id
@@ -6037,7 +6038,7 @@ paths:
       tags: &id060
       - comments
     patch:
-      operationId: PartialUpdateCommentDetail
+      operationId: updateComment
       description: ''
       parameters:
       - name: id
@@ -6087,7 +6088,7 @@ paths:
                   format: id
       tags: *id060
     delete:
-      operationId: DestroyCommentDetail
+      operationId: deleteComment
       description: ''
       parameters:
       - name: id
@@ -6102,7 +6103,7 @@ paths:
       tags: *id060
   /api/handgrading_results/{handgrading_result_pk}/criterion_results/:
     get:
-      operationId: listListCreateCriterionResults
+      operationId: listCriterionResults
       description: ''
       parameters:
       - name: handgrading_result_pk
@@ -6123,7 +6124,7 @@ paths:
       tags: &id061
       - criterion_results
     post:
-      operationId: CreateListCreateCriterionResult
+      operationId: createCriterionResult
       description: ''
       parameters:
       - name: handgrading_result_pk
@@ -6180,7 +6181,7 @@ paths:
       tags: *id061
   /api/criterion_results/{id}/:
     get:
-      operationId: RetrieveCriterionResultDetail
+      operationId: getCriterionResult
       description: ''
       parameters:
       - name: id
@@ -6199,7 +6200,7 @@ paths:
       tags: &id062
       - criterion_results
     patch:
-      operationId: PartialUpdateCriterionResultDetail
+      operationId: updateCriterionResult
       description: ''
       parameters:
       - name: id
@@ -6251,7 +6252,7 @@ paths:
                   format: id
       tags: *id062
     delete:
-      operationId: DestroyCriterionResultDetail
+      operationId: deleteCriterionResult
       description: ''
       parameters:
       - name: id
@@ -6266,7 +6267,7 @@ paths:
       tags: *id062
   /api/projects/{id}/handgrading_results/:
     get:
-      operationId: listListHandgradingResults
+      operationId: listHandgradingResults
       description: ''
       parameters:
       - name: id
@@ -6324,7 +6325,7 @@ paths:
       - handgrading_results
   /api/courses/{id}/copy/:
     post:
-      operationId: CreateCopyCourse
+      operationId: createCourse
       description: 'Makes a copy of the given course and all its projects.
 
         The projects and all of their  instructor file,
@@ -6410,7 +6411,7 @@ paths:
       - courses
   /api/projects/{project_pk}/copy_to_course/{target_course_pk}/:
     post:
-      operationId: CreateCopyProject
+      operationId: copyProject
       description: 'Makes a copy of the specified project and
 
         all of its instructor file, expected student file, test case,
@@ -6456,7 +6457,7 @@ paths:
       - projects
   /api/projects/{project_pk}/import_handgrading_rubric_from/{import_from_project_pk}/:
     post:
-      operationId: CreateImportHandgradingRubric
+      operationId: importHandgradingRubric
       description: ''
       parameters:
       - name: project_pk
@@ -6482,7 +6483,7 @@ paths:
       - handgrading_rubrics
   /api/group_invitations/{id}/accept/:
     post:
-      operationId: CreateAcceptGroupInvitation
+      operationId: acceptGroupInvitation
       description: 'Accept this group invitation. If all invitees have accepted,
 
         create a group, delete the invitation, and return the group.'
@@ -6510,7 +6511,7 @@ paths:
       - group_invitations
   /api/projects/{project_pk}/groups/solo_group/:
     post:
-      operationId: CreateCreateSoloGroup
+      operationId: createSoloGroup
       description: Creates a group containing only the user making the request.
       parameters:
       - name: project_pk
@@ -6529,7 +6530,7 @@ paths:
       - groups
   /api/groups/{id}/merge_with/{other_group_pk}/:
     post:
-      operationId: CreateMergeGroups
+      operationId: mergeGroups
       description: 'Merge two groups together, preserving their submissions, and
 
         return the newly created group.'
@@ -6556,7 +6557,7 @@ paths:
       - groups
   /api/submissions/{id}/remove_from_queue/:
     post:
-      operationId: CreateRemoveSubmissionFromQueue
+      operationId: removeSubmissionFromQueue
       description: Remove this submission from the grading queue.
       parameters:
       - name: id
@@ -6575,7 +6576,7 @@ paths:
       - submissions
   /api/image_build_tasks/{id}/cancel/:
     post:
-      operationId: CreateCancelBuildTask
+      operationId: cancelBuildImageTask
       description: ''
       parameters:
       - name: id
@@ -6594,7 +6595,7 @@ paths:
       - sandbox_docker_images
   /api/rerun_submissions_tasks/{id}/cancel/:
     post:
-      operationId: CreateCancelRerunSubmissionsTask
+      operationId: cancelRerunSubmissionsTask
       description: ''
       parameters:
       - name: id
@@ -6613,7 +6614,7 @@ paths:
       - rerun_submissions_tasks
   /api/instructor_files/{id}/name/:
     put:
-      operationId: UpdateRenameInstructorFile
+      operationId: renameInstructorFile
       description: ''
       parameters:
       - name: id
@@ -6638,7 +6639,7 @@ paths:
       - instructor_files
   /api/sandbox_docker_images/{id}/rebuild/:
     put:
-      operationId: UpdateRebuildSandboxDockerImage
+      operationId: createGlobalSandboxDockerImage
       description: Rebuild the specified image using the files uploaded.
       parameters:
       - name: id
@@ -6656,7 +6657,7 @@ paths:
       - sandbox_docker_images
   /api/projects/{project_pk}/groups/bonus_submissions/:
     patch:
-      operationId: PartialUpdateEditBonusSubmissions
+      operationId: massEditBonusSubmissions
       description: ''
       parameters:
       - name: project_pk

@@ -50,7 +50,7 @@ class AnnotationDetailView(AGModelDetailView):
 
 
 class AnnotationOrderView(AGModelAPIView):
-    schema = OrderViewSchema([APITags.annotations])
+    schema = OrderViewSchema([APITags.annotations], hg_models.Annotation)
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(

@@ -118,7 +118,7 @@ urlpatterns = [
          views.EditBonusSubmissionsView.as_view(),
          name='edit-bonus-submissions'),
 
-    path('groups/<int:pk>/submissions/', views.ListCreateSubmissionViewSet.as_view(),
+    path('groups/<int:pk>/submissions/', views.ListCreateSubmissionView.as_view(),
          name='submissions'),
     path('submissions/<int:pk>/', views.SubmissionDetailView.as_view(),
          name='submission-detail'),
@@ -197,13 +197,13 @@ urlpatterns = [
          name='all-ultimate-submission-results'),
 
     path('submissions/<int:pk>/ag_test_suite_results/<int:result_pk>/stdout/',
-         views.AGTestSuiteResultsStdoutView.as_view(),
+         views.AGTestSuiteResultStdoutView.as_view(),
          name='ag-test-suite-result-stdout'),
     path('submissions/<int:pk>/ag_test_suite_results/<int:result_pk>/stderr/',
-         views.AGTestSuiteResultsStderrView.as_view(),
+         views.AGTestSuiteResultStderrView.as_view(),
          name='ag-test-suite-result-stderr'),
     path('submissions/<int:pk>/ag_test_suite_results/<int:result_pk>/output_size/',
-         views.AGTestSuiteResultsOutputSizeView.as_view(),
+         views.AGTestSuiteResultOutputSizeView.as_view(),
          name='ag-test-suite-result-output-size'),
 
     path('submissions/<int:pk>/ag_test_cmd_results/<int:result_pk>/stdout/',

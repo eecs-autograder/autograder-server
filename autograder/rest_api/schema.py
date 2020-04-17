@@ -59,7 +59,6 @@ class AGSchemaGenerator(SchemaGenerator):
         )
 
     def get_schema(self, request=None, public=False):
-        stderr('Try to generate better operationIds')
         stderr('Fix anyOf and oneOf examples')
         schema = super().get_schema(request=request, public=public)
         schema['components'] = self._get_model_schemas()
@@ -660,6 +659,17 @@ class AGViewSchemaGenerator(AutoSchema):
     def get_operation_impl(self, path, method) -> dict:
         return super().get_operation(path, method)
 
+    def _get_operation_id(self, path, method):
+        return self._get_operation_id_impl(path, method)
+
+    def _get_operation_id_impl(self, path, method) -> str:
+        # return super()._get_operation_id(path, method)
+        raise NotImplementedError(
+            f'Unable to create operation ID for {type(self.view).__name__} {method} {path}.\n'
+            'You must either use an appropriate "AGxxSchema" class or provide the '
+            '"operation_id" key to "CustomViewSchema".'
+        )
+
     def generate_list_op_schema(self, base_result) -> dict:
         base_result['responses']['200']['content']['application/json']['schema']['items'] = (
             as_schema_ref(self.get_api_class())
@@ -734,6 +744,12 @@ class AGListViewSchemaMixin:
 
         return base_result
 
+    def _get_operation_id_impl(self, path, method):
+        if method == 'GET':
+            return f'list{API_OBJ_TYPE_NAMES[self.get_api_class()]}s'
+
+        return super()._get_operation_id_impl(path, method)
+
 
 class AGCreateViewSchemaMixin:
     def get_operation_impl(self, path, method):
@@ -742,6 +758,12 @@ class AGCreateViewSchemaMixin:
             return self.generate_create_op_schema(base_result)
 
         return base_result
+
+    def _get_operation_id_impl(self, path, method):
+        if method == 'POST':
+            return f'create{API_OBJ_TYPE_NAMES[self.get_api_class()]}'
+
+        return super()._get_operation_id_impl(path, method)
 
 
 class AGListCreateViewSchemaGenerator(
@@ -758,6 +780,12 @@ class AGRetrieveViewSchemaMixin:
 
         return base_result
 
+    def _get_operation_id_impl(self, path, method):
+        if method == 'GET':
+            return f'get{API_OBJ_TYPE_NAMES[self.get_api_class()]}'
+
+        return super()._get_operation_id_impl(path, method)
+
 
 class AGPatchViewSchemaMixin:
     def get_operation_impl(self, path, method):
@@ -767,11 +795,21 @@ class AGPatchViewSchemaMixin:
 
         return base_result
 
+    def _get_operation_id_impl(self, path, method):
+        if method == 'PATCH':
+            return f'update{API_OBJ_TYPE_NAMES[self.get_api_class()]}'
+
+        return super()._get_operation_id_impl(path, method)
+
 
 class AGDetailViewSchemaGenerator(
     AGRetrieveViewSchemaMixin, AGPatchViewSchemaMixin, AGViewSchemaGenerator
 ):
-    pass
+    def _get_operation_id_impl(self, path, method):
+        if method == 'DELETE':
+            return f'delete{API_OBJ_TYPE_NAMES[self.get_api_class()]}'
+
+        return super()._get_operation_id_impl(path, method)
 
 
 class CustomViewDict(TypedDict, total=False):
@@ -783,6 +821,7 @@ class CustomViewDict(TypedDict, total=False):
 
 
 class CustomViewMethodData(TypedDict, total=False):
+    operation_id: str
     parameters: Sequence[Union[RequestParam, RefDict]]
     # Key = param name, Value = schema dict
     # Use for fixing the types of DRF-generated URL params.
@@ -870,6 +909,23 @@ def as_content_obj(type_: APIClassType) -> ContentObj:
     }
 
 
+def as_array_content_obj(type_: Union[APIClassType, RefDict, dict]) -> ContentObj:
+    if isinstance(type_, dict):
+        obj_dict = type_
+    else:
+        assert type_ in API_OBJ_TYPE_NAMES
+        obj_dict = as_schema_ref(cast(APIClassType, type_))
+
+    return {
+        'application/json': {
+            'schema': {
+                'type': 'array',
+                'items': obj_dict
+            }
+        }
+    }
+
+
 def as_paginated_content_obj(type_: Union[APIClassType, RefDict, dict]) -> ContentObj:
     if isinstance(type_, dict):
         obj_dict = type_
@@ -933,11 +989,19 @@ class CustomViewSchema(AGViewSchemaGenerator):
 
         return result
 
+    def _get_operation_id_impl(self, path, method):
+        operation_id = self.data.get(method, {}).get('operation_id', None)
+        if operation_id is not None:
+            return operation_id
+
+        return super()._get_operation_id_impl(path, method)
+
 
 class OrderViewSchema(CustomViewSchema):
-    def __init__(self, tags: List[APITags]):
+    def __init__(self, tags: List[APITags], api_class: APIClassType):
         super().__init__(tags, {
             'GET': {
+                'operation_id': f'get{API_OBJ_TYPE_NAMES[api_class]}Order',
                 'responses': {
                     '200': {
                         'content': {
@@ -952,6 +1016,7 @@ class OrderViewSchema(CustomViewSchema):
                 }
             },
             'PUT': {
+                'operation_id': f'set{API_OBJ_TYPE_NAMES[api_class]}Order',
                 'request': {
                     'content': {
                         'application/json': {

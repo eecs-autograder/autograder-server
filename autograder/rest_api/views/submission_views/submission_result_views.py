@@ -61,6 +61,7 @@ class SubmissionResultsViewBase(AGModelAPIView):
 class SubmissionResultsView(SubmissionResultsViewBase):
     schema = CustomViewSchema([APITags.submissions], {
         'GET': {
+            'operation_id': 'getSubmissionResults',
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
@@ -103,9 +104,10 @@ class SubmissionResultsView(SubmissionResultsViewBase):
 
 
 class _OutputViewSchema(CustomViewSchema):
-    def __init__(self) -> None:
+    def __init__(self, operation_id: str) -> None:
         super().__init__([APITags.submission_output], {
             'GET': {
+                'operation_id': operation_id,
                 'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
                 'responses': {
                     '200': {
@@ -120,8 +122,8 @@ class _OutputViewSchema(CustomViewSchema):
         })
 
 
-class AGTestSuiteResultsStdoutView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+class AGTestSuiteResultStdoutView(SubmissionResultsViewBase):
+    schema = _OutputViewSchema('getAGTestSuiteResultStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -131,8 +133,8 @@ class AGTestSuiteResultsStdoutView(SubmissionResultsViewBase):
                                  lambda fdbk_calc: fdbk_calc.setup_stdout)
 
 
-class AGTestSuiteResultsStderrView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+class AGTestSuiteResultStderrView(SubmissionResultsViewBase):
+    schema = _OutputViewSchema('getAGTestSuiteResultStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -142,9 +144,10 @@ class AGTestSuiteResultsStderrView(SubmissionResultsViewBase):
                                  lambda fdbk_calc: fdbk_calc.setup_stderr)
 
 
-class AGTestSuiteResultsOutputSizeView(SubmissionResultsViewBase):
+class AGTestSuiteResultOutputSizeView(SubmissionResultsViewBase):
     schema = CustomViewSchema([APITags.submission_output], {
         'GET': {
+            'operation_id': 'getAGTestSuiteResultOutputSize',
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
@@ -226,7 +229,7 @@ def _find_ag_suite_result(submission_fdbk: SubmissionResultFeedback,
 
 
 class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getAGTestCommandResultStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -238,7 +241,7 @@ class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
 
 
 class AGTestCommandResultStderrView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getAGTestCommandResultStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -252,6 +255,7 @@ class AGTestCommandResultStderrView(SubmissionResultsViewBase):
 class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
     schema = CustomViewSchema([APITags.submission_output], {
         'GET': {
+            'operation_id': 'getAGTestCommandResultOutputSize',
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
@@ -309,8 +313,7 @@ class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
         })
 
 
-GetCmdOutputFnType = Callable[
-    [AGTestCommandResultFeedback], Optional[BinaryIO]]
+GetCmdOutputFnType = Callable[[AGTestCommandResultFeedback], Optional[BinaryIO]]
 
 
 def _get_cmd_result_output(submission_fdbk: SubmissionResultFeedback,
@@ -326,7 +329,7 @@ def _get_cmd_result_output(submission_fdbk: SubmissionResultFeedback,
 
 
 class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getAGTestCommandResultStdoutDiff')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -338,7 +341,7 @@ class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
 
 
 class AGTestCommandResultStderrDiffView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getAGTestCommandResultStderrDiff')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -394,7 +397,7 @@ def _find_ag_test_cmd_result(submission_fdbk: SubmissionResultFeedback,
 
 
 class StudentTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getStudentTestSuiteResultSetupStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -407,7 +410,7 @@ class StudentTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
 
 
 class StudentTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getStudentTestSuiteResultSetupStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -420,7 +423,7 @@ class StudentTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
 
 
 class StudentTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getStudentTestSuiteResultTestDiscoveryStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -433,7 +436,7 @@ class StudentTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase)
 
 
 class StudentTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getStudentTestSuiteResultTestDiscoveryStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -446,7 +449,7 @@ class StudentTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase)
 
 
 class StudentTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getStudentTestSuiteResultValidityCheckStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -459,7 +462,7 @@ class StudentTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
 
 
 class StudentTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getStudentTestSuiteResultValidityCheckStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -472,7 +475,7 @@ class StudentTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
 
 
 class StudentTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getStudentTestSuiteResultGradeBuggyImplsStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -485,7 +488,7 @@ class StudentTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase)
 
 
 class StudentTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema()
+    schema = _OutputViewSchema('getStudentTestSuiteResultGradeBuggyImplsStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -500,6 +503,7 @@ class StudentTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase)
 class StudentTestSuiteOutputSizeView(SubmissionResultsViewBase):
     schema = CustomViewSchema([APITags.submission_output], {
         'GET': {
+            'operation_id': 'getStudentTestSuiteResultOutputSize',
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {

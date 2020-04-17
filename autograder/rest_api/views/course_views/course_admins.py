@@ -7,19 +7,24 @@ from rest_framework import exceptions, response, status
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.course import clear_cached_user_roles
-from autograder.rest_api.schema import (AGRetrieveViewSchemaMixin, APITags, CustomViewSchema,
+from autograder.rest_api.schema import (APITags, CustomViewSchema, as_array_content_obj,
                                         as_schema_ref)
 from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import NestedModelView, require_body_params
 
 
-class _Schema(AGRetrieveViewSchemaMixin, CustomViewSchema):
-    pass
-
-
 class CourseAdminViewSet(NestedModelView):
-    schema = _Schema(tags=[APITags.rosters], api_class=User, data={
+    schema = CustomViewSchema([APITags.rosters], {
+        'GET': {
+            'operation_id': 'listCourseAdmins',
+            'responses': {
+                '200': {
+                    'content': as_array_content_obj(User)
+                }
+            }
+        },
         'POST': {
+            'operation_id': 'addCourseAdmins',
             'request': {
                 'content': {
                     'application/json': {
@@ -42,6 +47,7 @@ class CourseAdminViewSet(NestedModelView):
             'responses': {'204': None}
         },
         'PATCH': {
+            'operation_id': 'removeCourseAdmins',
             'request': {
                 'content': {
                     'application/json': {
@@ -51,9 +57,7 @@ class CourseAdminViewSet(NestedModelView):
                             'properties': {
                                 'remove_admins': {
                                     'type': 'array',
-                                    'items': {
-                                        '$ref': as_schema_ref(User)
-                                    },
+                                    'items': as_schema_ref(User),
                                     'description': (
                                         'Users to revoke admin privileges from for the course.'
                                     )

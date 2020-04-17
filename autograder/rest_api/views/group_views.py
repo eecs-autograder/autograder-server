@@ -52,6 +52,7 @@ class _ListCreateGroupSchema(AGListViewSchemaMixin, CustomViewSchema):
 class ListCreateGroupsView(NestedModelView):
     schema = _ListCreateGroupSchema([APITags.groups], api_class=ag_models.Group, data={
         'POST': {
+            'operation_id': 'createGroup',
             'request': _MEMBER_NAMES_REQUEST_BODY,
             'responses': {
                 '201': {
@@ -126,6 +127,7 @@ class _CanCreateSoloGroup(permissions.BasePermission):
 class CreateSoloGroupView(AGModelAPIView):
     schema = CustomViewSchema([APITags.groups], {
         'POST': {
+            'operation_id': 'createSoloGroup',
             'responses': {
                 '201': {
                     'content': as_content_obj(ag_models.Group)
@@ -186,13 +188,15 @@ class _GroupDetailSchema(AGRetrieveViewSchemaMixin, CustomViewSchema):
 class GroupDetailView(AGModelDetailView):
     schema = _GroupDetailSchema([APITags.groups], {
         'PATCH': {
+            'operation_id': 'updateGroup',
             'request': _MEMBER_NAMES_REQUEST_BODY,
             'responses': {
                 '200': {
                     'content': as_content_obj(ag_models.Group)
                 }
             }
-        }
+        },
+        'DELETE': {'operation_id': 'pseudoDeleteGroup'}
     })
 
     permission_classes = [group_permissions]
@@ -249,6 +253,7 @@ class GroupDetailView(AGModelDetailView):
 class GroupUltimateSubmissionView(AGModelAPIView):
     schema = CustomViewSchema([APITags.groups, APITags.submissions], {
         'GET': {
+            'operation_id': 'getUltimateSubmissionForGroup',
             'responses': {
                 '200': {
                     'content': as_content_obj(ag_models.Submission)
@@ -286,6 +291,7 @@ class GroupUltimateSubmissionView(AGModelAPIView):
 class MergeGroupsView(AGModelAPIView):
     schema = CustomViewSchema([APITags.groups], {
         'POST': {
+            'operation_id': 'mergeGroups',
             'responses': {
                 '201': {
                     'content': as_content_obj(ag_models.Group)

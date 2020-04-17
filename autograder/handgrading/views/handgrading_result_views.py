@@ -54,15 +54,8 @@ class _HandgradingResultViewSchema(
 
 class HandgradingResultView(NestedModelView):
     schema = _HandgradingResultViewSchema({
-        'GET': {
-            'responses': {
-                '200': {
-                    'content': as_content_obj(hg_models.HandgradingResult),
-                }
-            }
-        },
-
         'POST': {
+            'operation_id': 'getOrCreateHandgradingResult',
             'responses': {
                 '200': {
                     'description': 'A HandgradingResult already exists for the group. '
@@ -74,7 +67,9 @@ class HandgradingResultView(NestedModelView):
                     'content': as_content_obj(hg_models.HandgradingResult)
                 }
             }
-        }
+        },
+
+        'DELETE': {'operation_id': 'deleteHandgradingResult'}
     })
 
     permission_classes = [
@@ -159,6 +154,7 @@ class HandgradingResultView(NestedModelView):
 class HandgradingResultFileContentView(NestedModelView):
     schema = CustomViewSchema([APITags.handgrading_results], {
         'GET': {
+            'operation_id': 'getHandgradingResultFile',
             'parameters': [{
                 'name': 'filename',
                 'in': 'query',
@@ -200,6 +196,7 @@ class HandgradingResultFileContentView(NestedModelView):
 class HandgradingResultHasCorrectSubmissionView(NestedModelView):
     schema = CustomViewSchema([APITags.handgrading_results], {
         'GET': {
+            'operation_id': 'handgradingResultHasCorrectSubmission',
             'responses': {
                 '200': {
                     'content': {
@@ -246,6 +243,7 @@ class HandgradingResultPaginator(PageNumberPagination):
 class ListHandgradingResultsView(AGModelAPIView):
     schema = CustomViewSchema([APITags.projects, APITags.handgrading_results], {
         'GET': {
+            'operation_id': 'listHandgradingResults',
             'parameters': [
                 {'$ref': '#/components/parameters/page'},
                 {

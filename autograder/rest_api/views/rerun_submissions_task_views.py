@@ -109,6 +109,7 @@ class RerunSubmissionsTaskDetailView(AGModelDetailView):
 class CancelRerunSubmissionsTaskView(AGModelAPIView):
     schema = CustomViewSchema([APITags.rerun_submissions_tasks], {
         'POST': {
+            'operation_id': 'cancelRerunSubmissionsTask',
             'responses': {
                 '200': {
                     'content': as_content_obj(ag_models.RerunSubmissionsTask)

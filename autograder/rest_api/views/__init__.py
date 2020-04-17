@@ -46,15 +46,15 @@ from .submission_views.all_ultimate_submission_results_view import AllUltimateSu
 from .submission_views.submission_result_views import (
     AGTestCommandResultOutputSizeView, AGTestCommandResultStderrDiffView,
     AGTestCommandResultStderrView, AGTestCommandResultStdoutDiffView,
-    AGTestCommandResultStdoutView, AGTestSuiteResultsOutputSizeView, AGTestSuiteResultsStderrView,
-    AGTestSuiteResultsStdoutView, StudentTestSuiteOutputSizeView,
+    AGTestCommandResultStdoutView, AGTestSuiteResultOutputSizeView, AGTestSuiteResultStderrView,
+    AGTestSuiteResultStdoutView, StudentTestSuiteOutputSizeView,
     StudentTestSuiteResultGetStudentTestsStderrView,
     StudentTestSuiteResultGetStudentTestsStdoutView,
     StudentTestSuiteResultGradeBuggyImplsStderrView,
     StudentTestSuiteResultGradeBuggyImplsStdoutView, StudentTestSuiteResultSetupStderrView,
     StudentTestSuiteResultSetupStdoutView, StudentTestSuiteResultValidityCheckStderrView,
     StudentTestSuiteResultValidityCheckStdoutView, SubmissionResultsView)
-from .submission_views.submission_views import (GetSubmittedFileView, ListCreateSubmissionViewSet,
+from .submission_views.submission_views import (GetSubmittedFileView, ListCreateSubmissionView,
                                                 ListSubmissionsWithResults,
                                                 RemoveSubmissionFromQueueView,
                                                 SubmissionDetailView)
