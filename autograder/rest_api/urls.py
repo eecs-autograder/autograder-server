@@ -12,7 +12,7 @@ urlpatterns = [
     path('users/current/can_create_courses/', views.CurrentUserCanCreateCoursesView.as_view(),
          name='user-can-create-courses'),
     path('users/<int:pk>/', views.UserDetailView.as_view(), name='user-detail'),
-    path('users/<username_or_id>/late_days/', views.UserLateDaysView.as_view(),
+    path('users/<username_or_pk>/late_days/', views.UserLateDaysView.as_view(),
          name='user-late-days'),
     path('users/<int:pk>/courses_is_admin_for/', views.CoursesIsAdminForView.as_view(),
          name='courses-is-admin-for'),

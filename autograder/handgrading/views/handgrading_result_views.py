@@ -273,6 +273,7 @@ class ListHandgradingResultsView(AGModelAPIView):
                                             'handgrading has not started for this group.'
                                         ),
                                         'type': 'object',
+                                        'nullable': True,
                                         'properties': {
                                             'finished_grading': {'type': 'boolean'},
                                             'total_points': {'type': 'number', 'format': 'double'},

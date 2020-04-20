@@ -13,7 +13,7 @@ from autograder.core.models.copy_project_and_course import copy_course
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGRetrieveViewSchemaMixin,
-                                        APITags, CustomViewSchema, as_schema_ref)
+                                        APITags, CustomViewSchema, as_content_obj, as_schema_ref)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       AlwaysIsAuthenticatedMixin, NestedModelView,
                                                       convert_django_validation_error,
@@ -100,31 +100,35 @@ class CourseUserRolesView(AGModelAPIView):
         return response.Response(course.get_user_roles(self.request.user))
 
 
-class _CopyCourseSchemaGen(AGCreateViewSchemaMixin, CustomViewSchema):
-    pass
-
-
 class CopyCourseView(AGModelAPIView):
-    schema = _CopyCourseSchemaGen([APITags.courses], {
+    schema = CustomViewSchema([APITags.courses], {
         'POST': {
-            'request_payload': {
-                'body': {
-                    'type': 'object',
-                    'required': [
-                        'new_name',
-                        'new_semester',
-                        'new_year',
-                    ],
-                    'properties': {
-                        'new_name': {
-                            'type': 'string'
-                        },
-                        'new_semester': as_schema_ref(ag_models.Semester),
-                        'new_year': {
-                            'type': 'integer'
+            'operation_id': 'copyCourse',
+            'request': {
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': [
+                                'new_name',
+                                'new_semester',
+                                'new_year',
+                            ],
+                            'properties': {
+                                'new_name': {
+                                    'type': 'string'
+                                },
+                                'new_semester': as_schema_ref(ag_models.Semester),
+                                'new_year': {
+                                    'type': 'integer'
+                                }
+                            }
                         }
                     }
                 }
+            },
+            'responses': {
+                '201': {'content': as_content_obj(ag_models.Course)}
             }
         }
     })
@@ -165,7 +169,8 @@ class CopyCourseView(AGModelAPIView):
 
 
 class CourseByNameSemesterYearViewSchema(AGRetrieveViewSchemaMixin, CustomViewSchema):
-    pass
+    def _get_operation_id_impl(self, path, method):
+        return 'getCourseByFields'
 
 
 class CourseByNameSemesterYearView(AlwaysIsAuthenticatedMixin, APIView):
@@ -173,7 +178,7 @@ class CourseByNameSemesterYearView(AlwaysIsAuthenticatedMixin, APIView):
         tags=[APITags.courses], api_class=ag_models.Course, data={
             'GET': {
                 'param_schema_overrides': {
-                    'semester': as_schema_ref(ag_models.Submission),
+                    'semester': as_schema_ref(ag_models.Semester),
                     'year': {'type': 'integer'}
                 }
             }

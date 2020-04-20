@@ -104,7 +104,7 @@ class SubmissionResultsView(SubmissionResultsViewBase):
 
 
 class _OutputViewSchema(CustomViewSchema):
-    def __init__(self, operation_id: str) -> None:
+    def __init__(self, operation_id: str):
         super().__init__([APITags.submission_output], {
             'GET': {
                 'operation_id': operation_id,
