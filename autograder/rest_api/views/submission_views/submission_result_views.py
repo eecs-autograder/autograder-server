@@ -328,8 +328,42 @@ def _get_cmd_result_output(submission_fdbk: SubmissionResultFeedback,
     return FileResponse(stream_data)
 
 
+class _DiffViewSchema(CustomViewSchema):
+    def __init__(self, operation_id: str):
+        super().__init__([APITags.submission_output], {
+            'GET': {
+                'operation_id': operation_id,
+                'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
+                'responses': {
+                    '200': {
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    'type': 'array',
+                                    'items': {
+                                        'type': 'string',
+                                    }
+                                },
+                                'examples': {
+                                    'differencesFound': {
+                                        'summary': 'Expected and actual output differ',
+                                        'value': ['  spam', '+ egg', '- sausage']
+                                    },
+                                    'noDifference': {
+                                        'summary': 'Expected and actual output match',
+                                        'value': []
+                                    }
+                                }
+                            },
+                        }
+                    }
+                }
+            }
+        })
+
+
 class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema('getAGTestCommandResultStdoutDiff')
+    schema = _DiffViewSchema('getAGTestCommandResultStdoutDiff')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -341,7 +375,7 @@ class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
 
 
 class AGTestCommandResultStderrDiffView(SubmissionResultsViewBase):
-    schema = _OutputViewSchema('getAGTestCommandResultStderrDiff')
+    schema = _DiffViewSchema('getAGTestCommandResultStderrDiff')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
