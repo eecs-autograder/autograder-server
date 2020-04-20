@@ -138,7 +138,7 @@ class CopyProjectView(AGModelAPIView):
         if not target_course.is_admin(request.user):
             return response.Response(status=status.HTTP_403_FORBIDDEN)
 
-        new_project_name = request.query_params.get('new_project_name', None)
+        new_project_name = request.data.get('new_project_name', None)
         new_project = copy_project(
             project=project, target_course=target_course, new_project_name=new_project_name)
 
@@ -274,12 +274,17 @@ class ListDownloadTasksView(NestedModelView):
 
 
 class ClearResultsCacheView(AGModelAPIView):
-    schema = None
+    schema = CustomViewSchema([APITags.projects], {
+        'DELETE': {'deprecated': True, 'operation_id': 'clearSubmissionResultsCache'}
+    })
 
     model_manager = ag_models.Project.objects
     permission_classes = [ag_permissions.is_admin()]
 
     def delete(self, *args, **kwargs):
+        """
+        DEPRECATED. Clears cached "normal" feedback submission results.
+        """
         with transaction.atomic():
             project = self.get_object()
 

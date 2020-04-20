@@ -262,7 +262,7 @@ class CopyProjectViewTestCase(UnitTestBase):
         with mock.patch(path) as mock_register_queues:
             self.client.force_authenticate(self.admin)
             new_name = 'New Project'
-            response = self.client.post(self.get_url(self.project, self.project.course, new_name))
+            response = self.send_copy_request(self.project, self.project.course, new_name)
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
             # Regression check: closing_time and instructor_files should be present
@@ -280,7 +280,7 @@ class CopyProjectViewTestCase(UnitTestBase):
 
     def test_admin_copy_project_to_different_course_they_are_admin_for(self):
         self.client.force_authenticate(self.admin)
-        response = self.client.post(self.get_url(self.project, self.other_course))
+        response = self.send_copy_request(self.project, self.other_course)
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         new_project = ag_models.Project.objects.get(pk=response.data['pk'])
@@ -290,7 +290,7 @@ class CopyProjectViewTestCase(UnitTestBase):
     def test_admin_copy_project_to_different_course_with_different_name(self):
         self.client.force_authenticate(self.admin)
         new_name = 'New Project'
-        response = self.client.post(self.get_url(self.project, self.other_course, new_name))
+        response = self.send_copy_request(self.project, self.other_course, new_name)
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         new_project = ag_models.Project.objects.get(pk=response.data['pk'])
@@ -303,7 +303,7 @@ class CopyProjectViewTestCase(UnitTestBase):
         with mock.patch('autograder.rest_api.views.project_views.project_views.copy_project',
                         new=mock_copy_project):
             self.client.force_authenticate(self.admin)
-            response = self.client.post(self.get_url(self.project, self.other_course))
+            response = self.send_copy_request(self.project, self.other_course)
 
             mock_copy_project.assert_called_once_with(
                 project=self.project, target_course=self.other_course, new_project_name=None)
@@ -311,34 +311,40 @@ class CopyProjectViewTestCase(UnitTestBase):
     def test_non_admin_copy_project_permission_denied(self):
         staff = obj_build.make_staff_user(self.project.course)
         self.client.force_authenticate(staff)
-        response = self.client.post(self.get_url(self.project, self.project.course, 'New project'))
+        response = self.send_copy_request(self.project, self.project.course, 'New project')
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_admin_copy_project_to_course_they_arent_admin_for_permission_denied(self):
         self.other_course.admins.remove(self.admin)
 
         self.client.force_authenticate(self.admin)
-        response = self.client.post(self.get_url(self.project, self.other_course))
+        response = self.send_copy_request(self.project, self.other_course)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_error_same_course_same_project_name(self):
         self.client.force_authenticate(self.admin)
-        response = self.client.post(self.get_url(self.project, self.project.course))
+        response = self.send_copy_request(self.project, self.project.course)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
     def test_error_new_project_name_empty(self):
         self.client.force_authenticate(self.admin)
-        response = self.client.post(self.get_url(self.project, self.project.course, ''))
+        response = self.send_copy_request(self.project, self.project.course, '')
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-    def get_url(self, project: ag_models.Project,
-                target_course: ag_models.Course, new_name: Optional[str]=None):
-        url = reverse('copy-project',
-                      kwargs={'project_pk': project.pk, 'target_course_pk': target_course.pk})
+    def send_copy_request(
+        self, project: ag_models.Project,
+        target_course: ag_models.Course,
+        new_name: Optional[str]=None
+    ):
+        url = reverse(
+            'copy-project',
+            kwargs={'project_pk': project.pk, 'target_course_pk': target_course.pk}
+        )
+        body = {}
         if new_name is not None:
-            url += f'?new_project_name={new_name}'
+            body['new_project_name'] = new_name
 
-        return url
+        return self.client.post(url, body)
 
 
 class ImportHandgradingRubricTestCase(AGViewTestBase):

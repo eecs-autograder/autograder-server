@@ -825,10 +825,12 @@ class CustomViewMethodData(TypedDict, total=False):
     parameters: Sequence[Union[RequestParam, RefDict]]
     # Key = param name, Value = schema dict
     # Use for fixing the types of DRF-generated URL params.
-    param_schema_overrides: Mapping[str, dict]
+    param_schema_overrides: Mapping[str, SchemaObjType]
     request: RequestBody
     # Key = response status
     responses: Mapping[str, Optional[ResponseBody]]
+
+    deprecated: bool
 
 
 # Where appropriate, types are defined from the OpenAPI 3 spec:
@@ -986,6 +988,9 @@ class CustomViewSchema(AGViewSchemaGenerator):
 
         if responses:
             result['responses'] = responses
+
+        if 'deprecated' in method_data:
+            result['deprecated'] = method_data['deprecated']
 
         return result
 

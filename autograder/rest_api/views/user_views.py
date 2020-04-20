@@ -1,3 +1,4 @@
+from abc import abstractclassmethod
 from typing import List, Mapping, Sequence
 
 from django.contrib.auth.models import User
@@ -10,10 +11,7 @@ from rest_framework.request import Request
 from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
-from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator, APITags, ContentObj,
-                                        ContentTypeVal, CustomViewSchema, MediaTypeObject,
-                                        RequestParam)
+from autograder.rest_api.schema import AGDetailViewSchemaGenerator, AGListCreateViewSchemaGenerator, APIClassType, APITags, ContentObj, ContentTypeVal, CustomViewSchema, MediaTypeObject, RequestParam, as_array_content_obj
 from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       AlwaysIsAuthenticatedMixin, NestedModelView,
@@ -47,12 +45,28 @@ class UserDetailView(AGModelDetailView):
         return serialize_user(obj)
 
 
-class _UserCoursesViewBase(NestedModelView):
-    schema = AGListCreateViewSchemaGenerator(
-        tags=[APITags.users, APITags.courses],
-        api_class=ag_models.Course
-    )
+# For objects related to the user,
+# e.g. Courses is student in, Groups is member of.
+class _UserEntityListViewSchema(CustomViewSchema):
+    def __init__(self, tags: List[APITags], operation_id: str, api_class: APIClassType):
+        super().__init__(tags, {
+            'GET': {
+                'operation_id': operation_id,
+                'responses': {
+                    '200': {
+                        'content': as_array_content_obj(api_class)
+                    }
+                }
+            }
+        })
 
+
+class _UserCoursesViewSchema(_UserEntityListViewSchema):
+    def __init__(self, operation_id):
+        super().__init__([APITags.users, APITags.courses], operation_id, ag_models.Course)
+
+
+class _UserCoursesViewBase(NestedModelView):
     model_manager = User.objects
 
     permission_classes = [_Permissions]
@@ -62,25 +76,28 @@ class _UserCoursesViewBase(NestedModelView):
 
 
 class CoursesIsAdminForView(_UserCoursesViewBase):
+    schema = _UserCoursesViewSchema('coursesIsAdminFor')
     nested_field_name = 'courses_is_admin_for'
 
 
 class CoursesIsStaffForView(_UserCoursesViewBase):
+    schema = _UserCoursesViewSchema('coursesIsStaffFor')
     nested_field_name = 'courses_is_staff_for'
 
 
 class CoursesIsEnrolledInView(_UserCoursesViewBase):
+    schema = _UserCoursesViewSchema('coursesIsEnrolledIn')
     nested_field_name = 'courses_is_enrolled_in'
 
 
 class CoursesIsHandgraderForView(_UserCoursesViewBase):
+    schema = _UserCoursesViewSchema('coursesIsHandgraderFor')
     nested_field_name = 'courses_is_handgrader_for'
 
 
 class GroupsIsMemberOfView(NestedModelView):
-    schema = AGListCreateViewSchemaGenerator(
-        tags=[APITags.users, APITags.groups],
-        api_class=ag_models.Group
+    schema = _UserEntityListViewSchema(
+        [APITags.users, APITags.groups], 'groupsIsMemberOf', ag_models.Group
     )
 
     model_manager = User.objects
@@ -93,11 +110,6 @@ class GroupsIsMemberOfView(NestedModelView):
 
 
 class _InvitationViewBase(NestedModelView):
-    schema = AGListCreateViewSchemaGenerator(
-        tags=[APITags.users, APITags.groups],
-        api_class=ag_models.GroupInvitation
-    )
-
     model_manager = User.objects
 
     permission_classes = [_Permissions]
@@ -107,10 +119,18 @@ class _InvitationViewBase(NestedModelView):
 
 
 class GroupInvitationsSentView(_InvitationViewBase):
+    schema = _UserEntityListViewSchema(
+        [APITags.users, APITags.groups], 'groupInvitationsSent', ag_models.GroupInvitation
+    )
+
     nested_field_name = 'group_invitations_sent'
 
 
 class GroupInvitationsReceivedView(_InvitationViewBase):
+    schema = _UserEntityListViewSchema(
+        [APITags.users, APITags.groups], 'groupInvitationsReceived', ag_models.GroupInvitation
+    )
+
     nested_field_name = 'group_invitations_received'
 
 
@@ -152,7 +172,7 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
 
     _PARAMS: Sequence[RequestParam] = [
         {
-            'name': 'username_or_id',
+            'name': 'username_or_pk',
             'in': 'path',
             'required': True,
             'description': 'The ID or username of the user.',
@@ -194,9 +214,9 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
     @method_decorator(require_query_params('course_pk'))
     def get(self, request: Request, *args, **kwargs):
         try:
-            user = get_object_or_404(User.objects, pk=int(kwargs['username_or_id']))
+            user = get_object_or_404(User.objects, pk=int(kwargs['username_or_pk']))
         except ValueError:
-            user = get_object_or_404(User.objects, username=kwargs['username_or_id'])
+            user = get_object_or_404(User.objects, username=kwargs['username_or_pk'])
 
         course = get_object_or_404(ag_models.Course.objects, pk=request.query_params['course_pk'])
         remaining = ag_models.LateDaysRemaining.objects.get_or_create(user=user, course=course)[0]
@@ -208,9 +228,9 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
     @method_decorator(require_body_params('late_days_remaining'))
     def put(self, request: Request, *args, **kwargs):
         try:
-            user = get_object_or_404(User.objects, pk=int(kwargs['username_or_id']))
+            user = get_object_or_404(User.objects, pk=int(kwargs['username_or_pk']))
         except ValueError:
-            user = get_object_or_404(User.objects, username=kwargs['username_or_id'])
+            user = get_object_or_404(User.objects, username=kwargs['username_or_pk'])
 
         course = get_object_or_404(ag_models.Course.objects, pk=request.query_params['course_pk'])
 
