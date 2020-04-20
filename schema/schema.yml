@@ -2139,7 +2139,7 @@ paths:
       tags: *id028
   /api/courses/{id}/sandbox_docker_images/:
     get:
-      operationId: listSandboxDockerImages
+      operationId: listSandboxDockerImagesForCourse
       description: ''
       parameters:
       - name: id
@@ -2156,11 +2156,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SandboxDockerImage'
-          description: ''
       tags: &id031
       - sandbox_docker_images
     post:
-      operationId: createGlobalSandboxDockerImage
+      operationId: createSandboxDockerImageForCourse
       description: List all sandbox images for the specified course.
       parameters:
       - name: id
@@ -2177,7 +2176,7 @@ paths:
       tags: *id031
   /api/image_build_tasks/:
     get:
-      operationId: listBuildSandboxDockerImageTasks
+      operationId: listGlobalBuildSandboxDockerImageTasks
       description: List all global (not belonging to a course) image build tasks.
       parameters: []
       responses:
@@ -2188,12 +2187,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/BuildSandboxDockerImageTask'
-          description: ''
       tags:
       - sandbox_docker_images
   /api/courses/{id}/image_build_tasks/:
     get:
-      operationId: listBuildSandboxDockerImageTasks
+      operationId: listBuildSandboxDockerImageTasksForCourse
       description: List all image build tasks for the specified course.
       parameters:
       - name: id
@@ -2210,7 +2208,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/BuildSandboxDockerImageTask'
-          description: ''
       tags:
       - sandbox_docker_images
   /api/image_build_tasks/{id}/:
@@ -6540,7 +6537,7 @@ paths:
       - submissions
   /api/image_build_tasks/{id}/cancel/:
     post:
-      operationId: cancelBuildImageTask
+      operationId: cancelBuildSandboxDockerImageTask
       description: ''
       parameters:
       - name: id
@@ -6603,7 +6600,7 @@ paths:
       - instructor_files
   /api/sandbox_docker_images/{id}/rebuild/:
     put:
-      operationId: createGlobalSandboxDockerImage
+      operationId: rebuildSandboxDockerImage
       description: Rebuild the specified image using the files uploaded.
       parameters:
       - name: id

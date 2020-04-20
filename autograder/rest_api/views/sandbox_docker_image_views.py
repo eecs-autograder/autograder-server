@@ -9,7 +9,7 @@ from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
                                         APITags, CustomViewMethodData, CustomViewSchema,
-                                        as_content_obj, as_schema_ref)
+                                        as_array_content_obj, as_content_obj, as_schema_ref)
 from autograder.rest_api.views.ag_model_views import convert_django_validation_error
 
 from . import ag_model_views as ag_views
@@ -20,8 +20,13 @@ class IsAdminForAnyCourse(permissions.BasePermission):
         return request.user.courses_is_admin_for.count() > 0
 
 
+def _make_build_image_schema(operation_id: str) -> CustomViewMethodData:
+    result: CustomViewMethodData = {'operation_id': operation_id}
+    result.update(_BUILD_IMAGE_SCHEMA)
+    return result
+
+
 _BUILD_IMAGE_SCHEMA: CustomViewMethodData = {
-    'operation_id': 'createGlobalSandboxDockerImage',
     'request': {
         'content': {
             'multipart/form-data': {
@@ -70,7 +75,7 @@ class ListCreateGlobalSandboxDockerImageView(ag_views.AGModelAPIView):
                     }
                 }
             },
-            'POST': _BUILD_IMAGE_SCHEMA
+            'POST': _make_build_image_schema('createGlobalSandboxDockerImage')
         }
     )
 
@@ -99,15 +104,18 @@ class ListCreateGlobalSandboxDockerImageView(ag_views.AGModelAPIView):
         return _start_build_task(build_task)
 
 
-class _Schema(AGListViewSchemaMixin, CustomViewSchema):
-    pass
-
-
 class ListCreateSandboxDockerImageForCourseView(ag_views.NestedModelView):
-    schema = _Schema(
-        [APITags.sandbox_docker_images],
-        api_class=ag_models.SandboxDockerImage,
-        data={'POST': _BUILD_IMAGE_SCHEMA}
+    schema = CustomViewSchema([APITags.sandbox_docker_images], {
+        'GET': {
+            'operation_id': 'listSandboxDockerImagesForCourse',
+            'responses': {
+                '200': {
+                    'content': as_array_content_obj(ag_models.SandboxDockerImage)
+                }
+            }
+        },
+        'POST': _make_build_image_schema('createSandboxDockerImageForCourse')
+    }
     )
     permission_classes = [ag_permissions.is_admin()]
 
@@ -133,9 +141,16 @@ class ListCreateSandboxDockerImageForCourseView(ag_views.NestedModelView):
 
 
 class ListGlobalBuildTasksView(ag_views.AGModelAPIView):
-    schema = AGListCreateViewSchemaGenerator(
-        [APITags.sandbox_docker_images], ag_models.BuildSandboxDockerImageTask
-    )
+    schema = CustomViewSchema([APITags.sandbox_docker_images], {
+        'GET': {
+            'operation_id': 'listGlobalBuildSandboxDockerImageTasks',
+            'responses': {
+                '200': {
+                    'content': as_array_content_obj(ag_models.BuildSandboxDockerImageTask)
+                }
+            }
+        }
+    })
     permission_classes = [ag_permissions.IsSuperuser]
 
     def get(self, *args, **kwargs):
@@ -149,9 +164,16 @@ class ListGlobalBuildTasksView(ag_views.AGModelAPIView):
 
 
 class ListBuildTasksForCourseView(ag_views.NestedModelView):
-    schema = AGListCreateViewSchemaGenerator(
-        [APITags.sandbox_docker_images], ag_models.BuildSandboxDockerImageTask
-    )
+    schema = CustomViewSchema([APITags.sandbox_docker_images], {
+        'GET': {
+            'operation_id': 'listBuildSandboxDockerImageTasksForCourse',
+            'responses': {
+                '200': {
+                    'content': as_array_content_obj(ag_models.BuildSandboxDockerImageTask)
+                }
+            }
+        }
+    })
 
     permission_classes = [ag_permissions.is_admin()]
     model_manager = ag_models.Course.objects
@@ -188,7 +210,7 @@ class BuildTaskDetailView(ag_views.AGModelDetailView):
 class CancelBuildTaskView(ag_views.AGModelAPIView):
     schema = CustomViewSchema([APITags.sandbox_docker_images], {
         'POST': {
-            'operation_id': 'cancelBuildImageTask',
+            'operation_id': 'cancelBuildSandboxDockerImageTask',
             'responses': {
                 '200': {
                     'content': as_content_obj(ag_models.BuildSandboxDockerImageTask)
@@ -246,7 +268,7 @@ class SandboxDockerImageDetailView(ag_views.AGModelDetailView):
 
 class RebuildSandboxDockerImageView(ag_views.AGModelAPIView):
     schema = CustomViewSchema([APITags.sandbox_docker_images], {
-        'PUT': _BUILD_IMAGE_SCHEMA
+        'PUT': _make_build_image_schema('rebuildSandboxDockerImage')
     })
 
     permission_classes = [SandboxDockerImageDetailPermissions]
