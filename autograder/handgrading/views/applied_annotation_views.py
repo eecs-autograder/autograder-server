@@ -44,8 +44,5 @@ class AppliedAnnotationDetailView(AGModelDetailView):
     def get(self, *args, **kwargs):
         return self.do_get()
 
-    def patch(self, *args, **kwargs):
-        return self.do_patch()
-
     def delete(self, *args, **kwargs):
         return self.do_delete()

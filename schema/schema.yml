@@ -4536,10 +4536,21 @@ paths:
       responses:
         '200':
           content:
-            application/octet-stream:
+            application/json:
               schema:
-                type: string
-                format: binary
+                type: array
+                items:
+                  type: string
+              examples:
+                differencesFound:
+                  summary: Expected and actual output differ
+                  value:
+                  - '  spam'
+                  - + egg
+                  - '- sausage'
+                noDifference:
+                  summary: Expected and actual output match
+                  value: []
       tags:
       - submission_output
   /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stderr_diff/:
@@ -4563,10 +4574,21 @@ paths:
       responses:
         '200':
           content:
-            application/octet-stream:
+            application/json:
               schema:
-                type: string
-                format: binary
+                type: array
+                items:
+                  type: string
+              examples:
+                differencesFound:
+                  summary: Expected and actual output differ
+                  value:
+                  - '  spam'
+                  - + egg
+                  - '- sausage'
+                noDifference:
+                  summary: Expected and actual output match
+                  value: []
       tags:
       - submission_output
   /api/submissions/{id}/ag_test_cmd_results/{result_pk}/output_size/:
@@ -5875,57 +5897,6 @@ paths:
           description: ''
       tags: &id056
       - applied_annotations
-    patch:
-      operationId: updateAppliedAnnotation
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AppliedAnnotation'
-          description: ''
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                pk: *id006
-                last_modified:
-                  description: ''
-                  nullable: false
-                  readOnly: true
-                  type: string
-                  format: date-time
-                location:
-                  description: The source code location where the Annotation was applied.
-                  nullable: false
-                  readOnly: true
-                  allOf:
-                  - $ref: '#/components/schemas/Location'
-                annotation:
-                  description: The Annotation that was applied to the source code.
-                  nullable: false
-                  readOnly: true
-                  allOf:
-                  - $ref: '#/components/schemas/Annotation'
-                handgrading_result:
-                  description: The HandgradingResult the applied annotation belongs
-                    to.
-                  nullable: false
-                  readOnly: true
-                  type: integer
-                  format: id
-      tags: *id056
     delete:
       operationId: deleteAppliedAnnotation
       description: ''
