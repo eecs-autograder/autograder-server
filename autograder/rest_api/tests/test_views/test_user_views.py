@@ -371,7 +371,7 @@ class UserLateDaysViewTestCase(UnitTestBase):
     def test_missing_course_pk_query_param(self):
         student = obj_build.make_student_user(self.course)
         self.client.force_authenticate(student)
-        url = reverse('user-late-days', kwargs={'username_or_id': student.pk})
+        url = reverse('user-late-days', kwargs={'username_or_pk': student.pk})
 
         response = self.client.get(url)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -405,9 +405,9 @@ class UserLateDaysViewTestCase(UnitTestBase):
             self.assertEqual({'late_days_remaining': expected_num_late_days}, response.data)
 
     def get_pk_url(self, requestee: User, course: ag_models.Course):
-        url = reverse('user-late-days', kwargs={'username_or_id': requestee.pk})
+        url = reverse('user-late-days', kwargs={'username_or_pk': requestee.pk})
         return url + f'?course_pk={course.pk}'
 
     def get_username_url(self, requestee: User, course: ag_models.Course):
-        url = reverse('user-late-days', kwargs={'username_or_id': requestee.username})
+        url = reverse('user-late-days', kwargs={'username_or_pk': requestee.username})
         return url + f'?course_pk={course.pk}'
