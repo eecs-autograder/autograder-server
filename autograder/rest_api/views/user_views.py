@@ -11,7 +11,10 @@ from rest_framework.request import Request
 from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
-from autograder.rest_api.schema import AGDetailViewSchemaGenerator, AGListCreateViewSchemaGenerator, APIClassType, APITags, ContentObj, ContentTypeVal, CustomViewSchema, MediaTypeObject, RequestParam, as_array_content_obj
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator, APIClassType, APITags,
+                                        ContentObj, ContentTypeVal, CustomViewSchema,
+                                        MediaTypeObject, RequestParam, as_array_content_obj)
 from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       AlwaysIsAuthenticatedMixin, NestedModelView,
