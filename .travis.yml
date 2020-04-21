@@ -31,4 +31,4 @@ script:
     pycodestyle autograder &&
     pydocstyle augograder &&
     python3 manage.py makemigrations --check &&
-    python3 manage.py test autograder
+    python3 manage.py test -v 2 autograder
