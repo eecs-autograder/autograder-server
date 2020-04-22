@@ -19,16 +19,13 @@ class AGCommandResult(AGCommandResultBase):
         help_text="The AGCommand this result belongs to, or None if this "
                   "result doesn't belong to a command or if its command has been deleted.")
 
-    _stdout_filename = models.TextField(blank=True)
-    _stderr_filename = models.TextField(blank=True)
-
     @property
     def stdout_filename(self):
         if not self.pk:
             raise AttributeError(
                 'stdout_filename is not available until the AGCommandResult has been saved')
 
-        return self._stdout_filename
+        return os.path.join(core_ut.misc_cmd_output_dir(), 'cmd_result_{}_stdout'.format(self.pk))
 
     @property
     def stderr_filename(self):
@@ -36,7 +33,7 @@ class AGCommandResult(AGCommandResultBase):
             raise AttributeError(
                 'stderr_filename is not available until the AGCommandResult has been saved')
 
-        return self._stderr_filename
+        return os.path.join(core_ut.misc_cmd_output_dir(), 'cmd_result_{}_stderr'.format(self.pk))
 
     def save(self, *args, **kwargs):
         is_create = self.pk is None
@@ -46,13 +43,8 @@ class AGCommandResult(AGCommandResultBase):
 
             if is_create:
                 os.makedirs(core_ut.misc_cmd_output_dir(), exist_ok=True)
-                self._stdout_filename = os.path.join(core_ut.misc_cmd_output_dir(),
-                                                     'cmd_result_{}_stdout'.format(self.pk))
-                self._stderr_filename = os.path.join(core_ut.misc_cmd_output_dir(),
-                                                     'cmd_result_{}_stderr'.format(self.pk))
-
-                open(self._stdout_filename, 'w').close()
-                open(self._stderr_filename, 'w').close()
+                open(self.stdout_filename, 'w').close()
+                open(self.stderr_filename, 'w').close()
 
                 self.save()
 
