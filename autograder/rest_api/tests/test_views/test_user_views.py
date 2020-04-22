@@ -149,7 +149,7 @@ class UserGroupsTestCase(AGViewTestBase):
 
     def test_self_list_invitations_received(self):
         invitation = obj_build.make_group_invitation()
-        recipient = invitation.invited_users.first()
+        recipient = invitation.recipients.first()
         self.do_list_objects_test(
             self.client, recipient,
             user_url(recipient, 'group-invitations-received'), [invitation.to_dict()])
@@ -163,11 +163,11 @@ class UserGroupsTestCase(AGViewTestBase):
         other_user = obj_build.make_user()
         self.do_permission_denied_get_test(
             self.client, other_user,
-            user_url(invitation.invitation_creator, 'group-invitations-received'))
+            user_url(invitation.sender, 'group-invitations-received'))
 
     def test_self_list_invitations_sent(self):
         invitation = obj_build.make_group_invitation()
-        sender = invitation.invitation_creator
+        sender = invitation.sender
         self.do_list_objects_test(
             self.client, sender,
             user_url(sender, 'group-invitations-sent'), [invitation.to_dict()])
@@ -181,7 +181,7 @@ class UserGroupsTestCase(AGViewTestBase):
         other_user = obj_build.make_user()
         self.do_permission_denied_get_test(
             self.client, other_user,
-            user_url(invitation.invitation_creator, 'group-invitations-sent'))
+            user_url(invitation.sender, 'group-invitations-sent'))
 
 
 def user_url(user, lookup='user-detail'):

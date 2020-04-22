@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 from autograder.utils.testing import UnitTestBase
 
@@ -419,31 +420,40 @@ class UpdateGroupTestCase(AGViewTestBase):
         group = obj_build.make_group(
             num_members=2, members_role=obj_build.UserRole.staff, project=self.project)
         new_members = list(group.members.all())[:-1] + [obj_build.make_admin_user(self.course)]
-        self.do_patch_object_test(
+        response = self.do_patch_object_test(
             group, self.client, self.admin, self.group_url(group),
-            {'member_names': self.get_names(new_members)})
+            {'member_names': self.get_names(new_members)},
+            ignore_fields=['members'])
 
         self.assertGreater(len(new_members), self.project.max_group_size)
+        self.assertCountEqual(
+            [serialize_user(user) for user in new_members], response.data['members'])
 
     def test_admin_update_student_group_members(self):
         group = obj_build.make_group(
             num_members=2, members_role=obj_build.UserRole.student, project=self.project)
         new_members = list(group.members.all())[:-1] + [obj_build.make_student_user(self.course)]
-        self.do_patch_object_test(
+        response = self.do_patch_object_test(
             group, self.client, self.admin, self.group_url(group),
-            {'member_names': self.get_names(new_members)})
+            {'member_names': self.get_names(new_members)},
+            ignore_fields=['members'])
 
         self.assertGreater(len(new_members), self.project.max_group_size)
+        self.assertCountEqual(
+            [serialize_user(user) for user in new_members], response.data['members'])
 
     def test_admin_update_guest_group_members(self):
         group = obj_build.make_group(
             num_members=2, members_role=obj_build.UserRole.guest, project=self.project)
         new_members = list(group.members.all())[:-1] + [obj_build.make_user()]
-        self.do_patch_object_test(
+        response = self.do_patch_object_test(
             group, self.client, self.admin, self.group_url(group),
-            {'member_names': self.get_names(new_members)})
+            {'member_names': self.get_names(new_members)},
+            ignore_fields=['members'])
 
         self.assertGreater(len(new_members), self.project.max_group_size)
+        self.assertCountEqual(
+            [serialize_user(user) for user in new_members], response.data['members'])
 
     def test_admin_update_group_extension(self):
         group = obj_build.make_group(project=self.project)
