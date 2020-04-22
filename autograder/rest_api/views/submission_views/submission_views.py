@@ -16,7 +16,6 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.utils.testing as test_ut
 from autograder.core.submission_feedback import (AGTestPreLoader, StudentTestSuitePreLoader,
                                                  SubmissionResultFeedback)
-from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
                                         APITags, CustomViewDict, CustomViewSchema, as_content_obj,

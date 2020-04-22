@@ -15,7 +15,6 @@ from autograder.core.caching import clear_submission_results_cache
 from autograder.core.models.copy_project_and_course import copy_project
 from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
 from autograder.rest_api import tasks as api_tasks
-from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APITags, CustomViewSchema,
                                         as_content_obj, as_schema_ref)
