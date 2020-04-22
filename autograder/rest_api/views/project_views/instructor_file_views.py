@@ -8,7 +8,6 @@ from rest_framework import decorators, mixins, permissions, response, status, vi
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core import constants
-from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator, AGListViewSchemaMixin,
                                         APITags, ContentTypeVal, CustomViewSchema, MediaTypeObject,
                                         as_content_obj, as_schema_ref)
