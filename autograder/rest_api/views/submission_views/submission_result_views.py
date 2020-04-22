@@ -1,6 +1,5 @@
 from typing import BinaryIO, Callable, Optional
 
-from django.core.cache import cache
 from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
