@@ -1,7 +1,6 @@
 from typing import Tuple
 from unittest import mock
 
-from django.core.cache import cache
 from django.test import tag
 from django.urls import reverse
 from rest_framework import status
