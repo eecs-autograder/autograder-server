@@ -4,11 +4,14 @@ import enum
 import inspect
 import typing
 from collections import OrderedDict
+from typing import Union
 
-from django.db import models, transaction
+from django.contrib.auth.models import User
 from django.core import exceptions
+from django.db import models, transaction
 
 from autograder.core.fields import ValidatedJSONField
+from autograder.rest_api.serialize_user import serialize_user
 
 
 class AutograderModelManager(models.Manager):
@@ -231,7 +234,7 @@ class ToDictMixin:
 
                     if (field_name in self.get_serialize_related_fields()
                             or field_name in self.get_transparent_to_one_fields()):
-                        result[field_name] = field_val.to_dict()
+                        result[field_name] = _serialize_model_obj(field_val)
                     else:
                         if isinstance(field_val, int):  # serializing an '_id' field
                             result[field_name] = field_val
@@ -240,13 +243,21 @@ class ToDictMixin:
                 elif field.many_to_many or field.one_to_many:
                     if field_name in self.get_serialize_related_fields():
                         result[field_name] = [
-                            obj.to_dict() for obj in getattr(self, field_name).all()]
+                            _serialize_model_obj(obj) for obj in getattr(self, field_name).all()
+                        ]
                     else:
                         result[field_name] = [obj.pk for obj in getattr(self, field_name).all()]
             except exceptions.FieldDoesNotExist:
                 pass
 
         return result
+
+
+def _serialize_model_obj(obj: Union[ToDictMixin, User]) -> dict:
+    if isinstance(obj, User):
+        return serialize_user(obj)
+
+    return obj.to_dict()
 
 
 class DictSerializableMixin(ToDictMixin):

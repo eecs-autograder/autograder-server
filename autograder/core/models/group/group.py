@@ -188,6 +188,7 @@ class Group(ag_model_base.AutograderModel):
         'project',
         'extended_due_date',
         'member_names',
+        'members',
 
         'bonus_submissions_remaining',
 
@@ -199,5 +200,6 @@ class Group(ag_model_base.AutograderModel):
         'created_at',
         'last_modified',
     )
+    SERIALIZE_RELATED = ('members',)
 
     EDITABLE_FIELDS = ('extended_due_date', 'bonus_submissions_remaining')

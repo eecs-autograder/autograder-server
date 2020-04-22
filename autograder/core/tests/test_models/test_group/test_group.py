@@ -156,6 +156,7 @@ class GroupTestCase(_SetUp):
         expected_fields = [
             'pk',
             'member_names',
+            'members',
             'project',
             'extended_due_date',
 
@@ -170,12 +171,11 @@ class GroupTestCase(_SetUp):
             'last_modified',
         ]
 
-        self.assertCountEqual(
-            expected_fields,
-            ag_models.Group.get_serializable_fields())
-
         group = obj_build.build_group()
-        self.assertTrue(group.to_dict())
+        serialized = group.to_dict()
+        self.assertCountEqual(expected_fields, list(serialized.keys()))
+        self.assertIsInstance(serialized['members'], list)
+        self.assertIsInstance(serialized['members'][0], dict)
 
     def test_editable_fields(self):
         self.assertCountEqual(['extended_due_date', 'bonus_submissions_remaining'],
