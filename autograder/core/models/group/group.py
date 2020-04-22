@@ -203,3 +203,8 @@ class Group(ag_model_base.AutograderModel):
     SERIALIZE_RELATED = ('members',)
 
     EDITABLE_FIELDS = ('extended_due_date', 'bonus_submissions_remaining')
+
+    def to_dict(self):
+        result = super().to_dict()
+        result['members'].sort(key=lambda user: user['username'])
+        return result

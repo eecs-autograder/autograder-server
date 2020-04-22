@@ -76,6 +76,7 @@ class ListCreateGroupsView(NestedModelView):
         queryset = super().get_queryset()
         if self.request.method.lower() == 'get':
             queryset = queryset.prefetch_related(
+                'members',
                 Prefetch('submissions',
                          ag_models.Submission.objects.defer('denormalized_ag_test_results'))
             )
