@@ -17,7 +17,6 @@ import autograder.utils.testing as test_ut
 from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
 from autograder.rest_api import permissions as ag_permissions
-from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGListViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags,
                                         CustomViewSchema, RequestBody, as_content_obj)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,

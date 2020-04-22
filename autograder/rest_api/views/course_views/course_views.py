@@ -10,7 +10,6 @@ from rest_framework.views import APIView
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.copy_project_and_course import copy_course
-from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGRetrieveViewSchemaMixin,
                                         APITags, CustomViewSchema, as_content_obj, as_schema_ref)
