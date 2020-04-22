@@ -1693,7 +1693,7 @@ paths:
             schema:
               type: object
               properties:
-                invited_usernames:
+                recipient_usernames:
                   type: array
                   items:
                     type: string
@@ -6416,7 +6416,7 @@ paths:
   /api/group_invitations/{id}/accept/:
     post:
       operationId: acceptGroupInvitation
-      description: 'Accept this group invitation. If all invitees have accepted,
+      description: 'Accept this group invitation. If all recipients have accepted,
 
         create a group, delete the invitation, and return the group.'
       parameters:
@@ -6995,6 +6995,16 @@ components:
           type: array
           items: *id062
           readOnly: false
+        members:
+          description: "The Users that belong to this submission group.\n        \
+            \    This list must contain at least one member and no more than\n   \
+            \         project.max_group_size members. A User can only be a member\n\
+            \            of one submission group per project.\n            This field\
+            \ is REQUIRED."
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
         bonus_submissions_remaining:
           description: "The number of bonus submissions this group has left.\n   \
             \         This field is automatically initialized to self.project.num_bonus_submissions"
@@ -7032,22 +7042,33 @@ components:
       type: object
       properties:
         pk: *id061
-        invitation_creator:
-          description: "The User who created this invitation.\n            This field\
-            \ is REQUIRED."
-          nullable: false
-          type: integer
-          format: id
         project:
           description: ''
           nullable: false
           type: integer
           format: id
-        invited_usernames:
+        sender:
+          description: "The User who created this invitation.\n            This field\
+            \ is REQUIRED."
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/User'
+        recipients:
+          description: "The Users that the sender has invited\n            to form\
+            \ a submission group together.\n            This field is REQUIRED.\n\
+            \            This field may not be empty."
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        sender_username:
+          description: The username of the User that sent this invitation.
+          type: string
+        recipient_usernames:
           description: The usernames of the Users that will receive this invitation.
           type: array
           items: *id062
-        invitees_who_accepted:
+        recipients_who_accepted:
           description: "A list of usernames indicating which invitees have accepted\n\
             \        this invitation.\n        This field is READ ONLY."
           type: array
