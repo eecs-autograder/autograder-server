@@ -143,7 +143,7 @@ class StudentTestSuiteResult(AutograderModel):
         @property
         def fdbk_settings(self) -> dict:
             """
-            :return: A dictionary representation of this object's feedback config.
+            A dictionary representation of this object's feedback config.
             """
             return self.fdbk_conf.to_dict()
 

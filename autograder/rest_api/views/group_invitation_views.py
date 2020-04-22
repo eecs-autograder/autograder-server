@@ -4,19 +4,19 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Response, Parameter
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework import exceptions, mixins, permissions, response, status
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import action
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
 import autograder.utils.testing as test_ut
 from autograder import utils
-from autograder.rest_api.views.ag_model_views import (
-    ListCreateNestedModelViewSet, AGModelGenericViewSet, require_body_params)
-from autograder.rest_api.views.schema_generation import AGModelSchemaBuilder
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator, AGListViewSchemaMixin,
+                                        APITags, CustomViewSchema, as_content_obj)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      NestedModelView,
+                                                      convert_django_validation_error,
+                                                      require_body_params)
 
 
 class CanSendInvitation(permissions.BasePermission):
@@ -40,24 +40,58 @@ list_create_invitation_permissions = (
 )
 
 
-class ListCreateGroupInvitationViewSet(ListCreateNestedModelViewSet):
-    serializer_class = ag_serializers.SubmissionGroupInvitationSerializer
-    permission_classes = (list_create_invitation_permissions,)
+class _ListCreateInvitationSchema(AGListViewSchemaMixin, CustomViewSchema):
+    pass
+
+
+class ListCreateGroupInvitationView(NestedModelView):
+    schema = _ListCreateInvitationSchema(
+        [APITags.group_invitations],
+        api_class=ag_models.GroupInvitation,
+        data={
+            'POST': {
+                'operation_id': 'createGroupInvitation',
+                'request': {
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                'type': 'object',
+                                'properties': {
+                                    'invited_usernames': {
+                                        'type': 'array',
+                                        'items': {
+                                            'type': 'string',
+                                            'format': 'username'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                'responses': {
+                    '201': {
+                        'content': as_content_obj(ag_models.GroupInvitation)
+                    }
+                }
+            }
+        }
+    )
+
+    permission_classes = [list_create_invitation_permissions]
 
     model_manager = ag_models.Project.objects
-    to_one_field_name = 'project'
-    reverse_to_one_field_name = 'group_invitations'
+    nested_field_name = 'group_invitations'
+    parent_obj_field_name = 'project'
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(
-                name='invited_usernames', in_='body', type='List[string]', required=True,
-                description='The usernames to invite to be in a group with the current user.'
-            )]
-    )
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
     @method_decorator(require_body_params('invited_usernames'))
     @transaction.atomic()
-    def create(self, *args, **kwargs):
+    @convert_django_validation_error
+    def post(self, *args, **kwargs):
+        project = self.get_object()
         for key in self.request.data:
             if key != 'invited_usernames':
                 raise exceptions.ValidationError({'invalid_fields': [key]})
@@ -68,9 +102,12 @@ class ListCreateGroupInvitationViewSet(ListCreateNestedModelViewSet):
 
         utils.lock_users(itertools.chain([self.request.user], invited_users))
 
-        self.request.data['invitation_creator'] = self.request.user
-        self.request.data['invited_users'] = invited_users
-        return super().create(self.request, *args, **kwargs)
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
+            self.request.user,
+            invited_users,
+            project=project,
+        )
+        return response.Response(self.serialize_object(invitation), status.HTTP_201_CREATED)
 
 
 class CanReadOrEditInvitation(permissions.BasePermission):
@@ -93,29 +130,45 @@ invitation_detail_permissions = (
 )
 
 
-class GroupInvitationDetailViewSet(mixins.RetrieveModelMixin,
-                                   mixins.DestroyModelMixin,
-                                   AGModelGenericViewSet):
-    serializer_class = ag_serializers.SubmissionGroupInvitationSerializer
-    permission_classes = (invitation_detail_permissions,)
+class GroupInvitationDetailView(AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator([APITags.group_invitations])
 
+    permission_classes = [invitation_detail_permissions]
     model_manager = ag_models.GroupInvitation.objects
 
-    @swagger_auto_schema(
-        responses={
-            '200': Response(
-                schema=AGModelSchemaBuilder.get().get_schema(ag_models.GroupInvitation),
-                description='You have accepted the invitation.'),
-            '201': Response(
-                schema=AGModelSchemaBuilder.get().get_schema(ag_models.Group),
-                description='All invited users have accepted the invitation.'
-            )
-        }
+    def get(self, *args, **kwargs):
+        return self.do_get()
 
-    )
+    def delete(self, *args, **kwargs):
+        """
+        Revoke or reject this invitation.
+        """
+        return self.do_delete()
+
+
+class AcceptGroupInvitationView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.group_invitations], {
+        'POST': {
+            'operation_id': 'acceptGroupInvitation',
+            'responses': {
+                '200': {
+                    'description': 'You have accepted the invitation.',
+                    'content': as_content_obj(ag_models.GroupInvitation)
+                },
+                '201': {
+                    'description': 'All invited users have accepted the invitation.',
+                    'content': as_content_obj(ag_models.Group)
+                }
+            }
+        }
+    })
+
+    model_manager = ag_models.GroupInvitation.objects
+    permission_classes = [invitation_detail_permissions]
+
+    @convert_django_validation_error
     @transaction.atomic()
-    @detail_route(methods=['POST'])
-    def accept(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         """
         Accept this group invitation. If all invitees have accepted,
         create a group, delete the invitation, and return the group.
@@ -130,31 +183,7 @@ class GroupInvitationDetailViewSet(mixins.RetrieveModelMixin,
         # Keep this hook just after the users are locked
         test_ut.mocking_hook()
 
-        serializer = ag_serializers.SubmissionGroupSerializer(
-            data={'members': members, 'project': invitation.project})
-        serializer.is_valid()
-        serializer.save()
+        group = ag_models.Group.objects.validate_and_create(members, project=invitation.project)
 
         invitation.delete()
-        return response.Response(serializer.data,
-                                 status=status.HTTP_201_CREATED)
-
-    @transaction.atomic()
-    def destroy(self, request, *args, **kwargs):
-        """
-        Revoke or reject this invitation.
-        """
-        invitation = self.get_object()
-        message = (
-            "{} has rejected {}'s invitation to work together "
-            "for project '{}'. The invitation has been deleted, "
-            "and no groups have been created".format(
-                request.user, invitation.invitation_creator.username,
-                invitation.project.name))
-        for user in itertools.chain([invitation.invitation_creator],
-                                    invitation.invited_users.all()):
-            ag_models.Notification.objects.validate_and_create(
-                message=message, recipient=user)
-
-        invitation.delete()
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
+        return response.Response(group.to_dict(), status=status.HTTP_201_CREATED)

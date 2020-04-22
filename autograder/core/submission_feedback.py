@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import tempfile
 from decimal import Decimal
@@ -98,7 +100,7 @@ DenormedAGCommandResType = Union[AGTestCommandResult, 'SerializedAGTestCommandRe
 
 class DenormalizedAGTestSuiteResult:
     def __init__(self, ag_test_suite_result: DenormedAGSuiteResType,
-                 ag_test_case_results: List['DenormalizedAGTestCaseResult']):
+                 ag_test_case_results: List[DenormalizedAGTestCaseResult]):
         self.ag_test_suite_result = ag_test_suite_result
         self.ag_test_case_results = ag_test_case_results
 
@@ -336,7 +338,7 @@ class SubmissionResultFeedback(ToDictMixin):
         return self._submission
 
     @cached_property
-    def total_points(self) -> Decimal:
+    def total_points(self) -> Union[int, Decimal]:
         ag_suite_points = sum((
             ag_test_suite_result.total_points
             for ag_test_suite_result in self.ag_test_suite_results
@@ -351,7 +353,7 @@ class SubmissionResultFeedback(ToDictMixin):
         return ag_suite_points + student_suite_points
 
     @cached_property
-    def total_points_possible(self) -> Decimal:
+    def total_points_possible(self) -> Union[int, Decimal]:
         ag_suite_points = sum((
             ag_test_suite_result.total_points_possible
             for ag_test_suite_result in self.ag_test_suite_results
@@ -366,7 +368,7 @@ class SubmissionResultFeedback(ToDictMixin):
         return ag_suite_points + student_suite_points
 
     @cached_property
-    def ag_test_suite_results(self) -> List['AGTestSuiteResultFeedback']:
+    def ag_test_suite_results(self) -> List[AGTestSuiteResultFeedback]:
         visible = []
         for result in self._ag_test_suite_results:
             try:
@@ -386,7 +388,7 @@ class SubmissionResultFeedback(ToDictMixin):
         return visible
 
     @cached_property
-    def student_test_suite_results(self) -> List['StudentTestSuiteResult']:
+    def student_test_suite_results(self) -> List[StudentTestSuiteResult]:
         return list(self._visible_student_test_suite_results)
 
     @property
@@ -559,14 +561,14 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         ))
 
     @property
-    def ag_test_case_results(self) -> List['AGTestCaseResultFeedback']:
+    def ag_test_case_results(self) -> List[AGTestCaseResultFeedback]:
         if not self._fdbk.show_individual_tests:
             return []
 
         return self._visible_ag_test_case_results
 
     @cached_property
-    def _visible_ag_test_case_results(self) -> List['AGTestCaseResultFeedback']:
+    def _visible_ag_test_case_results(self) -> List[AGTestCaseResultFeedback]:
         visible = []
         first_failure_found = False
         for result in self._ag_test_case_results:
@@ -676,14 +678,14 @@ class AGTestCaseResultFeedback(ToDictMixin):
         return sum((cmd_res.total_points_possible for cmd_res in self._visible_cmd_results))
 
     @property
-    def ag_test_command_results(self) -> List['AGTestCommandResultFeedback']:
+    def ag_test_command_results(self) -> List[AGTestCommandResultFeedback]:
         if not self._fdbk.show_individual_commands:
             return []
 
         return list(self._visible_cmd_results)
 
     @property
-    def _visible_cmd_results(self) -> Iterable['AGTestCommandResultFeedback']:
+    def _visible_cmd_results(self) -> Iterable[AGTestCommandResultFeedback]:
         visible = []
         for result in self._ag_test_command_results:
             try:

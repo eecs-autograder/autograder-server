@@ -13,7 +13,6 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -41,8 +40,8 @@ class ListSubmissionsTestCase(test_data.Client,
     def test_admin_or_staff_list_submissions(self):
         for project in self.all_projects:
             for group in self.at_least_enrolled_groups(project):
-                expected_data = ag_serializers.SubmissionSerializer(
-                    self.build_submissions(group), many=True).data
+                expected_data = [
+                    submission.to_dict() for submission in self.build_submissions(group)]
                 for user in self.admin, self.staff:
                     self.do_list_objects_test(
                         self.client, user, self.submissions_url(group),
@@ -50,8 +49,7 @@ class ListSubmissionsTestCase(test_data.Client,
 
         for project in self.hidden_public_project, self.visible_public_project:
             group = self.non_enrolled_group(project)
-            expected_data = ag_serializers.SubmissionSerializer(
-                self.build_submissions(group), many=True).data
+            expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
             for user in self.admin, self.staff:
                 self.do_list_objects_test(
                     self.client, user, self.submissions_url(group),
@@ -60,8 +58,7 @@ class ListSubmissionsTestCase(test_data.Client,
     def test_enrolled_list_submissions(self):
         for project in self.visible_projects:
             group = self.enrolled_group(project)
-            expected_data = ag_serializers.SubmissionSerializer(
-                self.build_submissions(group), many=True).data
+            expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
             self.do_list_objects_test(
                 self.client, self.enrolled, self.submissions_url(group),
                 expected_data)
@@ -69,15 +66,13 @@ class ListSubmissionsTestCase(test_data.Client,
     def test_handgrader_list_student_group_submissions_permission_denied(self):
         for project in self.visible_projects:
             group = self.enrolled_group(project)
-            expected_data = ag_serializers.SubmissionSerializer(
-                self.build_submissions(group), many=True).data
+            expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
             self.do_permission_denied_get_test(
                 self.client, self.handgrader, self.submissions_url(group), expected_data)
 
     def test_non_enrolled_list_submissions(self):
         group = self.non_enrolled_group(self.visible_public_project)
-        expected_data = ag_serializers.SubmissionSerializer(
-            self.build_submissions(group), many=True).data
+        expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
         self.do_list_objects_test(
             self.client, self.nobody, self.submissions_url(group),
             expected_data)
@@ -152,6 +147,21 @@ class CreateSubmissionTestCase(test_data.Client,
             closing_time=closing_time)
         group = self.non_enrolled_group(self.visible_public_project)
         self.do_normal_submit_test(group, group.members.first())
+
+    def test_no_files_submitted(self) -> None:
+        group = obj_build.make_group()
+        group.project.validate_and_update(visible_to_students=True)
+        response = self.do_create_object_test(
+            ag_models.Submission.objects, self.client, group.members.first(),
+            self.submissions_url(group),
+            {'submitted_files': []},
+            format='multipart', check_data=False
+        )
+
+        submission = ag_models.Submission.objects.get(pk=response.data['pk'])
+        self.assertEqual(submission.to_dict(), response.data)
+
+        self.assertEqual([], submission.submitted_filenames)
 
     def test_all_submit_no_closing_time(self):
         for group in self.all_groups(self.visible_public_project):
@@ -538,8 +548,11 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
         other_project = obj_build.make_project(
             self.course, closing_time=self.closing_time, visible_to_students=True,
             allow_late_days=True)
-        other_group = obj_build.make_group(
-            project=other_project, members=list(self.group.members.all()))
+        other_group = ag_models.Group.objects.validate_and_create(
+            members=list(self.group.members.all()),
+            check_group_size_limits=False,
+            project=other_project
+        )
 
         submitter = self.group.members.first()
         self.submit(self.group, submitter,
@@ -1124,7 +1137,7 @@ class CreateSubmissionTotalLimitTestCase(UnitTestBase):
         url = reverse('submissions', kwargs={'pk': group.pk})
         self.client.force_authenticate(group.members.first())
 
-        response = self.client.post(url, {'submitted_files': []})
+        response = self.client.post(url, {'submitted_files': []}, format='multipart')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code, msg=response.data)
         self.assertTrue(response.data['count_towards_total_limit'])
 
@@ -1523,7 +1536,7 @@ class RemoveFromQueueTestCase(test_data.Client,
         self.assertTrue(bonus_submission.is_bonus_submission)
 
         response = self.client.post(submission_remove_from_queue_url(bonus_submission))
-        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code, msg=response.data)
+        self.assertEqual(status.HTTP_200_OK, response.status_code, msg=response.data)
 
         group.refresh_from_db()
         self.assertEqual(1, group.bonus_submissions_remaining)
@@ -1531,6 +1544,7 @@ class RemoveFromQueueTestCase(test_data.Client,
 
         bonus_submission.refresh_from_db()
         self.assertFalse(bonus_submission.is_bonus_submission)
+        self.assertFalse(response.data['is_bonus_submission'])
 
     def test_remove_non_bonus_submission_from_queue_no_refund(self):
         project = obj_build.make_project(submission_limit_per_day=1,
@@ -1551,7 +1565,7 @@ class RemoveFromQueueTestCase(test_data.Client,
         self.assertFalse(submission.is_bonus_submission)
 
         response = self.client.post(submission_remove_from_queue_url(submission))
-        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code, msg=response.data)
+        self.assertEqual(status.HTTP_200_OK, response.status_code, msg=response.data)
 
         group.refresh_from_db()
         self.assertEqual(1, group.bonus_submissions_remaining)
@@ -1613,7 +1627,9 @@ class RemoveFromQueueTestCase(test_data.Client,
             self.client.force_authenticate(user)
             response = self.client.post(
                 submission_remove_from_queue_url(submission))
-            self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual(ag_models.Submission.GradingStatus.removed_from_queue,
+                             response.data['status'])
 
             submission.refresh_from_db()
 
@@ -1643,7 +1659,7 @@ class RemoveFromQueueTestCase(test_data.Client,
 
 
 def submission_remove_from_queue_url(submission):
-    return reverse('submission-remove-from-queue',
+    return reverse('remove-submission-from-queue',
                    kwargs={'pk': submission.pk})
 
 

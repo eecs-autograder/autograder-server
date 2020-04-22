@@ -7,7 +7,6 @@ from collections import OrderedDict
 
 from django.db import models, transaction
 from django.core import exceptions
-from drf_yasg.openapi import Schema, Parameter
 
 from autograder.core.fields import ValidatedJSONField
 
@@ -261,8 +260,6 @@ class DictSerializableMixin(ToDictMixin):
     Input data will be automatically validated to check for input type
     correctness, extra fields, and missing required fields.
 
-    This mixin also provides schema generation.
-
     Note: This mixin should NOT be used with Django model classes.
     """
     @classmethod
@@ -323,6 +320,7 @@ class DictSerializableMixin(ToDictMixin):
         updated fields are assigned. Note that this is done in a way
         that the updates will be undone if an exception is thrown.
         """
+        pass
 
     @classmethod
     def prepare_input(cls, input_: dict) -> dict:
@@ -374,7 +372,7 @@ class DictSerializableMixin(ToDictMixin):
         return list(inspect.signature(cls.__init__).parameters.keys())[1:]
 
     @classmethod
-    def get_field_type(cls, field_name: str) -> typing.Type:
+    def get_field_type(cls, field_name: str) -> type:
         """
         Attempts to determine the type of the field with the given
         name by inspecting the type annotation of the parameter
@@ -411,7 +409,8 @@ class DictSerializableMixin(ToDictMixin):
     def get_field_descriptions(cls):
         return cls.FIELD_DESCRIPTIONS
 
-    # A dictionary of field names to field descriptions.
+    # A dictionary of field names to field descriptions. Used for
+    # generating the API schema.
     FIELD_DESCRIPTIONS: typing.Dict[str, str] = {}
 
     @classmethod
@@ -434,28 +433,6 @@ class DictSerializableMixin(ToDictMixin):
     # django.core.exceptions.ValidationError constructed with a
     # string if the argument is invalid.
     FIELD_VALIDATORS: typing.Dict[str, typing.List[typing.Callable[[object], None]]] = {}
-
-    @classmethod
-    def get_schema(cls, title) -> Schema:
-        """
-        Returns a schema for this class to be used in generating API
-        documentation.
-        """
-        properties = OrderedDict()
-        for field_name in cls.get_serializable_fields():
-            properties[field_name] = Parameter(
-                field_name, 'body',
-                description=cls.get_field_descriptions().get(field_name, ''),
-                type=cls.get_field_type(field_name).__name__,
-                required=cls.field_is_required(field_name),
-                default=(None if cls.field_is_required(field_name)
-                         else cls.get_field_default(field_name))
-            )
-        return Schema(
-            title=title,
-            type='object',
-            properties=properties
-        )
 
 
 def make_min_value_validator(min_value: int):

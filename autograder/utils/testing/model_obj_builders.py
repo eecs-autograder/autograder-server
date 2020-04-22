@@ -256,10 +256,13 @@ def make_instructor_file(project: ag_models.Project) -> ag_models.InstructorFile
         project=project)
 
 
-def make_expected_student_file(project: ag_models.Project) -> ag_models.ExpectedStudentFile:
-    return ag_models.ExpectedStudentFile.objects.validate_and_create(
-        project=project,
-        pattern='pattern' + get_unique_id())
+def make_expected_student_file(
+    project: ag_models.Project,
+    **kwargs
+) -> ag_models.ExpectedStudentFile:
+    if 'pattern' not in kwargs:
+        kwargs['pattern'] = 'pattern' + get_unique_id()
+    return ag_models.ExpectedStudentFile.objects.validate_and_create(project=project, **kwargs)
 
 
 class UserRole(core_ut.OrderedEnum):
@@ -273,13 +276,12 @@ class UserRole(core_ut.OrderedEnum):
 def make_group(num_members: int=1,
                members_role: UserRole=UserRole.student,
                project: ag_models.Project=None,
-               members: Optional[Sequence[User]]=None,
                **group_kwargs) -> ag_models.Group:
     if project is None:
         project = make_project()
 
-    if members is None:
-        members = create_dummy_users(num_members)
+    # if members is None:
+    members = make_users(num_members)
 
     if members_role == UserRole.guest:
         project.validate_and_update(guests_can_submit=True)
@@ -295,6 +297,38 @@ def make_group(num_members: int=1,
         project=project,
         check_group_size_limits=False,
         **group_kwargs)
+
+
+def make_group_invitation(
+    # sender: User=None,
+    # recipients: Sequence[User]=None,
+    project: ag_models.Project=None,
+    num_recipients: int=1,
+    users_role: UserRole=UserRole.student,
+):
+    if project is None:
+        project = make_project()
+
+    # if sender is None:
+    sender = make_user()
+
+    # if recipients is None:
+    recipients = make_users(num_recipients)
+
+    project.max_group_size = 1 + len(recipients)
+    project.save()
+
+    if users_role == UserRole.guest:
+        project.validate_and_update(guests_can_submit=True)
+    elif users_role == UserRole.student:
+        project.course.students.add(sender, *recipients)
+    elif users_role == UserRole.staff:
+        project.course.staff.add(sender, *recipients)
+    elif users_role == UserRole.admin:
+        project.course.admins.add(sender, *recipients)
+
+    return ag_models.GroupInvitation.objects.validate_and_create(
+        sender, recipients, project=project)
 
 
 def make_ag_test_suite(project: ag_models.Project=None,

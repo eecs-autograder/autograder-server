@@ -6,149 +6,182 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
-import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
+from autograder.rest_api.serialize_user import serialize_user
 
 
-class RetrieveUserTestCase(test_data.Project,
-                           test_data.Group,
-                           test_impls.GetObjectTest,
-                           UnitTestBase):
+class GetUserTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.user = obj_build.make_user()
+
+    def test_self_get_currently_authenticated_user(self):
+        self.do_get_object_test(
+            self.client, self.user, reverse('current-user'), serialize_user(self.user))
+
+    def test_self_get_user(self):
+        self.do_get_object_test(
+            self.client, self.user, user_url(self.user), serialize_user(self.user))
+
+    def test_other_get_user_permission_denied(self):
+        other_user = obj_build.make_user()
+        self.do_permission_denied_get_test(self.client, other_user, user_url(self.user))
+
+
+class UsersCourseViewTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
 
-    def test_self_get_currently_authenticated_user(self):
-        for user in self.all_users:
-            self.do_get_object_test(self.client, user, reverse('user-current'),
-                                    ag_serializers.UserSerializer(user).data)
+        self.course = obj_build.make_course()
+        self.admin = obj_build.make_admin_user(self.course)
+        self.staff = obj_build.make_staff_user(self.course)
+        self.student = obj_build.make_student_user(self.course)
+        self.handgrader = obj_build.make_handgrader_user(self.course)
+        self.guest = obj_build.make_user()
 
-    def test_self_get_user(self):
-        for user in self.all_users:
-            self.do_get_object_test(self.client, user, user_url(user),
-                                    ag_serializers.UserSerializer(user).data)
-
-    def test_other_get_user_permission_denied(self):
-        self.do_get_user_info_permission_denied_test('user-detail')
+        self.all_users = {
+            self.admin,
+            self.staff,
+            self.student,
+            self.handgrader,
+            self.guest,
+        }
 
     def test_self_list_courses_is_admin_for(self):
         self.do_list_objects_test(
             self.client, self.admin,
-            user_url(self.admin, 'user-courses-is-admin-for'),
-            ag_serializers.CourseSerializer([self.course], many=True).data)
+            user_url(self.admin, 'courses-is-admin-for'),
+            [self.course.to_dict()])
 
-        for user in self.staff, self.enrolled, self.nobody:
+        for user in self.all_users - {self.admin}:
             self.do_list_objects_test(
-                self.client, user,
-                user_url(user, 'user-courses-is-admin-for'),
-                ag_serializers.CourseSerializer([], many=True).data)
+                self.client, user, user_url(user, 'courses-is-admin-for'), [])
 
     def test_other_list_courses_is_admin_for_forbidden(self):
-        self.do_get_user_info_permission_denied_test(
-            'user-courses-is-admin-for')
+        self.do_permission_denied_get_test(
+            self.client, self.guest,
+            reverse('courses-is-admin-for', kwargs={'pk': self.admin.pk}))
 
     def test_self_list_courses_is_staff_for(self):
         self.do_list_objects_test(
-            self.client, self.staff, user_url(self.staff, 'user-courses-is-staff-for'),
-            ag_serializers.CourseSerializer([self.course], many=True).data)
+            self.client, self.staff,
+            user_url(self.staff, 'courses-is-staff-for'), [self.course.to_dict()])
 
         # Note: Even though admins have staff privileges, they are not
         # listed here with other staff members.
-        for user in self.admin, self.enrolled, self.nobody:
+        for user in self.all_users - {self.staff}:
             self.do_list_objects_test(
-                self.client, user, user_url(user, 'user-courses-is-staff-for'),
-                ag_serializers.CourseSerializer([], many=True).data)
+                self.client, user, user_url(user, 'courses-is-staff-for'), [])
 
     def test_other_list_courses_is_staff_for_forbidden(self):
-        self.do_get_user_info_permission_denied_test(
-            'user-courses-is-staff-for')
+        self.do_permission_denied_get_test(
+            self.client, self.guest,
+            reverse('courses-is-staff-for', kwargs={'pk': self.staff.pk}))
 
     def test_self_list_courses_is_enrolled_in(self):
         self.do_list_objects_test(
-            self.client, self.enrolled,
-            user_url(self.enrolled, 'user-courses-is-enrolled-in'),
-            ag_serializers.CourseSerializer(
-                self.enrolled.courses_is_enrolled_in.all(), many=True).data)
+            self.client, self.student,
+            user_url(self.student, 'courses-is-enrolled-in'),
+            [course.to_dict() for course in self.student.courses_is_enrolled_in.all()])
 
-        for user in self.admin, self.staff, self.nobody:
+        for user in self.all_users - {self.student}:
             self.do_list_objects_test(
-                self.client, user, user_url(user, 'user-courses-is-enrolled-in'),
-                ag_serializers.CourseSerializer([], many=True).data)
+                self.client, user, user_url(user, 'courses-is-enrolled-in'), [])
 
     def test_other_list_courses_is_enrolled_in_forbidden(self):
-        self.do_get_user_info_permission_denied_test(
-            'user-courses-is-enrolled-in')
+        self.do_permission_denied_get_test(
+            self.client, self.guest,
+            reverse('courses-is-enrolled-in', kwargs={'pk': self.student.pk}))
+
+    def test_self_list_courses_is_handgrader_for(self):
+        self.do_list_objects_test(
+            self.client, self.student,
+            user_url(self.student, 'courses-is-handgrader-for'),
+            [course.to_dict() for course in self.student.courses_is_handgrader_for.all()])
+
+        for user in self.all_users - {self.handgrader}:
+            self.do_list_objects_test(
+                self.client, user, user_url(user, 'courses-is-handgrader-for'), [])
+
+    def test_other_list_courses_is_handgrader_for_forbidden(self):
+        self.do_permission_denied_get_test(
+            self.client, self.guest,
+            reverse('courses-is-handgrader-for', kwargs={'pk': self.handgrader.pk}))
+
+
+class UserGroupsTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
 
     def test_self_list_groups_is_member_of(self):
-        for group in self.all_groups(self.visible_public_project):
-            self.do_list_objects_test(
-                self.client, group.members.first(),
-                user_url(group.members.first(), 'user-groups-is-member-of'),
-                ag_serializers.SubmissionGroupSerializer(
-                    [group], many=True).data)
-
-        other_user = obj_build.create_dummy_user()
+        student_group1 = obj_build.make_group()
+        student_group2 = ag_models.Group.objects.validate_and_create(
+            members=list(student_group1.members.all()),
+            project=obj_build.make_project(student_group1.project.course)
+        )
+        user = student_group1.members.first()
         self.do_list_objects_test(
-            self.client, other_user,
-            user_url(other_user, 'user-groups-is-member-of'),
-            ag_serializers.SubmissionGroupSerializer([], many=True).data)
+            self.client,
+            user,
+            user_url(user, 'groups-is-member-of'),
+            [student_group1.to_dict(), student_group2.to_dict()]
+        )
+
+        guest_group = obj_build.make_group(members_role=obj_build.UserRole.guest)
+        user = guest_group.members.first()
+        self.do_list_objects_test(
+            self.client, user, user_url(user, 'groups-is-member-of'), [guest_group.to_dict()])
+
+        other_user = obj_build.make_user()
+        self.do_list_objects_test(
+            self.client, other_user, user_url(other_user, 'groups-is-member-of'), [])
 
     def test_other_list_groups_is_member_of_forbidden(self):
-        self.do_get_user_info_permission_denied_test(
-            'user-groups-is-member-of')
+        group = obj_build.make_group()
+        other_user = obj_build.make_user()
+        self.do_permission_denied_get_test(
+            self.client, other_user, user_url(group.members.first(), 'groups-is-member-of'))
 
     def test_self_list_invitations_received(self):
-        invite = self.non_enrolled_group_invitation(self.visible_public_project)
-        for user in invite.invited_users.all():
-            self.do_list_objects_test(
-                self.client, user,
-                user_url(user, 'user-group-invitations-received'),
-                ag_serializers.SubmissionGroupInvitationSerializer(
-                    [invite], many=True).data)
-
-        other_user = obj_build.create_dummy_user()
+        invitation = obj_build.make_group_invitation()
+        recipient = invitation.invited_users.first()
         self.do_list_objects_test(
-            self.client, other_user,
-            user_url(other_user, 'user-group-invitations-received'),
-            ag_serializers.SubmissionGroupInvitationSerializer([], many=True).data)
+            self.client, recipient,
+            user_url(recipient, 'group-invitations-received'), [invitation.to_dict()])
+
+        other_user = obj_build.make_user()
+        self.do_list_objects_test(
+            self.client, other_user, user_url(other_user, 'group-invitations-received'), [])
 
     def test_other_list_invitations_received_forbidden(self):
-        self.do_get_user_info_permission_denied_test(
-            'user-group-invitations-received')
+        invitation = obj_build.make_group_invitation()
+        other_user = obj_build.make_user()
+        self.do_permission_denied_get_test(
+            self.client, other_user,
+            user_url(invitation.invitation_creator, 'group-invitations-received'))
 
     def test_self_list_invitations_sent(self):
-        invite = self.non_enrolled_group_invitation(self.visible_public_project)
+        invitation = obj_build.make_group_invitation()
+        sender = invitation.invitation_creator
         self.do_list_objects_test(
-            self.client, invite.invitation_creator,
-            user_url(invite.invitation_creator, 'user-group-invitations-sent'),
-            ag_serializers.SubmissionGroupInvitationSerializer(
-                [invite], many=True).data)
+            self.client, sender,
+            user_url(sender, 'group-invitations-sent'), [invitation.to_dict()])
 
-        other_user = obj_build.create_dummy_user()
+        other_user = obj_build.make_user()
         self.do_list_objects_test(
-            self.client, other_user,
-            user_url(other_user, 'user-group-invitations-sent'),
-            ag_serializers.SubmissionGroupInvitationSerializer([], many=True).data)
+            self.client, other_user, user_url(other_user, 'group-invitations-sent'), [])
 
     def test_other_list_invitations_sent_forbidden(self):
-        self.do_get_user_info_permission_denied_test(
-            'user-group-invitations-sent')
-
-    def do_get_user_info_permission_denied_test(self, url_lookup):
-        for requester, to_get in itertools.product(self.all_users,
-                                                   self.all_users):
-            if requester == to_get:
-                continue
-
-            self.do_permission_denied_get_test(
-                self.client, requester, user_url(to_get, url_lookup))
-
-    @property
-    def all_users(self):
-        return [self.admin, self.staff, self.enrolled, self.nobody]
+        invitation = obj_build.make_group_invitation()
+        other_user = obj_build.make_user()
+        self.do_permission_denied_get_test(
+            self.client, other_user,
+            user_url(invitation.invitation_creator, 'group-invitations-sent'))
 
 
 def user_url(user, lookup='user-detail'):

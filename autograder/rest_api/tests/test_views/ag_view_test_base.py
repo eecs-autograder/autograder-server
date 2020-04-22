@@ -55,7 +55,7 @@ class AGViewTestBase(UnitTestBase):
         original_num = model_manager.count()
         client.force_authenticate(user)
         response = client.post(url, request_data, format=format)
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code, msg=response.data)
         self.assertEqual(original_num, model_manager.count())
 
         return response
@@ -103,7 +103,7 @@ class AGViewTestBase(UnitTestBase):
 
         client.force_authenticate(user)
         response = client.patch(url, request_data, format=format)
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(status.HTTP_200_OK, response.status_code, msg=response.data)
 
         ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
         self.assert_dict_contents_equal(

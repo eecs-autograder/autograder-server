@@ -3,29 +3,28 @@ import itertools
 from collections import OrderedDict
 
 from django.contrib.auth.models import User
-from django.db.models import Prefetch
-from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from drf_yasg import openapi
-from drf_yasg.openapi import Parameter, Schema
-from drf_yasg.utils import swagger_auto_schema
-
-from rest_framework import status, permissions
+from django.db import transaction
+from django.db.models import Prefetch
+from drf_composable_permissions.p import P
+from rest_framework import exceptions, mixins, permissions, response, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import BasePermission
-from rest_framework import response, mixins, exceptions
-from drf_composable_permissions.p import P
 
 import autograder.core.models as ag_models
-from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
-import autograder.handgrading.models as handgrading_models
-import autograder.handgrading.serializers as handgrading_serializers
+import autograder.handgrading.models as hg_models
 import autograder.rest_api.permissions as ag_permissions
-from autograder.rest_api.size_file_response import SizeFileResponse
-from autograder.rest_api.views.ag_model_views import (
-    handle_object_does_not_exist_404, AGModelAPIView, AGModelGenericViewSet)
 from autograder import utils
-from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
+from autograder.rest_api.schema import (AGPatchViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags,
+                                        CustomViewDict, CustomViewSchema, as_content_obj,
+                                        as_paginated_content_obj, as_schema_ref)
+from autograder.rest_api.size_file_response import SizeFileResponse
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, NestedModelView,
+                                                      convert_django_validation_error,
+                                                      handle_object_does_not_exist_404,
+                                                      require_query_params)
+from django.utils.decorators import method_decorator
 
 is_admin = ag_permissions.is_admin(lambda group: group.project.course)
 is_staff = ag_permissions.is_staff(lambda group: group.project.course)
@@ -46,56 +45,54 @@ student_permission = (
 )
 
 
-class HandgradingResultView(AGModelGenericViewSet):
-    serializer_class = handgrading_serializers.HandgradingResultSerializer
+class _HandgradingResultViewSchema(
+    AGRetrieveViewSchemaMixin, AGPatchViewSchemaMixin, CustomViewSchema
+):
+    def __init__(self, data: CustomViewDict):
+        super().__init__([APITags.handgrading_results], data, hg_models.HandgradingResult)
+
+
+class HandgradingResultView(NestedModelView):
+    schema = _HandgradingResultViewSchema({
+        'POST': {
+            'operation_id': 'getOrCreateHandgradingResult',
+            'responses': {
+                '200': {
+                    'description': 'A HandgradingResult already exists for the group. '
+                                   'That HandgradingResult is returned.',
+                    'content': as_content_obj(hg_models.HandgradingResult)
+                },
+                '201': {
+                    'description': 'A new HandgradingResult was created for the group.',
+                    'content': as_content_obj(hg_models.HandgradingResult)
+                }
+            }
+        },
+
+        'DELETE': {'operation_id': 'deleteHandgradingResult'}
+    })
+
     permission_classes = [
-        (P(is_admin) | P(is_staff) | P(is_handgrader) | student_permission)
+        P(is_admin) | P(is_staff) | P(is_handgrader) | student_permission
     ]
 
     pk_key = 'group_pk'
     model_manager = ag_models.Group.objects.select_related(
         'project__course'
     )
-    one_to_one_field_name = 'group'
-    reverse_one_to_one_field_name = 'handgrading_result'
-
-    api_tags = [APITags.handgrading_results]
-
-    @swagger_auto_schema(
-        manual_parameters=[
-            Parameter(
-                name='filename', in_='query', type='string',
-                description='The name of a submitted file. When this parameter is included, '
-                            'this endpoint will return the contents of the requested file.')
-        ]
-    )
-    @handle_object_does_not_exist_404
-    def retrieve(self, request, *args, **kwargs):
-        group = self.get_object()  # type: ag_models.Group
-
-        if 'filename' not in request.query_params:
-            return response.Response(self.get_serializer(group.handgrading_result).data)
-
-        submission = group.handgrading_result.submission
-
-        filename = request.query_params['filename']
-        return SizeFileResponse(submission.get_file(filename))
 
     @handle_object_does_not_exist_404
-    def has_correct_submission(self, *args, **kwargs):
-        group = self.get_object()  # type: ag_models.Group
-        return response.Response(
-            data=group.handgrading_result.submission == get_ultimate_submission(group),
-            status=status.HTTP_200_OK
-        )
+    def get(self, request, *args, **kwargs):
+        group: ag_models.Group = self.get_object()
+        return response.Response(group.handgrading_result.to_dict())
 
     @transaction.atomic()
-    def create(self, *args, **kwargs):
+    def post(self, *args, **kwargs):
         """
         Creates a new HandgradingResult for the specified Group, or returns
         an already existing one.
         """
-        group = self.get_object()
+        group: ag_models.Group = self.get_object()
         try:
             handgrading_rubric = group.project.handgrading_rubric
         except ObjectDoesNotExist:
@@ -108,25 +105,28 @@ class HandgradingResultView(AGModelGenericViewSet):
             raise exceptions.ValidationError(
                 {'num_submissions': 'Group {} has no submissions'.format(group.pk)})
 
-        handgrading_result, created = handgrading_models.HandgradingResult.objects.get_or_create(
+        handgrading_result, created = hg_models.HandgradingResult.objects.get_or_create(
             defaults={'submission': ultimate_submission},
             handgrading_rubric=handgrading_rubric,
-            group=group)
+            group=group
+        )
 
         for criterion in handgrading_rubric.criteria.all():
-            handgrading_models.CriterionResult.objects.get_or_create(
+            hg_models.CriterionResult.objects.get_or_create(
                 defaults={'selected': False},
                 criterion=criterion,
                 handgrading_result=handgrading_result,
             )
 
-        serializer = self.get_serializer(handgrading_result)
         return response.Response(
-            serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+            handgrading_result.to_dict(),
+            status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        )
 
+    @convert_django_validation_error
     @transaction.atomic()
     @handle_object_does_not_exist_404
-    def partial_update(self, request, *args, **kwargs):
+    def patch(self, request, *args, **kwargs):
         group = self.get_object()  # type: ag_models.Group
         is_admin = group.project.course.is_admin(request.user)
         is_staff = group.project.course.is_staff(request.user)
@@ -140,63 +140,98 @@ class HandgradingResultView(AGModelGenericViewSet):
 
         handgrading_result = group.handgrading_result
         handgrading_result.validate_and_update(**request.data)
-        return response.Response(self.get_serializer(handgrading_result).data)
+        return response.Response(handgrading_result.to_dict())
 
     @transaction.atomic()
     @handle_object_does_not_exist_404
-    def destroy(self, *args, **kwargs):
+    def delete(self, *args, **kwargs):
         group = self.get_object()  # type: ag_models.Group
         group.handgrading_result.delete()
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class HandgradingResultFileContentView(NestedModelView):
+    schema = CustomViewSchema([APITags.handgrading_results], {
+        'GET': {
+            'operation_id': 'getHandgradingResultFile',
+            'parameters': [{
+                'name': 'filename',
+                'in': 'query',
+                'description': 'The name of a submitted file to return.',
+                'schema': {'type': 'string'}
+            }],
+            'responses': {
+                '200': {
+                    'content': {
+                        'application/octet-stream': {
+                            'schema': {
+                                'type': 'string',
+                                'format': 'binary'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    })
+
+    permission_classes = [
+        P(is_admin) | P(is_staff) | P(is_handgrader) | student_permission
+    ]
+
+    pk_key = 'group_pk'
+    model_manager = ag_models.Group.objects.select_related(
+        'project__course'
+    )
+
+    @method_decorator(require_query_params('filename'))
+    @handle_object_does_not_exist_404
+    def get(self, request, *args, **kwargs):
+        group: ag_models.Group = self.get_object()
+        filename = request.query_params['filename']
+        return SizeFileResponse(group.handgrading_result.submission.get_file(filename))
+
+
+class HandgradingResultHasCorrectSubmissionView(NestedModelView):
+    schema = CustomViewSchema([APITags.handgrading_results], {
+        'GET': {
+            'operation_id': 'handgradingResultHasCorrectSubmission',
+            'responses': {
+                '200': {
+                    'content': {
+                        'application/json': {
+                            'schema': {'type': 'boolean'}
+                        }
+                    }
+                }
+            }
+        }
+    })
+    permission_classes = [
+        P(is_admin) | P(is_staff) | P(is_handgrader) | student_permission
+    ]
+
+    pk_key = 'group_pk'
+    model_manager = ag_models.Group.objects.select_related(
+        'project__course'
+    )
+
+    @handle_object_does_not_exist_404
+    def get(self, *args, **kwargs):
+        """
+        Returns true if the submission linked to the group's handgrading result
+        is the same as that group's current final graded submission.
+        """
+        group: ag_models.Group = self.get_object()
+        return response.Response(
+            data=group.handgrading_result.submission == get_ultimate_submission(group),
+            status=status.HTTP_200_OK
+        )
+
+
 is_handgrader_or_staff = (P(ag_permissions.is_staff(lambda project: project.course))
                           | P(ag_permissions.is_handgrader(lambda project: project.course)))
-
-
-def _buid_minimal_handgrading_resuit_schema():
-    group_with_handgrading_result_schema = Schema(
-        type='object',
-        properties=copy.deepcopy(AGModelSchemaBuilder.get().get_schema(ag_models.Group).properties)
-    )
-    assert (group_with_handgrading_result_schema.properties is not
-            AGModelSchemaBuilder.get().get_schema(ag_models.Group).properties)
-    group_with_handgrading_result_schema.properties['handgrading_result'] = Schema(
-        title='MinimalHandgradingResult',
-        type='object',
-        description=('When this value is null, indicates that '
-                     'handgrading has not started for this group.'),
-        properties=OrderedDict([
-            ('finished_grading', Schema(
-                type='boolean',
-                description="Indicates whether a human grader "
-                            "has finished grading this group's code.",
-            )),
-            ('total_points', Schema(
-                type='float',
-            )),
-            ('total_points_possible', Schema(
-                type='float',
-            )),
-        ])
-    )
-
-    return group_with_handgrading_result_schema
-
-
-_handgrading_results_schema = Schema(
-    type='object',
-    properties=OrderedDict([
-        ('count', openapi.Schema(type=openapi.TYPE_INTEGER)),
-        ('next', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
-        ('previous', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
-        ('results', Schema(
-            type='array',
-            items=_buid_minimal_handgrading_resuit_schema(),
-        )),
-    ])
-)
 
 
 class HandgradingResultPaginator(PageNumberPagination):
@@ -206,32 +241,67 @@ class HandgradingResultPaginator(PageNumberPagination):
 
 
 class ListHandgradingResultsView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.projects, APITags.handgrading_results], {
+        'GET': {
+            'operation_id': 'listHandgradingResults',
+            'parameters': [
+                {'$ref': '#/components/parameters/page'},
+                {
+                    'name': 'page_size',
+                    'in': 'query',
+                    'description': 'The page size. Maximum value is {}'.format(
+                        HandgradingResultPaginator.max_page_size),
+                    'schema': {
+                        'type': 'integer',
+                        'default': HandgradingResultPaginator.page_size,
+                        'maximum': HandgradingResultPaginator.max_page_size,
+                    }
+                },
+                {'$ref': '#/components/parameters/includeStaff'},
+            ],
+            'responses': {
+                '200': {
+                    'content': as_paginated_content_obj({
+                        'allOf': [
+                            as_schema_ref(ag_models.Group),
+                            {
+                                'type': 'object',
+                                'properties': {
+                                    'handgrading_result': {
+                                        'description': (
+                                            'When this value is null, indicates that '
+                                            'handgrading has not started for this group.'
+                                        ),
+                                        'type': 'object',
+                                        'nullable': True,
+                                        'properties': {
+                                            'finished_grading': {'type': 'boolean'},
+                                            'total_points': {'type': 'number', 'format': 'double'},
+                                            'total_points_possible': {
+                                                'type': 'number', 'format': 'double'
+                                            },
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    })
+                }
+            }
+        }
+    })
+
     permission_classes = [is_handgrader_or_staff]
 
     model_manager = ag_models.Project.objects
 
     api_tags = [APITags.projects, APITags.handgrading_results]
 
-    @swagger_auto_schema(
-        manual_parameters=[
-            Parameter(
-                name='include_staff', type='string', enum=['true', 'false'], in_='query',
-                description='When false, excludes staff and admin users '
-                            'from the results. Defaults to true.'
-            ),
-            Parameter(name='page', type='integer', in_='query'),
-            Parameter(name='page_size', type='integer', in_='query',
-                      default=HandgradingResultPaginator.page_size,
-                      description='Max page size: {}'.format(
-                          HandgradingResultPaginator.max_page_size))
-        ],
-        responses={'200': _handgrading_results_schema}
-    )
     @handle_object_does_not_exist_404
     def get(self, *args, **kwargs):
         project = self.get_object()  # type: ag_models.Project
 
-        hg_result_queryset = handgrading_models.HandgradingResult.objects.select_related(
+        hg_result_queryset = hg_models.HandgradingResult.objects.select_related(
             'handgrading_rubric__project',
             'group',
             'submission'

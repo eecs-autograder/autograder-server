@@ -1,35 +1,51 @@
-import autograder.handgrading.models as handgrading_models
-import autograder.handgrading.serializers as handgrading_serializers
+import autograder.handgrading.models as hg_models
 import autograder.rest_api.permissions as ag_permissions
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator, APITags)
+from autograder.rest_api.views.ag_model_views import AGModelDetailView, NestedModelView
 
-from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrievePatchDestroyMixin,
-)
 
+class ListCreateCriterionResultView(NestedModelView):
+    schema = AGListCreateViewSchemaGenerator(
+        [APITags.criterion_results], hg_models.CriterionResult)
 
-class CriterionResultListCreateView(ListCreateNestedModelViewSet):
-    serializer_class = handgrading_serializers.CriterionResultSerializer
     permission_classes = [
         ag_permissions.is_admin_or_staff_or_handgrader(
             lambda handgrading_result: handgrading_result.handgrading_rubric.project.course)]
 
     pk_key = 'handgrading_result_pk'
-    model_manager = handgrading_models.HandgradingResult.objects.select_related(
+    model_manager = hg_models.HandgradingResult.objects.select_related(
         'handgrading_rubric__project__course')
-    to_one_field_name = 'handgrading_result'
-    reverse_to_one_field_name = 'criterion_results'
+    nested_field_name = 'criterion_results'
+    parent_obj_field_name = 'handgrading_result'
+
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+    def post(self, *args, **kwargs):
+        return self.do_create()
 
 
-class CriterionResultDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGenericViewSet):
-    serializer_class = handgrading_serializers.CriterionResultSerializer
+class CriterionResultDetailView(AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator([APITags.criterion_results])
+
     permission_classes = [
         ag_permissions.is_admin_or_staff_or_handgrader(
             lambda criterion_result: (
                 criterion_result.handgrading_result.handgrading_rubric.project.course)
         )
     ]
-    model_manager = handgrading_models.CriterionResult.objects.select_related(
+    model_manager = hg_models.CriterionResult.objects.select_related(
         'handgrading_result__handgrading_rubric__project__course'
     ).prefetch_related(
         'criterion'
     )
+
+    def get(self, *args, **kwargs):
+        return self.do_get()
+
+    def patch(self, *args, **kwargs):
+        return self.do_patch()
+
+    def delete(self, *args, **kwargs):
+        return self.do_delete()

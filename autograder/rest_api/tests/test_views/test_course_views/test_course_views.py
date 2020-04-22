@@ -9,12 +9,11 @@ from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 
-from autograder.utils.testing import UnitTestBase
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
-import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 
 
-class ListCoursesTestCase(UnitTestBase):
+class ListCoursesTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
@@ -24,7 +23,7 @@ class ListCoursesTestCase(UnitTestBase):
         [superuser] = obj_build.make_users(1, superuser=True)
 
         self.client.force_authenticate(user=superuser)
-        response = self.client.get(reverse('course-list'))
+        response = self.client.get(reverse('list-create-courses'))
 
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
@@ -39,11 +38,11 @@ class ListCoursesTestCase(UnitTestBase):
 
         for user in admin, guest:
             self.client.force_authenticate(user=user)
-            response = self.client.get(reverse('course-list'))
+            response = self.client.get(reverse('list-create-courses'))
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class CreateCourseTestCase(UnitTestBase):
+class CreateCourseTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
@@ -53,7 +52,7 @@ class CreateCourseTestCase(UnitTestBase):
         self.client.force_authenticate(superuser)
 
         name = 'new_course'
-        response = self.client.post(reverse('course-list'), {'name': name})
+        response = self.client.post(reverse('list-create-courses'), {'name': name})
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         loaded_course = ag_models.Course.objects.get(name=name)
@@ -65,7 +64,7 @@ class CreateCourseTestCase(UnitTestBase):
         user.user_permissions.add(Permission.objects.get(codename='create_course'))
         self.client.force_authenticate(user)
 
-        response = self.client.post(reverse('course-list'), {'name': 'waluigi'})
+        response = self.client.post(reverse('list-create-courses'), {'name': 'waluigi'})
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         loaded_course = ag_models.Course.objects.get(name='waluigi')
@@ -77,13 +76,13 @@ class CreateCourseTestCase(UnitTestBase):
 
         name = 'spam'
         self.client.force_authenticate(guest)
-        response = self.client.post(reverse('course-list'), {'name': name})
+        response = self.client.post(reverse('list-create-courses'), {'name': name})
 
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.assertEqual(0, ag_models.Course.objects.count())
 
 
-class CopyCourseViewTestCase(UnitTestBase):
+class CopyCourseViewTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
 
@@ -98,7 +97,7 @@ class CopyCourseViewTestCase(UnitTestBase):
         new_year = 2019
 
         self.client.force_authenticate(superuser)
-        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+        response = self.client.post(reverse('copy-course', kwargs={'pk': self.course.pk}),
                                     {'new_name': new_name,
                                      'new_semester': new_semester.value,
                                      'new_year': new_year})
@@ -121,7 +120,7 @@ class CopyCourseViewTestCase(UnitTestBase):
                         new=mock_copy_course):
             self.client.force_authenticate(superuser)
             response = self.client.post(
-                reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+                reverse('copy-course', kwargs={'pk': self.course.pk}),
                 {'new_name': 'Clone',
                  'new_semester': ag_models.Semester.winter.value,
                  'new_year': 2020}
@@ -140,7 +139,7 @@ class CopyCourseViewTestCase(UnitTestBase):
         new_year = 2017
 
         self.client.force_authenticate(user)
-        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+        response = self.client.post(reverse('copy-course', kwargs={'pk': self.course.pk}),
                                     {'new_name': new_name,
                                      'new_semester': new_semester.value,
                                      'new_year': new_year})
@@ -163,7 +162,7 @@ class CopyCourseViewTestCase(UnitTestBase):
                         new=mock_copy_course):
             self.client.force_authenticate(user)
             response = self.client.post(
-                reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+                reverse('copy-course', kwargs={'pk': self.course.pk}),
                 {'new_name': 'Cloney',
                  'new_semester': ag_models.Semester.spring.value,
                  'new_year': 2021}
@@ -180,7 +179,7 @@ class CopyCourseViewTestCase(UnitTestBase):
 
         self.client.force_authenticate(user)
         response = self.client.post(
-            reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+            reverse('copy-course', kwargs={'pk': self.course.pk}),
             {
                 'new_name': 'New',
                 'new_semester': ag_models.Semester.summer.value,
@@ -195,7 +194,7 @@ class CopyCourseViewTestCase(UnitTestBase):
 
         self.client.force_authenticate(user)
         response = self.client.post(
-            reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+            reverse('copy-course', kwargs={'pk': self.course.pk}),
             {'new_name': 'New',
              'new_semester': ag_models.Semester.summer.value,
              'new_year': 2021}
@@ -210,17 +209,17 @@ class CopyCourseViewTestCase(UnitTestBase):
         new_year = 2019
 
         self.client.force_authenticate(superuser)
-        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+        response = self.client.post(reverse('copy-course', kwargs={'pk': self.course.pk}),
                                     {'new_name': new_name,
                                      'new_semester': new_semester.value})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+        response = self.client.post(reverse('copy-course', kwargs={'pk': self.course.pk}),
                                     {'new_name': new_name,
                                      'new_year': new_year})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+        response = self.client.post(reverse('copy-course', kwargs={'pk': self.course.pk}),
                                     {'new_semester': new_semester.value,
                                      'new_year': new_year})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -234,7 +233,7 @@ class CopyCourseViewTestCase(UnitTestBase):
         self.course.save()
 
         response = self.client.post(
-            reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+            reverse('copy-course', kwargs={'pk': self.course.pk}),
             {'new_name': self.course.name,
              'new_semester': self.course.semester.value,
              'new_year': self.course.year}
@@ -244,7 +243,7 @@ class CopyCourseViewTestCase(UnitTestBase):
         self.assertIn('exists', response.data['__all__'][0])
 
 
-class RetrieveCourseTestCase(UnitTestBase):
+class RetrieveCourseTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
@@ -269,7 +268,7 @@ class RetrieveCourseTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
 
-class UpdateCourseTestCase(UnitTestBase):
+class UpdateCourseTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
@@ -314,12 +313,12 @@ class UpdateCourseTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
 
-class UserRolesForCourseTestCase(test_impls.GetObjectTest, UnitTestBase):
+class UserRolesForCourseTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
         self.course = obj_build.make_course()
-        self.url = reverse('course-my-roles', kwargs={'pk': self.course.pk})
+        self.url = reverse('course-user-roles', kwargs={'pk': self.course.pk})
 
     def expected_response_base(self):
         return {
@@ -370,7 +369,7 @@ class UserRolesForCourseTestCase(test_impls.GetObjectTest, UnitTestBase):
             self.expected_response_base())
 
 
-class CourseByNameSemesterYearViewTestCase(UnitTestBase):
+class CourseByNameSemesterYearViewTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()

@@ -37,6 +37,7 @@ class RerunSubmissionsTask(Task):
         help_text="""When rerun_all_ag_test_suites is False, specifies which
                      AGTestSuites should be rerun and which AGTestCases within
                      those suites should be rerun.
+
         Data format:
         {
             // Note: JSON format requires that keys are strings. Postgres
@@ -44,6 +45,7 @@ class RerunSubmissionsTask(Task):
             "<ag_test_suite_pk>": [<ag_test_case_pk>, ...],
             ...
         }
+
         If an ag_test_suite_pk is mapped to an empty list, then all ag test cases
         belonging to that ag test suite will be rerun.""")
 

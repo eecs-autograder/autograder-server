@@ -4,42 +4,47 @@ import celery
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.db.models import F
-from django.db.models import Value
+from django.db.models import F, Value
 from django.db.models.functions import Concat
-
 from rest_framework import mixins, response, status
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import action
 from rest_framework.request import Request
 
+import autograder.core.models as ag_models
+import autograder.rest_api.permissions as ag_permissions
 from autograder.core.caching import clear_submission_results_cache
 from autograder.grading_tasks import tasks
-from autograder.rest_api.views.ag_model_views import (
-    ListCreateNestedModelViewSet, AGModelGenericViewSet)
-import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
-import autograder.rest_api.permissions as ag_permissions
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator, APITags, CustomViewSchema,
+                                        as_content_obj)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      NestedModelView,
+                                                      convert_django_validation_error)
 from autograder.utils.retry import retry_should_recover
 
 
-class RerunSubmissionsTaskListCreateView(ListCreateNestedModelViewSet):
-    serializer_class = ag_serializers.RerunSubmissionTaskSerializer
-    permission_classes = [ag_permissions.is_admin(lambda project: project.course)]
+class RerunSubmissionsTaskListCreateView(NestedModelView):
+    schema = AGListCreateViewSchemaGenerator(
+        [APITags.rerun_submissions_tasks], ag_models.RerunSubmissionsTask)
+
+    permission_classes = [ag_permissions.is_admin()]
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
-    to_one_field_name = 'project'
-    reverse_to_one_field_name = 'rerun_submission_tasks'
+    nested_field_name = 'rerun_submission_tasks'
+    parent_obj_field_name = 'project'
 
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+    @convert_django_validation_error
     @transaction.atomic()
-    def create(self, request: Request, *args, **kwargs):
-        project = self.get_object()  # type: ag_models.Project
+    def post(self, request: Request, *args, **kwargs):
+        project: ag_models.Project = self.get_object()
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid()
-        rerun_task = serializer.save(
-            project=project, creator=request.user
-        )  # type: ag_models.RerunSubmissionsTask
+        task_args = dict(request.data)
+        task_args.update({'project': project, 'creator': request.user})
+        rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(**task_args)
 
         submissions = ag_models.Submission.objects.filter(group__project=project)
         if not request.data.get('rerun_all_submissions', True):
@@ -88,25 +93,41 @@ class RerunSubmissionsTaskListCreateView(ListCreateNestedModelViewSet):
                 pk=rerun_task.pk
             ).update(celery_group_result_id=chord_result.id)
 
-        return response.Response(self.get_serializer(rerun_task).data,
-                                 status=status.HTTP_201_CREATED)
+        return response.Response(rerun_task.to_dict(), status=status.HTTP_201_CREATED)
 
 
-class RerunSubmissionsTaskDetailVewSet(mixins.RetrieveModelMixin,
-                                       AGModelGenericViewSet):
+class RerunSubmissionsTaskDetailView(AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator([APITags.rerun_submissions_tasks])
+
     permission_classes = [ag_permissions.is_admin(lambda rerun_task: rerun_task.project.course)]
-    serializer_class = ag_serializers.RerunSubmissionTaskSerializer
+    model_manager = ag_models.RerunSubmissionsTask.objects
 
+    def get(self, *args, **kwargs):
+        return self.do_get()
+
+
+class CancelRerunSubmissionsTaskView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.rerun_submissions_tasks], {
+        'POST': {
+            'operation_id': 'cancelRerunSubmissionsTask',
+            'responses': {
+                '200': {
+                    'content': as_content_obj(ag_models.RerunSubmissionsTask)
+                }
+            }
+        }
+    })
+
+    permission_classes = [ag_permissions.is_admin(lambda rerun_task: rerun_task.project.course)]
     model_manager = ag_models.RerunSubmissionsTask.objects
 
     @transaction.atomic
-    @detail_route(methods=['POST'])
-    def cancel(self, *args, **kwargs):
+    def post(self, *args, **kwargs):
         task = self.get_object()
         task.is_cancelled = True
         task.save()
 
-        return response.Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
+        return response.Response(task.to_dict(), status=status.HTTP_200_OK)
 
 
 @celery.shared_task(max_retries=1, acks_late=True)
