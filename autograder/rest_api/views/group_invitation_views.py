@@ -57,7 +57,7 @@ class ListCreateGroupInvitationView(NestedModelView):
                             'schema': {
                                 'type': 'object',
                                 'properties': {
-                                    'invited_usernames': {
+                                    'recipient_usernames': {
                                         'type': 'array',
                                         'items': {
                                             'type': 'string',
@@ -87,24 +87,24 @@ class ListCreateGroupInvitationView(NestedModelView):
     def get(self, *args, **kwargs):
         return self.do_list()
 
-    @method_decorator(require_body_params('invited_usernames'))
+    @method_decorator(require_body_params('recipient_usernames'))
     @transaction.atomic()
     @convert_django_validation_error
     def post(self, *args, **kwargs):
         project = self.get_object()
         for key in self.request.data:
-            if key != 'invited_usernames':
+            if key != 'recipient_usernames':
                 raise exceptions.ValidationError({'invalid_fields': [key]})
 
-        invited_users = [
+        recipients = [
             User.objects.get_or_create(username=username)[0]
-            for username in self.request.data.pop('invited_usernames')]
+            for username in self.request.data.pop('recipient_usernames')]
 
-        utils.lock_users(itertools.chain([self.request.user], invited_users))
+        utils.lock_users(itertools.chain([self.request.user], recipients))
 
         invitation = ag_models.GroupInvitation.objects.validate_and_create(
             self.request.user,
-            invited_users,
+            recipients,
             project=project,
         )
         return response.Response(self.serialize_object(invitation), status.HTTP_201_CREATED)
@@ -113,8 +113,8 @@ class ListCreateGroupInvitationView(NestedModelView):
 class CanReadOrEditInvitation(permissions.BasePermission):
     def has_object_permission(self, request, view, invitation):
         is_staff = invitation.project.course.is_staff(request.user)
-        is_involved = (request.user == invitation.invitation_creator
-                       or request.user in invitation.invited_users.all())
+        is_involved = (request.user == invitation.sender
+                       or request.user in invitation.recipients.all())
 
         if request.method.lower() == 'get':
             return is_staff or is_involved
@@ -170,15 +170,15 @@ class AcceptGroupInvitationView(AGModelAPIView):
     @transaction.atomic()
     def post(self, request, *args, **kwargs):
         """
-        Accept this group invitation. If all invitees have accepted,
+        Accept this group invitation. If all recipients have accepted,
         create a group, delete the invitation, and return the group.
         """
         invitation = self.get_object()
-        invitation.invitee_accept(request.user)
-        if not invitation.all_invitees_accepted:
+        invitation.recipient_accept(request.user)
+        if not invitation.all_recipients_accepted:
             return response.Response(invitation.to_dict())
 
-        members = [invitation.invitation_creator] + list(invitation.invited_users.all())
+        members = [invitation.sender] + list(invitation.recipients.all())
         utils.lock_users(members)
         # Keep this hook just after the users are locked
         test_ut.mocking_hook()

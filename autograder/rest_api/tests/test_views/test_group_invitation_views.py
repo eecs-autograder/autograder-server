@@ -62,7 +62,7 @@ class CreateInvitationTestCase(AGViewTestBase):
 
         self.do_create_object_test(
             self.project.group_invitations, self.client, admin, self.url,
-            {'invited_usernames': [staff.username]})
+            {'recipient_usernames': [staff.username]})
 
     def test_staff_create_invitation(self):
         admin = obj_build.make_admin_user(self.course)
@@ -70,7 +70,7 @@ class CreateInvitationTestCase(AGViewTestBase):
 
         self.do_create_object_test(
             self.project.group_invitations, self.client, staff, self.url,
-            {'invited_usernames': [admin.username]})
+            {'recipient_usernames': [admin.username]})
 
     def test_student_create_invitation(self):
         self.project.validate_and_update(visible_to_students=True)
@@ -79,7 +79,7 @@ class CreateInvitationTestCase(AGViewTestBase):
 
         self.do_create_object_test(
             self.project.group_invitations, self.client, student, self.url,
-            {'invited_usernames': [other_student.username]})
+            {'recipient_usernames': [other_student.username]})
 
     def test_handgrader_create_invitation_permission_denied(self):
         handgrader = obj_build.make_handgrader_user(self.course)
@@ -87,7 +87,7 @@ class CreateInvitationTestCase(AGViewTestBase):
 
         self.do_permission_denied_create_test(
             self.project.group_invitations, self.client, handgrader, self.url,
-            {'invited_usernames': [other_handgrader.username]})
+            {'recipient_usernames': [other_handgrader.username]})
 
     def test_handgrader_also_student_create_invitation(self):
         handgrader_student = obj_build.make_user()
@@ -97,7 +97,7 @@ class CreateInvitationTestCase(AGViewTestBase):
         other_student = obj_build.make_student_user(self.course)
         self.do_create_object_test(
             self.project.group_invitations, self.client, handgrader_student, self.url,
-            {'invited_usernames': [other_student.username]})
+            {'recipient_usernames': [other_student.username]})
 
     def test_handgrader_also_staff_create_invitation(self):
         handgrader_staff = obj_build.make_user()
@@ -107,7 +107,7 @@ class CreateInvitationTestCase(AGViewTestBase):
         other_staff = obj_build.make_staff_user(self.course)
         self.do_create_object_test(
             self.project.group_invitations, self.client, handgrader_staff, self.url,
-            {'invited_usernames': [other_staff.username]})
+            {'recipient_usernames': [other_staff.username]})
 
     def test_guest_create_invitation(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
@@ -116,7 +116,7 @@ class CreateInvitationTestCase(AGViewTestBase):
 
         self.do_create_object_test(
             self.project.group_invitations, self.client, guest, self.url,
-            {'invited_usernames': [other_guest.username, 'steve']})
+            {'recipient_usernames': [other_guest.username, 'steve']})
 
     def test_invalid_create_invitation_enrollement_mismatch(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
@@ -125,15 +125,15 @@ class CreateInvitationTestCase(AGViewTestBase):
 
         response = self.do_invalid_create_object_test(
             self.project.group_invitations, self.client, student, self.url,
-            {'invited_usernames': [guest.username]})
-        self.assertIn('invited_users', response.data)
-        self.assertIn('non-enrolled', response.data['invited_users'][0])
+            {'recipient_usernames': [guest.username]})
+        self.assertIn('recipients', response.data)
+        self.assertIn('non-enrolled', response.data['recipients'][0])
 
         self.do_invalid_create_object_test(
             self.project.group_invitations, self.client, guest, self.url,
-            {'invited_usernames': [student.username]})
-        self.assertIn('invited_users', response.data)
-        self.assertIn('non-enrolled', response.data['invited_users'][0])
+            {'recipient_usernames': [student.username]})
+        self.assertIn('recipients', response.data)
+        self.assertIn('non-enrolled', response.data['recipients'][0])
 
     def test_invalid_create_invitation_group_too_big(self):
         self.project.validate_and_update(
@@ -142,11 +142,11 @@ class CreateInvitationTestCase(AGViewTestBase):
         response = self.do_invalid_create_object_test(
             self.project.group_invitations,
             self.client, obj_build.make_user(), self.url,
-            {'invited_usernames': ['steve', 'stove']})
-        self.assertIn('invited_users', response.data)
-        self.assertIn('max', response.data['invited_users'][0])
+            {'recipient_usernames': ['steve', 'stove']})
+        self.assertIn('recipients', response.data)
+        self.assertIn('max', response.data['recipients'][0])
 
-    def test_invalid_create_invitation_missing_invited_usernames(self):
+    def test_invalid_create_invitation_missing_recipient_usernames(self):
         admin = obj_build.make_admin_user(self.course)
         other_admin = obj_build.make_admin_user(self.course)
         self.do_invalid_create_object_test(
@@ -157,7 +157,7 @@ class CreateInvitationTestCase(AGViewTestBase):
         other_student = obj_build.make_student_user(self.course)
         self.do_permission_denied_create_test(
             self.project.group_invitations, self.client, student, self.url,
-            {'invited_usernames': [other_student.username]})
+            {'recipient_usernames': [other_student.username]})
 
     def test_guest_create_invitation_sender_has_wrong_domain_permission_denied(self):
         self.course.validate_and_update(allowed_guest_domain='@llama.edu')
@@ -168,7 +168,7 @@ class CreateInvitationTestCase(AGViewTestBase):
 
         self.do_permission_denied_create_test(
             self.project.group_invitations, self.client, wrong_domain, self.url,
-            {'invited_usernames': [right_domain.username]})
+            {'recipient_usernames': [right_domain.username]})
 
     def test_guest_create_invitation_recipient_has_wrong_domain_invalid(self) -> None:
         self.course.validate_and_update(allowed_guest_domain='@llama.edu')
@@ -179,31 +179,31 @@ class CreateInvitationTestCase(AGViewTestBase):
 
         self.do_invalid_create_object_test(
             self.project.group_invitations, self.client, right_domain, self.url,
-            {'invited_usernames': [wrong_domain.username]})
+            {'recipient_usernames': [wrong_domain.username]})
 
     def test_guest_create_invitation_right_domain(self):
         self.course.validate_and_update(allowed_guest_domain='@llama.edu')
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
 
         inviter = obj_build.make_allowed_domain_guest_user(self.course)
-        invitee = obj_build.make_allowed_domain_guest_user(self.course)
+        recipient = obj_build.make_allowed_domain_guest_user(self.course)
         response = self.do_create_object_test(
             self.project.group_invitations, self.client, inviter, self.url,
-            {'invited_usernames': [invitee.username]})
+            {'recipient_usernames': [recipient.username]})
 
     def test_guest_create_invitation_project_private_or_hidden_permission_denied(self):
         sender = obj_build.make_user()
-        invitee = obj_build.make_user()
+        recipient = obj_build.make_user()
 
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
         self.do_permission_denied_create_test(
             self.project.group_invitations, self.client, sender, self.url,
-            {'invited_usernames': [invitee.username]})
+            {'recipient_usernames': [recipient.username]})
 
         self.project.validate_and_update(visible_to_students=False, guests_can_submit=True)
         self.do_permission_denied_create_test(
             self.project.group_invitations, self.client, sender, self.url,
-            {'invited_usernames': [invitee.username]})
+            {'recipient_usernames': [recipient.username]})
 
     def test_registration_disabled_permission_denied(self):
         self.project.validate_and_update(
@@ -213,13 +213,13 @@ class CreateInvitationTestCase(AGViewTestBase):
         other_student = obj_build.make_student_user(self.course)
         self.do_permission_denied_create_test(
             ag_models.GroupInvitation.objects, self.client, student, self.url,
-            {'invited_usernames': [other_student.username]})
+            {'recipient_usernames': [other_student.username]})
 
         guest = obj_build.make_user()
         other_guest = obj_build.make_user()
         self.do_permission_denied_create_test(
             ag_models.GroupInvitation.objects, self.client, guest, self.url,
-            {'invited_usernames': [other_guest.username]})
+            {'recipient_usernames': [other_guest.username]})
 
     def test_registration_disabled_staff_can_still_send_invitations(self):
         self.project.validate_and_update(disallow_group_registration=True)
@@ -228,18 +228,18 @@ class CreateInvitationTestCase(AGViewTestBase):
 
         self.do_create_object_test(
             self.project.group_invitations, self.client, staff, self.url,
-            {'invited_usernames': [other_staff.username]})
+            {'recipient_usernames': [other_staff.username]})
 
-    def test_invalid_fields_other_than_invited_usernames_in_request(self):
+    def test_invalid_fields_other_than_recipient_usernames_in_request(self):
         staff = obj_build.make_staff_user(self.course)
         other_staff = obj_build.make_staff_user(self.course)
         response = self.do_invalid_create_object_test(
             self.project.group_invitations, self.client, staff, self.url,
-            {'invited_usernames': [other_staff.username],
-             '_invitees_who_accepted': [staff.username]}
+            {'recipient_usernames': [other_staff.username],
+             '_recipients_who_accepted': [staff.username]}
         )
         self.assertIn('invalid_fields', response.data)
-        self.assertIn('_invitees_who_accepted', response.data['invalid_fields'])
+        self.assertIn('_recipients_who_accepted', response.data['invalid_fields'])
 
 
 class GetGroupInvitationTestCase(AGViewTestBase):
@@ -285,13 +285,13 @@ class GetGroupInvitationTestCase(AGViewTestBase):
 
         self.do_get_object_test(
             self.client,
-            invitation.invitation_creator,
+            invitation.sender,
             self.invitation_url(invitation),
             invitation.to_dict())
 
         self.do_get_object_test(
             self.client,
-            invitation.invited_users.first(),
+            invitation.recipients.first(),
             self.invitation_url(invitation),
             invitation.to_dict())
 
@@ -302,13 +302,13 @@ class GetGroupInvitationTestCase(AGViewTestBase):
 
         self.do_get_object_test(
             self.client,
-            invitation.invitation_creator,
+            invitation.sender,
             self.invitation_url(invitation),
             invitation.to_dict())
 
         self.do_get_object_test(
             self.client,
-            invitation.invited_users.first(),
+            invitation.recipients.first(),
             self.invitation_url(invitation),
             invitation.to_dict())
 
@@ -335,14 +335,14 @@ class GetGroupInvitationTestCase(AGViewTestBase):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.student)
         self.do_permission_denied_get_test(
-            self.client, invitation.invitation_creator, self.invitation_url(invitation))
+            self.client, invitation.sender, self.invitation_url(invitation))
 
     def test_guest_get_invitation_project_hidden_permission_denied(self):
         self.project.validate_and_update(guests_can_submit=True)
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.guest)
         self.do_permission_denied_get_test(
-            self.client, invitation.invitation_creator, self.invitation_url(invitation))
+            self.client, invitation.sender, self.invitation_url(invitation))
 
     def test_guest_get_invitation_project_private_permission_denied(self):
         invitation = obj_build.make_group_invitation(
@@ -350,7 +350,7 @@ class GetGroupInvitationTestCase(AGViewTestBase):
 
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
         self.do_permission_denied_get_test(
-            self.client, invitation.invitation_creator, self.invitation_url(invitation))
+            self.client, invitation.sender, self.invitation_url(invitation))
 
     def test_guest_get_invitation_allowed_domain(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
@@ -395,23 +395,23 @@ class AcceptGroupInvitationTestCase(AGViewTestBase):
         self.project = obj_build.make_project(max_group_size=2)
         self.course = self.project.course
 
-    def test_admin_all_invitees_accept(self):
+    def test_admin_all_recipients_accept(self):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.admin)
         self.do_all_accept_test(invitation)
 
-    def test_staff_all_invitees_accept(self):
+    def test_staff_all_recipients_accept(self):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.staff)
         self.do_all_accept_test(invitation)
 
-    def test_student_all_invitees_accept(self):
+    def test_student_all_recipients_accept(self):
         self.project.validate_and_update(visible_to_students=True)
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.student)
         self.do_all_accept_test(invitation)
 
-    def test_guest_all_invitees_accept(self):
+    def test_guest_all_recipients_accept(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.guest)
@@ -423,7 +423,7 @@ class AcceptGroupInvitationTestCase(AGViewTestBase):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.student)
 
-        self.do_accept_permission_denied_test(invitation, invitation.invited_users.first())
+        self.do_accept_permission_denied_test(invitation, invitation.recipients.first())
 
     def test_guest_accept_invitation_project_hidden_permission_denied(self):
         self.project.validate_and_update(guests_can_submit=True)
@@ -431,7 +431,7 @@ class AcceptGroupInvitationTestCase(AGViewTestBase):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.guest)
 
-        self.do_accept_permission_denied_test(invitation, invitation.invited_users.first())
+        self.do_accept_permission_denied_test(invitation, invitation.recipients.first())
 
     def test_non_involved_user_permission_denied(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
@@ -451,40 +451,40 @@ class AcceptGroupInvitationTestCase(AGViewTestBase):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
         self.course.validate_and_update(allowed_guest_domain='@llama.edu')
 
-        invitor = obj_build.make_allowed_domain_guest_user(self.course)
-        invitee = obj_build.make_allowed_domain_guest_user(self.course)
+        sender = obj_build.make_allowed_domain_guest_user(self.course)
+        recipient = obj_build.make_allowed_domain_guest_user(self.course)
         invitation = ag_models.GroupInvitation.objects.validate_and_create(
-            invitor, [invitee], project=self.project)
+            sender, [recipient], project=self.project)
 
         self.do_all_accept_test(invitation)
 
     def test_wrong_domain_guest_accept_permission_denied(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
-        invitor = obj_build.make_user()
-        invitee = obj_build.make_user()
+        sender = obj_build.make_user()
+        recipient = obj_build.make_user()
         invitation = ag_models.GroupInvitation.objects.validate_and_create(
-            invitor, [invitee], project=self.project)
+            sender, [recipient], project=self.project)
 
         self.course.validate_and_update(allowed_guest_domain='@llama.edu')
 
-        self.do_accept_permission_denied_test(invitation, invitee)
+        self.do_accept_permission_denied_test(invitation, recipient)
 
     def test_guest_accept_invitation_project_private_permission_denied(self):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.guest)
 
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
-        self.do_accept_permission_denied_test(invitation, invitation.invited_users.first())
+        self.do_accept_permission_denied_test(invitation, invitation.recipients.first())
 
     def test_creator_accepts_nothing_happens(self):
         self.project.validate_and_update(visible_to_students=True)
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.student)
 
-        self.client.force_authenticate(invitation.invitation_creator)
+        self.client.force_authenticate(invitation.sender)
         response = self.client.post(self.accept_invitation_url(invitation))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual(0, len(response.data['invitees_who_accepted']))
+        self.assertEqual(0, len(response.data['recipients_who_accepted']))
 
     def test_registration_disabled_permission_denied_for_student(self):
         self.project.validate_and_update(
@@ -492,7 +492,7 @@ class AcceptGroupInvitationTestCase(AGViewTestBase):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.student)
 
-        self.do_accept_permission_denied_test(invitation, invitation.invited_users.first())
+        self.do_accept_permission_denied_test(invitation, invitation.recipients.first())
 
     def test_registration_disabled_permission_denied_for_guest(self):
         self.project.validate_and_update(
@@ -500,7 +500,7 @@ class AcceptGroupInvitationTestCase(AGViewTestBase):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.student)
 
-        self.do_accept_permission_denied_test(invitation, invitation.invited_users.first())
+        self.do_accept_permission_denied_test(invitation, invitation.recipients.first())
 
     def test_registration_disabled_staff_can_still_accept_invitations(self):
         self.project.validate_and_update(disallow_group_registration=True)
@@ -516,14 +516,14 @@ class AcceptGroupInvitationTestCase(AGViewTestBase):
         # Send accept requests for all but one user, and make sure that
         # the list of users who accepted the invitation is updated and
         # reflected in the responses.
-        invited_users = list(invitation.invited_users.all())
+        recipients = list(invitation.recipients.all())
         # Computing this for later use.
-        all_users = invited_users + [invitation.invitation_creator]
+        all_users = recipients + [invitation.sender]
         original_invite_count = (
             ag_models.GroupInvitation.objects.count())
         original_group_count = ag_models.Group.objects.count()
         num_accepted = 0
-        for user in invited_users[:-1]:
+        for user in recipients[:-1]:
             num_accepted += 1
             self.client.force_authenticate(user)
             response = self.client.post(self.accept_invitation_url(invitation))
@@ -532,12 +532,12 @@ class AcceptGroupInvitationTestCase(AGViewTestBase):
             self.assertEqual(invitation.to_dict(), response.data)
             self.assertEqual(
                 num_accepted,
-                len(invitation.to_dict()['invitees_who_accepted']))
+                len(invitation.to_dict()['recipients_who_accepted']))
 
         # Send the final accept request, and make sure that the
         # invitation was deleted and that a group was created with the
         # right members.
-        self.client.force_authenticate(invited_users[-1])
+        self.client.force_authenticate(recipients[-1])
         response = self.client.post(self.accept_invitation_url(invitation))
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
@@ -578,59 +578,59 @@ class RejectGroupInvitationTestCase(AGViewTestBase):
         self.project = obj_build.make_project(max_group_size=2)
         self.course = self.project.course
 
-    def test_admin_invitee_rejects(self):
+    def test_admin_recipient_rejects(self):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.admin)
-        self.do_reject_invitation_test(invitation, invitation.invited_users.last())
+        self.do_reject_invitation_test(invitation, invitation.recipients.last())
 
-    def test_staff_invitee_rejects(self):
+    def test_staff_recipient_rejects(self):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.staff)
-        self.do_reject_invitation_test(invitation, invitation.invited_users.last())
+        self.do_reject_invitation_test(invitation, invitation.recipients.last())
 
-    def test_student_invitee_rejects(self):
+    def test_student_recipient_rejects(self):
         self.project.validate_and_update(visible_to_students=True)
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.student)
-        self.do_reject_invitation_test(invitation, invitation.invited_users.last())
+        self.do_reject_invitation_test(invitation, invitation.recipients.last())
 
-    def test_guest_invitee_rejects(self):
+    def test_guest_recipient_rejects(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.guest)
-        self.do_reject_invitation_test(invitation, invitation.invited_users.last())
+        self.do_reject_invitation_test(invitation, invitation.recipients.last())
 
     def test_admin_sender_revokes(self):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.admin)
-        self.do_reject_invitation_test(invitation, invitation.invitation_creator)
+        self.do_reject_invitation_test(invitation, invitation.sender)
 
     def test_staff_sender_revokes(self):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.staff)
-        self.do_reject_invitation_test(invitation, invitation.invitation_creator)
+        self.do_reject_invitation_test(invitation, invitation.sender)
 
     def test_student_sender_revokes(self):
         self.project.validate_and_update(visible_to_students=True)
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.student)
-        self.do_reject_invitation_test(invitation, invitation.invitation_creator)
+        self.do_reject_invitation_test(invitation, invitation.sender)
 
     def test_guest_sender_revokes(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.guest)
-        self.do_reject_invitation_test(invitation, invitation.invitation_creator)
+        self.do_reject_invitation_test(invitation, invitation.sender)
 
     def test_student_reject_hidden_project_permission_denied(self):
         invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.student)
         self.do_delete_object_permission_denied_test(
-            invitation, self.client, invitation.invitation_creator,
+            invitation, self.client, invitation.sender,
             self.invitation_url(invitation))
 
         self.do_delete_object_permission_denied_test(
-            invitation, self.client, invitation.invited_users.last(),
+            invitation, self.client, invitation.recipients.last(),
             self.invitation_url(invitation))
 
     def test_non_involved_user_permission_denied(self):
@@ -654,11 +654,11 @@ class RejectGroupInvitationTestCase(AGViewTestBase):
             project=self.project, users_role=obj_build.UserRole.guest)
 
         self.do_delete_object_permission_denied_test(
-            invitation, self.client, invitation.invitation_creator,
+            invitation, self.client, invitation.sender,
             self.invitation_url(invitation))
 
         self.do_delete_object_permission_denied_test(
-            invitation, self.client, invitation.invited_users.first(),
+            invitation, self.client, invitation.recipients.first(),
             self.invitation_url(invitation))
 
     def test_guest_reject_invitation_project_private_permission_denied(self):
@@ -668,11 +668,11 @@ class RejectGroupInvitationTestCase(AGViewTestBase):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
 
         self.do_delete_object_permission_denied_test(
-            invitation, self.client, invitation.invitation_creator,
+            invitation, self.client, invitation.sender,
             self.invitation_url(invitation))
 
         self.do_delete_object_permission_denied_test(
-            invitation, self.client, invitation.invited_users.first(),
+            invitation, self.client, invitation.recipients.first(),
             self.invitation_url(invitation))
 
     def test_student_reject_invitation_registration_disabled_permission_denied(self):
@@ -682,11 +682,11 @@ class RejectGroupInvitationTestCase(AGViewTestBase):
             project=self.project, users_role=obj_build.UserRole.student)
 
         self.do_delete_object_permission_denied_test(
-            invitation, self.client, invitation.invitation_creator,
+            invitation, self.client, invitation.sender,
             self.invitation_url(invitation))
 
         self.do_delete_object_permission_denied_test(
-            invitation, self.client, invitation.invited_users.first(),
+            invitation, self.client, invitation.recipients.first(),
             self.invitation_url(invitation))
 
     def test_guest_reject_invitation_registration_disabled_permission_denied(self):
@@ -696,11 +696,11 @@ class RejectGroupInvitationTestCase(AGViewTestBase):
             project=self.project, users_role=obj_build.UserRole.guest)
 
         self.do_delete_object_permission_denied_test(
-            invitation, self.client, invitation.invitation_creator,
+            invitation, self.client, invitation.sender,
             self.invitation_url(invitation))
 
         self.do_delete_object_permission_denied_test(
-            invitation, self.client, invitation.invited_users.first(),
+            invitation, self.client, invitation.recipients.first(),
             self.invitation_url(invitation))
 
     def test_staff_can_reject_invitation_with_registration_disabled(self):
@@ -710,15 +710,15 @@ class RejectGroupInvitationTestCase(AGViewTestBase):
         staff_invitation = obj_build.make_group_invitation(
             project=self.project, users_role=obj_build.UserRole.staff)
 
-        self.do_reject_invitation_test(admin_invitation, admin_invitation.invitation_creator)
-        self.do_reject_invitation_test(staff_invitation, staff_invitation.invitation_creator)
+        self.do_reject_invitation_test(admin_invitation, admin_invitation.sender)
+        self.do_reject_invitation_test(staff_invitation, staff_invitation.sender)
 
     def do_reject_invitation_test(self, invitation, user):
         original_invite_count = (
             ag_models.GroupInvitation.objects.count())
         original_group_count = ag_models.Group.objects.count()
 
-        users = [invitation.invitation_creator] + list(invitation.invited_users.all())
+        users = [invitation.sender] + list(invitation.recipients.all())
         self.client.force_authenticate(user)
         response = self.client.delete(self.invitation_url(invitation))
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
