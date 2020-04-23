@@ -315,9 +315,9 @@ class ListHandgradingResultsView(AGModelAPIView):
         )
 
         groups = project.groups.prefetch_related(
+            'members',
             'submissions',
             Prefetch('handgrading_result', hg_result_queryset),
-            Prefetch('members', User.objects.order_by('username')),
         ).all()
 
         include_staff = self.request.query_params.get('include_staff', 'true') == 'true'

@@ -83,14 +83,15 @@ class AllUltimateSubmissionResults(AGModelAPIView):
         project: ag_models.Project = self.get_object()
 
         include_staff = self.request.query_params.get('include_staff', 'true') == 'true'
+        groups = project.groups.prefetch_related('members')
         if include_staff:
-            groups = project.groups.all()
+            groups = groups.all()
         else:
             staff = list(
                 itertools.chain(project.course.staff.all(),
                                 project.course.admins.all())
             )
-            groups = project.groups.exclude(members__in=staff)
+            groups = groups.exclude(members__in=staff)
 
         full_results = self.request.query_params.get('full_results') == 'true'
 
