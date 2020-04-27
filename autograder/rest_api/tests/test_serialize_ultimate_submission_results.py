@@ -256,6 +256,49 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
 
             mock_get_ultimate_submission.assert_called_once_with(group, doesnt_count_for_user)
 
+    def test_group_has_user_no_submissions_count_for(self) -> None:
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+
+        group = obj_build.make_group(project=self.project, num_members=2)
+
+        doesnt_count_for_username = group.member_names[0]
+        doesnt_count_for_user = group.members.get(username=doesnt_count_for_username)
+        counts_for_username = group.member_names[1]
+
+        first_submission = self._add_results_to_submission(
+            obj_build.make_finished_submission(group), results_correct=True)
+
+        most_recent_submission = self._add_results_to_submission(
+            obj_build.make_finished_submission(group), results_correct=True)
+        most_recent_submission_fdbk = SubmissionResultFeedback(
+            most_recent_submission, ag_models.FeedbackCategory.max, self.ag_test_preloader)
+        self.assertNotEqual(0, most_recent_submission_fdbk.total_points)
+        self.assertNotEqual(0, most_recent_submission_fdbk.total_points_possible)
+
+        first_submission.does_not_count_for = [doesnt_count_for_username]
+        first_submission.save()
+        most_recent_submission.does_not_count_for = [doesnt_count_for_username]
+        most_recent_submission.save()
+
+        expected = [{
+            'username': counts_for_username,
+            'group': group.to_dict(),
+            'ultimate_submission': {
+                'results': {
+                    'total_points': two_decimal_place_string(
+                        most_recent_submission_fdbk.total_points),
+                    'total_points_possible': two_decimal_place_string(
+                        most_recent_submission_fdbk.total_points_possible)
+                },
+                **most_recent_submission.to_dict()
+            }
+        }]
+        actual = serialize_ultimate_submission_results(
+            [most_recent_submission_fdbk], full_results=False
+        )
+        self.assertEqual(expected, actual)
+
     def test_some_groups_have_finished_handgrading_result_others_have_no_handgrading_result(self):
         handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
             project=self.project

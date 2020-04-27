@@ -64,6 +64,10 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
             if username in submission.does_not_count_for:
                 user_ultimate_submission = get_ultimate_submission(
                     group, group.members.get(username=username))
+
+                if user_ultimate_submission is None:
+                    continue
+
                 # NOTE: Do NOT overwrite submission_data
                 user_submission_data = get_submission_data_with_results(
                     SubmissionResultFeedback(
