@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: Autograder.io API
-  version: 3.5.2
+  version: 3.5.3
 paths:
   /api/users/current/:
     get:
@@ -3212,6 +3212,14 @@ paths:
                   nullable: false
                   readOnly: false
                   type: integer
+                use_virtual_memory_limit:
+                  description: "When set to false, the virtual memory limit will not\n\
+                    \            be applied to the command. Note that the sandbox\
+                    \ will still apply\n            a physical memory limit to all\
+                    \ commands run in the sandbox."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
                 virtual_memory_limit:
                   description: "The maximum amount of virtual memory\n           \
                     \ (in bytes) the command can use.\n            Must be > 0\n \
@@ -3561,6 +3569,14 @@ paths:
                   nullable: false
                   readOnly: false
                   type: integer
+                use_virtual_memory_limit:
+                  description: "When set to false, the virtual memory limit will not\n\
+                    \            be applied to the command. Note that the sandbox\
+                    \ will still apply\n            a physical memory limit to all\
+                    \ commands run in the sandbox."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
                 virtual_memory_limit:
                   description: "The maximum amount of virtual memory\n           \
                     \ (in bytes) the command can use.\n            Must be > 0\n \
@@ -7179,6 +7195,12 @@ components:
             \            Must be <= 100000000\n            NOTE: Setting this value\
             \ too low may cause the command to crash prematurely."
           type: integer
+        use_virtual_memory_limit:
+          description: "When set to false, the virtual memory limit will not\n   \
+            \         be applied to the command. Note that the sandbox will still\
+            \ apply\n            a physical memory limit to all commands run in the\
+            \ sandbox."
+          type: boolean
         virtual_memory_limit:
           description: "The maximum amount of virtual memory (in bytes) allowed.\n\
             \            Must be > 0\n            Must be <= 4000000000\n        \
@@ -7626,6 +7648,13 @@ components:
             \ too low may cause the command to crash prematurely."
           nullable: false
           type: integer
+        use_virtual_memory_limit:
+          description: "When set to false, the virtual memory limit will not\n   \
+            \         be applied to the command. Note that the sandbox will still\
+            \ apply\n            a physical memory limit to all commands run in the\
+            \ sandbox."
+          nullable: false
+          type: boolean
         virtual_memory_limit:
           description: "The maximum amount of virtual memory\n            (in bytes)\
             \ the command can use.\n            Must be > 0\n            Must be <=\
