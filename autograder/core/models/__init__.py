@@ -2,7 +2,6 @@
 
 from .ag_model_base import AutograderModel
 
-from .notification import Notification
 from .task import Task
 
 from .course import Course, Semester, LateDaysRemaining
