@@ -118,7 +118,7 @@ class RetryDecoratorTestCase(UnitTestBase):
 class RunCommandTestCase(UnitTestBase):
     def test_shell_parse_error(self):
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='echo hello"')
+            ag_command = ag_models.Command(cmd='echo hello"')
             result = tasks.run_command_from_args(
                 ag_command.cmd, sandbox,
                 max_num_processes=ag_command.process_spawn_limit,
@@ -132,7 +132,7 @@ class RunCommandTestCase(UnitTestBase):
 
     def test_command_not_found(self):
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='not_a_command')
+            ag_command = ag_models.Command(cmd='not_a_command')
             result = tasks.run_command_from_args(
                 ag_command.cmd, sandbox,
                 max_num_processes=ag_command.process_spawn_limit,
@@ -146,7 +146,7 @@ class RunCommandTestCase(UnitTestBase):
 
     def test_file_not_found(self):
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='./not_a_file')
+            ag_command = ag_models.Command(cmd='./not_a_file')
             result = tasks.run_command_from_args(
                 ag_command.cmd, sandbox,
                 max_num_processes=ag_command.process_spawn_limit,
@@ -162,7 +162,7 @@ class RunCommandTestCase(UnitTestBase):
         with AutograderSandbox() as sandbox:
             sandbox.run_command(['touch', 'not_executable'], check=True)
             sandbox.run_command(['chmod', '666', 'not_executable'], check=True)
-            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='./not_executable')
+            ag_command = ag_models.Command(cmd='./not_executable')
             result = tasks.run_command_from_args(
                 ag_command.cmd, sandbox,
                 max_num_processes=ag_command.process_spawn_limit,
@@ -207,8 +207,7 @@ class RunCommandTestCase(UnitTestBase):
 
     def test_shell_output_redirection(self):
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(
-                cmd='printf "spam" > file', process_spawn_limit=0)
+            ag_command = ag_models.Command(cmd='printf "spam" > file', process_spawn_limit=0)
             tasks.run_command_from_args(
                 ag_command.cmd, sandbox,
                 max_num_processes=ag_command.process_spawn_limit,
@@ -242,10 +241,11 @@ class RunCommandTestCase(UnitTestBase):
 
         # Run ag command
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(
+            ag_command = ag_models.Command(
                 cmd=cmd,
                 process_spawn_limit=10,
-                time_limit=2)
+                time_limit=2
+            )
             result = tasks.run_ag_command(ag_command, sandbox)
             self.assertFalse(result.timed_out)
             self.assertEqual(0, result.return_code)
