@@ -14,6 +14,7 @@ class CommandTestCase(SimpleTestCase):
         self.assertEqual('', cmd.name)
         self.assertEqual(constants.DEFAULT_SUBPROCESS_TIMEOUT, cmd.time_limit)
         self.assertEqual(constants.DEFAULT_STACK_SIZE_LIMIT, cmd.stack_size_limit)
+        self.assertTrue(cmd.use_virtual_memory_limit)
         self.assertEqual(constants.DEFAULT_VIRTUAL_MEM_LIMIT, cmd.virtual_memory_limit)
         self.assertEqual(constants.DEFAULT_PROCESS_LIMIT, cmd.process_spawn_limit)
 
@@ -23,6 +24,7 @@ class CommandTestCase(SimpleTestCase):
             'name': 'steve',
             'time_limit': 5,
             'stack_size_limit': 15000,
+            'use_virtual_memory_limit': False,
             'virtual_memory_limit': 200000,
             'process_spawn_limit': 8
         })
@@ -31,6 +33,7 @@ class CommandTestCase(SimpleTestCase):
         self.assertEqual('steve', cmd.name)
         self.assertEqual(5, cmd.time_limit)
         self.assertEqual(15000, cmd.stack_size_limit)
+        self.assertFalse(cmd.use_virtual_memory_limit)
         self.assertEqual(200000, cmd.virtual_memory_limit)
         self.assertEqual(8, cmd.process_spawn_limit)
 
@@ -120,6 +123,7 @@ class CommandTestCase(SimpleTestCase):
             'cmd',
             'time_limit',
             'stack_size_limit',
+            'use_virtual_memory_limit',
             'virtual_memory_limit',
             'process_spawn_limit',
         ]

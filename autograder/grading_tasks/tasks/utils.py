@@ -68,40 +68,45 @@ def run_ag_test_command(cmd: ag_models.AGTestCommand,
         stdin = get_stdin_file(cmd, ag_test_suite_result)
         file_closer.register_file(stdin)
 
-        return run_command_from_args(cmd=cmd.cmd,
-                                     sandbox=sandbox,
-                                     max_num_processes=cmd.process_spawn_limit,
-                                     max_stack_size=cmd.stack_size_limit,
-                                     max_virtual_memory=cmd.virtual_memory_limit,
-                                     timeout=cmd.time_limit,
-                                     stdin=stdin)
+        return run_command_from_args(
+            cmd=cmd.cmd,
+            sandbox=sandbox,
+            max_num_processes=cmd.process_spawn_limit,
+            max_stack_size=cmd.stack_size_limit,
+            max_virtual_memory=cmd.virtual_memory_limit if cmd.use_virtual_memory_limit else None,
+            timeout=cmd.time_limit,
+            stdin=stdin
+        )
 
 
-def run_ag_command(cmd: ag_models.AGCommand, sandbox: AutograderSandbox,
+def run_ag_command(cmd: ag_models.Command, sandbox: AutograderSandbox,
                    cmd_str_override: Optional[str]=None):
     cmd_str = cmd_str_override if cmd_str_override is not None else cmd.cmd
-    return run_command_from_args(cmd_str,
-                                 sandbox=sandbox,
-                                 max_num_processes=cmd.process_spawn_limit,
-                                 max_stack_size=cmd.stack_size_limit,
-                                 max_virtual_memory=cmd.virtual_memory_limit,
-                                 timeout=cmd.time_limit,
-                                 stdin=None)
+    return run_command_from_args(
+        cmd_str,
+        sandbox=sandbox,
+        max_num_processes=cmd.process_spawn_limit,
+        max_stack_size=cmd.stack_size_limit,
+        max_virtual_memory=cmd.virtual_memory_limit if cmd.use_virtual_memory_limit else None,
+        timeout=cmd.time_limit,
+        stdin=None
+    )
 
 
 def run_command_from_args(cmd: str,
                           sandbox: AutograderSandbox,
                           *,
-                          max_num_processes: int,
-                          max_stack_size: int,
-                          max_virtual_memory: int,
+                          max_num_processes: int,  # DEPRECATED and ignored
+                          max_stack_size: int,  # DEPRECATED and ignored
+                          max_virtual_memory: Optional[int],
                           timeout: int,
                           stdin: Optional[FileIO]=None) -> CompletedCommand:
     run_result = sandbox.run_command(['bash', '-c', cmd],
                                      stdin=stdin,
                                      as_root=False,
-                                     max_num_processes=max_num_processes,
-                                     max_stack_size=max_stack_size,
+                                     # To be removed entirely at a later date
+                                     # max_num_processes=max_num_processes,
+                                     # max_stack_size=max_stack_size,
                                      max_virtual_memory=max_virtual_memory,
                                      timeout=timeout,
                                      truncate_stdout=constants.MAX_OUTPUT_LENGTH,
