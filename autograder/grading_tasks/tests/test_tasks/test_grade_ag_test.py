@@ -461,21 +461,23 @@ sys.stderr.flush()
         self.assertEqual(self.non_utf_bytes, res.open_setup_stdout().read())
         self.assertEqual(self.non_utf_bytes, res.open_setup_stderr().read())
 
+    # TODO: Process spawn and stack size limits are disabled and will be
+    # removed at a later date.
     def test_time_process_stack_and_virtual_mem_limits_passed_to_run_command(self, *args):
         self.ag_test_suite.validate_and_update(setup_suite_cmd='printf waluigi')
 
         time_limit = random.randint(1, constants.MAX_SUBPROCESS_TIMEOUT)
-        process_spawn_limit = random.randint(constants.DEFAULT_PROCESS_LIMIT + 1,
-                                             constants.MAX_PROCESS_LIMIT)
-        stack_size_limit = random.randint(constants.DEFAULT_STACK_SIZE_LIMIT,
-                                          constants.MAX_STACK_SIZE_LIMIT)
-        virtual_memory_limit = random.randint(constants.DEFAULT_VIRTUAL_MEM_LIMIT,
-                                              constants.MAX_VIRTUAL_MEM_LIMIT)
+        # process_spawn_limit = random.randint(constants.DEFAULT_PROCESS_LIMIT + 1,
+        #                                      constants.MAX_PROCESS_LIMIT)
+        # stack_size_limit = random.randint(constants.DEFAULT_STACK_SIZE_LIMIT,
+        #                                   constants.MAX_STACK_SIZE_LIMIT)
+        virtual_memory_limit = random.randint(
+            constants.DEFAULT_VIRTUAL_MEM_LIMIT, constants.MAX_VIRTUAL_MEM_LIMIT)
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case, cmd='printf spam',
             time_limit=time_limit,
-            process_spawn_limit=process_spawn_limit,
-            stack_size_limit=stack_size_limit,
+            # process_spawn_limit=process_spawn_limit,
+            # stack_size_limit=stack_size_limit,
             virtual_memory_limit=virtual_memory_limit,
         )
 
@@ -495,16 +497,16 @@ sys.stderr.flush()
 
         expected_setup_resource_kwargs = {
             'timeout': constants.MAX_SUBPROCESS_TIMEOUT,
-            'max_num_processes': constants.MAX_PROCESS_LIMIT,
-            'max_stack_size': constants.MAX_STACK_SIZE_LIMIT,
-            'max_virtual_memory': constants.MAX_VIRTUAL_MEM_LIMIT,
+            # 'max_num_processes': constants.MAX_PROCESS_LIMIT,
+            # 'max_stack_size': constants.MAX_STACK_SIZE_LIMIT,
+            'max_virtual_memory': None,
             'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
             'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
         }
         expected_cmd_args = {
             'timeout': time_limit,
-            'max_num_processes': process_spawn_limit,
-            'max_stack_size': stack_size_limit,
+            # 'max_num_processes': process_spawn_limit,
+            # 'max_stack_size': stack_size_limit,
             'max_virtual_memory': virtual_memory_limit,
             'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
             'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
@@ -513,6 +515,42 @@ sys.stderr.flush()
             mock.call(['bash', '-c', self.ag_test_suite.setup_suite_cmd],
                       stdin=None,
                       as_root=False, **expected_setup_resource_kwargs),
+            mock.call(['bash', '-c', cmd.cmd], stdin=None, as_root=False, **expected_cmd_args),
+        ])
+
+    def test_use_virtual_memory_limit_false_no_limit_applied(self, *args) -> None:
+        self.ag_test_suite.validate_and_update(setup_suite_cmd='')
+
+        time_limit = 5
+        virtual_memory_limit = random.randint(
+            constants.DEFAULT_VIRTUAL_MEM_LIMIT, constants.MAX_VIRTUAL_MEM_LIMIT)
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case, cmd='printf spam',
+            use_virtual_memory_limit=False,
+            time_limit=time_limit,
+        )
+
+        sandbox = AutograderSandbox()
+
+        def make_run_command_ret_val(*args, **kwargs):
+            return CompletedCommand(
+                return_code=0, stdout=tempfile.NamedTemporaryFile(),
+                stderr=tempfile.NamedTemporaryFile(), timed_out=False,
+                stdout_truncated=False, stderr_truncated=False)
+
+        run_command_mock = mock.Mock(side_effect=make_run_command_ret_val)
+        sandbox.run_command = run_command_mock
+        with mock.patch('autograder.grading_tasks.tasks.grade_ag_test.AutograderSandbox',
+                        return_value=sandbox):
+            tasks.grade_submission(self.submission.pk)
+
+        expected_cmd_args = {
+            'timeout': time_limit,
+            'max_virtual_memory': None,
+            'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
+        }
+        run_command_mock.assert_has_calls([
             mock.call(['bash', '-c', cmd.cmd], stdin=None, as_root=False, **expected_cmd_args),
         ])
 

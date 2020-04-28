@@ -22,12 +22,14 @@ class Command(DictSerializableMixin):
                  name: str='',
                  time_limit: int=constants.DEFAULT_SUBPROCESS_TIMEOUT,
                  stack_size_limit: int=constants.DEFAULT_STACK_SIZE_LIMIT,
+                 use_virtual_memory_limit: bool=True,
                  virtual_memory_limit: int=constants.DEFAULT_VIRTUAL_MEM_LIMIT,
                  process_spawn_limit: int=constants.DEFAULT_PROCESS_LIMIT):
         self.cmd = cmd
         self.name = name
         self.time_limit = time_limit
         self.stack_size_limit = stack_size_limit
+        self.use_virtual_memory_limit = use_virtual_memory_limit
         self.virtual_memory_limit = virtual_memory_limit
         self.process_spawn_limit = process_spawn_limit
 
@@ -55,6 +57,9 @@ class Command(DictSerializableMixin):
             Must be > 0
             Must be <= {constants.MAX_STACK_SIZE_LIMIT}
             NOTE: Setting this value too low may cause the command to crash prematurely.""",
+        'use_virtual_memory_limit': """When set to false, the virtual memory limit will not
+            be applied to the command. Note that the sandbox will still apply
+            a physical memory limit to all commands run in the sandbox.""",
         'virtual_memory_limit': f"""The maximum amount of virtual memory (in bytes) allowed.
             Must be > 0
             Must be <= {constants.MAX_VIRTUAL_MEM_LIMIT}

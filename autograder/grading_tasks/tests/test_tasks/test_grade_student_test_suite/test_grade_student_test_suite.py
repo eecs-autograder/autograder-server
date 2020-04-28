@@ -9,6 +9,8 @@ import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core import constants
 from autograder.grading_tasks import tasks
 from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
+from autograder_sandbox.autograder_sandbox import AutograderSandbox, CompletedCommand
+import tempfile
 
 
 @tag('slow', 'sandbox')
@@ -381,6 +383,46 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
 
         result = self.submission.student_test_suite_results.get(student_test_suite=student_suite)
         self.assertEqual(0, result.setup_result.return_code)
+
+    def test_use_virtual_memory_limit_false_no_limit_applied(self, *args) -> None:
+        time_limit = 5
+        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+            name='qeoriuqewrpqiuerqopwr',
+            project=self.project,
+            use_setup_command=True,
+            setup_command={
+                'cmd': 'true',
+                'use_virtual_memory_limit': False,
+                'virtual_memory_limit': 40000,
+                'time_limit': time_limit
+            }
+        )
+
+        sandbox = AutograderSandbox()
+
+        def make_run_command_ret_val(*args, **kwargs):
+            return CompletedCommand(
+                return_code=0, stdout=tempfile.NamedTemporaryFile(),
+                stderr=tempfile.NamedTemporaryFile(), timed_out=False,
+                stdout_truncated=False, stderr_truncated=False)
+
+        run_command_mock = mock.Mock(side_effect=make_run_command_ret_val)
+        sandbox.run_command = run_command_mock
+        with mock.patch(
+            'autograder.grading_tasks.tasks.grade_student_test_suite.AutograderSandbox',
+            return_value=sandbox
+        ):
+            tasks.grade_submission(self.submission.pk)
+
+        expected_cmd_args = {
+            'timeout': time_limit,
+            'max_virtual_memory': None,
+            'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
+        }
+        run_command_mock.assert_has_calls([
+            mock.call(['bash', '-c', 'true'], stdin=None, as_root=False, **expected_cmd_args),
+        ])
 
 
 @mock.patch('autograder.utils.retry.sleep')

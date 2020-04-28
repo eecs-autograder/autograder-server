@@ -108,7 +108,7 @@ def _run_suite_setup(sandbox: AutograderSandbox,
         sandbox=sandbox,
         max_num_processes=constants.MAX_PROCESS_LIMIT,
         max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-        max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
+        max_virtual_memory=None,
         timeout=constants.MAX_SUBPROCESS_TIMEOUT)
     suite_result.setup_return_code = setup_result.return_code
     suite_result.setup_timed_out = setup_result.timed_out

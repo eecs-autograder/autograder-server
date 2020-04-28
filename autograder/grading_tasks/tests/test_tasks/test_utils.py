@@ -174,35 +174,36 @@ class RunCommandTestCase(UnitTestBase):
             print(result.stdout.read())
             print(result.stderr.read())
 
-    def test_process_spawn_limit(self):
-        # Make sure that wrapping commands in bash -c doesn't affect
-        # the needed process spawn limit.
-        with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(
-                cmd='echo hello', process_spawn_limit=0)
-            result = tasks.run_command_from_args(
-                ag_command.cmd, sandbox,
-                max_num_processes=ag_command.process_spawn_limit,
-                max_stack_size=ag_command.stack_size_limit,
-                max_virtual_memory=ag_command.virtual_memory_limit,
-                timeout=ag_command.time_limit,
-            )
-            self.assertEqual(0, result.return_code)
-            print(result.stdout.read())
-            print(result.stderr.read())
+    # TODO: Process spawn limit is disabled and will be removed at a later time.
+    # def test_process_spawn_limit(self):
+    #     # Make sure that wrapping commands in bash -c doesn't affect
+    #     # the needed process spawn limit.
+    #     with AutograderSandbox() as sandbox:
+    #         ag_command = ag_models.AGCommand.objects.validate_and_create(
+    #             cmd='echo hello', process_spawn_limit=0)
+    #         result = tasks.run_command_from_args(
+    #             ag_command.cmd, sandbox,
+    #             max_num_processes=ag_command.process_spawn_limit,
+    #             max_stack_size=ag_command.stack_size_limit,
+    #             max_virtual_memory=ag_command.virtual_memory_limit,
+    #             timeout=ag_command.time_limit,
+    #         )
+    #         self.assertEqual(0, result.return_code)
+    #         print(result.stdout.read())
+    #         print(result.stderr.read())
 
-            extra_bash_dash_c = ag_models.AGCommand.objects.validate_and_create(
-                cmd='bash -c "echo hello"', process_spawn_limit=0)
-            result = tasks.run_command_from_args(
-                extra_bash_dash_c.cmd, sandbox,
-                max_num_processes=ag_command.process_spawn_limit,
-                max_stack_size=ag_command.stack_size_limit,
-                max_virtual_memory=ag_command.virtual_memory_limit,
-                timeout=ag_command.time_limit,
-            )
-            self.assertEqual(0, result.return_code)
-            print(result.stdout.read())
-            print(result.stderr.read())
+    #         extra_bash_dash_c = ag_models.AGCommand.objects.validate_and_create(
+    #             cmd='bash -c "echo hello"', process_spawn_limit=0)
+    #         result = tasks.run_command_from_args(
+    #             extra_bash_dash_c.cmd, sandbox,
+    #             max_num_processes=ag_command.process_spawn_limit,
+    #             max_stack_size=ag_command.stack_size_limit,
+    #             max_virtual_memory=ag_command.virtual_memory_limit,
+    #             timeout=ag_command.time_limit,
+    #         )
+    #         self.assertEqual(0, result.return_code)
+    #         print(result.stdout.read())
+    #         print(result.stderr.read())
 
     def test_shell_output_redirection(self):
         with AutograderSandbox() as sandbox:
