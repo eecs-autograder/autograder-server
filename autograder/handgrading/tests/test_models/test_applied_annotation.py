@@ -15,7 +15,7 @@ class AppliedAnnotationTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        rubric = (
+        self.rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
                 max_points=10,
@@ -33,7 +33,7 @@ class AppliedAnnotationTestCase(UnitTestBase):
         }
 
         self.annotation = handgrading_models.Annotation.objects.validate_and_create(
-            handgrading_rubric=rubric)
+            handgrading_rubric=self.rubric)
 
         submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
@@ -41,7 +41,7 @@ class AppliedAnnotationTestCase(UnitTestBase):
             handgrading_models.HandgradingResult.objects.validate_and_create(
                 submission=submission,
                 group=submission.group,
-                handgrading_rubric=rubric
+                handgrading_rubric=self.rubric
             )
         )
 
@@ -69,10 +69,6 @@ class AppliedAnnotationTestCase(UnitTestBase):
                          self.default_applied_annotation_inputs["location"]["filename"])
 
     def test_filename_in_location_must_be_in_submitted_files(self):
-        """
-        Default submission filename is "test.cpp" (see handgrading_obj_builders)
-        """
-
         # Submission in handgrading_result contains filename "test.cpp" (see defaults),
         # but location's filename is set to "WRONG.cpp"
 
@@ -86,6 +82,20 @@ class AppliedAnnotationTestCase(UnitTestBase):
                 annotation=self.annotation,
                 handgrading_result=self.default_handgrading_result_obj
             )
+
+    def test_annotation_and_handgrading_result_belong_to_different_rubrics(self) -> None:
+        other_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+            project=obj_build.build_project())
+        other_annotation = handgrading_models.Annotation.objects.validate_and_create(
+            handgrading_rubric=other_rubric)
+
+        data = dict(self.default_applied_annotation_inputs)
+        data['annotation'] = other_annotation
+
+        with self.assertRaises(ValidationError) as cm:
+            handgrading_models.AppliedAnnotation.objects.validate_and_create(**data)
+
+        self.assertIn('annotation', cm.exception.message_dict)
 
     def test_serializable_fields(self):
         expected_fields = [

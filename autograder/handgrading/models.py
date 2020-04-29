@@ -324,6 +324,14 @@ class CriterionResult(AutograderModel):
         HandgradingResult, related_name='criterion_results', on_delete=models.CASCADE,
         help_text='''The HandgradingResult this CriterionResult belongs to.''')
 
+    def clean(self) -> None:
+        super().clean()
+        if self.criterion.handgrading_rubric != self.handgrading_result.handgrading_rubric:
+            raise ValidationError({
+                'criterion': 'The selected criterion does not belong to the '
+                             'same handgrading rubric as the requested handgrading result.'
+            })
+
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
 
@@ -381,13 +389,21 @@ class AppliedAnnotation(AutograderModel):
         blank=True, null=True, default=None,
         help_text='''The source code location where the Annotation was applied.''')
 
-    def clean(self):
+    def clean(self) -> None:
         """
         Checks that the filename specified in the location is actually one of
         the files in the submission.
         """
+        super().clean()
+
         if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')
+
+        if self.annotation.handgrading_rubric != self.handgrading_result.handgrading_rubric:
+            raise ValidationError({
+                'annotation': 'The selected annotation does not belong to the '
+                             'same handgrading rubric as the requested handgrading result.'
+            })
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
