@@ -170,7 +170,7 @@ class ListCreateSubmissionView(NestedModelView):
                     late_days_needed = (timestamp - user_deadline).days + 1
 
                     if remaining.late_days_remaining >= late_days_needed:
-                        remaining.late_days_remaining -= late_days_needed
+                        remaining.late_days_used += late_days_needed
                         remaining.save()
                         group.late_days_used.setdefault(user.username, 0)
                         group.late_days_used[user.username] += late_days_needed

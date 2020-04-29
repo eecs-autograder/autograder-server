@@ -602,8 +602,10 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
     def test_user_with_no_late_days_in_group_cannot_submit_after_deadline(self):
         submitter = self.group.members.first()
-        ag_models.LateDaysRemaining.objects.validate_and_create(
-            user=submitter, course=self.course, late_days_remaining=0)
+        late_days_remaining = ag_models.LateDaysRemaining.objects.validate_and_create(
+            user=submitter, course=self.course)
+        late_days_remaining.late_days_used = self.num_late_days
+        late_days_remaining.save()
 
         self.submit(self.group, submitter,
                     self.closing_time + datetime.timedelta(hours=1),
@@ -623,8 +625,10 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
     def test_user_with_not_enough_late_days_in_group_cannot_submit_after_deadline(self):
         submitter = self.group.members.first()
-        ag_models.LateDaysRemaining.objects.validate_and_create(
-            user=submitter, course=self.course, late_days_remaining=1)
+        late_days_remaining = ag_models.LateDaysRemaining.objects.validate_and_create(
+            user=submitter, course=self.course)
+        late_days_remaining.late_days_used = self.num_late_days - 1
+        late_days_remaining.save()
 
         self.group.late_days_used[submitter.username] = 1
         self.group.save()
@@ -641,8 +645,10 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
     def test_non_submitting_member_has_no_late_days_submission_does_not_count_for_them(self):
         submitter = self.group.members.first()
         non_submitter = self.group.members.exclude(pk=submitter.pk).first()
-        ag_models.LateDaysRemaining.objects.validate_and_create(
-            user=non_submitter, course=self.course, late_days_remaining=0)
+        late_days_remaining = ag_models.LateDaysRemaining.objects.validate_and_create(
+            user=non_submitter, course=self.course)
+        late_days_remaining.late_days_used = self.num_late_days
+        late_days_remaining.save()
 
         submission = self.submit(self.group, submitter,
                                  self.closing_time + datetime.timedelta(hours=1),
@@ -663,8 +669,10 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
     def test_non_submitting_member_has_too_few_late_days_submission_does_not_count_for_them(self):
         submitter = self.group.members.first()
         non_submitter = self.group.members.exclude(pk=submitter.pk).first()
-        ag_models.LateDaysRemaining.objects.validate_and_create(
-            user=non_submitter, course=self.course, late_days_remaining=1)
+        late_days_remaining = ag_models.LateDaysRemaining.objects.validate_and_create(
+            user=non_submitter, course=self.course)
+        late_days_remaining.late_days_used = self.num_late_days - 1
+        late_days_remaining.save()
 
         submission = self.submit(self.group, submitter,
                                  self.closing_time + datetime.timedelta(days=1, hours=1),
@@ -686,8 +694,10 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
     def test_group_with_no_late_days_cannot_submit_past_deadline(self):
         for user in self.group.members.all():
-            ag_models.LateDaysRemaining.objects.validate_and_create(
-                user=user, course=self.course, late_days_remaining=0)
+            late_days_remaining = ag_models.LateDaysRemaining.objects.validate_and_create(
+                user=user, course=self.course)
+            late_days_remaining.late_days_used = self.num_late_days
+            late_days_remaining.save()
 
             self.submit(self.group, user,
                         self.closing_time + datetime.timedelta(hours=1),
