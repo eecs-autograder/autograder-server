@@ -131,8 +131,8 @@ class ListCreateSubmissionView(NestedModelView):
 
         is_bonus_submission = False
         if is_past_daily_limit and group.bonus_submissions_remaining > 0:
-            group.validate_and_update(
-                bonus_submissions_remaining=group.bonus_submissions_remaining - 1)
+            group.bonus_submissions_used += 1
+            group.save()
             is_bonus_submission = True
             is_past_daily_limit = False
 
@@ -409,7 +409,7 @@ class RemoveSubmissionFromQueueView(AGModelAPIView):
         if refund_bonus_submission:
             ag_models.Group.objects.select_for_update().filter(
                 pk=submission.group_id
-            ).update(bonus_submissions_remaining=F('bonus_submissions_remaining') + 1)
+            ).update(bonus_submissions_used=F('bonus_submissions_used') - 1)
 
         submission.status = (
             ag_models.Submission.GradingStatus.removed_from_queue)
