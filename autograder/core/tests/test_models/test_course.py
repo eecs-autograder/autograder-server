@@ -145,54 +145,175 @@ class CourseTestCase(UnitTestBase):
 class LateDaysRemainingTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.course = obj_build.make_course()
-        self.user = obj_build.make_user()
+        self.course = obj_build.make_course(num_late_days=4)
+
+        self.no_tokens_used = LateDaysRemaining.objects.validate_and_create(
+            course=self.course, user=obj_build.make_user())
+
+        self.some_tokens_used = LateDaysRemaining.objects.validate_and_create(
+            course=self.course, user=obj_build.make_user())
+        self.some_tokens_used.late_days_used = 3
+        self.some_tokens_used.save()
+
+        self.all_tokens_used = LateDaysRemaining.objects.validate_and_create(
+            course=self.course, user=obj_build.make_user())
+        self.all_tokens_used.late_days_used = 4
+        self.all_tokens_used.save()
 
     def test_valid_create_with_defaults(self):
+        user = obj_build.make_user()
         num_late_days = 2
         self.course.validate_and_update(num_late_days=num_late_days)
         remaining = LateDaysRemaining.objects.validate_and_create(
             course=self.course,
-            user=self.user,
+            user=user,
         )
 
         self.assertEqual(self.course, remaining.course)
-        self.assertEqual(self.user, remaining.user)
+        self.assertEqual(user, remaining.user)
         self.assertEqual(num_late_days, remaining.late_days_remaining)
 
-    def test_valid_create(self):
-        late_days_remaining = 2
-        remaining = LateDaysRemaining.objects.validate_and_create(
-            course=self.course,
-            user=self.user,
-            late_days_remaining=late_days_remaining
-        )
-
-        self.assertEqual(self.course, remaining.course)
-        self.assertEqual(self.user, remaining.user)
-        self.assertEqual(late_days_remaining, remaining.late_days_remaining)
-
     def test_error_already_exists_for_user_and_course(self):
+        user = obj_build.make_user()
         LateDaysRemaining.objects.validate_and_create(
             course=self.course,
-            user=self.user,
-            late_days_remaining=1
+            user=user,
         )
 
         with self.assertRaises(ValidationError):
             LateDaysRemaining.objects.validate_and_create(
                 course=self.course,
-                user=self.user,
-                late_days_remaining=3
+                user=user,
             )
 
     def test_error_negative_late_days_remaining(self):
-        with self.assertRaises(ValidationError):
-            LateDaysRemaining.objects.validate_and_create(
-                course=self.course,
-                user=self.user,
-                late_days_remaining=-1
-            )
+        user = obj_build.make_user()
+        late_days = LateDaysRemaining.objects.validate_and_create(
+            course=self.course,
+            user=user,
+        )
+        with self.assertRaises(ValidationError) as cm:
+            late_days.late_days_remaining = -1
+
+        self.assertIn('late_days_remaining', cm.exception.message_dict)
+
+    def test_individual_given_extra_tokens(self) -> None:
+        self.assertEqual(4, self.no_tokens_used.late_days_remaining)
+        self.no_tokens_used.late_days_remaining = 5
+        self.no_tokens_used.save()
+        self.no_tokens_used.refresh_from_db()
+        self.assertEqual(5, self.no_tokens_used.late_days_remaining)
+        self.assertEqual(0, self.no_tokens_used.late_days_used)
+
+        self.assertEqual(1, self.some_tokens_used.late_days_remaining)
+        self.some_tokens_used.late_days_remaining = 2
+        self.some_tokens_used.save()
+        self.some_tokens_used.refresh_from_db()
+        self.assertEqual(2, self.some_tokens_used.late_days_remaining)
+        self.assertEqual(3, self.some_tokens_used.late_days_used)
+
+        self.assertEqual(0, self.all_tokens_used.late_days_remaining)
+        self.all_tokens_used.late_days_remaining = 3
+        self.all_tokens_used.save()
+        self.all_tokens_used.refresh_from_db()
+        self.assertEqual(3, self.all_tokens_used.late_days_remaining)
+        self.assertEqual(4, self.all_tokens_used.late_days_used)
+
+    def test_individual_tokens_given_extra_and_revoked(self) -> None:
+        self.assertEqual(4, self.no_tokens_used.late_days_remaining)
+        self.no_tokens_used.late_days_remaining = 6
+        self.no_tokens_used.save()
+        self.no_tokens_used.refresh_from_db()
+
+        self.assertEqual(6, self.no_tokens_used.late_days_remaining)
+        self.no_tokens_used.late_days_remaining = 3
+        self.no_tokens_used.save()
+        self.no_tokens_used.refresh_from_db()
+        self.assertEqual(3, self.no_tokens_used.late_days_remaining)
+        self.assertEqual(0, self.no_tokens_used.late_days_used)
+
+    def test_individual_tokens_revoked_then_given_extra(self) -> None:
+        self.assertEqual(4, self.no_tokens_used.late_days_remaining)
+        self.no_tokens_used.late_days_remaining = 3
+        self.no_tokens_used.save()
+        self.no_tokens_used.refresh_from_db()
+
+        self.assertEqual(3, self.no_tokens_used.late_days_remaining)
+        self.no_tokens_used.late_days_remaining = 5
+        self.no_tokens_used.save()
+        self.no_tokens_used.refresh_from_db()
+        self.assertEqual(5, self.no_tokens_used.late_days_remaining)
+
+    def test_tokens_remaining_set_to_zero(self) -> None:
+        self.some_tokens_used.late_days_remaining = 0
+        self.some_tokens_used.save()
+        self.some_tokens_used.refresh_from_db()
+        self.assertEqual(0, self.some_tokens_used.late_days_remaining)
+        self.assertEqual(3, self.some_tokens_used.late_days_used)
+
+    def test_invalid_set_late_days_remaining_to_be_negative(self) -> None:
+        with self.assertRaises(ValidationError) as cm:
+            self.some_tokens_used.late_days_remaining = -1
+            self.some_tokens_used.save()
+
+        self.assertIn('late_days_remaining', cm.exception.message_dict)
+
+    def test_individual_group_given_extra_tokens_twice(self) -> None:
+        self.some_tokens_used.late_days_remaining = 2
+        self.some_tokens_used.save()
+        self.some_tokens_used.refresh_from_db()
+        self.assertEqual(2, self.some_tokens_used.late_days_remaining)
+        self.assertEqual(3, self.some_tokens_used.late_days_used)
+
+        self.some_tokens_used.late_days_remaining = 3
+        self.some_tokens_used.save()
+        self.some_tokens_used.refresh_from_db()
+        self.assertEqual(3, self.some_tokens_used.late_days_remaining)
+        self.assertEqual(3, self.some_tokens_used.late_days_used)
+
+    def test_course_token_count_lowered_then_raised(self) -> None:
+        self.assertEqual(0, self.all_tokens_used.late_days_remaining)
+        self.assertEqual(1, self.some_tokens_used.late_days_remaining)
+        self.assertEqual(4, self.no_tokens_used.late_days_remaining)
+
+        self.course.validate_and_update(num_late_days=self.course.num_late_days - 2)
+
+        self.no_tokens_used.refresh_from_db()
+        self.some_tokens_used.refresh_from_db()
+        self.all_tokens_used.refresh_from_db()
+
+        self.assertEqual(0, self.all_tokens_used.late_days_remaining)
+        self.assertEqual(0, self.some_tokens_used.late_days_remaining)
+        self.assertEqual(2, self.no_tokens_used.late_days_remaining)
+
+        self.course.validate_and_update(num_late_days=self.course.num_late_days + 3)
+
+        self.no_tokens_used.refresh_from_db()
+        self.some_tokens_used.refresh_from_db()
+        self.all_tokens_used.refresh_from_db()
+
+        self.assertEqual(1, self.all_tokens_used.late_days_remaining)
+        self.assertEqual(2, self.some_tokens_used.late_days_remaining)
+        self.assertEqual(5, self.no_tokens_used.late_days_remaining)
+
+    def test_course_token_count_lowered_then_group_granted_extra(self) -> None:
+        self.assertEqual(0, self.all_tokens_used.late_days_remaining)
+        self.course.validate_and_update(
+            num_late_days=self.course.num_late_days - 2)
+        self.all_tokens_used.refresh_from_db()
+
+        self.assertEqual(0, self.all_tokens_used.late_days_remaining)
+        self.all_tokens_used.late_days_remaining = 2
+        self.all_tokens_used.save()
+        self.all_tokens_used.refresh_from_db()
+        self.assertEqual(2, self.all_tokens_used.late_days_remaining)
+
+        # If we re-raise the course count, the user's count should go up
+        # by the same amount
+        self.course.validate_and_update(
+            num_late_days=self.course.num_late_days + 3)
+        self.all_tokens_used.refresh_from_db()
+        self.assertEqual(5, self.all_tokens_used.late_days_remaining)
 
 
 class CourseFilesystemTestCase(UnitTestBase):

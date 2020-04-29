@@ -98,7 +98,7 @@ class Group(ag_model_base.AutograderModel):
 
     @property
     def bonus_submissions_remaining(self) -> int:
-        """The number of bonus submissions this group has left."""
+        """The number of unused bonus submission tokens this group has."""
         return max(0, self._true_bonus_submissions_remaining)
 
     @bonus_submissions_remaining.setter
@@ -108,9 +108,6 @@ class Group(ag_model_base.AutograderModel):
                 'bonus_submissions_remaining': 'This value cannot be negative.'
             })
 
-        # Unlike self.bonus_submissions_remaining, this value
-        # can be negative.
-        true_total = ()
         self._extra_bonus_submissions_granted += value - self._true_bonus_submissions_remaining
 
     @property

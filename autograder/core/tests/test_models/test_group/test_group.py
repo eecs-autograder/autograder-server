@@ -189,9 +189,11 @@ class BonusSubmissionTokenCountTestCase(test_ut.UnitTestBase):
         self.course = self.project.course
 
         self.no_tokens_used_group = obj_build.make_group(project=self.project)
+
         self.some_tokens_used_group = obj_build.make_group(project=self.project)
         self.some_tokens_used_group.bonus_submissions_used = 3
         self.some_tokens_used_group.save()
+
         self.all_tokens_used_group = obj_build.make_group(project=self.project)
         self.all_tokens_used_group.bonus_submissions_used = 4
         self.all_tokens_used_group.save()
