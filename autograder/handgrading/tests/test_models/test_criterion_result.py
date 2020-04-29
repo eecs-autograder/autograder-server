@@ -13,6 +13,9 @@ class CriterionResultTestCases(UnitTestBase):
     def setUp(self):
         super().setUp()
 
+        submission = obj_build.make_submission()
+        self.project = submission.project
+
         self.default_handgrading_rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
@@ -20,7 +23,7 @@ class CriterionResultTestCases(UnitTestBase):
                 show_grades_and_rubric_to_students=False,
                 handgraders_can_leave_comments=True,
                 handgraders_can_adjust_points=True,
-                project=obj_build.build_project()
+                project=self.project
             )
         )
 
@@ -28,8 +31,6 @@ class CriterionResultTestCases(UnitTestBase):
             points=0,
             handgrading_rubric=self.default_handgrading_rubric
         )
-
-        submission = obj_build.make_submission()
 
         self.result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
