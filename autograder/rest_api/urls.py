@@ -114,10 +114,6 @@ urlpatterns = [
          views.MergeGroupsView.as_view(),
          name='merge-groups'),
 
-    path('projects/<int:project_pk>/groups/bonus_submissions/',
-         views.EditBonusSubmissionsView.as_view(),
-         name='edit-bonus-submissions'),
-
     path('groups/<int:pk>/submissions/', views.ListCreateSubmissionView.as_view(),
          name='submissions'),
     path('submissions/<int:pk>/', views.SubmissionDetailView.as_view(),

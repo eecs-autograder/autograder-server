@@ -12,6 +12,7 @@ from django.db import models, transaction
 
 from autograder.core.fields import ValidatedJSONField
 from autograder.rest_api.serialize_user import serialize_user
+from django.core.exceptions import FieldDoesNotExist
 
 
 class AutograderModelManager(models.Manager):
@@ -539,7 +540,12 @@ class AutograderModel(ToDictMixin, models.Model):
                 raise exceptions.ValidationError(
                     {'non_editable_fields': [field_name]})
 
-            field = self._meta.get_field(field_name)
+            try:
+                field = self._meta.get_field(field_name)
+            except FieldDoesNotExist:
+                # The field is most likely a property setter.
+                setattr(self, field_name, val)
+                continue
 
             if isinstance(field, ValidatedJSONField):
                 if isinstance(val, dict):

@@ -6603,57 +6603,6 @@ paths:
         content: *id030
       tags:
       - sandbox_docker_images
-  /api/projects/{project_pk}/groups/bonus_submissions/:
-    patch:
-      operationId: massEditBonusSubmissions
-      description: ''
-      parameters:
-      - name: project_pk
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      - name: group_pk
-        in: query
-        description: "Instead of modifying the bonus submission totals for\n     \
-          \                   every group, only modify the group with this ID."
-        schema:
-          type: integer
-          format: id
-      responses:
-        '204': {}
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-              - type: object
-                properties:
-                  add:
-                    type: integer
-                    description: "How many bonus submissions to add\n            \
-                      \                                    to each group's total."
-              - type: object
-                properties:
-                  subtract:
-                    type: integer
-                    description: "How many bonus submissions to subtract from\n  \
-                      \                                              each group's\
-                      \ total."
-            examples:
-              addExample:
-                summary: Give every group 2 extra bonus submissions.
-                value:
-                  add: 2
-              subtractExample:
-                summary: Take away 1 bonus submission from every group.
-                value:
-                  subtract: 1
-      tags:
-      - projects
-      - groups
   /api/projects/{id}/results_cache/:
     delete:
       operationId: clearSubmissionResultsCache
@@ -7022,9 +6971,7 @@ components:
           items:
             $ref: '#/components/schemas/User'
         bonus_submissions_remaining:
-          description: "The number of bonus submissions this group has left.\n   \
-            \         This field is automatically initialized to self.project.num_bonus_submissions"
-          nullable: false
+          description: The number of unused bonus submission tokens this group has.
           type: integer
         late_days_used:
           description: "Keeps track of how many late days each user in this\n    \
