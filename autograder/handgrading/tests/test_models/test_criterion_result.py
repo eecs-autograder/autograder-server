@@ -3,6 +3,7 @@
 import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
+from django.core.exceptions import ValidationError
 
 
 class CriterionResultTestCases(UnitTestBase):
@@ -50,6 +51,20 @@ class CriterionResultTestCases(UnitTestBase):
         self.assertEqual(criterion_result_obj.criterion, self.criterion_inputs["criterion"])
         self.assertEqual(criterion_result_obj.handgrading_result,
                          self.criterion_inputs["handgrading_result"])
+
+    def test_criterion_and_handgrading_result_belong_to_different_rubrics(self) -> None:
+        other_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+            project=obj_build.build_project())
+        other_criterion = handgrading_models.Criterion.objects.validate_and_create(
+            handgrading_rubric=other_rubric)
+
+        data = dict(self.criterion_inputs)
+        data['criterion'] = other_criterion
+
+        with self.assertRaises(ValidationError) as cm:
+            handgrading_models.CriterionResult.objects.validate_and_create(**data)
+
+        self.assertIn('criterion', cm.exception.message_dict)
 
     def test_serializable_fields(self):
         expected_fields = [
