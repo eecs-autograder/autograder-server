@@ -4,6 +4,13 @@ import django.core.validators
 from django.db import migrations, models
 
 
+def migrate_late_day_totals(apps, schema_editor):
+    LateDaysRemaining = apps.get_model('core', 'LateDaysRemaining')
+    for obj in LateDaysRemaining.objects.all():
+        obj.late_days_remaining = obj.old_late_days_remaining
+        obj.save()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -26,4 +33,7 @@ class Migration(migrations.Migration):
             name='old_late_days_remaining',
             field=models.IntegerField(blank=True, default=0, validators=[django.core.validators.MinValueValidator(0)]),
         ),
+
+        migrations.RunPython(
+            migrate_late_day_totals, reverse_code=lambda apps, schema_editor: None),
     ]

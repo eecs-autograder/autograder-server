@@ -4,6 +4,13 @@ import django.core.validators
 from django.db import migrations, models
 
 
+def migrate_bonus_submission_totals(apps, schema_editor):
+    Group = apps.get_model('core', 'Group')
+    for group in Group.objects.all():
+        group.bonus_submissions_remaining = group.old_bonus_submissions_remaining
+        group.save()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -16,4 +23,7 @@ class Migration(migrations.Migration):
             name='old_bonus_submissions_remaining',
             field=models.IntegerField(blank=True, default=0, help_text='The number of bonus submissions this group has left.\n            This field is automatically initialized to self.project.num_bonus_submissions', validators=[django.core.validators.MinValueValidator(0)]),
         ),
+
+        migrations.RunPython(
+            migrate_bonus_submission_totals, reverse_code=lambda apps, schema_editor: None),
     ]
