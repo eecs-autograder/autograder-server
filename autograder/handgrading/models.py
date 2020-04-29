@@ -402,7 +402,7 @@ class AppliedAnnotation(AutograderModel):
         if self.annotation.handgrading_rubric != self.handgrading_result.handgrading_rubric:
             raise ValidationError({
                 'annotation': 'The selected annotation does not belong to the '
-                             'same handgrading rubric as the requested handgrading result.'
+                              'same handgrading rubric as the requested handgrading result.'
             })
 
     SERIALIZABLE_FIELDS = ('pk',
