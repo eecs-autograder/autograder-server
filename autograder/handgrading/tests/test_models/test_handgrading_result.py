@@ -284,19 +284,19 @@ class HandgradingResultTestCase(UnitTestBase):
             'total_points_possible',
         ]
 
-        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
-
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=submission,
-            group=submission.group,
+            submission=self.submission,
+            group=self.submission.group,
             handgrading_rubric=self.rubric
         )
+
+        filename = self.submitted_files[0].name
 
         applied_annotation = handgrading_models.AppliedAnnotation.objects.validate_and_create(
             location={
                 "first_line": 0,
                 "last_line": 1,
-                "filename": "test.cpp"
+                "filename": filename
             },
             annotation=handgrading_models.Annotation.objects.validate_and_create(
                 handgrading_rubric=self.rubric),
@@ -306,7 +306,7 @@ class HandgradingResultTestCase(UnitTestBase):
             location={
                 "first_line": 0,
                 "last_line": 1,
-                "filename": "test.cpp"
+                "filename": filename
             },
             text="HI",
             handgrading_result=result)
@@ -315,7 +315,7 @@ class HandgradingResultTestCase(UnitTestBase):
             location={
                 "first_line": 0,
                 "last_line": 1,
-                "filename": "test.cpp"
+                "filename": filename
             },
             text="HI",
             handgrading_result=result)
