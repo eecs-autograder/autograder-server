@@ -3,8 +3,9 @@ import copy
 from django.core import exceptions
 
 import autograder.core.models as ag_models
-from autograder.core import constants
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core import constants
+from autograder.core.models.ag_test.ag_test_command import MAX_EXPECTED_OUTPUT_TEXT_LENGTH
 from autograder.utils.testing import UnitTestBase
 
 
@@ -400,7 +401,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertIn('expected_stderr_source', cm.exception.message_dict)
 
     def test_error_expected_output_text_too_large(self):
-        too_much_text = 'A' * (constants.MAX_OUTPUT_LENGTH + 1)
+        too_much_text = 'A' * (MAX_EXPECTED_OUTPUT_TEXT_LENGTH + 1)
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AGTestCommand.objects.validate_and_create(
                 name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,

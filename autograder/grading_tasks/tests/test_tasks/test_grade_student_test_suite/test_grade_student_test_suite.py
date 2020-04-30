@@ -417,8 +417,8 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         expected_cmd_args = {
             'timeout': time_limit,
             'max_virtual_memory': None,
-            'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
-            'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
+            'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,
         }
         run_command_mock.assert_has_calls([
             mock.call(['bash', '-c', 'true'], stdin=None, as_root=False, **expected_cmd_args),

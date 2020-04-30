@@ -72,7 +72,7 @@ class CreateInstuctorFileTestCase(_SetUp):
             self.assertIn('file_obj', cm.exception.message_dict)
 
     def test_error_file_too_big(self):
-        too_big = SimpleUploadedFile('wee', b'a' * (constants.MAX_PROJECT_FILE_SIZE + 1))
+        too_big = SimpleUploadedFile('wee', b'a' * (constants.MAX_INSTRUCTOR_FILE_SIZE + 1))
         with self.assertRaises(exceptions.ValidationError) as cm:
             InstructorFile.objects.validate_and_create(project=self.project, file_obj=too_big)
 

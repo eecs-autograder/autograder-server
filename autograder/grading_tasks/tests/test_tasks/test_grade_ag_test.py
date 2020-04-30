@@ -410,8 +410,10 @@ sys.stderr.flush()
         self.assertFalse(res.timed_out)
         self.assertTrue(res.stdout_truncated)
         self.assertTrue(res.stderr_truncated)
-        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.stdout_filename))
-        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.stderr_filename))
+        self.assertEqual(
+            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.stdout_filename))
+        self.assertEqual(
+            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.stderr_filename))
 
     def test_program_prints_non_unicode_chars(self, *args):
         cmd = obj_build.make_full_ag_test_command(
@@ -449,8 +451,10 @@ sys.stderr.flush()
         self.assertTrue(res.setup_stdout_truncated)
         self.assertTrue(res.setup_stderr_truncated)
 
-        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.setup_stdout_filename))
-        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.setup_stderr_filename))
+        self.assertEqual(
+            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.setup_stdout_filename))
+        self.assertEqual(
+            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.setup_stderr_filename))
 
     def test_setup_print_non_unicode_chars(self, *args):
         self.ag_test_suite.validate_and_update(
@@ -500,16 +504,16 @@ sys.stderr.flush()
             # 'max_num_processes': constants.MAX_PROCESS_LIMIT,
             # 'max_stack_size': constants.MAX_STACK_SIZE_LIMIT,
             'max_virtual_memory': None,
-            'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
-            'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
+            'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,
         }
         expected_cmd_args = {
             'timeout': time_limit,
             # 'max_num_processes': process_spawn_limit,
             # 'max_stack_size': stack_size_limit,
             'max_virtual_memory': virtual_memory_limit,
-            'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
-            'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
+            'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,
         }
         run_command_mock.assert_has_calls([
             mock.call(['bash', '-c', self.ag_test_suite.setup_suite_cmd],
@@ -547,8 +551,8 @@ sys.stderr.flush()
         expected_cmd_args = {
             'timeout': time_limit,
             'max_virtual_memory': None,
-            'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
-            'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
+            'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,
         }
         run_command_mock.assert_has_calls([
             mock.call(['bash', '-c', cmd.cmd], stdin=None, as_root=False, **expected_cmd_args),

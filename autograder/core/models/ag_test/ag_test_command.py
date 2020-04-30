@@ -193,6 +193,11 @@ class ExpectedReturnCode(enum.Enum):
     nonzero = 'nonzero'
 
 
+# The maximum length of the "expected_stdout_text" and "expected_stderr_text"
+# fields in AGTestCommand.
+MAX_EXPECTED_OUTPUT_TEXT_LENGTH = 8 * pow(10, 6)  # 8,000,000 characters
+
+
 class AGTestCommand(AGCommandBase):
     """
     An AGTestCommand represents a single command to evaluate student code.
@@ -238,7 +243,7 @@ class AGTestCommand(AGCommandBase):
         help_text="Specifies what kind of source this command's stdout should be compared to.")
     expected_stdout_text = models.TextField(
         blank=True,
-        validators=[MaxLengthValidator(constants.MAX_OUTPUT_LENGTH)],
+        validators=[MaxLengthValidator(MAX_EXPECTED_OUTPUT_TEXT_LENGTH)],
         help_text='''A string whose contents should be compared against this command's stdout.
                      This value is used when expected_stdout_source is ExpectedOutputSource.text
                      and is ignored otherwise.''')
@@ -254,7 +259,7 @@ class AGTestCommand(AGCommandBase):
         help_text="Specifies what kind of source this command's stderr should be compared to.")
     expected_stderr_text = models.TextField(
         blank=True,
-        validators=[MaxLengthValidator(constants.MAX_OUTPUT_LENGTH)],
+        validators=[MaxLengthValidator(MAX_EXPECTED_OUTPUT_TEXT_LENGTH)],
         help_text='''A string whose contents should be compared against this command's stderr.
                      This value is used when expected_stderr_source is ExpectedOutputSource.text
                      and is ignored otherwise.''')

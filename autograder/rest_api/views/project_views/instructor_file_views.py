@@ -162,11 +162,11 @@ class InstructorFileContentView(AGModelAPIView):
         uploaded_file = self.get_object()
         uploaded_file.save(update_fields=['last_modified'])
 
-        if self.request.data['file_obj'].size > constants.MAX_PROJECT_FILE_SIZE:
+        if self.request.data['file_obj'].size > constants.MAX_INSTRUCTOR_FILE_SIZE:
             return response.Response(
                 {
                     'content': 'Project files cannot be bigger than {} bytes'.format(
-                        constants.MAX_PROJECT_FILE_SIZE)
+                        constants.MAX_INSTRUCTOR_FILE_SIZE)
                 },
                 status=status.HTTP_400_BAD_REQUEST)
         with open(uploaded_file.abspath, 'wb') as f:
