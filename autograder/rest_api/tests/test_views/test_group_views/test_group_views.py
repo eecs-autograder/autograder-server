@@ -97,7 +97,7 @@ class ListGroupsTestCase(AGViewTestBase):
             timestamp=timezone.now() - datetime.timedelta(days=1))
         group1_not_towards_limit_submission = obj_build.make_submission(
             group=group1,
-            count_towards_daily_limit=False)
+            status=ag_models.Submission.GradingStatus.error)
         group1_towards_limit_submission = obj_build.make_submission(group=group1)
 
         group1.refresh_from_db()
@@ -113,7 +113,7 @@ class ListGroupsTestCase(AGViewTestBase):
             timestamp=timezone.now() - datetime.timedelta(days=1))
         group2_not_towards_limit_submission = obj_build.make_submission(
             group=group2,
-            count_towards_daily_limit=False)
+            status=ag_models.Submission.GradingStatus.removed_from_queue)
         group2_towards_limit_submission = obj_build.make_submission(group=group2)
 
         group2.refresh_from_db()
@@ -386,7 +386,7 @@ class RetrieveGroupTestCase(AGViewTestBase):
             timestamp=timezone.now() - datetime.timedelta(days=1))
         not_towards_limit_submission = obj_build.make_submission(
             group=group,
-            count_towards_daily_limit=False)
+            status=ag_models.Submission.GradingStatus.removed_from_queue)
         towards_limit_submission = obj_build.make_submission(group=group)
 
         group.refresh_from_db()

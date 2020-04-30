@@ -280,10 +280,12 @@ def make_group(num_members: int=1,
     if project is None:
         project = make_project()
 
-    # if members is None:
     members = make_users(num_members)
 
+    original_guests_can_submit: Optional[bool] = None
+
     if members_role == UserRole.guest:
+        original_guests_can_submit = project.guests_can_submit
         project.validate_and_update(guests_can_submit=True)
     elif members_role == UserRole.student:
         project.course.students.add(*members)
@@ -292,16 +294,19 @@ def make_group(num_members: int=1,
     elif members_role == UserRole.admin:
         project.course.admins.add(*members)
 
-    return ag_models.Group.objects.validate_and_create(
+    result = ag_models.Group.objects.validate_and_create(
         members=members,
         project=project,
         check_group_size_limits=False,
         **group_kwargs)
 
+    if original_guests_can_submit is not None:
+        project.validate_and_update(guests_can_submit=original_guests_can_submit)
+
+    return result
+
 
 def make_group_invitation(
-    # sender: User=None,
-    # recipients: Sequence[User]=None,
     project: ag_models.Project=None,
     num_recipients: int=1,
     users_role: UserRole=UserRole.student,
@@ -309,16 +314,16 @@ def make_group_invitation(
     if project is None:
         project = make_project()
 
-    # if sender is None:
     sender = make_user()
-
-    # if recipients is None:
     recipients = make_users(num_recipients)
 
     project.max_group_size = 1 + len(recipients)
     project.save()
 
+    original_guests_can_submit: Optional[bool] = None
+
     if users_role == UserRole.guest:
+        original_guests_can_submit = project.guests_can_submit
         project.validate_and_update(guests_can_submit=True)
     elif users_role == UserRole.student:
         project.course.students.add(sender, *recipients)
@@ -327,8 +332,13 @@ def make_group_invitation(
     elif users_role == UserRole.admin:
         project.course.admins.add(sender, *recipients)
 
-    return ag_models.GroupInvitation.objects.validate_and_create(
+    result = ag_models.GroupInvitation.objects.validate_and_create(
         sender, recipients, project=project)
+
+    if original_guests_can_submit is not None:
+        project.validate_and_update(guests_can_submit=original_guests_can_submit)
+
+    return result
 
 
 def make_ag_test_suite(project: ag_models.Project=None,

@@ -202,11 +202,6 @@ class Submission(ag_model_base.AutograderModel):
         help_text="""The grading status of this submission see
             Submission.GradingStatus for details on allowed values.""")
 
-    count_towards_daily_limit = models.BooleanField(
-        default=True,
-        help_text="""Indicates whether this submission should count
-            towards the daily submission limit.""")
-
     is_past_daily_limit = models.BooleanField(
         default=False,
         help_text="Whether this submission is past the daily submission limit.")
@@ -319,7 +314,6 @@ class Submission(ag_model_base.AutograderModel):
         'missing_files',
         'status',
 
-        'count_towards_daily_limit',
         'is_past_daily_limit',
         'is_bonus_submission',
 
@@ -332,7 +326,7 @@ class Submission(ag_model_base.AutograderModel):
         'last_modified'
     )
 
-    EDITABLE_FIELDS = ('count_towards_daily_limit', 'count_towards_total_limit')
+    EDITABLE_FIELDS = ('count_towards_total_limit',)
 
 
 # These functions return querysets that are optimized to return
