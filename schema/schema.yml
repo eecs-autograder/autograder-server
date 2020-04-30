@@ -2020,12 +2020,6 @@ paths:
                   nullable: false
                   readOnly: true
                   type: string
-                count_towards_daily_limit:
-                  description: "Indicates whether this submission should count\n \
-                    \           towards the daily submission limit."
-                  nullable: false
-                  readOnly: false
-                  type: boolean
                 is_past_daily_limit:
                   description: Whether this submission is past the daily submission
                     limit.
@@ -7080,11 +7074,6 @@ components:
             \ for details on allowed values."
           nullable: false
           type: string
-        count_towards_daily_limit:
-          description: "Indicates whether this submission should count\n         \
-            \   towards the daily submission limit."
-          nullable: false
-          type: boolean
         is_past_daily_limit:
           description: Whether this submission is past the daily submission limit.
           nullable: false

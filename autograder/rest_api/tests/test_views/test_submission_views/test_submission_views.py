@@ -1,7 +1,7 @@
 import datetime
 import os
 import random
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional
 from unittest import mock
 
 from django.contrib.auth.models import User
@@ -13,139 +13,171 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder import utils
-from autograder.core.submission_feedback import \
-    update_denormalized_ag_test_results
-from autograder.rest_api.tests.test_views.ag_view_test_base import \
-    AGViewTestBase
+from autograder.core.submission_feedback import update_denormalized_ag_test_results
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 from autograder.utils.testing import UnitTestBase
 
-# TODO: When removing common_generic_data module, add tests for
-# guests and allowed domain.
+
+def submissions_url(group: ag_models.Group) -> str:
+    return reverse('submissions', kwargs={'pk': group.pk})
 
 
-class ListSubmissionsTestCase(test_data.Client,
-                              test_data.Project,
-                              test_data.Group,
-                              test_data.Submission,
-                              test_impls.ListObjectsTest,
-                              UnitTestBase):
+class ListSubmissionsTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.maxDiff = None
 
-    def test_admin_or_staff_list_submissions(self):
-        for project in self.all_projects:
-            for group in self.at_least_enrolled_groups(project):
-                expected_data = [
-                    submission.to_dict() for submission in self.build_submissions(group)]
-                for user in self.admin, self.staff:
-                    self.do_list_objects_test(
-                        self.client, user, self.submissions_url(group),
-                        expected_data)
+        self.client = APIClient()
+        self.project = obj_build.make_project()
+        self.course = self.project.course
 
-        for project in self.hidden_public_project, self.visible_public_project:
-            group = self.non_enrolled_group(project)
-            expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
-            for user in self.admin, self.staff:
-                self.do_list_objects_test(
-                    self.client, user, self.submissions_url(group),
-                    expected_data)
+    def test_staff_list_submissions_for_any_group(self):
+        staff = obj_build.make_staff_user(self.course)
+        self._do_list_submissions_test(staff, group_role=obj_build.UserRole.admin)
+        self._do_list_submissions_test(staff, group_role=obj_build.UserRole.staff)
+        self._do_list_submissions_test(staff, group_role=obj_build.UserRole.student)
+        self._do_list_submissions_test(staff, group_role=obj_build.UserRole.guest)
 
-    def test_enrolled_list_submissions(self):
-        for project in self.visible_projects:
-            group = self.enrolled_group(project)
-            expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
-            self.do_list_objects_test(
-                self.client, self.enrolled, self.submissions_url(group),
-                expected_data)
+    def _do_list_submissions_test(self, requester: User, group_role: obj_build.UserRole) -> None:
+        group = obj_build.make_group(project=self.project, members_role=group_role)
+        submissions = self._make_submissions(group)
+        self.do_list_objects_test(
+            self.client, requester, submissions_url(group),
+            [submission.to_dict() for submission in submissions]
+        )
+
+    def test_student_list_submissions_for_own_group(self):
+        self.project.validate_and_update(visible_to_students=True)
+
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        submissions = self._make_submissions(student_group)
+
+        self.do_list_objects_test(
+            self.client, student_group.members.first(), submissions_url(student_group),
+            [submission.to_dict() for submission in submissions]
+        )
+
+    def test_guest_list_submissions_for_own_group(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+
+        guest_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.guest)
+        submissions = self._make_submissions(guest_group)
+
+        self.do_list_objects_test(
+            self.client, guest_group.members.first(), submissions_url(guest_group),
+            [submission.to_dict() for submission in submissions]
+        )
 
     def test_handgrader_list_student_group_submissions_permission_denied(self):
-        for project in self.visible_projects:
-            group = self.enrolled_group(project)
-            expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
-            self.do_permission_denied_get_test(
-                self.client, self.handgrader, self.submissions_url(group), expected_data)
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
 
-    def test_non_enrolled_list_submissions(self):
-        group = self.non_enrolled_group(self.visible_public_project)
-        expected_data = [submission.to_dict() for submission in self.build_submissions(group)]
-        self.do_list_objects_test(
-            self.client, self.nobody, self.submissions_url(group),
-            expected_data)
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        submissions = self._make_submissions(student_group)
+
+        handgrader = obj_build.make_handgrader_user(self.course)
+        self.do_permission_denied_get_test(
+            self.client, handgrader, submissions_url(student_group))
 
     def test_non_group_member_list_submissions_permission_denied(self):
-        group = self.enrolled_group(self.visible_public_project)
-        self.build_submissions(group)
-        non_member = self.clone_user(self.enrolled)
-        for user in non_member, self.nobody:
-            self.do_permission_denied_get_test(
-                self.client, user, self.submissions_url(group))
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
 
-    def test_enrolled_list_submissions_project_hidden_permission_denied(self):
-        for project in self.hidden_projects:
-            group = self.enrolled_group(project)
-            self.build_submissions(group)
-            self.do_permission_denied_get_test(
-                self.client, self.enrolled, self.submissions_url(group))
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        submissions = self._make_submissions(student_group)
 
-    def test_non_enrolled_list_submissions_project_hidden_permission_denied(self):
-        group = self.non_enrolled_group(self.hidden_public_project)
-        self.build_submissions(group)
+        other_student = obj_build.make_student_user(self.course)
         self.do_permission_denied_get_test(
-            self.client, self.nobody, self.submissions_url(group))
+            self.client, other_student, submissions_url(student_group))
 
-    def test_non_enrolled_list_submissions_project_private_permission_denied(self):
-        group = self.non_enrolled_group(self.visible_public_project)
-        self.build_submissions(group)
-        self.visible_public_project.validate_and_update(
-            guests_can_submit=False)
+    def test_student_list_submissions_project_hidden_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=False, guests_can_submit=True)
+
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        submissions = self._make_submissions(student_group)
+
         self.do_permission_denied_get_test(
-            self.client, self.nobody, self.submissions_url(group))
+            self.client, student_group.members.first(), submissions_url(student_group))
+
+    def test_guest_list_submissions_project_hidden_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=False, guests_can_submit=True)
+
+        guest_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.guest)
+        submissions = self._make_submissions(guest_group)
+
+        self.do_permission_denied_get_test(
+            self.client, guest_group.members.first(), submissions_url(guest_group))
+
+    def test_guest_list_submissions_project_private_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
+
+        guest_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.guest)
+        submissions = self._make_submissions(guest_group)
+
+        self.do_permission_denied_get_test(
+            self.client, guest_group.members.first(), submissions_url(guest_group))
+
+    def _make_submissions(
+        self, group: ag_models.Group, num_submissions=4
+    ) -> List[ag_models.Submission]:
+        return [obj_build.make_finished_submission(group) for i in range(num_submissions)]
 
 
-class CreateSubmissionTestCase(test_data.Client,
-                               test_data.Project,
-                               test_data.Group,
-                               test_data.Submission,
-                               test_impls.CreateObjectTest,
-                               UnitTestBase):
+class CreateSubmissionTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.maxDiff = None
+
+        self.client = APIClient()
+        self.project = obj_build.make_project()
+        self.course = self.project.course
+
     def test_admin_or_staff_submit(self):
-        for project in self.all_projects:
-            project.validate_and_update(
-                closing_time=timezone.now() + timezone.timedelta(minutes=1))
-            for group in (self.admin_group(project),
-                          self.staff_group(project)):
-                self.do_normal_submit_test(group, group.members.last())
+        self.project.validate_and_update(
+            closing_time=timezone.now() + timezone.timedelta(minutes=1))
+        admin_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.admin)
+        self.do_normal_submit_test(admin_group, admin_group.members.last())
 
-    def test_admin_or_staff_submit_deadline_past(self):
+        staff_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.staff)
+        self.do_normal_submit_test(staff_group, staff_group.members.last())
+
+    def test_staff_submit_deadline_past(self):
         self.project.validate_and_update(
             closing_time=timezone.now() + timezone.timedelta(seconds=-1))
-        for group in (self.admin_group(self.project),
-                      self.staff_group(self.project)):
-            self.do_normal_submit_test(group, group.members.first())
+
+        staff_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.staff)
+        self.do_normal_submit_test(staff_group, staff_group.members.last())
 
     def test_admin_or_staff_submit_submissions_disallowed(self):
         self.project.validate_and_update(disallow_student_submissions=True)
-        for group in (self.admin_group(self.project),
-                      self.staff_group(self.project)):
-            self.do_normal_submit_test(group, group.members.last())
 
-    def test_enrolled_submit(self):
-        for project in self.visible_projects:
-            closing_time = timezone.now() + timezone.timedelta(minutes=1)
-            project.validate_and_update(closing_time=closing_time)
-            group = self.enrolled_group(project)
-            self.do_normal_submit_test(group, group.members.last())
+        staff_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.staff)
+        self.do_normal_submit_test(staff_group, staff_group.members.last())
 
-    def test_non_enrolled_submit(self):
+    def test_student_submit(self):
         closing_time = timezone.now() + timezone.timedelta(minutes=1)
-        self.visible_public_project.validate_and_update(
-            closing_time=closing_time)
-        group = self.non_enrolled_group(self.visible_public_project)
+        self.project.validate_and_update(visible_to_students=True, closing_time=closing_time)
+
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.student)
+        self.do_normal_submit_test(group, group.members.last())
+
+    def test_guest_submit(self):
+        closing_time = timezone.now() + timezone.timedelta(minutes=1)
+        self.project.validate_and_update(
+            closing_time=closing_time, visible_to_students=True, guests_can_submit=True)
+
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.guest)
         self.do_normal_submit_test(group, group.members.first())
 
     def test_no_files_submitted(self) -> None:
@@ -153,7 +185,7 @@ class CreateSubmissionTestCase(test_data.Client,
         group.project.validate_and_update(visible_to_students=True)
         response = self.do_create_object_test(
             ag_models.Submission.objects, self.client, group.members.first(),
-            self.submissions_url(group),
+            submissions_url(group),
             {'submitted_files': []},
             format='multipart', check_data=False
         )
@@ -163,20 +195,43 @@ class CreateSubmissionTestCase(test_data.Client,
 
         self.assertEqual([], submission.submitted_filenames)
 
-    def test_all_submit_no_closing_time(self):
-        for group in self.all_groups(self.visible_public_project):
-            self.do_normal_submit_test(group, group.members.first())
+    def test_any_group_submit_no_closing_time(self):
+        self.project.validate_and_update(
+            closing_time=None, visible_to_students=True, guests_can_submit=True)
+
+        admin_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.admin)
+        self.do_normal_submit_test(admin_group, admin_group.members.first())
+
+        staff_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.staff)
+        self.do_normal_submit_test(staff_group, staff_group.members.first())
+
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        self.do_normal_submit_test(student_group, student_group.members.first())
+
+        guest_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.guest)
+        self.do_normal_submit_test(guest_group, guest_group.members.first())
+
+        handgrader_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.handgrader)
+        self.do_normal_submit_test(handgrader_group, handgrader_group.members.first())
 
     def test_submit_missing_and_discarded_files_tracked(self):
-        self.add_expected_patterns(self.visible_private_project)
-        group = self.enrolled_group(self.visible_private_project)
-        self.client.force_authenticate(self.enrolled)
+        self.project.validate_and_update(visible_to_students=True)
+        self.add_expected_patterns(self.project)
+        group = obj_build.make_group(project=self.project)
+        self.client.force_authenticate(group.members.first())
+
         bad_filename = 'not a needed file'
         request_data = {
             'submitted_files': [
                 SimpleUploadedFile(bad_filename, b'merp')]}
         response = self.client.post(
-            self.submissions_url(group), request_data, format='multipart')
+            submissions_url(group), request_data, format='multipart')
+
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         self.assertCountEqual([], response.data['submitted_filenames'])
         self.assertCountEqual([bad_filename],
@@ -185,112 +240,165 @@ class CreateSubmissionTestCase(test_data.Client,
         self.assertIn('spam.cpp', response.data['missing_files'])
 
     # Note that non-group members in this case includes staff, admin, and handgrader.
-    def test_non_group_member_submit_permission_denied(self):
-        group = self.enrolled_group(self.visible_public_project)
-        other_user = self.clone_user(self.enrolled)
-        for user in self.admin, self.staff, other_user, self.nobody, self.handgrader:
+    def test_non_group_member_submit_permission_denied(self) -> None:
+        self.project.validate_and_update(visible_to_students=True)
+        group = obj_build.make_group(project=self.project)
+        other_user = obj_build.make_student_user(self.course)
+
+        admin = obj_build.make_admin_user(self.course)
+        staff = obj_build.make_staff_user(self.course)
+        student = obj_build.make_student_user(self.course)
+        guest = obj_build.make_user()
+        handgrader = obj_build.make_handgrader_user(self.course)
+
+        for user in admin, staff, student, guest, handgrader:
             self.do_permission_denied_submit_test(group, user)
 
-    def test_handgraders_that_are_also_students_submit(self):
-        for project in self.visible_projects:
-            group = self.enrolled_group(project)
-            project.course.handgraders.add(group.members.last())
-            self.do_normal_submit_test(group, group.members.last())
+    def test_handgraders_that_are_also_students_submit(self) -> None:
+        self.project.validate_and_update(visible_to_students=True)
+        group = obj_build.make_group(project=self.project)
+        handgrader = group.members.last()
+        self.project.course.handgraders.add(handgrader)
+        self.do_normal_submit_test(group, handgrader)
 
-    def test_enrolled_submit_hidden_project_permission_denied(self):
-        for project in self.hidden_projects:
-            group = self.enrolled_group(project)
-            self.do_permission_denied_submit_test(group, group.members.first())
-
-    def test_non_enrolled_submit_hidden_project_permission_denied(self):
-        group = self.non_enrolled_group(self.hidden_public_project)
+    def test_student_submit_hidden_project_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=False, guests_can_submit=True)
+        group = obj_build.make_group(project=self.project)
         self.do_permission_denied_submit_test(group, group.members.first())
 
-    def test_non_enrolled_submit_private_project_permission_denied(self):
-        group = self.non_enrolled_group(self.visible_public_project)
-        self.visible_public_project.validate_and_update(
-            guests_can_submit=False)
-        for user in group.members.all():
-            self.do_permission_denied_submit_test(group, user)
+    def test_guest_submit_hidden_project_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=False, guests_can_submit=True)
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.guest)
+        self.do_permission_denied_submit_test(group, group.members.first())
+
+    def test_guest_submit_private_project_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.guest)
+        self.do_permission_denied_submit_test(group, group.members.first())
 
     def test_non_staff_submit_deadline_past(self):
-        self.visible_public_project.validate_and_update(
-            closing_time=timezone.now() + timezone.timedelta(seconds=-1))
-        for group in self.non_staff_groups(self.visible_public_project):
-            response = self.do_bad_request_submit_test(
-                group, group.members.first())
-            self.assertIn('submission', response.data)
+        self.project.validate_and_update(
+            closing_time=timezone.now() + timezone.timedelta(seconds=-1),
+            visible_to_students=True, guests_can_submit=True)
+
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        response = self.do_bad_request_submit_test(student_group, student_group.members.first())
+        self.assertIn('submission', response.data)
+
+        guest_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.guest)
+        response = self.do_bad_request_submit_test(guest_group, guest_group.members.first())
+        self.assertIn('submission', response.data)
 
     def test_non_staff_submit_deadline_past_but_has_extension(self):
         closing_time = timezone.now() + timezone.timedelta(seconds=-1)
-        self.visible_public_project.validate_and_update(
+        self.project.validate_and_update(
+            visible_to_students=True, guests_can_submit=True,
             closing_time=closing_time)
-        for group in self.non_staff_groups(self.visible_public_project):
+
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        guest_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.guest)
+
+        for group in student_group, guest_group:
             extension = timezone.now() + timezone.timedelta(minutes=1)
             group.validate_and_update(extended_due_date=extension)
             self.do_normal_submit_test(group, group.members.last())
 
-    def test_non_staff_submit_deadline_and_extension_past(self):
+    def test_non_staff_submit_deadline_and_extension_past(self) -> None:
         closing_time = timezone.now() + timezone.timedelta(minutes=-1)
-        self.visible_public_project.validate_and_update(
+        self.project.validate_and_update(
+            visible_to_students=True, guests_can_submit=True,
             closing_time=closing_time)
-        for group in self.non_staff_groups(self.visible_public_project):
+
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        guest_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.guest)
+
+        for group in student_group, guest_group:
             extension = timezone.now() + timezone.timedelta(seconds=-1)
             group.validate_and_update(extended_due_date=extension)
             response = self.do_bad_request_submit_test(group, group.members.first())
             self.assertIn('submission', response.data)
 
-    def test_non_staff_submit_submissions_disallowed(self):
-        self.visible_public_project.validate_and_update(
+    def test_non_staff_submit_submissions_disallowed(self) -> None:
+        self.project.validate_and_update(
+            visible_to_students=True, guests_can_submit=True,
             disallow_student_submissions=True)
-        future_closing_time = timezone.now() + timezone.timedelta(minutes=1)
-        for group in self.non_staff_groups(self.visible_public_project):
-            for closing_time in None, future_closing_time:
-                self.visible_public_project.validate_and_update(
-                    closing_time=closing_time)
-            response = self.do_bad_request_submit_test(group, group.members.first())
-            self.assertIn('submission', response.data)
 
-    def test_all_users_already_has_submission_being_processed(self):
-        for group in self.all_groups(self.visible_public_project):
-            ag_models.Submission.objects.validate_and_create(
-                [], group=group)
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        guest_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.guest)
+
+        future_closing_time = timezone.now() + timezone.timedelta(minutes=1)
+
+        for group in student_group, guest_group:
+            for closing_time in None, future_closing_time:
+                self.project.validate_and_update(closing_time=closing_time)
+                response = self.do_bad_request_submit_test(group, group.members.first())
+                self.assertIn('submission', response.data)
+
+    def test_any_group_already_has_submission_being_processed(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+
+        for group in self._all_roles_groups():
+            ag_models.Submission.objects.validate_and_create([], group=group)
             response = self.do_bad_request_submit_test(group, group.members.last())
             self.assertIn('submission', response.data)
 
+    def _all_roles_groups(self) -> List[ag_models.Group]:
+        return [
+            obj_build.make_group(
+                project=self.project, members_role=obj_build.UserRole.admin),
+            obj_build.make_group(
+                project=self.project, members_role=obj_build.UserRole.staff),
+            obj_build.make_group(
+                project=self.project, members_role=obj_build.UserRole.student),
+            obj_build.make_group(
+                project=self.project, members_role=obj_build.UserRole.guest),
+        ]
+
     def test_can_resubmit_non_being_processed_status(self):
-        for group in self.all_groups(self.visible_public_project):
-            for grading_status in ag_models.Submission.GradingStatus.values:
-                if grading_status in (
-                        ag_models.Submission.GradingStatus.active_statuses):
-                    continue
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
 
+        resubmittable_statuses = list(
+            set(ag_models.Submission.GradingStatus.values)
+            - set(ag_models.Submission.GradingStatus.active_statuses)
+        )
+
+        for group in self._all_roles_groups():
+            for grading_status in resubmittable_statuses:
                 obj_build.make_submission(group=group, status=grading_status)
-
                 self.do_normal_submit_test(group, group.members.first())
 
-    def test_no_submission_limit(self):
-        self.assertIsNone(self.visible_public_project.submission_limit_per_day)
-        for group in self.all_groups(self.visible_public_project):
+    def test_no_submission_limit(self) -> None:
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+
+        self.assertIsNone(self.project.submission_limit_per_day)
+        for group in self._all_roles_groups():
             for i in range(5):
                 self.do_normal_submit_test(group, group.members.first())
 
-    def test_submission_not_past_limit(self):
+    def test_submission_not_past_limit(self) -> None:
         limit = 3
-        self.visible_public_project.validate_and_update(
-            submission_limit_per_day=limit)
-        for group in self.all_groups(self.visible_public_project):
+        self.project.validate_and_update(
+            submission_limit_per_day=limit, visible_to_students=True, guests_can_submit=True)
+
+        for group in self._all_roles_groups():
             for i in range(limit):
                 self.do_normal_submit_test(group, group.members.last())
-            for sub in group.submissions.all():
-                self.assertTrue(sub.count_towards_daily_limit)
 
-    def test_submission_past_limit_allowed(self):
+    def test_submission_past_limit_allowed(self) -> None:
         limit = 3
-        self.visible_public_project.validate_and_update(
+        self.project.validate_and_update(
             submission_limit_per_day=limit,
-            allow_submissions_past_limit=True)
-        for group in self.all_groups(self.visible_public_project):
+            allow_submissions_past_limit=True,
+            visible_to_students=True, guests_can_submit=True)
+        for group in self._all_roles_groups():
             for i in range(limit):
                 submission = self.do_normal_submit_test(group, group.members.last())
                 self.assertFalse(submission.is_past_daily_limit)
@@ -299,15 +407,19 @@ class CreateSubmissionTestCase(test_data.Client,
                 past_limit = self.do_normal_submit_test(group, group.members.last())
                 self.assertTrue(past_limit)
 
-            for sub in group.submissions.all():
-                self.assertTrue(sub.count_towards_daily_limit)
-
-    def test_submission_past_limit_not_allowed_bad_request(self):
+    def test_submission_past_limit_not_allowed_bad_request(self) -> None:
         limit = 2
-        self.visible_public_project.validate_and_update(
+        self.project.validate_and_update(
             submission_limit_per_day=limit,
-            allow_submissions_past_limit=False)
-        for group in self.non_staff_groups(self.visible_public_project):
+            allow_submissions_past_limit=False,
+            visible_to_students=True, guests_can_submit=True)
+
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        guest_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.guest)
+
+        for group in student_group, guest_group:
             for i in range(limit):
                 self.do_normal_submit_test(group, group.members.first())
 
@@ -317,7 +429,6 @@ class CreateSubmissionTestCase(test_data.Client,
             self.assertEqual(limit, group.submissions.count())
 
             for sub in group.submissions.all():
-                self.assertTrue(sub.count_towards_daily_limit)
                 self.assertFalse(sub.is_past_daily_limit)
 
     def test_submission_past_limit_not_allowed_but_group_has_bonus_submission(self):
@@ -340,22 +451,29 @@ class CreateSubmissionTestCase(test_data.Client,
     def test_admin_or_staff_submissions_never_count_towards_limit(self):
         limit = 1
         num_submissions = limit + 4
-        self.hidden_private_project.validate_and_update(
-            submission_limit_per_day=limit)
-        for group in self.staff_groups(self.hidden_private_project):
+        self.project.validate_and_update(submission_limit_per_day=limit)
+
+        admin_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.admin)
+        staff_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.staff)
+
+        for group in admin_group, staff_group:
             for i in range(num_submissions):
                 self.do_normal_submit_test(group, group.members.last())
 
             self.assertEqual(num_submissions, group.submissions.count())
 
-    def test_groups_combine_submissions(self):
-        self.visible_public_project.validate_and_update(groups_combine_daily_submissions=True,
-                                                        submission_limit_per_day=1,
-                                                        allow_submissions_past_limit=False)
+    def test_group_members_combine_submissions_per_day(self):
+        self.project.validate_and_update(
+            groups_combine_daily_submissions=True,
+            submission_limit_per_day=1,
+            allow_submissions_past_limit=False,
+            visible_to_students=True, guests_can_submit=True)
 
-        alone = obj_build.make_group(num_members=1, project=self.visible_public_project)
-        partner = obj_build.make_group(num_members=2, project=self.visible_public_project)
-        trio = obj_build.make_group(num_members=3, project=self.visible_public_project)
+        alone = obj_build.make_group(num_members=1, project=self.project)
+        partner = obj_build.make_group(num_members=2, project=self.project)
+        trio = obj_build.make_group(num_members=3, project=self.project)
 
         self.do_normal_submit_test(alone, alone.members.first())
         self.do_bad_request_submit_test(alone, alone.members.first())
@@ -368,14 +486,16 @@ class CreateSubmissionTestCase(test_data.Client,
             self.do_normal_submit_test(trio, trio.members.first())
         self.do_bad_request_submit_test(trio, trio.members.first())
 
-    def test_groups_combine_submissions_allow_past_limit(self):
-        self.visible_public_project.validate_and_update(groups_combine_daily_submissions=True,
-                                                        submission_limit_per_day=1,
-                                                        allow_submissions_past_limit=True)
+    def test_group_members_combine_submissions_per_day_allow_past_limit(self):
+        self.project.validate_and_update(
+            groups_combine_daily_submissions=True,
+            submission_limit_per_day=1,
+            allow_submissions_past_limit=True,
+            visible_to_students=True, guests_can_submit=True)
 
-        alone = obj_build.make_group(num_members=1, project=self.visible_public_project)
-        partner = obj_build.make_group(num_members=2, project=self.visible_public_project)
-        trio = obj_build.make_group(num_members=3, project=self.visible_public_project)
+        alone = obj_build.make_group(num_members=1, project=self.project)
+        partner = obj_build.make_group(num_members=2, project=self.project)
+        trio = obj_build.make_group(num_members=3, project=self.project)
 
         submission = self.do_normal_submit_test(alone, alone.members.first())
         self.assertFalse(submission.is_past_daily_limit)
@@ -397,24 +517,21 @@ class CreateSubmissionTestCase(test_data.Client,
         self.assertTrue(past_limit.is_past_daily_limit)
 
     def test_invalid_fields_fields_other_than_submitted_files_in_request(self):
-        group = self.admin_group(self.project)
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.admin)
         response = self.do_invalid_create_object_test(
             group.submissions, self.client,
             group.members.first(),
-            self.submissions_url(group),
-            {'submitted_files': self.files_to_submit,
-             'count_towards_daily_limit': False,
-             'count_towards_total_limit': False},
+            submissions_url(group),
+            {'submitted_files': self.files_to_submit, 'count_towards_total_limit': False},
             format='multipart')
         self.assertIn('invalid_fields', response.data)
-        self.assertIn('count_towards_daily_limit', response.data['invalid_fields'])
         self.assertIn('count_towards_total_limit', response.data['invalid_fields'])
 
     def do_normal_submit_test(self, group, user) -> ag_models.Submission:
         self.add_expected_patterns(group.project)
         response = self.do_create_object_test(
             ag_models.Submission.objects, self.client, user,
-            self.submissions_url(group),
+            submissions_url(group),
             {'submitted_files': self.files_to_submit},
             format='multipart', check_data=False)
 
@@ -440,18 +557,35 @@ class CreateSubmissionTestCase(test_data.Client,
 
         return submission
 
+    @property
+    def files_to_submit(self):
+        return [
+            SimpleUploadedFile('spam.cpp', b'steve'),
+            SimpleUploadedFile('egg.txt', b'stave'),
+            SimpleUploadedFile('sausage.txt', b'stove')
+        ]
+
+    def add_expected_patterns(self, project):
+        if project.expected_student_files.count():
+            return
+
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
+            pattern='spam.cpp', project=project)
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
+            pattern='*.txt', project=project, max_num_matches=3)
+
     def do_permission_denied_submit_test(self, group, user):
         self.add_expected_patterns(group.project)
         return self.do_permission_denied_create_test(
             ag_models.Submission.objects, self.client,
-            user, self.submissions_url(group),
+            user, submissions_url(group),
             {'submitted_files': self.files_to_submit}, format='multipart')
 
     def do_bad_request_submit_test(self, group, user):
         self.add_expected_patterns(group.project)
         return self.do_invalid_create_object_test(
             group.submissions, self.client, user,
-            self.submissions_url(group),
+            submissions_url(group),
             {'submitted_files': self.files_to_submit}, format='multipart')
 
 
@@ -830,7 +964,7 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
         self.assertIsNone(self.project.submission_limit_per_day)
         for i in range(10):
             sub = self._create_submission(group=self.group)
-            self.assertTrue(sub.count_towards_daily_limit)
+            self.assertEqual(i + 1, self.group.num_submits_towards_limit)
             self.assertFalse(sub.is_past_daily_limit)
 
     def test_not_past_daily_limit(self):
@@ -841,13 +975,12 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
         timestamp = timestamp.replace(tzinfo=timezone.now().tzinfo)
         for i in range(limit):
             sub = self._create_submission(group=self.group, timestamp=timestamp)
-            self.assertTrue(sub.count_towards_daily_limit)
+            self.assertEqual(i + 1, self.group.num_submits_towards_limit)
             self.assertFalse(sub.is_past_daily_limit)
 
         # Place submission at exact beginning of next cycle
         next_cycle_timestamp = timestamp + timezone.timedelta(days=1)
         sub = self._create_submission(group=self.group, timestamp=next_cycle_timestamp)
-        self.assertTrue(sub.count_towards_daily_limit)
         self.assertFalse(sub.is_past_daily_limit)
 
     def test_past_daily_limit(self):
@@ -859,31 +992,22 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
 
         for i in range(2):
             sub = self._create_submission(group=self.group)
-
-            self.assertTrue(sub.count_towards_daily_limit)
+            self.assertEqual(limit + i + 1, self.group.num_submits_towards_limit)
             self.assertTrue(sub.is_past_daily_limit)
 
         # Verify that the status of earlier submissions hasn't changed
         for sub in not_past_limit:
-            self.assertTrue(sub.count_towards_daily_limit)
             self.assertFalse(sub.is_past_daily_limit)
 
-    def test_submission_limit_from_past_day(self):
-        timestamp = timezone.now() + timezone.timedelta(days=-3)
+    def test_submissions_from_past_day_dont_affect_current_towards_limit_count(self):
+        timestamp = timezone.now() - timezone.timedelta(days=3)
         limit = 2
         self.project.validate_and_update(submission_limit_per_day=limit)
         submissions = []
-        sub = self._create_submission(group=self.group, timestamp=timestamp)
-        sub.count_towards_daily_limit = False
-        sub.save()
-        submissions.append(sub)
-        self.assertFalse(sub.count_towards_daily_limit)
         for i in range(limit):
             sub = self._create_submission(group=self.group, timestamp=timestamp)
-            sub.count_towards_daily_limit = True
-            sub.save()
             submissions.append(sub)
-            self.assertTrue(sub.count_towards_daily_limit)
+            self.assertEqual(0, self.group.num_submits_towards_limit)
 
         for sub in submissions:
             self.assertFalse(sub.is_past_daily_limit)
@@ -895,7 +1019,7 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
         for i in range(total_num_submissions):
             self.assertEqual(i, self.group.num_submits_towards_limit)
             sub = self._create_submission(group=self.group)
-            self.assertTrue(sub.count_towards_daily_limit)
+            self.assertEqual(i + 1, self.group.num_submits_towards_limit)
             if i > limit:
                 self.assertTrue(sub.is_past_daily_limit)
 
@@ -919,27 +1043,6 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
 
         self.assertEqual(1, self.group.num_submits_towards_limit)
 
-    def test_group_submissions_towards_limit_some_not_counted(self):
-        limit = 3
-        self.project.validate_and_update(submission_limit_per_day=limit)
-        # We'll count every other submission towards the limit
-        for i in range(limit * 2):
-            count_towards_limit = i % 2 != 0
-
-            sub = self._create_submission(group=self.group)
-            sub.count_towards_daily_limit = count_towards_limit
-            sub.save()
-            self.assertEqual(count_towards_limit,
-                             sub.count_towards_daily_limit)
-            self.assertFalse(sub.is_past_daily_limit)
-
-            # The number of submits towards the limit should increase by
-            # 1 every other submission.
-            self.assertEqual((i + 1) // 2, self.group.num_submits_towards_limit)
-
-        sub = self._create_submission(group=self.group)
-        self.assertTrue(sub.is_past_daily_limit)
-
     def test_non_default_limit_reset_time_and_timezone(self):
         reset_timezone = 'America/Detroit'
         reset_datetime = timezone.now().astimezone(
@@ -954,21 +1057,21 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
         within_limit_submission = self._create_submission(
             group=self.group,
             timestamp=within_limit_timestamp)
-        self.assertTrue(within_limit_submission.count_towards_daily_limit)
+        self.assertEqual(1, self.group.num_submits_towards_limit)
         self.assertFalse(within_limit_submission.is_past_daily_limit)
 
         past_limit_timestamp = reset_datetime + timezone.timedelta(hours=-1)
         past_limit_submission = self._create_submission(
             group=self.group,
             timestamp=past_limit_timestamp)
-        self.assertTrue(past_limit_submission.count_towards_daily_limit)
+        self.assertEqual(2, self.group.num_submits_towards_limit)
         self.assertTrue(past_limit_submission.is_past_daily_limit)
 
         next_cycle_timestamp = reset_datetime
         next_cycle_submission = self._create_submission(
             group=self.group,
             timestamp=next_cycle_timestamp)
-        self.assertTrue(next_cycle_submission.count_towards_daily_limit)
+        self.assertEqual(2, self.group.num_submits_towards_limit)
         self.assertFalse(next_cycle_submission.is_past_daily_limit)
 
     def test_statuses_counted_towards_limit(self):
@@ -1164,86 +1267,109 @@ class CreateSubmissionTotalLimitTestCase(UnitTestBase):
         self.assertIn('submission', response.data)
 
 
-class RetrieveSubmissionAndFileTestCase(test_data.Client,
-                                        test_data.Project,
-                                        test_data.Submission,
-                                        test_impls.GetObjectTest,
-                                        UnitTestBase):
-    def test_admin_or_staff_view_submission(self):
-        for project in self.all_projects:
-            for submission in self.at_least_enrolled_submissions(project):
-                for user in self.admin, self.staff:
-                    self.do_get_object_test(
-                        self.client, user, submission_url(submission),
-                        submission.to_dict())
-                    self.do_get_files_test_case(submission, user)
+class RetrieveSubmissionAndFileTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
 
-        for project in self.public_projects:
-            submission = self.non_enrolled_submission(project)
-            for user in self.admin, self.staff:
+        self.project = obj_build.make_project()
+        self.course = self.project.course
+
+    def _make_submission_with_files(self, user_role: obj_build.UserRole) -> ag_models.Submission:
+        group = obj_build.make_group(project=self.project, members_role=user_role)
+        return obj_build.make_submission(
+            group,
+            submitted_files=[
+                SimpleUploadedFile('spam.cpp', b'stevenroiestanriosta'),
+                SimpleUploadedFile('egg.txt', b'stavenrst'),
+                SimpleUploadedFile('sausage.txt', b'stoveqwfophn')
+            ]
+        )
+
+    def test_admin_or_staff_view_any_submission(self):
+        admin = obj_build.make_admin_user(self.course)
+        staff = obj_build.make_staff_user(self.course)
+
+        admin_submission = self._make_submission_with_files(obj_build.UserRole.admin)
+        staff_submission = self._make_submission_with_files(obj_build.UserRole.staff)
+        student_submission = self._make_submission_with_files(obj_build.UserRole.student)
+        guest_submission = self._make_submission_with_files(obj_build.UserRole.guest)
+
+        for submission in admin_submission, staff_submission, student_submission, guest_submission:
+            for user in admin, staff:
                 self.do_get_object_test(
-                    self.client, user, submission_url(submission),
+                    self.client, user, submission_detail_url(submission),
                     submission.to_dict())
                 self.do_get_files_test_case(submission, user)
 
-    def test_enrolled_view_submission(self):
-        for project in self.visible_projects:
-            submission = self.enrolled_submission(project)
-            for user in submission.group.members.all():
-                self.do_get_object_test(
-                    self.client, user, submission_url(submission),
-                    submission.to_dict())
-                self.do_get_files_test_case(submission, user)
+    def test_student_view_submission(self):
+        self.project.validate_and_update(visible_to_students=True)
+        submission = self._make_submission_with_files(obj_build.UserRole.student)
+        user = submission.group.members.first()
+        self.do_get_object_test(
+            self.client, user, submission_detail_url(submission),
+            submission.to_dict())
+        self.do_get_files_test_case(submission, user)
 
-    def test_non_enrolled_view_submission(self):
-        submission = self.enrolled_submission(self.visible_public_project)
-        for user in submission.group.members.all():
-            self.do_get_object_test(
-                self.client, user, submission_url(submission),
-                submission.to_dict())
-            self.do_get_files_test_case(submission, user)
+    def test_guest_view_submission(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        submission = self._make_submission_with_files(obj_build.UserRole.guest)
+        user = submission.group.members.first()
+        self.do_get_object_test(
+            self.client, user, submission_detail_url(submission),
+            submission.to_dict())
+        self.do_get_files_test_case(submission, user)
 
     def test_non_member_view_submission_forbidden(self):
-        submission = self.enrolled_submission(self.visible_public_project)
-        other_user = self.clone_user(self.enrolled)
-        for user in other_user, self.nobody, self.handgrader:
-            self.do_permission_denied_get_test(
-                self.client, user, submission_url(submission))
-            self.do_get_files_permission_denied_test_case(submission, user)
+        self.project.validate_and_update(visible_to_students=True)
+        submission = self._make_submission_with_files(obj_build.UserRole.student)
 
-    def test_enrolled_view_submission_project_hidden_forbidden(self):
-        for project in self.hidden_projects:
-            submission = self.enrolled_submission(project)
-            self.do_permission_denied_get_test(
-                self.client, self.enrolled, submission_url(submission))
-            self.do_get_files_permission_denied_test_case(
-                submission, self.enrolled)
+        user = obj_build.make_student_user(self.course)
 
-    def test_non_enrolled_view_submission_project_hidden_forbidden(self):
-        submission = self.non_enrolled_submission(self.hidden_public_project)
         self.do_permission_denied_get_test(
-            self.client, self.nobody, submission_url(submission))
-        self.do_get_files_permission_denied_test_case(submission, self.nobody)
+            self.client, user, submission_detail_url(submission))
+        self.do_get_files_permission_denied_test_case(submission, user)
 
-    def test_non_enrolled_view_submission_project_private_forbidden(self):
-        submission = self.non_enrolled_submission(self.visible_public_project)
-        self.visible_public_project.validate_and_update(
-            guests_can_submit=False)
-        self.do_permission_denied_get_test(
-            self.client, self.nobody, submission_url(submission))
-        self.do_get_files_permission_denied_test_case(submission, self.nobody)
+    def test_student_view_submission_project_hidden_forbidden(self):
+        self.project.validate_and_update(visible_to_students=False, guests_can_submit=True)
+        submission = self._make_submission_with_files(obj_build.UserRole.student)
+        user = submission.group.members.first()
+
+        self.do_permission_denied_get_test(self.client, user, submission_detail_url(submission))
+        self.do_get_files_permission_denied_test_case(submission, user)
+
+    def test_guest_view_submission_project_hidden_forbidden(self):
+        self.project.validate_and_update(visible_to_students=False, guests_can_submit=True)
+        submission = self._make_submission_with_files(obj_build.UserRole.guest)
+        user = submission.group.members.first()
+
+        self.do_permission_denied_get_test(self.client, user, submission_detail_url(submission))
+        self.do_get_files_permission_denied_test_case(submission, user)
+
+    def test_guest_view_submission_project_private_forbidden(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
+        submission = self._make_submission_with_files(obj_build.UserRole.guest)
+        user = submission.group.members.first()
+
+        self.do_permission_denied_get_test(self.client, user, submission_detail_url(submission))
+        self.do_get_files_permission_denied_test_case(submission, user)
 
     def test_get_malicious_filename_not_found(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        submission = self._make_submission_with_files(obj_build.UserRole.student)
+
         filename = os.path.abspath(__file__)
-        submission = self.enrolled_submission(self.visible_public_project)
-        self.client.force_authenticate(self.enrolled)
+
+        self.client.force_authenticate(submission.group.members.first())
         url = file_url(submission, filename)
         response = self.client.get(url)
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
     def test_get_file_missing_filename_param(self):
-        submission = self.enrolled_submission(self.visible_public_project)
-        self.client.force_authenticate(self.enrolled)
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        submission = self._make_submission_with_files(obj_build.UserRole.student)
+
+        self.client.force_authenticate(submission.group.members.first())
         response = self.client.get(
             reverse('submission-file', kwargs={'pk': submission.pk}))
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -1437,77 +1563,75 @@ class ListSubmissionsWithResultsTestCase(AGViewTestBase):
             'ag_test_command_results'][0]
 
 
-class UpdateSubmissionTestCase(test_data.Client,
-                               test_data.Project,
-                               test_data.Submission,
-                               test_impls.UpdateObjectTest,
-                               UnitTestBase):
-    def test_admin_edit_count_towards_limit(self):
-        for project in self.all_projects:
-            for submission in self.at_least_enrolled_submissions(project):
-                self.assertTrue(submission.count_towards_daily_limit)
-                for val in False, True:
-                    self.do_patch_object_test(
-                        submission, self.client, self.admin,
-                        submission_url(submission),
-                        {'count_towards_daily_limit': val})
+class UpdateSubmissionTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.submission = obj_build.make_submission()
+        self.group = self.submission.group
+        self.project = self.group.project
+        self.course = self.project.course
 
-        for project in self.visible_public_project, self.hidden_public_project:
-            submission = self.non_enrolled_submission(project)
-            self.assertTrue(submission.count_towards_daily_limit)
-            for val in False, True:
-                self.do_patch_object_test(
-                    submission, self.client, self.admin,
-                    submission_url(submission),
-                    {'count_towards_daily_limit': val})
+    def test_admin_edit_count_towards_total_limit(self) -> None:
+        admin = obj_build.make_admin_user(self.course)
 
-    def test_admin_edit_submission_invalid_fields(self):
-        for submission in self.all_submissions(self.visible_public_project):
-            self.do_patch_object_invalid_args_test(
-                submission, self.client, self.admin,
-                submission_url(submission), {'is_past_daily_limit': False})
+        self.assertTrue(self.submission.count_towards_total_limit)
+        for val in False, True:
+            self.do_patch_object_test(
+                self.submission, self.client, admin,
+                submission_detail_url(self.submission),
+                {'count_towards_total_limit': val})
 
-    def test_other_edit_count_towards_limit_permission_denied(self):
-        submissions = (
-            self.staff_submission(self.visible_public_project),
-            self.enrolled_submission(self.visible_public_project),
-            self.non_enrolled_submission(self.visible_public_project))
-        for submission in submissions:
-            self.do_patch_object_permission_denied_test(
-                submission, self.client,
-                submission.group.members.first(),
-                submission_url(submission),
-                {'count_towards_daily_limit': False})
+    def test_admin_edit_submission_invalid_fields(self) -> None:
+        admin = obj_build.make_admin_user(self.course)
+        self.do_patch_object_invalid_args_test(
+            self.submission, self.client, admin,
+            submission_detail_url(self.submission),
+            {'is_past_daily_limit': False})
 
-    def test_handgrader_edit_submission_permission_denied(self):
-        submissions = (
-            self.staff_submission(self.visible_public_project),
-            self.enrolled_submission(self.visible_public_project),
-            self.non_enrolled_submission(self.visible_public_project))
-        for submission in submissions:
-            self.do_patch_object_permission_denied_test(
-                submission, self.client,
-                self.handgrader,
-                submission_url(submission),
-                {'count_towards_daily_limit': False})
+    def test_non_admin_edit_count_towards_total_limit_permission_denied(self) -> None:
+        self.do_patch_object_permission_denied_test(
+            self.submission, self.client,
+            obj_build.make_staff_user(self.course),
+            submission_detail_url(self.submission),
+            {'count_towards_total_limit': False})
+
+        self.do_patch_object_permission_denied_test(
+            self.submission, self.client,
+            self.group.members.first(),
+            submission_detail_url(self.submission),
+            {'count_towards_total_limit': False})
+
+        self.do_patch_object_permission_denied_test(
+            self.submission, self.client,
+            obj_build.make_handgrader_user(self.course),
+            submission_detail_url(self.submission),
+            {'count_towards_total_limit': False})
 
 
-class RemoveFromQueueTestCase(test_data.Client,
-                              test_data.Project,
-                              test_data.Submission,
-                              UnitTestBase):
+class RemoveSubmissionFromQueueTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+        self.project = obj_build.make_project()
+        self.course = self.project.course
+
     def test_admin_or_staff_remove_own_from_queue(self):
-        for project in self.all_projects:
-            for submission in self.staff_submissions(project):
-                self.do_valid_remove_from_queue_test(submission)
+        self._do_remove_own_submission_from_queue_test(obj_build.UserRole.admin)
+        self._do_remove_own_submission_from_queue_test(obj_build.UserRole.staff)
 
-    def test_enrolled_remove_own_from_queue(self):
-        for project in self.visible_projects:
-            submission = self.enrolled_submission(project)
-            self.do_valid_remove_from_queue_test(submission)
+    def test_student_remove_own_from_queue(self):
+        self.project.validate_and_update(visible_to_students=True)
+        self._do_remove_own_submission_from_queue_test(obj_build.UserRole.student)
 
-    def test_non_enrolled_remove_own_from_queue(self):
-        submission = self.non_enrolled_submission(self.visible_public_project)
+    def test_guest_remove_own_from_queue(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        self._do_remove_own_submission_from_queue_test(obj_build.UserRole.guest)
+
+    def _do_remove_own_submission_from_queue_test(self, user_role: obj_build.UserRole) -> None:
+        group = obj_build.make_group(project=self.project, members_role=user_role)
+        submission = obj_build.make_submission(group)
         self.do_valid_remove_from_queue_test(submission)
 
     def test_remove_bonus_submission_from_queue_refund_bonus_submission(self):
@@ -1583,47 +1707,57 @@ class RemoveFromQueueTestCase(test_data.Client,
         submission.refresh_from_db()
         self.assertFalse(submission.is_bonus_submission)
 
-    def test_enrolled_remove_from_queue_project_hidden_permission_denied(self):
-        for project in self.hidden_projects:
-            submission = self.enrolled_submission(project)
-            self.do_permission_denied_remove_from_queue_test(
-                submission, submission.group.members.first())
+    def test_student_remove_from_queue_project_hidden_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=False, guests_can_submit=True)
+        group = obj_build.make_group(project=self.project)
+        submission = obj_build.make_submission(group)
 
-    def test_non_enrolled_remove_from_queue_project_hidden_permission_denied(self):
-        submission = self.non_enrolled_submission(self.hidden_public_project)
-        self.do_permission_denied_remove_from_queue_test(
-            submission, submission.group.members.first())
+        self.do_permission_denied_remove_from_queue_test(submission, group.members.first())
+
+    def test_guest_remove_from_queue_project_hidden_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=False, guests_can_submit=True)
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.guest)
+        submission = obj_build.make_submission(group)
+
+        self.do_permission_denied_remove_from_queue_test(submission, group.members.first())
 
     def test_handgrader_remove_student_submission_from_queue_permission_denied(self):
-        self.do_permission_denied_remove_from_queue_test(
-            self.enrolled_submission(self.visible_projects[0]), self.handgrader)
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        group = obj_build.make_group(project=self.project)
+        submission = obj_build.make_submission(group)
 
-    def test_non_enrolled_remove_from_queue_project_private_permission_denied(self):
-        submission = self.non_enrolled_submission(self.visible_public_project)
-        self.visible_public_project.validate_and_update(
-            guests_can_submit=False)
         self.do_permission_denied_remove_from_queue_test(
-            submission, submission.group.members.first())
+            submission, obj_build.make_handgrader_user(self.course))
+
+    def test_guest_remove_from_queue_project_private_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
+
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.guest)
+        submission = obj_build.make_submission(group)
+
+        self.do_permission_denied_remove_from_queue_test(submission, group.members.first())
 
     def test_remove_others_submission_from_queue_permission_denied(self):
-        for submission in self.all_submissions(self.visible_public_project):
-            for user in self.admin, self.staff, self.enrolled, self.nobody:
-                group = submission.group
-                if group.members.filter(pk=user.pk).exists():
-                    continue
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
 
-                self.do_permission_denied_remove_from_queue_test(
-                    submission, user)
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.guest)
+        submission = obj_build.make_submission(group)
+
+        self.do_permission_denied_remove_from_queue_test(
+            submission, obj_build.make_admin_user(self.course))
 
     def test_error_remove_submission_not_in_queue(self):
         statuses = set(ag_models.Submission.GradingStatus.values)
         statuses.remove(ag_models.Submission.GradingStatus.queued)
         statuses.remove(ag_models.Submission.GradingStatus.received)
-        for submission in self.all_submissions(self.visible_public_project):
-            for grading_status in statuses:
-                submission.status = grading_status
-                submission.save()
-                self.do_invalid_remove_from_queue_test(submission)
+
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.admin)
+        submission = obj_build.make_submission(group)
+
+        for grading_status in statuses:
+            submission.status = grading_status
+            submission.save()
+            self.do_invalid_remove_from_queue_test(submission)
 
     def do_valid_remove_from_queue_test(self, submission, user=None):
         for grading_status in (ag_models.Submission.GradingStatus.received,
@@ -1673,7 +1807,7 @@ def submission_remove_from_queue_url(submission):
                    kwargs={'pk': submission.pk})
 
 
-def submission_url(submission):
+def submission_detail_url(submission):
     return reverse('submission-detail', kwargs={'pk': submission.pk})
 
 

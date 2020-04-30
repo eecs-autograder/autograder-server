@@ -159,7 +159,6 @@ class Group(ag_model_base.AutograderModel):
 
         def _is_towards_limit(submission):
             return (start_datetime <= submission.timestamp < end_datetime
-                    and submission.count_towards_daily_limit
                     and submission.status in Submission.GradingStatus.count_towards_limit_statuses)
 
         return utils.count_if(self.submissions.all(), _is_towards_limit)

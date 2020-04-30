@@ -70,13 +70,9 @@ class SubmissionTestCase(UnitTestBase):
             (file_.name for file_ in files_to_submit),
             submission.submitted_filenames)
 
-        self.assertTrue(submission.count_towards_daily_limit)
         self.assertFalse(submission.is_past_daily_limit)
-
         self.assertTrue(submission.count_towards_total_limit)
-
         self.assertFalse(submission.is_bonus_submission)
-
         self.assertEqual([], submission.does_not_count_for)
 
         self.assertLess(submission.timestamp - now,
@@ -241,7 +237,6 @@ class SubmissionTestCase(UnitTestBase):
             'missing_files',
             'status',
 
-            'count_towards_daily_limit',
             'is_past_daily_limit',
             'is_bonus_submission',
 
@@ -261,7 +256,7 @@ class SubmissionTestCase(UnitTestBase):
         self.assertTrue(submission.to_dict())
 
     def test_editable_fields(self):
-        self.assertCountEqual(['count_towards_daily_limit', 'count_towards_total_limit'],
+        self.assertCountEqual(['count_towards_total_limit'],
                               ag_models.Submission.get_editable_fields())
 
 
