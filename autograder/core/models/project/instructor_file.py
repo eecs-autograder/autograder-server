@@ -28,10 +28,10 @@ class InstructorFileManager(AutograderModelManager):
         # is created.
         if 'file_obj' in kwargs and 'project' in kwargs:
             file_obj = kwargs['file_obj']
-            if file_obj.size > const.MAX_PROJECT_FILE_SIZE:
+            if file_obj.size > const.MAX_INSTRUCTOR_FILE_SIZE:
                 raise exceptions.ValidationError(
                     {'content': 'Project files cannot be bigger than {} bytes'.format(
-                        const.MAX_PROJECT_FILE_SIZE)})
+                        const.MAX_INSTRUCTOR_FILE_SIZE)})
             project = kwargs['project']
 
             file_exists = utils.find_if(

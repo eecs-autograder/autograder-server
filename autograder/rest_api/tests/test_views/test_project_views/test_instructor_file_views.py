@@ -91,7 +91,7 @@ class CreateInstructorFileTestCase(AGViewTestBase):
         self.assertEqual(0, self.project.instructor_files.count())
 
     def test_invalid_create_too_large_uploaded_file(self):
-        too_big_file = SimpleUploadedFile('spam', b'a' * (constants.MAX_PROJECT_FILE_SIZE + 1))
+        too_big_file = SimpleUploadedFile('spam', b'a' * (constants.MAX_INSTRUCTOR_FILE_SIZE + 1))
         self.assertEqual(0, self.project.instructor_files.count())
         self.client.force_authenticate(obj_build.make_admin_user(self.course))
         response = self.client.post(
@@ -271,7 +271,7 @@ class UpdateUploadedFileContentTestCase(_DetailViewTestSetup):
     def test_error_update_content_too_large(self):
         self.client.force_authenticate(self.admin)
         too_big_updated_file = SimpleUploadedFile(
-            self.file_.name, b'a' * (constants.MAX_PROJECT_FILE_SIZE + 1))
+            self.file_.name, b'a' * (constants.MAX_INSTRUCTOR_FILE_SIZE + 1))
 
         response = self.client.put(
             self.url, {'file_obj': too_big_updated_file}, format='multipart')

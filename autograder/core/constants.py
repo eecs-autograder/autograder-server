@@ -7,8 +7,13 @@ MAX_USERNAME_LEN = User._meta.get_field('username').max_length
 
 MAX_CHAR_FIELD_LEN = 255
 
-MAX_OUTPUT_LENGTH = 8 * pow(10, 6)  # 8,000,000 characters
-MAX_PROJECT_FILE_SIZE = 15 * (10 ** 6)  # 15,000,000 bytes
+# The maximum size for an instructor file.
+MAX_INSTRUCTOR_FILE_SIZE = 15 * (10 ** 6)  # 15,000,000 bytes
+
+# Recorded output longer than this value will be truncated.
+# Since instructor files can be used as expected stdout/stderr,
+# this value must be the SAME as MAX_INSTRUCTOR_FILE_SIZE.
+MAX_RECORDED_OUTPUT_LENGTH = MAX_INSTRUCTOR_FILE_SIZE
 
 # For a given project, the name of the directory that
 # user-uploaded project files should be placed in.

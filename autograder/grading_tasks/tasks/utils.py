@@ -109,8 +109,8 @@ def run_command_from_args(cmd: str,
                                      # max_stack_size=max_stack_size,
                                      max_virtual_memory=max_virtual_memory,
                                      timeout=timeout,
-                                     truncate_stdout=constants.MAX_OUTPUT_LENGTH,
-                                     truncate_stderr=constants.MAX_OUTPUT_LENGTH)
+                                     truncate_stdout=constants.MAX_RECORDED_OUTPUT_LENGTH,
+                                     truncate_stderr=constants.MAX_RECORDED_OUTPUT_LENGTH)
     return run_result
 
 
