@@ -443,6 +443,7 @@ class UpdateGroupTestCase(AGViewTestBase):
             [serialize_user(user) for user in new_members], response.data['members'])
 
     def test_admin_update_guest_group_members(self):
+        self.project.validate_and_update(guests_can_submit=True)
         group = obj_build.make_group(
             num_members=2, members_role=obj_build.UserRole.guest, project=self.project)
         new_members = list(group.members.all())[:-1] + [obj_build.make_user()]
