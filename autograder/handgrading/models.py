@@ -384,10 +384,6 @@ class AppliedAnnotation(AutograderModel):
 
     location = ag_fields.ValidatedJSONField(
         NewLocation, help_text='The source code location where the Annotation was applied.')
-    old_location = models.OneToOneField(
-        'Location', related_name='+', on_delete=models.PROTECT,
-        blank=True, null=True, default=None,
-        help_text='''The source code location where the Annotation was applied.''')
 
     def clean(self) -> None:
         """
@@ -428,10 +424,6 @@ class Comment(AutograderModel):
         help_text='''When not None, specifies the source code location this comment
                      applies to.'''
     )
-    old_location = models.OneToOneField(
-        'Location', related_name='+', null=True, blank=True, on_delete=models.PROTECT,
-        help_text='''When not None, specifies the source code location this comment
-                     applies to.''')
 
     text = models.TextField(help_text='''Text to be shown to students.''')
 
@@ -462,35 +454,3 @@ class Comment(AutograderModel):
                            'handgrading_result',)
 
     EDITABLE_FIELDS = ('text',)
-
-
-class Location(AutograderModel):
-    """
-    A region of source code in a specific file with a starting and ending line.
-    """
-    filename = models.TextField(help_text='''The file that contains the source code region.''')
-
-    first_line = models.IntegerField(
-        validators=[validators.MinValueValidator(0)],
-        help_text='''The first line in the source code region. Must be non-negative.''')
-
-    last_line = models.IntegerField(
-        validators=[validators.MinValueValidator(0)],
-        help_text='''The last line in the source code region (inclusive). Must be non-negative.''')
-
-    def clean(self):
-        """
-        Checks that first_line <= last_line.
-        """
-        if self.last_line is not None and (self.last_line < self.first_line):
-            raise ValidationError('first line should be before last line')
-
-    SERIALIZABLE_FIELDS = ('pk',
-                           'last_modified',
-
-                           'first_line',
-                           'last_line',
-                           'filename',)
-
-    EDITABLE_FIELDS = ('first_line',
-                       'last_line',)

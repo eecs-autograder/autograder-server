@@ -21,9 +21,11 @@ class Command(DictSerializableMixin):
                  cmd: str,
                  name: str='',
                  time_limit: int=constants.DEFAULT_SUBPROCESS_TIMEOUT,
+                 # Remove in version 5.0.0
                  stack_size_limit: int=constants.DEFAULT_STACK_SIZE_LIMIT,
                  use_virtual_memory_limit: bool=True,
                  virtual_memory_limit: int=constants.DEFAULT_VIRTUAL_MEM_LIMIT,
+                 # Remove in version 5.0.0
                  process_spawn_limit: int=constants.DEFAULT_PROCESS_LIMIT):
         self.cmd = cmd
         self.name = name
@@ -103,6 +105,7 @@ class AGCommandBase(AutograderModel):
             Must be > 0
             Must be <= {constants.MAX_SUBPROCESS_TIMEOUT}""")
 
+    # Remove in version 5.0.0
     stack_size_limit = models.IntegerField(
         default=constants.DEFAULT_STACK_SIZE_LIMIT,
         validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_STACK_SIZE_LIMIT)],
@@ -120,6 +123,7 @@ class AGCommandBase(AutograderModel):
             Must be <= {constants.MAX_VIRTUAL_MEM_LIMIT}
             NOTE: Setting this value too low may cause the command to crash prematurely.""")
 
+    # Remove in version 5.0.0
     process_spawn_limit = models.IntegerField(
         default=constants.DEFAULT_PROCESS_LIMIT,
         validators=[MinValueValidator(0), MaxValueValidator(constants.MAX_PROCESS_LIMIT)],

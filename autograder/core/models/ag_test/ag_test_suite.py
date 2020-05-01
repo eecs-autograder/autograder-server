@@ -8,49 +8,6 @@ from ..project import ExpectedStudentFile, Project, InstructorFile
 from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
 
-class AGTestSuiteFeedbackConfig(AutograderModel):
-    """
-    DEPRECATED: Use NewAGTestSuiteFeedbackConfig instead.
-    Contains feedback options for an AGTestSuite.
-    """
-
-    visible = models.BooleanField(default=True)
-
-    show_individual_tests = models.BooleanField(
-        default=True,
-        help_text='''Whether to show information about individual tests in a suite or just a
-                     points summary (if available).''')
-
-    show_setup_and_teardown_return_code = models.BooleanField(default=True)
-    show_setup_and_teardown_timed_out = models.BooleanField(default=True)
-
-    show_setup_and_teardown_stdout = models.BooleanField(
-        default=True,
-        help_text="Whether to show stdout content from a suite's setup and teardown commands.")
-
-    show_setup_and_teardown_stderr = models.BooleanField(
-        default=True,
-        help_text="Whether to show stderr content from a suite's setup and teardown commands.")
-
-    SERIALIZABLE_FIELDS = (
-        'visible',
-        'show_individual_tests',
-        'show_setup_and_teardown_return_code',
-        'show_setup_and_teardown_timed_out',
-        'show_setup_and_teardown_stdout',
-        'show_setup_and_teardown_stderr',
-    )
-
-    EDITABLE_FIELDS = (
-        'visible',
-        'show_individual_tests',
-        'show_setup_and_teardown_return_code',
-        'show_setup_and_teardown_timed_out',
-        'show_setup_and_teardown_stdout',
-        'show_setup_and_teardown_stderr',
-    )
-
-
 class NewAGTestSuiteFeedbackConfig(DictSerializableMixin):
     """
     Contains feedback options for an AGTestSuite.
@@ -87,13 +44,6 @@ class NewAGTestSuiteFeedbackConfig(DictSerializableMixin):
         'show_setup_stderr': (
             "Whether to show stderr content from a suite's setup command."),
     }
-
-
-def make_default_suite_fdbk() -> int:
-    """
-    Creates a new default AGTestSuiteFeedbackConfig object and returns its pk
-    """
-    return AGTestSuiteFeedbackConfig.objects.validate_and_create().pk
 
 
 class AGTestSuite(AutograderModel):
@@ -149,7 +99,7 @@ class AGTestSuite(AutograderModel):
         help_text="The sandbox docker image to use for running this suite."
     )
 
-    # This is unused and will be removed eventually
+    # Remove in version 5.0.0
     old_sandbox_docker_image = models.ForeignKey(
         SandboxDockerImage,
         on_delete=models.SET_DEFAULT,
@@ -168,32 +118,6 @@ class AGTestSuite(AutograderModel):
         help_text='''If true, this test suite can be graded asynchronously. Deferred suites that
                      have yet to be graded do not prevent members of a group from submitting
                      again.''')
-
-    # These are unused and will be removed eventually
-    old_normal_fdbk_config = models.OneToOneField(
-        AGTestSuiteFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_suite_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a normal submission.')
-    old_ultimate_submission_fdbk_config = models.OneToOneField(
-        AGTestSuiteFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_suite_fdbk,
-        related_name='+',
-        help_text='Feedback settings for an ultimate submission.')
-    old_past_limit_submission_fdbk_config = models.OneToOneField(
-        AGTestSuiteFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_suite_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a submission that is past the daily limit.')
-    old_staff_viewer_fdbk_config = models.OneToOneField(
-        AGTestSuiteFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_suite_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a staff member viewing a submission from another group.')
 
     normal_fdbk_config = ag_fields.ValidatedJSONField(
         NewAGTestSuiteFeedbackConfig, default=NewAGTestSuiteFeedbackConfig)

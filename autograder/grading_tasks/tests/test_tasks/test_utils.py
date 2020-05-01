@@ -174,7 +174,7 @@ class RunCommandTestCase(UnitTestBase):
             print(result.stdout.read())
             print(result.stderr.read())
 
-    # TODO: Process spawn limit is disabled and will be removed at a later time.
+    # Remove in version 5.0.0
     # def test_process_spawn_limit(self):
     #     # Make sure that wrapping commands in bash -c doesn't affect
     #     # the needed process spawn limit.

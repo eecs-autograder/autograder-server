@@ -5,20 +5,12 @@ from django.db import transaction
 
 import autograder.core.utils as core_ut
 from .ag_command_result_base import AGCommandResultBase
-from .ag_command import AGCommand
 
 
 class AGCommandResult(AGCommandResultBase):
     """
-    Contains the core run results of an AGCommand.
+    Contains the core run results of a Command.
     """
-
-    ag_command = models.ForeignKey(
-        AGCommand, on_delete=models.SET_NULL,
-        null=True, blank=True, default=None,
-        help_text="The AGCommand this result belongs to, or None if this "
-                  "result doesn't belong to a command or if its command has been deleted.")
-
     @property
     def stdout_filename(self):
         if not self.pk:

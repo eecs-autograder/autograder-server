@@ -465,8 +465,7 @@ sys.stderr.flush()
         self.assertEqual(self.non_utf_bytes, res.open_setup_stdout().read())
         self.assertEqual(self.non_utf_bytes, res.open_setup_stderr().read())
 
-    # TODO: Process spawn and stack size limits are disabled and will be
-    # removed at a later date.
+    # Remove process and stack limit tests in version 5.0.0
     def test_time_process_stack_and_virtual_mem_limits_passed_to_run_command(self, *args):
         self.ag_test_suite.validate_and_update(setup_suite_cmd='printf waluigi')
 
