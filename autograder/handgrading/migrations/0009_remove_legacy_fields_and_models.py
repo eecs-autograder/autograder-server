@@ -10,9 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.DeleteModel(
-            name='Location',
-        ),
         migrations.RemoveField(
             model_name='appliedannotation',
             name='old_location',
@@ -20,5 +17,8 @@ class Migration(migrations.Migration):
         migrations.RemoveField(
             model_name='comment',
             name='old_location',
+        ),
+        migrations.DeleteModel(
+            name='Location',
         ),
     ]

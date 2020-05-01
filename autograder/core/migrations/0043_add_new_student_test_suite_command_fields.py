@@ -7,31 +7,31 @@ import django.core.validators
 from django.db import migrations, models
 
 
-def migrate_student_test_suite_commands(apps, schema_editor):
-    StudentTestSuite = apps.get_model('core', 'StudentTestSuite')
+# def migrate_student_test_suite_commands(apps, schema_editor):
+#     StudentTestSuite = apps.get_model('core', 'StudentTestSuite')
 
-    cmd_field_names = [
-        'setup_command',
-        'get_student_test_names_command',
-        'student_test_validity_check_command',
-        'grade_buggy_impl_command',
-    ]
+#     cmd_field_names = [
+#         'setup_command',
+#         'get_student_test_names_command',
+#         'student_test_validity_check_command',
+#         'grade_buggy_impl_command',
+#     ]
 
-    for suite in StudentTestSuite.objects.all():
-        for field_name in cmd_field_names:
-            old_field_name = 'old_' + field_name
-            cmd_settings = {
-                'name': getattr(suite, old_field_name).name,
-                'cmd': getattr(suite, old_field_name).cmd,
-                'time_limit': getattr(suite, old_field_name).time_limit,
-                'stack_size_limit': getattr(suite, old_field_name).stack_size_limit,
-                'virtual_memory_limit': getattr(suite, old_field_name).virtual_memory_limit,
-                'process_spawn_limit': getattr(suite, old_field_name).process_spawn_limit,
-            }
-            setattr(suite, field_name, cmd_settings)
+#     for suite in StudentTestSuite.objects.all():
+#         for field_name in cmd_field_names:
+#             old_field_name = 'old_' + field_name
+#             cmd_settings = {
+#                 'name': getattr(suite, old_field_name).name,
+#                 'cmd': getattr(suite, old_field_name).cmd,
+#                 'time_limit': getattr(suite, old_field_name).time_limit,
+#                 'stack_size_limit': getattr(suite, old_field_name).stack_size_limit,
+#                 'virtual_memory_limit': getattr(suite, old_field_name).virtual_memory_limit,
+#                 'process_spawn_limit': getattr(suite, old_field_name).process_spawn_limit,
+#             }
+#             setattr(suite, field_name, cmd_settings)
 
-        suite.full_clean()
-        suite.save()
+#         suite.full_clean()
+#         suite.save()
 
 
 class Migration(migrations.Migration):
@@ -61,26 +61,26 @@ class Migration(migrations.Migration):
             name='student_test_validity_check_command',
             field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.new_make_default_validity_check_command, help_text="This command will be run once for each detected student test case.\n                     An exit status of zero indicates that a student test case is valid,\n                     whereas a nonzero exit status indicates that a student test case\n                     is invalid.\n                     This command must contain the placeholder ${student_test_name} at least once. That\n                     placeholder will be replaced with the name of the student test case\n                     that is to be checked for validity.\n                     NOTE: This AGCommand's 'cmd' field must not be blank.\n                     ", serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
         ),
-        migrations.AlterField(
-            model_name='agcommand',
-            name='process_spawn_limit',
-            field=models.IntegerField(default=0, help_text="The maximum number of processes that the command is allowed to spawn.\n            Must be >= 0\n            Must be <= 150\n            NOTE: This limit applies cumulatively to the processes\n                  spawned by the main program being run. i.e. If a\n                  spawned process spawns it's own child process, both\n                  of those processes will count towards the main\n                  program's process limit.", validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(150)]),
-        ),
-        migrations.AlterField(
-            model_name='agcommand',
-            name='stack_size_limit',
-            field=models.IntegerField(default=10000000, help_text='The maximum stack size in bytes.\n            Must be > 0\n            Must be <= 100000000\n            NOTE: Setting this value too low may cause the command to crash prematurely.', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(100000000)]),
-        ),
-        migrations.AlterField(
-            model_name='agcommand',
-            name='time_limit',
-            field=models.IntegerField(default=10, help_text='The time limit in seconds to be placed on the command.\n            Must be > 0\n            Must be <= 90', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(90)]),
-        ),
-        migrations.AlterField(
-            model_name='agcommand',
-            name='virtual_memory_limit',
-            field=models.BigIntegerField(default=500000000, help_text='The maximum amount of virtual memory\n            (in bytes) the command can use.\n            Must be > 0\n            Must be <= 4000000000\n            NOTE: Setting this value too low may cause the command to crash prematurely.', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(4000000000)]),
-        ),
+        # migrations.AlterField(
+        #     model_name='agcommand',
+        #     name='process_spawn_limit',
+        #     field=models.IntegerField(default=0, help_text="The maximum number of processes that the command is allowed to spawn.\n            Must be >= 0\n            Must be <= 150\n            NOTE: This limit applies cumulatively to the processes\n                  spawned by the main program being run. i.e. If a\n                  spawned process spawns it's own child process, both\n                  of those processes will count towards the main\n                  program's process limit.", validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(150)]),
+        # ),
+        # migrations.AlterField(
+        #     model_name='agcommand',
+        #     name='stack_size_limit',
+        #     field=models.IntegerField(default=10000000, help_text='The maximum stack size in bytes.\n            Must be > 0\n            Must be <= 100000000\n            NOTE: Setting this value too low may cause the command to crash prematurely.', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(100000000)]),
+        # ),
+        # migrations.AlterField(
+        #     model_name='agcommand',
+        #     name='time_limit',
+        #     field=models.IntegerField(default=10, help_text='The time limit in seconds to be placed on the command.\n            Must be > 0\n            Must be <= 90', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(90)]),
+        # ),
+        # migrations.AlterField(
+        #     model_name='agcommand',
+        #     name='virtual_memory_limit',
+        #     field=models.BigIntegerField(default=500000000, help_text='The maximum amount of virtual memory\n            (in bytes) the command can use.\n            Must be > 0\n            Must be <= 4000000000\n            NOTE: Setting this value too low may cause the command to crash prematurely.', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(4000000000)]),
+        # ),
         migrations.AlterField(
             model_name='agcommandresult',
             name='stderr_truncated',
@@ -162,7 +162,7 @@ class Migration(migrations.Migration):
             field=models.BooleanField(blank=True, default=True, help_text='A hard override that indicates that ultimate\n            submission feedback should not be shown, even if the\n            appropriate criteria are met.'),
         ),
 
-        migrations.RunPython(
-            migrate_student_test_suite_commands, lambda apps, schema_editor: None
-        )
+        # migrations.RunPython(
+        #     migrate_student_test_suite_commands, lambda apps, schema_editor: None
+        # )
     ]
