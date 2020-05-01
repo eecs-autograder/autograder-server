@@ -3,27 +3,26 @@ from __future__ import annotations
 import os
 import tempfile
 from decimal import Decimal
-from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional, Union
+from typing import BinaryIO, Dict, Iterable, List, Optional, Sequence, Union
 
 from django.db import transaction
 from django.db.models import Prefetch
 from django.utils.functional import cached_property
 
-from autograder.core.models import Submission, AGTestCommandResult, StudentTestSuiteResult
-from autograder.core.models.ag_test.ag_test_suite_result import AGTestSuiteResult
-from autograder.core.models.ag_test.ag_test_case_result import AGTestCaseResult
-from autograder.core.models.student_test_suite import StudentTestSuite
-from autograder.core.models.ag_test.feedback_category import FeedbackCategory
-from autograder.core.models.ag_model_base import ToDictMixin
-from autograder.core.models.project import Project
-from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, NewAGTestSuiteFeedbackConfig
-from autograder.core.models.ag_test.ag_test_case import AGTestCase, NewAGTestCaseFeedbackConfig
-from autograder.core.models.ag_test.ag_test_command import (
-    AGTestCommand, ExpectedOutputSource,
-    ValueFeedbackLevel, ExpectedReturnCode, AGTestCommandFeedbackConfig,
-    MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
-
 import autograder.core.utils as core_ut
+from autograder.core.models import AGTestCommandResult, StudentTestSuiteResult, Submission
+from autograder.core.models.ag_model_base import ToDictMixin
+from autograder.core.models.ag_test.ag_test_case import AGTestCase, NewAGTestCaseFeedbackConfig
+from autograder.core.models.ag_test.ag_test_case_result import AGTestCaseResult
+from autograder.core.models.ag_test.ag_test_command import (AGTestCommand, ExpectedOutputSource,
+                                                            ExpectedReturnCode,
+                                                            NewAGTestCommandFeedbackConfig,
+                                                            ValueFeedbackLevel)
+from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, NewAGTestSuiteFeedbackConfig
+from autograder.core.models.ag_test.ag_test_suite_result import AGTestSuiteResult
+from autograder.core.models.ag_test.feedback_category import FeedbackCategory
+from autograder.core.models.project import Project
+from autograder.core.models.student_test_suite import StudentTestSuite
 
 
 class AGTestPreLoader:
@@ -752,7 +751,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
         elif fdbk_category == FeedbackCategory.staff_viewer:
             self._fdbk = self._cmd.staff_viewer_fdbk_config
         elif fdbk_category == FeedbackCategory.max:
-            self._fdbk = AGTestCommandFeedbackConfig(**MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
+            self._fdbk = NewAGTestCommandFeedbackConfig.max_fdbk_config()
 
     @property
     def pk(self):

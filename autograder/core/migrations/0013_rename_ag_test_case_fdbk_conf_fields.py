@@ -10,24 +10,24 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RenameField(
-            model_name='agtestcase',
-            old_name='normal_fdbk_config',
-            new_name='old_normal_fdbk_config',
-        ),
-        migrations.RenameField(
-            model_name='agtestcase',
-            old_name='past_limit_submission_fdbk_config',
-            new_name='old_past_limit_submission_fdbk_config',
-        ),
-        migrations.RenameField(
-            model_name='agtestcase',
-            old_name='staff_viewer_fdbk_config',
-            new_name='old_staff_viewer_fdbk_config',
-        ),
-        migrations.RenameField(
-            model_name='agtestcase',
-            old_name='ultimate_submission_fdbk_config',
-            new_name='old_ultimate_submission_fdbk_config',
-        ),
+        # migrations.RenameField(
+        #     model_name='agtestcase',
+        #     old_name='normal_fdbk_config',
+        #     new_name='old_normal_fdbk_config',
+        # ),
+        # migrations.RenameField(
+        #     model_name='agtestcase',
+        #     old_name='past_limit_submission_fdbk_config',
+        #     new_name='old_past_limit_submission_fdbk_config',
+        # ),
+        # migrations.RenameField(
+        #     model_name='agtestcase',
+        #     old_name='staff_viewer_fdbk_config',
+        #     new_name='old_staff_viewer_fdbk_config',
+        # ),
+        # migrations.RenameField(
+        #     model_name='agtestcase',
+        #     old_name='ultimate_submission_fdbk_config',
+        #     new_name='old_ultimate_submission_fdbk_config',
+        # ),
     ]

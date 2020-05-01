@@ -91,88 +91,6 @@ class NewAGTestCommandFeedbackConfig(DictSerializableMixin):
     )
 
 
-class AGTestCommandFeedbackConfig(AutograderModel):
-    """
-    Contains feedback options for an AGTestCommand
-    """
-    visible = models.BooleanField(default=True)
-
-    return_code_fdbk_level = ag_fields.EnumField(ValueFeedbackLevel,
-                                                 default=ValueFeedbackLevel.get_min())
-    stdout_fdbk_level = ag_fields.EnumField(ValueFeedbackLevel,
-                                            default=ValueFeedbackLevel.get_min())
-    stderr_fdbk_level = ag_fields.EnumField(ValueFeedbackLevel,
-                                            default=ValueFeedbackLevel.get_min())
-
-    show_points = models.BooleanField(default=False)
-    show_actual_return_code = models.BooleanField(default=False)
-    show_actual_stdout = models.BooleanField(default=False)
-    show_actual_stderr = models.BooleanField(default=False)
-    show_whether_timed_out = models.BooleanField(default=False)
-
-    SERIALIZABLE_FIELDS = (
-        'visible',
-        'return_code_fdbk_level',
-        'stdout_fdbk_level',
-        'stderr_fdbk_level',
-        'show_points',
-        'show_actual_return_code',
-        'show_actual_stdout',
-        'show_actual_stderr',
-        'show_whether_timed_out',
-    )
-
-    EDITABLE_FIELDS = (
-        'visible',
-        'return_code_fdbk_level',
-        'stdout_fdbk_level',
-        'stderr_fdbk_level',
-        'show_points',
-        'show_actual_return_code',
-        'show_actual_stdout',
-        'show_actual_stderr',
-        'show_whether_timed_out'
-    )
-
-
-def make_default_command_fdbk() -> int:
-    """
-    Creates a new default AGTestCommandFeedbackConfig and returns its pk.
-    """
-    return AGTestCommandFeedbackConfig.objects.validate_and_create().pk
-
-
-def make_default_ultimate_submission_command_fdbk() -> int:
-    return AGTestCommandFeedbackConfig.objects.validate_and_create(
-        return_code_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
-        stdout_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
-        stderr_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
-        show_points=True,
-        show_actual_return_code=True,
-        show_actual_stdout=True,
-        show_actual_stderr=True,
-        show_whether_timed_out=True
-    ).pk
-
-
-MAX_AG_TEST_COMMAND_FDBK_SETTINGS = {
-    'return_code_fdbk_level': ValueFeedbackLevel.get_max(),
-    'stdout_fdbk_level': ValueFeedbackLevel.get_max(),
-    'stderr_fdbk_level': ValueFeedbackLevel.get_max(),
-    'show_points': True,
-    'show_actual_return_code': True,
-    'show_actual_stdout': True,
-    'show_actual_stderr': True,
-    'show_whether_timed_out': True
-}
-
-
-def make_max_command_fdbk() -> int:
-    return AGTestCommandFeedbackConfig.objects.validate_and_create(
-        **MAX_AG_TEST_COMMAND_FDBK_SETTINGS
-    ).pk
-
-
 class StdinSource(enum.Enum):
     none = 'none'  # No input to redirect
     text = 'text'
@@ -314,31 +232,6 @@ class AGTestCommand(AGCommandBase):
                      produces the wrong stderr (this value must be negative).
                      Note: The total points given for a single command may be negative,
                      but the total points for an AGTestCase will be capped at zero.''')
-
-    old_normal_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_command_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a normal Submission.')
-    old_ultimate_submission_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_ultimate_submission_command_fdbk,
-        related_name='+',
-        help_text='Feedback settings for an ultimate Submission.')
-    old_past_limit_submission_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_command_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a Submission that is past the daily limit.')
-    old_staff_viewer_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_max_command_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a staff member viewing a Submission from another group.')
 
     normal_fdbk_config = ag_fields.ValidatedJSONField(
         NewAGTestCommandFeedbackConfig,

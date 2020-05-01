@@ -213,6 +213,7 @@ class LateDaysRemaining(AutograderModel):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
+    # Remove in version 5.0.0
     old_late_days_remaining = models.IntegerField(
         validators=[validators.MinValueValidator(0)], blank=True, default=0)
 

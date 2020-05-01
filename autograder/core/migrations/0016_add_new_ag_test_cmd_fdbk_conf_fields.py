@@ -5,37 +5,37 @@ import autograder.core.models.ag_test.ag_test_command
 from django.db import migrations
 
 
-def migrate_ag_test_cmd_fdbk_configs(apps, schema_editor):
-    AGTestCommand = apps.get_model('core', 'AGTestCommand')
+# def migrate_ag_test_cmd_fdbk_configs(apps, schema_editor):
+#     AGTestCommand = apps.get_model('core', 'AGTestCommand')
 
-    fdbk_field_names = [
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
-    ]
-    for cmd in AGTestCommand.objects.all():
-        for field_name in fdbk_field_names:
-            old_field_name = 'old_' + field_name
-            fdbk = {
-                'visible': getattr(cmd, old_field_name).visible,
+#     fdbk_field_names = [
+#         'normal_fdbk_config',
+#         'ultimate_submission_fdbk_config',
+#         'past_limit_submission_fdbk_config',
+#         'staff_viewer_fdbk_config',
+#     ]
+#     for cmd in AGTestCommand.objects.all():
+#         for field_name in fdbk_field_names:
+#             old_field_name = 'old_' + field_name
+#             fdbk = {
+#                 'visible': getattr(cmd, old_field_name).visible,
 
-                'return_code_fdbk_level': getattr(cmd, old_field_name).return_code_fdbk_level,
-                'stdout_fdbk_level': getattr(cmd, old_field_name).stdout_fdbk_level,
-                'stderr_fdbk_level': getattr(cmd, old_field_name).stderr_fdbk_level,
+#                 'return_code_fdbk_level': getattr(cmd, old_field_name).return_code_fdbk_level,
+#                 'stdout_fdbk_level': getattr(cmd, old_field_name).stdout_fdbk_level,
+#                 'stderr_fdbk_level': getattr(cmd, old_field_name).stderr_fdbk_level,
 
-                'show_points': getattr(cmd, old_field_name).show_points,
+#                 'show_points': getattr(cmd, old_field_name).show_points,
 
-                'show_actual_return_code': getattr(cmd, old_field_name).show_actual_return_code,
-                'show_actual_stdout': getattr(cmd, old_field_name).show_actual_stdout,
-                'show_actual_stderr': getattr(cmd, old_field_name).show_actual_stderr,
+#                 'show_actual_return_code': getattr(cmd, old_field_name).show_actual_return_code,
+#                 'show_actual_stdout': getattr(cmd, old_field_name).show_actual_stdout,
+#                 'show_actual_stderr': getattr(cmd, old_field_name).show_actual_stderr,
 
-                'show_whether_timed_out': getattr(cmd, old_field_name).show_whether_timed_out,
-            }
-            setattr(cmd, field_name, fdbk)
+#                 'show_whether_timed_out': getattr(cmd, old_field_name).show_whether_timed_out,
+#             }
+#             setattr(cmd, field_name, fdbk)
 
-        cmd.full_clean()
-        cmd.save()
+#         cmd.full_clean()
+#         cmd.save()
 
 
 class Migration(migrations.Migration):
@@ -66,7 +66,7 @@ class Migration(migrations.Migration):
             field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig.default_ultimate_submission_fdbk_config, help_text='Feedback settings for an ultimate Submission.', serializable_class=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig),
         ),
 
-        migrations.RunPython(
-            migrate_ag_test_cmd_fdbk_configs, lambda apps, schema_editor: None
-        )
+        # migrations.RunPython(
+        #     migrate_ag_test_cmd_fdbk_configs, lambda apps, schema_editor: None
+        # )
     ]

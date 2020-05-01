@@ -19,24 +19,6 @@ class NewAGTestCaseFeedbackConfig(DictSerializableMixin):
     SERIALIZABLE_FIELDS = ('visible', 'show_individual_commands',)
 
 
-class AGTestCaseFeedbackConfig(AutograderModel):
-    """
-    Contains feedback options for an AGTestCase.
-    """
-    visible = models.BooleanField(default=True)
-    show_individual_commands = models.BooleanField(default=True)
-
-    SERIALIZABLE_FIELDS = ('visible', 'show_individual_commands',)
-    EDITABLE_FIELDS = ('visible', 'show_individual_commands',)
-
-
-def make_default_test_fdbk() -> int:
-    """
-    Creates a new default AGTestCaseFeedbackConfig and returns its pk.
-    """
-    return AGTestCaseFeedbackConfig.objects.validate_and_create().pk
-
-
 class AGTestCase(AutograderModel):
     """
     An AGTestCase consists of a series of commands to be run together.
@@ -59,31 +41,6 @@ class AGTestCase(AutograderModel):
         on_delete=models.CASCADE,
         help_text='''The suite this autograder test belongs to.
                      This field is REQUIRED.''')
-
-    old_normal_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_test_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a normal Submission.')
-    old_ultimate_submission_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_test_fdbk,
-        related_name='+',
-        help_text='Feedback settings for an ultimate Submission.')
-    old_past_limit_submission_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_test_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a Submission that is past the daily limit.')
-    old_staff_viewer_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_test_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a staff member viewing a Submission from another group.')
 
     normal_fdbk_config = ag_fields.ValidatedJSONField(
         NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)

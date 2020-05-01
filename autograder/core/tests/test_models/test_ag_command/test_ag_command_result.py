@@ -6,10 +6,6 @@ import autograder.core.utils as core_ut
 
 
 class AGCommandResultTestCase(UnitTestBase):
-    def setUp(self):
-        super().setUp()
-        self.ag_cmd = ag_models.AGCommand.objects.validate_and_create(cmd='waaaluigi time')
-
     def test_default_init(self):
         result = ag_models.AGCommandResult.objects.validate_and_create()
         result.refresh_from_db()

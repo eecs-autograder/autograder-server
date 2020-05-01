@@ -88,6 +88,7 @@ class Group(ag_model_base.AutograderModel):
             date, overriding the project closing time.
             Default value: None""")
 
+    # Remove in version 5.0.0
     old_bonus_submissions_remaining = models.IntegerField(
         blank=True,
         default=0,

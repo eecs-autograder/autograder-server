@@ -5,7 +5,7 @@ from django.db import models
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
-from ..ag_command import AGCommand, Command
+from ..ag_command import Command
 from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import Project, InstructorFile, ExpectedStudentFile
 from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
@@ -17,7 +17,6 @@ class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
     exposed_bug_names = 'exposed_bug_names'
 
 
-# FIXME: add field descriptions
 class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
     """
     Contains feedback options for a StudentTestSuite
@@ -88,163 +87,24 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
 
     @classmethod
     def max_fdbk_config(cls) -> 'NewStudentTestSuiteFeedbackConfig':
-        return NewStudentTestSuiteFeedbackConfig(**MAX_STUDENT_SUITE_FDBK_SETTINGS)
+        return NewStudentTestSuiteFeedbackConfig(
+            visible=True,
+            show_setup_return_code=True,
+            show_setup_stdout=True,
+            show_setup_stderr=True,
+            show_get_test_names_return_code=True,
+            show_get_test_names_stdout=True,
+            show_get_test_names_stderr=True,
+            show_validity_check_stdout=True,
+            show_validity_check_stderr=True,
+            show_grade_buggy_impls_stdout=True,
+            show_grade_buggy_impls_stderr=True,
+            show_invalid_test_names=True,
+            show_points=True,
+            bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.get_max()
+        )
 
     FIELD_DESCRIPTIONS = {}
-
-
-class StudentTestSuiteFeedbackConfig(AutograderModel):
-    visible = models.BooleanField(default=True)
-
-    show_setup_return_code = models.BooleanField(
-        default=True,
-        help_text=""""Whether to show the return code from the setup command
-                      and whether the command timed out.""")
-    show_setup_stdout = models.BooleanField(
-        default=False, help_text="Whether to show stdout from the setup command.")
-    show_setup_stderr = models.BooleanField(
-        default=False, help_text="Whether to show stderr from the setup command")
-
-    show_get_test_names_return_code = models.BooleanField(
-        default=True,
-        help_text=""""Whether to show the return code from the get_test_names command
-                      and whether the command timed out.""")
-    show_get_test_names_stdout = models.BooleanField(
-        default=False, help_text="Whether to show stdout from the get_test_names command.")
-    show_get_test_names_stderr = models.BooleanField(
-        default=False, help_text="Whether to show stderr from the get_test_names command")
-
-    show_validity_check_stdout = models.BooleanField(
-        default=False,
-        help_text="Whether to show stdout from all runs of the setup command.")
-    show_validity_check_stderr = models.BooleanField(
-        default=False,
-        help_text="Whether to show stderr from all runs of the setup command.")
-
-    show_grade_buggy_impls_stdout = models.BooleanField(
-        default=False,
-        help_text="Whether to show stdout from grading all buggy impls.")
-    show_grade_buggy_impls_stderr = models.BooleanField(
-        default=False,
-        help_text="Whether to show stderr from grading all buggy impls.")
-
-    show_invalid_test_names = models.BooleanField(
-        default=True,
-        help_text="""Whether to show the names of student tests that failed the validity check.
-                     Setting this to true will also include information about whether
-                     invalid test cases exceeded the validity check command's time limit.""")
-    show_points = models.BooleanField(
-        default=False,
-        help_text="Whether to show how many points were awarded.")
-
-    bugs_exposed_fdbk_level = ag_fields.EnumField(BugsExposedFeedbackLevel,
-                                                  default=BugsExposedFeedbackLevel.get_min())
-
-    SERIALIZABLE_FIELDS = (
-        'visible',
-
-        'show_setup_return_code',
-        'show_setup_stdout',
-        'show_setup_stderr',
-
-        'show_get_test_names_return_code',
-        'show_get_test_names_stdout',
-        'show_get_test_names_stderr',
-
-        'show_validity_check_stdout',
-        'show_validity_check_stderr',
-
-        'show_grade_buggy_impls_stdout',
-        'show_grade_buggy_impls_stderr',
-
-        'show_invalid_test_names',
-        'show_points',
-
-        'bugs_exposed_fdbk_level',
-    )
-
-    EDITABLE_FIELDS = (
-        'visible',
-
-        'show_setup_return_code',
-        'show_setup_stdout',
-        'show_setup_stderr',
-
-        'show_get_test_names_return_code',
-        'show_get_test_names_stdout',
-        'show_get_test_names_stderr',
-
-        'show_validity_check_stdout',
-        'show_validity_check_stderr',
-
-        'show_grade_buggy_impls_stdout',
-        'show_grade_buggy_impls_stderr',
-
-        'show_invalid_test_names',
-        'show_points',
-
-        'bugs_exposed_fdbk_level',
-    )
-
-
-def make_default_command_fdbk() -> int:
-    return StudentTestSuiteFeedbackConfig.objects.validate_and_create().pk
-
-
-def make_default_ultimate_submission_command_fdbk() -> int:
-    return StudentTestSuiteFeedbackConfig.objects.validate_and_create(
-        show_invalid_test_names=True,
-        show_points=True,
-        bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.num_bugs_exposed,
-    ).pk
-
-
-MAX_STUDENT_SUITE_FDBK_SETTINGS = {
-    'visible': True,
-    'show_setup_return_code': True,
-    'show_setup_stdout': True,
-    'show_setup_stderr': True,
-    'show_get_test_names_return_code': True,
-    'show_get_test_names_stdout': True,
-    'show_get_test_names_stderr': True,
-    'show_validity_check_stdout': True,
-    'show_validity_check_stderr': True,
-    'show_grade_buggy_impls_stdout': True,
-    'show_grade_buggy_impls_stderr': True,
-    'show_invalid_test_names': True,
-    'show_points': True,
-    'bugs_exposed_fdbk_level': BugsExposedFeedbackLevel.get_max()
-}
-
-
-def make_max_student_suite_fdbk() -> int:
-    return StudentTestSuiteFeedbackConfig.objects.validate_and_create(
-        **MAX_STUDENT_SUITE_FDBK_SETTINGS
-    ).pk
-
-
-def make_default_past_limit_student_suite_fdbk() -> int:
-    return StudentTestSuiteFeedbackConfig.objects.validate_and_create(
-        visible=False,
-        show_setup_return_code=False,
-        show_setup_stdout=False,
-        show_setup_stderr=False,
-        show_get_test_names_return_code=False,
-        show_get_test_names_stdout=False,
-        show_get_test_names_stderr=False,
-        show_validity_check_stdout=False,
-        show_validity_check_stderr=False,
-        show_grade_buggy_impls_stdout=False,
-        show_grade_buggy_impls_stderr=False,
-        show_invalid_test_names=False,
-        show_points=False,
-        bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.get_min()
-    ).pk
-
-
-def make_default_setup_cmd() -> int:
-    return AGCommand.objects.validate_and_create(
-        cmd='true', process_spawn_limit=constants.MEDIUM_PROCESS_LIMIT).pk
 
 
 def new_make_default_setup_cmd() -> Command:
@@ -252,32 +112,14 @@ def new_make_default_setup_cmd() -> Command:
         {'cmd': 'true', 'process_spawn_limit': constants.MEDIUM_PROCESS_LIMIT})
 
 
-def make_default_get_student_test_names_cmd() -> int:
-    return AGCommand.objects.validate_and_create(
-        cmd='true', process_spawn_limit=constants.MEDIUM_PROCESS_LIMIT).pk
-
-
 def new_make_default_get_student_test_names_cmd() -> Command:
     return Command.from_dict(
         {'cmd': 'true', 'process_spawn_limit': constants.MEDIUM_PROCESS_LIMIT})
 
 
-def make_default_validity_check_command() -> int:
-    return AGCommand.objects.validate_and_create(
-        cmd='echo {}'.format(StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER)
-    ).pk
-
-
 def new_make_default_validity_check_command() -> Command:
     return Command.from_dict(
         {'cmd': f'echo {StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER}'})
-
-
-def make_default_grade_buggy_impl_command() -> int:
-    return AGCommand.objects.validate_and_create(
-        cmd='echo {} {}'.format(StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER,
-                                StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER)
-    ).pk
 
 
 def new_make_default_grade_buggy_impl_command() -> Command:
@@ -339,15 +181,6 @@ class StudentTestSuite(AutograderModel):
                      To indicate that no setup command should be run,
                      set use_setup_command to False."""
     )
-    old_setup_command = models.OneToOneField(
-        AGCommand,
-        on_delete=models.PROTECT,
-        related_name='+',
-        default=make_default_setup_cmd,
-        help_text="""A command to be run after student and project files have
-                     been added to the sandbox but before any other commands are run.
-                     The AGCommand's 'cmd' field must not be blank. To indicate that no
-                     setup command should be run, set use_setup_command to False.""")
 
     get_student_test_names_command = ag_fields.ValidatedJSONField(
         Command,
@@ -356,16 +189,6 @@ class StudentTestSuite(AutograderModel):
                      list of detected student names. The output of this command will
                      be parsed using Python's str.split()."""
     )
-    old_get_student_test_names_command = models.OneToOneField(
-        AGCommand,
-        on_delete=models.PROTECT,
-        related_name='+',
-        blank=True,
-        default=make_default_get_student_test_names_cmd,
-        help_text="""This required command should print out a whitespace-separated
-                     list of detected student names. The output of this command will
-                     be parsed using Python's str.split().
-                     NOTE: This AGCommand's 'cmd' field must not be blank.""")
 
     DEFAULT_STUDENT_TEST_MAX = 25
     MAX_STUDENT_TEST_MAX = 50
@@ -388,24 +211,8 @@ class StudentTestSuite(AutograderModel):
                      This command must contain the placeholder {} at least once. That
                      placeholder will be replaced with the name of the student test case
                      that is to be checked for validity.
-                     NOTE: This AGCommand's 'cmd' field must not be blank.
                      """.format(STUDENT_TEST_NAME_PLACEHOLDER)
     )
-    old_student_test_validity_check_command = models.OneToOneField(
-        AGCommand,
-        on_delete=models.PROTECT,
-        related_name='+',
-        blank=True,
-        default=make_default_validity_check_command,
-        help_text="""This command will be run once for each detected student test case.
-                     An exit status of zero indicates that a student test case is valid,
-                     whereas a nonzero exit status indicates that a student test case
-                     is invalid.
-                     This command must contain the placeholder {} at least once. That
-                     placeholder will be replaced with the name of the student test case
-                     that is to be checked for validity.
-                     NOTE: This AGCommand's 'cmd' field must not be blank.
-                     """.format(STUDENT_TEST_NAME_PLACEHOLDER))
 
     grade_buggy_impl_command = ag_fields.ValidatedJSONField(
         Command,
@@ -419,26 +226,8 @@ class StudentTestSuite(AutograderModel):
             {0} will be replaced with the name of a valid student test case.
             The placeholder {1} will be replaced with the name of
             the buggy impl that the student test is being run against.
-            NOTE: This AGCommand's 'cmd' field must not be blank.
         """.format(STUDENT_TEST_NAME_PLACEHOLDER, BUGGY_IMPL_NAME_PLACEHOLDER)
     )
-    old_grade_buggy_impl_command = models.OneToOneField(
-        AGCommand,
-        on_delete=models.PROTECT,
-        related_name='+',
-        blank=True,
-        default=make_default_grade_buggy_impl_command,
-        help_text="""This command will be run once for every (buggy implementation, valid test)
-                    pair.
-                     A nonzero exit status indicates that the valid student tests exposed the
-                     buggy impl, whereas an exit status of zero indicates that the student
-                     tests did not expose the buggy impl.
-                     This command must contain the placeholders {0} and {1}. The placeholder
-                     {0} will be replaced with the name of a valid student test case.
-                     The placeholder {1} will be replaced with the name of
-                     the buggy impl that the student test is being run against.
-                     NOTE: This AGCommand's 'cmd' field must not be blank.
-                     """.format(STUDENT_TEST_NAME_PLACEHOLDER, BUGGY_IMPL_NAME_PLACEHOLDER))
 
     points_per_exposed_bug = models.DecimalField(
         decimal_places=2, max_digits=4,
@@ -465,7 +254,7 @@ class StudentTestSuite(AutograderModel):
         help_text="The sandbox docker image to use for running this suite."
     )
 
-    # This is unused and will be removed eventually
+    # Remove in version 5.0.0
     old_sandbox_docker_image = models.ForeignKey(
         SandboxDockerImage,
         on_delete=models.SET_DEFAULT,
@@ -478,32 +267,6 @@ class StudentTestSuite(AutograderModel):
         default=False,
         help_text='''Specifies whether the sandbox should allow commands run inside of it to
                      make network calls outside of the sandbox.''')
-
-    # These are unused and will be removed eventually
-    old_normal_fdbk_config = models.OneToOneField(
-        StudentTestSuiteFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_command_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a normal Submission.')
-    old_ultimate_submission_fdbk_config = models.OneToOneField(
-        StudentTestSuiteFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_ultimate_submission_command_fdbk,
-        related_name='+',
-        help_text='Feedback settings for an ultimate Submission.')
-    old_past_limit_submission_fdbk_config = models.OneToOneField(
-        StudentTestSuiteFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_past_limit_student_suite_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a Submission that is past the daily limit.')
-    old_staff_viewer_fdbk_config = models.OneToOneField(
-        StudentTestSuiteFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_max_student_suite_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a staff member viewing a Submission from another group.')
 
     normal_fdbk_config = ag_fields.ValidatedJSONField(
         NewStudentTestSuiteFeedbackConfig,
@@ -526,7 +289,7 @@ class StudentTestSuite(AutograderModel):
         help_text='Feedback settings for a staff member viewing a Submission from another group.'
     )
 
-    def clean(self):
+    def clean(self) -> None:
         if self.pk is None:
             return
 
@@ -556,7 +319,7 @@ class StudentTestSuite(AutograderModel):
                           'get_student_test_names_command',
                           'student_test_validity_check_command',
                           'grade_buggy_impl_command']:
-            cmd = getattr(self, cmd_field)  # type: AGCommand
+            cmd = getattr(self, cmd_field)
             if cmd is None:
                 continue
 

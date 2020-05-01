@@ -10,9 +10,8 @@ import autograder.core.utils as core_ut
 from ..ag_command import AGCommandResult
 from ..ag_model_base import AutograderModel, ToDictMixin
 from ..ag_test.feedback_category import FeedbackCategory
-from .student_test_suite import (MAX_STUDENT_SUITE_FDBK_SETTINGS,
-                                 BugsExposedFeedbackLevel, StudentTestSuite,
-                                 StudentTestSuiteFeedbackConfig)
+from .student_test_suite import (BugsExposedFeedbackLevel, NewStudentTestSuiteFeedbackConfig,
+                                 StudentTestSuite)
 
 
 def _make_get_test_names_result_default() -> int:
@@ -118,7 +117,7 @@ class StudentTestSuiteResult(AutograderModel):
             elif fdbk_category == FeedbackCategory.staff_viewer:
                 self._fdbk = self._student_test_suite.staff_viewer_fdbk_config
             elif fdbk_category == FeedbackCategory.max:
-                self._fdbk = StudentTestSuiteFeedbackConfig(**MAX_STUDENT_SUITE_FDBK_SETTINGS)
+                self._fdbk = NewStudentTestSuiteFeedbackConfig.max_fdbk_config()
 
         @property
         def pk(self):
@@ -133,7 +132,7 @@ class StudentTestSuiteResult(AutograderModel):
             return self._student_test_suite.pk
 
         @property
-        def fdbk_conf(self) -> StudentTestSuiteFeedbackConfig:
+        def fdbk_conf(self) -> NewStudentTestSuiteFeedbackConfig:
             """
             :return: The StudentTestCaseFeedbackConfig object that this object
                      was initialized with.

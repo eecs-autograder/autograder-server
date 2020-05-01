@@ -5,26 +5,26 @@ import autograder.core.models.ag_test.ag_test_case
 from django.db import migrations
 
 
-def migrate_ag_test_case_fdbk_configs(apps, schema_editor):
-    AGTestCase = apps.get_model('core', 'AGTestCase')
+# def migrate_ag_test_case_fdbk_configs(apps, schema_editor):
+#     AGTestCase = apps.get_model('core', 'AGTestCase')
 
-    fdbk_field_names = [
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
-    ]
-    for case in AGTestCase.objects.all():
-        for field_name in fdbk_field_names:
-            old_field_name = 'old_' + field_name
-            fdbk = {
-                'visible': getattr(case, old_field_name).visible,
-                'show_individual_commands': getattr(case, old_field_name).show_individual_commands,
-            }
-            setattr(case, field_name, fdbk)
+#     fdbk_field_names = [
+#         'normal_fdbk_config',
+#         'ultimate_submission_fdbk_config',
+#         'past_limit_submission_fdbk_config',
+#         'staff_viewer_fdbk_config',
+#     ]
+#     for case in AGTestCase.objects.all():
+#         for field_name in fdbk_field_names:
+#             old_field_name = 'old_' + field_name
+#             fdbk = {
+#                 'visible': getattr(case, old_field_name).visible,
+#                 'show_individual_commands': getattr(case, old_field_name).show_individual_commands,
+#             }
+#             setattr(case, field_name, fdbk)
 
-        case.full_clean()
-        case.save()
+#         case.full_clean()
+#         case.save()
 
 
 class Migration(migrations.Migration):
@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
             field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_case.NewAGTestCaseFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_case.NewAGTestCaseFeedbackConfig),
         ),
 
-        migrations.RunPython(
-            migrate_ag_test_case_fdbk_configs, lambda apps, schema_editor: None
-        )
+        # migrations.RunPython(
+        #     migrate_ag_test_case_fdbk_configs, lambda apps, schema_editor: None
+        # )
     ]
