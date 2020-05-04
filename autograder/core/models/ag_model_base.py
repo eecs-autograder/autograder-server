@@ -4,19 +4,19 @@ import copy
 import decimal
 import enum
 import inspect
+import warnings
 from collections import OrderedDict
 from typing import Callable, Dict, List, Mapping, Sequence, Tuple, Union, cast
 
 from django.contrib.auth.models import User
 from django.core import exceptions
+from django.core.exceptions import FieldDoesNotExist
 from django.db import models, transaction
+from django.db.models import Model
+from django.db.models.fields.related import RelatedField
 
 from autograder.core.fields import ValidatedJSONField
 from autograder.rest_api.serialize_user import serialize_user
-from django.core.exceptions import FieldDoesNotExist
-from django.db.models.fields.related import RelatedField
-import warnings
-from django.db.models import Model
 
 
 class AutograderModelManager(models.Manager):
