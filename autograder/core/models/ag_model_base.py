@@ -1,18 +1,22 @@
+from __future__ import annotations
+
 import copy
 import decimal
 import enum
 import inspect
-import typing
+import warnings
 from collections import OrderedDict
-from typing import Union
+from typing import Callable, Dict, List, Mapping, Sequence, Tuple, Union, cast
 
 from django.contrib.auth.models import User
 from django.core import exceptions
+from django.core.exceptions import FieldDoesNotExist
 from django.db import models, transaction
+from django.db.models import Model
+from django.db.models.fields.related import RelatedField
 
 from autograder.core.fields import ValidatedJSONField
 from autograder.rest_api.serialize_user import serialize_user
-from django.core.exceptions import FieldDoesNotExist
 
 
 class AutograderModelManager(models.Manager):
@@ -20,7 +24,7 @@ class AutograderModelManager(models.Manager):
     The default manager for autograder model classes.
     Its main purpose is to provide the validate_and_create method.
     """
-    def validate_and_create(self, **kwargs) -> 'AutograderModel':
+    def validate_and_create(self, **kwargs) -> AutograderModel:
         """
         This method is a shortcut for constructing a model object,
         calling full_clean(), and then calling save().
@@ -91,12 +95,12 @@ class AutograderModelManager(models.Manager):
             return instance
 
 
-def _field_is_to_one(instance: 'AutograderModel', field_name: str):
-    field = instance._meta.get_field(field_name)
+def _field_is_to_one(instance: AutograderModel, field_name: str) -> bool:
+    field = cast(RelatedField, instance._meta.get_field(field_name))
     return field.many_to_one or field.one_to_one
 
 
-def _load_related_to_many_objs(related_model, objs: typing.Sequence):
+def _load_related_to_many_objs(related_model, objs: Sequence):
     if not objs:
         return []
 
@@ -115,9 +119,9 @@ def _load_related_to_many_objs(related_model, objs: typing.Sequence):
 
 class ToDictMixin:
     @classmethod
-    def get_serializable_fields(cls) -> typing.Tuple[str]:
+    def get_serializable_fields(cls) -> Sequence[str]:
         """
-        Returns a tuple of the names of member variables to include
+        Returns a Sequence of the names of member variables to include
         by default in the dictionary returned by to_dict()
 
         This collection can include model fields, properties, member
@@ -136,14 +140,14 @@ class ToDictMixin:
         are serialized by accessing the .value attribute of the enum.
 
         The base class version of this function returns the value of
-        cls.SERIALIZABLE_FIELDS, which defaults to an empty tuple.
+        cls.SERIALIZABLE_FIELDS, which defaults to an empty Sequence.
         """
         return cls.SERIALIZABLE_FIELDS
 
-    SERIALIZABLE_FIELDS = tuple()
+    SERIALIZABLE_FIELDS: Sequence[str] = tuple()
 
     @classmethod
-    def get_serialize_related_fields(cls) -> typing.Tuple[str]:
+    def get_serialize_related_fields(cls) -> Sequence[str]:
         """
         Returns a tuple of the names of database related fields
         (-to-one or -to-many) that should be serialized
@@ -161,12 +165,14 @@ class ToDictMixin:
         """
         return cls.SERIALIZE_RELATED
 
-    SERIALIZE_RELATED = tuple()
+    SERIALIZE_RELATED: Sequence[str] = tuple()
 
     @classmethod
-    def get_transparent_to_one_fields(cls) -> typing.Tuple[str]:
+    def get_transparent_to_one_fields(cls) -> Sequence[str]:
         """
-        Returns a tuple of the names of database -to-one fields
+        DEPRECATED. Do not use.
+
+        Returns a Sequence of the names of database -to-one fields
         that should be treated as "transparent" when serializing and
         updating instances of this class.
         This introduces the following default behaviors for affected fields:
@@ -189,11 +195,13 @@ class ToDictMixin:
         behave like a normal member of the class rather than a database relationship.
 
         The base class version of this function returns the value of
-        cls.TRANSPARENT_TO_ONE_FIELDS, which defaults to an empty tuple.
+        cls.TRANSPARENT_TO_ONE_FIELDS, which defaults to an empty Sequence.
         """
+        warnings.warn(
+            'Transparent -to-one functionality is deprecated. Use a ValidatedJSONField instead.')
         return cls.TRANSPARENT_TO_ONE_FIELDS
 
-    TRANSPARENT_TO_ONE_FIELDS = tuple()
+    TRANSPARENT_TO_ONE_FIELDS: Sequence[str] = tuple()
 
     def to_dict(self) -> dict:
         """
@@ -220,7 +228,7 @@ class ToDictMixin:
                 continue
 
             try:
-                field = self._meta.get_field(field_name)
+                field = cast(Model, self)._meta.get_field(field_name)
 
                 if isinstance(field, ValidatedJSONField):
                     value = getattr(self, field_name)
@@ -228,7 +236,8 @@ class ToDictMixin:
                     result[field_name] = value.to_dict() if value is not None else None
                     continue
 
-                if field.many_to_one or field.one_to_one:
+                related_field = cast(RelatedField, field)
+                if related_field.many_to_one or related_field.one_to_one:
                     field_val = getattr(self, field_name)
                     if field_val is None:
                         continue
@@ -241,7 +250,7 @@ class ToDictMixin:
                             result[field_name] = field_val
                         else:
                             result[field_name] = field_val.pk
-                elif field.many_to_many or field.one_to_many:
+                elif related_field.many_to_many or related_field.one_to_many:
                     if field_name in self.get_serialize_related_fields():
                         result[field_name] = [
                             _serialize_model_obj(obj) for obj in getattr(self, field_name).all()
@@ -274,6 +283,9 @@ class DictSerializableMixin(ToDictMixin):
 
     Note: This mixin should NOT be used with Django model classes.
     """
+    def __init__(self, **kwargs):
+        raise NotImplementedError('Derived classes must provide their own constructor.')
+
     @classmethod
     def from_dict(cls, input_: dict):
         """
@@ -289,7 +301,7 @@ class DictSerializableMixin(ToDictMixin):
         return result
 
     @classmethod
-    def get_serializable_fields(cls) -> typing.Tuple[str]:
+    def get_serializable_fields(cls) -> Sequence[str]:
         """
         This override automatically detects fields to be serialized
         by taking their names from the constructor arguments.
@@ -379,7 +391,7 @@ class DictSerializableMixin(ToDictMixin):
                 )
 
     @classmethod
-    def _allowed_fields(cls) -> typing.List[str]:
+    def _allowed_fields(cls) -> List[str]:
         # Skip "self"
         return list(inspect.signature(cls.__init__).parameters.keys())[1:]
 
@@ -423,10 +435,10 @@ class DictSerializableMixin(ToDictMixin):
 
     # A dictionary of field names to field descriptions. Used for
     # generating the API schema.
-    FIELD_DESCRIPTIONS: typing.Dict[str, str] = {}
+    FIELD_DESCRIPTIONS: Mapping[str, str] = {}
 
     @classmethod
-    def run_field_validators(cls, input_: dict):
+    def run_field_validators(cls, input_: dict) -> None:
         """
         Runs the validators defined in cls.FIELD_VALIDATORS on input_.
         Re-raises the first caught ValidationError with the field name
@@ -444,7 +456,7 @@ class DictSerializableMixin(ToDictMixin):
     # Validator functions should take in one argument and raise
     # django.core.exceptions.ValidationError constructed with a
     # string if the argument is invalid.
-    FIELD_VALIDATORS: typing.Dict[str, typing.List[typing.Callable[[object], None]]] = {}
+    FIELD_VALIDATORS: Dict[str, List[Callable[[object], None]]] = {}
 
 
 def make_min_value_validator(min_value: int):
@@ -484,9 +496,9 @@ class AutograderModel(ToDictMixin, models.Model):
     last_modified = models.DateTimeField(auto_now=True)
 
     @classmethod
-    def get_editable_fields(cls):
+    def get_editable_fields(cls) -> Sequence[str]:
         """
-        Returns a collection of the names of database fields that can be
+        Returns a sequence of the names of database fields that can be
         edited on this model type using model.validate_and_update()
 
         The base class version of this function returns the value of
@@ -496,7 +508,7 @@ class AutograderModel(ToDictMixin, models.Model):
         """
         return cls.EDITABLE_FIELDS
 
-    EDITABLE_FIELDS = tuple()
+    EDITABLE_FIELDS: Sequence[str] = tuple()
 
     @transaction.atomic
     def validate_and_update(self, **kwargs):
