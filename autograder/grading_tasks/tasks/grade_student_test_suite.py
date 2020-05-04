@@ -26,7 +26,7 @@ def grade_deferred_student_test_suite(student_test_suite_pk, submission_pk):
     def _grade_deferred_student_test_suite_impl():
         try:
             grade_student_test_suite_impl(
-                ag_models.StudentTestSuite.objects.get(pk=student_test_suite_pk),
+                ag_models.MutationTestSuite.objects.get(pk=student_test_suite_pk),
                 ag_models.Submission.objects.get(pk=submission_pk))
         except ObjectDoesNotExist:
             # This means that the suite was deleted, so we skip it.
@@ -40,7 +40,7 @@ def grade_deferred_student_test_suite(student_test_suite_pk, submission_pk):
         mark_submission_as_error(submission_pk, traceback.format_exc())
 
 
-def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite,
+def grade_student_test_suite_impl(student_test_suite: ag_models.MutationTestSuite,
                                   submission: ag_models.Submission):
     sandbox = AutograderSandbox(
         name='submission{}-suite{}-{}'.format(
@@ -98,7 +98,7 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
         for test in student_tests:
             validity_cmd = student_test_suite.student_test_validity_check_command
             concrete_cmd = validity_cmd.cmd.replace(
-                ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, test)
+                ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, test)
 
             validity_run_result = run_ag_command(validity_cmd, sandbox,
                                                  cmd_str_override=concrete_cmd)
@@ -124,8 +124,8 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
             for valid_test in valid_tests:
                 grade_cmd = student_test_suite.grade_buggy_impl_command
                 concrete_cmd = grade_cmd.cmd.replace(
-                    ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, valid_test
-                ).replace(ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
+                    ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, valid_test
+                ).replace(ag_models.MutationTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
 
                 buggy_impl_run_result = run_ag_command(grade_cmd, sandbox,
                                                        cmd_str_override=concrete_cmd)
@@ -150,7 +150,7 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
 
 
 @retry_should_recover
-def _save_results(student_test_suite: ag_models.StudentTestSuite,
+def _save_results(student_test_suite: ag_models.MutationTestSuite,
                   submission: ag_models.Submission,
                   setup_run_result: CompletedCommand,
                   student_tests: List[str],
@@ -172,10 +172,10 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
                 'timed_out_tests': timed_out_tests,
                 'bugs_exposed': bugs_exposed
             }
-            result = ag_models.StudentTestSuiteResult.objects.update_or_create(
+            result = ag_models.MutationTestSuiteResult.objects.update_or_create(
                 defaults=result_kwargs,
                 student_test_suite=student_test_suite,
-                submission=submission)[0]  # type: ag_models.StudentTestSuiteResult
+                submission=submission)[0]  # type: ag_models.MutationTestSuiteResult
 
             if setup_run_result is not None:
                 setup_result = ag_models.AGCommandResult.objects.validate_and_create(

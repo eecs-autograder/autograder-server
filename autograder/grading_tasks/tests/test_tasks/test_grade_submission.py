@@ -86,11 +86,11 @@ class GradeSubmissionTestCase(UnitTestBase):
         print_to_stdout_and_stderr = "bash -c 'printf hello; printf whoops >&2'"
         ag_cmd = obj_build.make_full_ag_test_command(ag_case, cmd=print_to_stdout_and_stderr)
 
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='mnkfoae',
             project=self.project)
 
-        deferred_student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        deferred_student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='deferryyyy',
             project=self.project,
             deferred=True)
@@ -100,11 +100,11 @@ class GradeSubmissionTestCase(UnitTestBase):
             ag_test_command=ag_cmd,
             ag_test_case_result__ag_test_suite_result__submission=self.submission)
 
-        student_suite_result = ag_models.StudentTestSuiteResult.objects.get(
+        student_suite_result = ag_models.MutationTestSuiteResult.objects.get(
             submission=self.submission,
             student_test_suite=student_suite)
 
-        deferred_student_suite_result = ag_models.StudentTestSuiteResult.objects.get(
+        deferred_student_suite_result = ag_models.MutationTestSuiteResult.objects.get(
             submission=self.submission,
             student_test_suite=deferred_student_suite)
 
@@ -320,7 +320,7 @@ void file2() {
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=2)
 
-        deferred_student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        deferred_student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='deferryyyy',
             project=self.project,
             deferred=True)
@@ -334,7 +334,7 @@ void file2() {
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-        deferred_student_suite_result = ag_models.StudentTestSuiteResult.objects.get(
+        deferred_student_suite_result = ag_models.MutationTestSuiteResult.objects.get(
             submission=self.submission,
             student_test_suite=deferred_student_suite)
 

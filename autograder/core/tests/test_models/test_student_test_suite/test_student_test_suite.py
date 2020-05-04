@@ -9,15 +9,15 @@ import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 
 
-class StudentTestSuiteTestCase(UnitTestBase):
+class MutationTestSuiteTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.project = obj_build.make_project()
         self.name = 'qewioruqiwoeiru'
 
     def test_default_init(self):
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
-            name=self.name, project=self.project)  # type: ag_models.StudentTestSuite
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
+            name=self.name, project=self.project)  # type: ag_models.MutationTestSuite
 
         self.assertEqual(self.name, student_suite.name)
         self.assertEqual(self.project, student_suite.project)
@@ -31,7 +31,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
                               ag_models.Command)
         self.assertIsInstance(student_suite.get_student_test_names_command,
                               ag_models.Command)
-        self.assertEqual(ag_models.StudentTestSuite.DEFAULT_STUDENT_TEST_MAX,
+        self.assertEqual(ag_models.MutationTestSuite.DEFAULT_STUDENT_TEST_MAX,
                          student_suite.max_num_student_tests)
 
         self.assertIsInstance(student_suite.student_test_validity_check_command,
@@ -47,16 +47,16 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertFalse(student_suite.allow_network_access)
 
         self.assertIsInstance(student_suite.normal_fdbk_config,
-                              ag_models.NewStudentTestSuiteFeedbackConfig)
+                              ag_models.MutationTestSuiteFeedbackConfig)
         self.assertIsInstance(student_suite.ultimate_submission_fdbk_config,
-                              ag_models.NewStudentTestSuiteFeedbackConfig)
+                              ag_models.MutationTestSuiteFeedbackConfig)
         self.assertIsInstance(student_suite.past_limit_submission_fdbk_config,
-                              ag_models.NewStudentTestSuiteFeedbackConfig)
+                              ag_models.MutationTestSuiteFeedbackConfig)
         self.assertIsInstance(student_suite.staff_viewer_fdbk_config,
-                              ag_models.NewStudentTestSuiteFeedbackConfig)
+                              ag_models.MutationTestSuiteFeedbackConfig)
 
         self.maxDiff = None
-        ultimate_fdbk = ag_models.NewStudentTestSuiteFeedbackConfig.from_dict({
+        ultimate_fdbk = ag_models.MutationTestSuiteFeedbackConfig.from_dict({
             'show_setup_return_code': True,
             'show_invalid_test_names': True,
             'show_points': True,
@@ -65,7 +65,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertEqual(ultimate_fdbk.to_dict(),
                          student_suite.ultimate_submission_fdbk_config.to_dict())
 
-        low_fdbk = ag_models.NewStudentTestSuiteFeedbackConfig.from_dict({})
+        low_fdbk = ag_models.MutationTestSuiteFeedbackConfig.from_dict({})
         self.assertEqual(low_fdbk.to_dict(),
                          student_suite.normal_fdbk_config.to_dict())
 
@@ -121,9 +121,9 @@ class StudentTestSuiteTestCase(UnitTestBase):
             }
         }
 
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             **values
-        )  # type: ag_models.StudentTestSuite
+        )  # type: ag_models.MutationTestSuite
 
         self.assertCountEqual(
             [instructor_file['pk'] for instructor_file in values['instructor_files_needed']],
@@ -145,10 +145,10 @@ class StudentTestSuiteTestCase(UnitTestBase):
                 self.assertEqual(value, getattr(student_suite, key))
 
     def test_valid_float_points_per_exposed_bug(self):
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name=self.name, project=self.project,
             points_per_exposed_bug='.75'
-        )  # type: ag_models.StudentTestSuite
+        )  # type: ag_models.MutationTestSuite
 
         student_suite.refresh_from_db()
 
@@ -157,55 +157,55 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
     def test_float_points_per_exposed_bug_too_many_decimal_places(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 points_per_exposed_bug='1.123'
-            )  # type: ag_models.StudentTestSuite
+            )  # type: ag_models.MutationTestSuite
 
         self.assertIn('points_per_exposed_bug', cm.exception.message_dict)
 
     def test_points_per_exposed_bug_too_many_digits(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 points_per_exposed_bug='1000.123'
-            )  # type: ag_models.StudentTestSuite
+            )  # type: ag_models.MutationTestSuite
 
         self.assertIn('points_per_exposed_bug', cm.exception.message_dict)
 
     def test_suite_ordering(self):
-        suite1 = ag_models.StudentTestSuite.objects.validate_and_create(
+        suite1 = ag_models.MutationTestSuite.objects.validate_and_create(
             name='qweiruquerw', project=self.project)
-        suite2 = ag_models.StudentTestSuite.objects.validate_and_create(
+        suite2 = ag_models.MutationTestSuite.objects.validate_and_create(
             name='xjvnjadoa', project=self.project)
 
-        self.assertCountEqual([suite1.pk, suite2.pk], self.project.get_studenttestsuite_order())
+        self.assertCountEqual([suite1.pk, suite2.pk], self.project.get_mutationtestsuite_order())
 
-        self.project.set_studenttestsuite_order([suite2.pk, suite1.pk])
-        self.assertSequenceEqual([suite2.pk, suite1.pk], self.project.get_studenttestsuite_order())
+        self.project.set_mutationtestsuite_order([suite2.pk, suite1.pk])
+        self.assertSequenceEqual([suite2.pk, suite1.pk], self.project.get_mutationtestsuite_order())
 
-        self.project.set_studenttestsuite_order([suite1.pk, suite2.pk])
-        self.assertSequenceEqual([suite1.pk, suite2.pk], self.project.get_studenttestsuite_order())
+        self.project.set_mutationtestsuite_order([suite1.pk, suite2.pk])
+        self.assertSequenceEqual([suite1.pk, suite2.pk], self.project.get_mutationtestsuite_order())
 
     def test_error_name_not_unique(self):
         name = 'spam'
-        suite1 = ag_models.StudentTestSuite.objects.validate_and_create(
+        suite1 = ag_models.MutationTestSuite.objects.validate_and_create(
             name=name, project=self.project)
 
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=name, project=self.project)
 
     def test_max_num_student_tests_out_of_range(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
-                max_num_student_tests=ag_models.StudentTestSuite.MAX_STUDENT_TEST_MAX + 1)
+                max_num_student_tests=ag_models.MutationTestSuite.MAX_STUDENT_TEST_MAX + 1)
 
         self.assertIn('max_num_student_tests', cm.exception.message_dict)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 max_num_student_tests=-1)
 
@@ -213,7 +213,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
     def test_validity_check_cmd_missing_placeholders(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 student_test_validity_check_command={'cmd': 'no_placeholder'})
 
@@ -221,26 +221,26 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
     def test_grade_buggy_impl_command_missing_placeholders(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 grade_buggy_impl_command={
                     'cmd': 'wee {}'.format(
-                        ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER)})
+                        ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER)})
 
         self.assertIn('grade_buggy_impl_command', cm.exception.message_dict)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 grade_buggy_impl_command={
                     'cmd': 'wee {}'.format(
-                        ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER)})
+                        ag_models.MutationTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER)})
 
         self.assertIn('grade_buggy_impl_command', cm.exception.message_dict)
 
     def test_points_per_exposed_bug_out_of_range(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 points_per_exposed_bug=-1)
 
@@ -248,7 +248,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
     def test_max_points_out_of_range(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 max_points=-1)
 
@@ -258,7 +258,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
         other_project = obj_build.make_project(course=self.project.course)
         other_instructor_file = obj_build.make_instructor_file(project=other_project)
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 instructor_files_needed=[other_instructor_file.pk])
 
@@ -268,7 +268,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
         other_project = obj_build.make_project(course=self.project.course)
         other_student_file = obj_build.make_expected_student_file(other_project)
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 student_files_needed=[other_student_file.pk])
 
@@ -278,7 +278,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
         other_course = obj_build.make_course()
         other_image = obj_build.make_sandbox_docker_image(other_course)
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
+            ag_models.MutationTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
                 sandbox_docker_image=other_image)
 
@@ -316,12 +316,12 @@ class StudentTestSuiteTestCase(UnitTestBase):
         instructor_file = obj_build.make_instructor_file(self.project)
         student_file = obj_build.make_expected_student_file(self.project)
 
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name=self.name, project=self.project,
             setup_command={'cmd': 'setuppy'},
             instructor_files_needed=[instructor_file],
             student_files_needed=[student_file]
-        )  # type: ag_models.StudentTestSuite
+        )  # type: ag_models.MutationTestSuite
 
         serialized = student_suite.to_dict()
         self.assertCountEqual(expected_field_names, serialized.keys())
@@ -348,13 +348,13 @@ class StudentTestSuiteTestCase(UnitTestBase):
         student_suite.validate_and_update(**update_dict)
 
 
-class StudentTestSuiteSandboxImageOnDeleteTestCase(TransactionUnitTestBase):
+class MutationTestSuiteSandboxImageOnDeleteTestCase(TransactionUnitTestBase):
     def test_sandbox_docker_image_set_to_default_on_delete(self):
         project = obj_build.make_project()
         sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
             name='waluigi', display_name='time', tag='taggy')
 
-        suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suiteo', project=project, sandbox_docker_image=sandbox_image
         )
 

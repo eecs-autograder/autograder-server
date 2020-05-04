@@ -65,22 +65,22 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studenttestsuite',
             name='normal_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.NewStudentTestSuiteFeedbackConfig, help_text='Feedback settings for a normal Submission.', serializable_class=autograder.core.models.student_test_suite.student_test_suite.NewStudentTestSuiteFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.MutationTestSuiteFeedbackConfig, help_text='Feedback settings for a normal Submission.', serializable_class=autograder.core.models.student_test_suite.student_test_suite.MutationTestSuiteFeedbackConfig),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
             name='past_limit_submission_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.NewStudentTestSuiteFeedbackConfig.default_past_limit_submission_fdbk_config, help_text='Feedback settings for a Submission that is past the daily limit.', serializable_class=autograder.core.models.student_test_suite.student_test_suite.NewStudentTestSuiteFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.MutationTestSuiteFeedbackConfig.default_past_limit_submission_fdbk_config, help_text='Feedback settings for a Submission that is past the daily limit.', serializable_class=autograder.core.models.student_test_suite.student_test_suite.MutationTestSuiteFeedbackConfig),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
             name='staff_viewer_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.NewStudentTestSuiteFeedbackConfig.max_fdbk_config, help_text='Feedback settings for a staff member viewing a Submission from another group.', serializable_class=autograder.core.models.student_test_suite.student_test_suite.NewStudentTestSuiteFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.MutationTestSuiteFeedbackConfig.max_fdbk_config, help_text='Feedback settings for a staff member viewing a Submission from another group.', serializable_class=autograder.core.models.student_test_suite.student_test_suite.MutationTestSuiteFeedbackConfig),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
             name='ultimate_submission_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.NewStudentTestSuiteFeedbackConfig.default_ultimate_submission_fdbk_config, help_text='Feedback settings for an ultimate Submission.', serializable_class=autograder.core.models.student_test_suite.student_test_suite.NewStudentTestSuiteFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.MutationTestSuiteFeedbackConfig.default_ultimate_submission_fdbk_config, help_text='Feedback settings for an ultimate Submission.', serializable_class=autograder.core.models.student_test_suite.student_test_suite.MutationTestSuiteFeedbackConfig),
         ),
 
         # migrations.RunPython(

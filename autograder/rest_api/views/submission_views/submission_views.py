@@ -14,7 +14,7 @@ from rest_framework import decorators, exceptions, mixins, response, status
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.utils.testing as test_ut
-from autograder.core.submission_feedback import (AGTestPreLoader, StudentTestSuitePreLoader,
+from autograder.core.submission_feedback import (AGTestPreLoader, MutationTestSuitePreLoader,
                                                  SubmissionResultFeedback)
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
@@ -287,7 +287,7 @@ class ListSubmissionsWithResults(AGModelAPIView):
             base_manager=group.submissions)
 
         ag_test_preloader = AGTestPreLoader(group.project)
-        student_test_suite_preloader = StudentTestSuitePreLoader(group.project)
+        student_test_suite_preloader = MutationTestSuitePreLoader(group.project)
 
         submissions = []
         for submission in submissions_queryset:

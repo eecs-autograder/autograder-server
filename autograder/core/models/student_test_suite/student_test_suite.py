@@ -17,9 +17,9 @@ class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
     exposed_bug_names = 'exposed_bug_names'
 
 
-class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
+class MutationTestSuiteFeedbackConfig(DictSerializableMixin):
     """
-    Contains feedback options for a StudentTestSuite
+    Contains feedback options for a MutationTestSuite
     """
     def __init__(
             self,
@@ -58,8 +58,8 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
         self.bugs_exposed_fdbk_level = bugs_exposed_fdbk_level
 
     @classmethod
-    def default_ultimate_submission_fdbk_config(cls) -> 'NewStudentTestSuiteFeedbackConfig':
-        return NewStudentTestSuiteFeedbackConfig(
+    def default_ultimate_submission_fdbk_config(cls) -> 'MutationTestSuiteFeedbackConfig':
+        return MutationTestSuiteFeedbackConfig(
             show_setup_return_code=True,
             show_invalid_test_names=True,
             show_points=True,
@@ -67,8 +67,8 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
         )
 
     @classmethod
-    def default_past_limit_submission_fdbk_config(cls) -> 'NewStudentTestSuiteFeedbackConfig':
-        return NewStudentTestSuiteFeedbackConfig(
+    def default_past_limit_submission_fdbk_config(cls) -> 'MutationTestSuiteFeedbackConfig':
+        return MutationTestSuiteFeedbackConfig(
             visible=True,
             show_setup_return_code=False,
             show_setup_stdout=False,
@@ -86,8 +86,8 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
         )
 
     @classmethod
-    def max_fdbk_config(cls) -> 'NewStudentTestSuiteFeedbackConfig':
-        return NewStudentTestSuiteFeedbackConfig(
+    def max_fdbk_config(cls) -> 'MutationTestSuiteFeedbackConfig':
+        return MutationTestSuiteFeedbackConfig(
             visible=True,
             show_setup_return_code=True,
             show_setup_stdout=True,
@@ -119,19 +119,19 @@ def new_make_default_get_student_test_names_cmd() -> Command:
 
 def new_make_default_validity_check_command() -> Command:
     return Command.from_dict(
-        {'cmd': f'echo {StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER}'})
+        {'cmd': f'echo {MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER}'})
 
 
 def new_make_default_grade_buggy_impl_command() -> Command:
     return Command.from_dict(
-        {'cmd': 'echo {} {}'.format(StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER,
-                                    StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER)}
+        {'cmd': 'echo {} {}'.format(MutationTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER,
+                                    MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER)}
     )
 
 
-class StudentTestSuite(AutograderModel):
+class MutationTestSuite(AutograderModel):
     """
-    A StudentTestSuite defines a way of grading student-submitted
+    A MutationTestSuite defines a way of grading student-submitted
     test cases against a set of intentionally buggy implementations
     of instructor code.
     """
@@ -144,7 +144,7 @@ class StudentTestSuite(AutograderModel):
     BUGGY_IMPL_NAME_PLACEHOLDER = r'${buggy_impl_name}'
 
     name = ag_fields.ShortStringField(
-        help_text="""The name used to identify this StudentTestSuite.
+        help_text="""The name used to identify this MutationTestSuite.
                      Must be non-empty and non-null.""")
     project = models.ForeignKey(
         Project, on_delete=models.CASCADE,
@@ -269,23 +269,23 @@ class StudentTestSuite(AutograderModel):
                      make network calls outside of the sandbox.''')
 
     normal_fdbk_config = ag_fields.ValidatedJSONField(
-        NewStudentTestSuiteFeedbackConfig,
-        default=NewStudentTestSuiteFeedbackConfig,
+        MutationTestSuiteFeedbackConfig,
+        default=MutationTestSuiteFeedbackConfig,
         help_text='Feedback settings for a normal Submission.'
     )
     ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewStudentTestSuiteFeedbackConfig,
-        default=NewStudentTestSuiteFeedbackConfig.default_ultimate_submission_fdbk_config,
+        MutationTestSuiteFeedbackConfig,
+        default=MutationTestSuiteFeedbackConfig.default_ultimate_submission_fdbk_config,
         help_text='Feedback settings for an ultimate Submission.'
     )
     past_limit_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewStudentTestSuiteFeedbackConfig,
-        default=NewStudentTestSuiteFeedbackConfig.default_past_limit_submission_fdbk_config,
+        MutationTestSuiteFeedbackConfig,
+        default=MutationTestSuiteFeedbackConfig.default_past_limit_submission_fdbk_config,
         help_text='Feedback settings for a Submission that is past the daily limit.'
     )
     staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
-        NewStudentTestSuiteFeedbackConfig,
-        default=NewStudentTestSuiteFeedbackConfig.max_fdbk_config,
+        MutationTestSuiteFeedbackConfig,
+        default=MutationTestSuiteFeedbackConfig.max_fdbk_config,
         help_text='Feedback settings for a staff member viewing a Submission from another group.'
     )
 

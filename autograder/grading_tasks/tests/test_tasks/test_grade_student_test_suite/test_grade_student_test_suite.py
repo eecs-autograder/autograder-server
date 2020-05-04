@@ -15,7 +15,7 @@ import tempfile
 
 @tag('slow', 'sandbox')
 @mock.patch('autograder.utils.retry.sleep')
-class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
+class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -43,7 +43,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
 
         self.bugs_exposed = ['RETURN_42_BUG', 'RETURN_TRUE_BUG', 'INFINITE_LOOP_BUG']
         self.bugs_not_exposed = ['RETURN_3_BUG']
-        self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        self.student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='EECS 280 Student Tests', project=self.project,
             instructor_files_needed=self.project.instructor_files.all(),
             student_files_needed=self.project.expected_student_files.all(),
@@ -67,7 +67,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
                         'bug_name=${buggy_impl_name} buggy_impl'),
                 'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
-            points_per_exposed_bug=1)  # type: ag_models.StudentTestSuite
+            points_per_exposed_bug=1)  # type: ag_models.MutationTestSuite
 
         with open(os.path.join(self.files_dir, 'student_tests.cpp'), 'rb') as f:
             self.submission = obj_build.make_submission(
@@ -82,7 +82,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
     def test_grade_non_deferred(self, *args):
         tasks.grade_submission(self.submission.pk)
 
-        result = ag_models.StudentTestSuiteResult.objects.get(
+        result = ag_models.MutationTestSuiteResult.objects.get(
             student_test_suite=self.student_suite)
 
         self.assertEqual(0, result.setup_result.return_code)
@@ -135,7 +135,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         self.student_suite.validate_and_update(deferred=True)
         tasks.grade_submission(self.submission.pk)
 
-        result = ag_models.StudentTestSuiteResult.objects.get(
+        result = ag_models.MutationTestSuiteResult.objects.get(
             student_test_suite=self.student_suite)
 
         self.assertEqual(0, result.setup_result.return_code)
@@ -151,7 +151,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         self.student_suite.validate_and_update(setup_command={'cmd': 'false'})
 
         tasks.grade_submission(self.submission.pk)
-        result = ag_models.StudentTestSuiteResult.objects.get(
+        result = ag_models.MutationTestSuiteResult.objects.get(
             student_test_suite=self.student_suite)
 
         self.assertNotEqual(0, result.setup_result.return_code)
@@ -181,7 +181,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         with mock.patch('autograder.core.constants.MAX_SUBPROCESS_TIMEOUT', new=1):
             tasks.grade_submission(self.submission.pk)
 
-            result = ag_models.StudentTestSuiteResult.objects.get(
+            result = ag_models.MutationTestSuiteResult.objects.get(
                 student_test_suite=self.student_suite)
             self.assertTrue(result.setup_result.timed_out)
 
@@ -208,7 +208,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
 
 @tag('slow', 'sandbox')
 @mock.patch('autograder.utils.retry.sleep')
-class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
+class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.project = obj_build.make_project()
@@ -222,7 +222,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
             file_obj=SimpleUploadedFile('test_names', non_unicode),
             project=self.project)
 
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='qeoriuqewrpqiuerqopwr',
             project=self.project,
             instructor_files_needed=[instructor_file],
@@ -236,7 +236,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-        result = ag_models.StudentTestSuiteResult.objects.get(student_test_suite=student_suite)
+        result = ag_models.MutationTestSuiteResult.objects.get(student_test_suite=student_suite)
         self.assertIsNone(result.setup_result)
 
         self.assertEqual(0, result.get_test_names_result.return_code)
@@ -245,7 +245,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
 
     def test_too_many_student_tests(self, *args):
         tests = ['test1', 'test2', 'test3']
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='too maaaany',
             project=self.project,
             get_student_test_names_command={
@@ -259,14 +259,14 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-        result = ag_models.StudentTestSuiteResult.objects.get(student_test_suite=student_suite)
+        result = ag_models.MutationTestSuiteResult.objects.get(student_test_suite=student_suite)
         self.assertEqual(tests[:1], result.student_tests)
         self.assertEqual(tests[1:], result.discarded_tests)
 
     def test_no_setup_command(self, *args):
         test_names = 'test1 test2 test3'
 
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='sweet',
             project=self.project,
             get_student_test_names_command={
@@ -279,7 +279,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-        result = ag_models.StudentTestSuiteResult.objects.get(
+        result = ag_models.MutationTestSuiteResult.objects.get(
             student_test_suite=student_suite)
         self.assertIsNone(result.setup_result)
 
@@ -290,7 +290,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
     def test_get_test_names_stdout_and_stderr(self, *args):
         test_names = 'test1 test2 test3'
         stderr = 'stderry'
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='sweet',
             project=self.project,
             get_student_test_names_command={
@@ -299,7 +299,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         )
         tasks.grade_submission(self.submission.pk)
 
-        result = ag_models.StudentTestSuiteResult.objects.get(
+        result = ag_models.MutationTestSuiteResult.objects.get(
             student_test_suite=student_suite)
 
         self.assertEqual(0, result.get_test_names_result.return_code)
@@ -314,7 +314,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
     def test_get_test_names_return_code_nonzero(self, *args):
         test_names = 'test1 test2 test3'
         stderr = 'stderry'
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='sweet',
             project=self.project,
             get_student_test_names_command={
@@ -324,7 +324,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         )
         tasks.grade_submission(self.submission.pk)
 
-        result = ag_models.StudentTestSuiteResult.objects.get(
+        result = ag_models.MutationTestSuiteResult.objects.get(
             student_test_suite=student_suite)
 
         self.assertNotEqual(0, result.get_test_names_result.return_code)
@@ -353,7 +353,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         eecs490_image = ag_models.SandboxDockerImage.objects.get_or_create(
             name='eecs490_image', display_name='EECS 490', tag='jameslp/eecs490')[0]
 
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suito',
             project=self.project,
             sandbox_docker_image=eecs490_image,
@@ -369,7 +369,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         self.assertEqual(0, result.setup_result.return_code)
 
     def test_network_access_allowed(self, *args):
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suito',
             project=self.project,
             allow_network_access=True,
@@ -386,7 +386,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
 
     def test_use_virtual_memory_limit_false_no_limit_applied(self, *args) -> None:
         time_limit = 5
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='qeoriuqewrpqiuerqopwr',
             project=self.project,
             use_setup_command=True,
@@ -431,7 +431,7 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
         submission = obj_build.make_submission()
         suite = obj_build.make_student_test_suite()
 
-        ag_models.StudentTestSuite.objects.get(pk=suite.pk).delete()
+        ag_models.MutationTestSuite.objects.get(pk=suite.pk).delete()
 
         tasks.grade_deferred_student_test_suite(suite.pk, submission.pk)
         tasks.grade_student_test_suite_impl(suite, submission)

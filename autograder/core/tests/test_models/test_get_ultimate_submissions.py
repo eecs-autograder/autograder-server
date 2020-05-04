@@ -348,14 +348,14 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         self.project.validate_and_update(
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
 
-        suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suite', project=self.project, buggy_impl_names=[f'bug{i}' for i in range(3)],
             points_per_exposed_bug=1
         )
 
         best_submission = obj_build.make_finished_submission(
             self.group, does_not_count_for=[self.does_not_count_for_user.username])
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=suite,
             submission=best_submission, bugs_exposed=suite.buggy_impl_names
         )
@@ -380,14 +380,14 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         self.project.validate_and_update(
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
 
-        suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suite', project=self.project, buggy_impl_names=[f'bug{i}' for i in range(3)],
             points_per_exposed_bug=1
         )
 
         best_submission = obj_build.make_finished_submission(
             self.group, does_not_count_for=[self.does_not_count_for_user.username])
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=suite,
             submission=best_submission, bugs_exposed=suite.buggy_impl_names
         )
@@ -396,7 +396,7 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
 
         second_best_submission = obj_build.make_finished_submission(
             self.group, does_not_count_for=[self.does_not_count_for_user.username])
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=suite,
             submission=second_best_submission, bugs_exposed=suite.buggy_impl_names[:-1]
         )

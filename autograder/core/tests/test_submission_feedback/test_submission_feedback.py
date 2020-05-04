@@ -6,7 +6,7 @@ from autograder.core.submission_feedback import update_denormalized_ag_test_resu
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_suite_fdbk, get_submission_fdbk)
 import autograder.core.models as ag_models
-from autograder.core.submission_feedback import StudentTestSuitePreLoader
+from autograder.core.submission_feedback import MutationTestSuitePreLoader
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
@@ -32,16 +32,16 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
         self.points_per_bug_exposed = Decimal('3.5')
         self.num_buggy_impls = 4
-        self.student_suite1 = ag_models.StudentTestSuite.objects.validate_and_create(
+        self.student_suite1 = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suite1', project=self.project,
             buggy_impl_names=['bug{}'.format(i) for i in range(self.num_buggy_impls)],
             points_per_exposed_bug=self.points_per_bug_exposed
-        )  # type: ag_models.StudentTestSuite
-        self.student_suite2 = ag_models.StudentTestSuite.objects.validate_and_create(
+        )  # type: ag_models.MutationTestSuite
+        self.student_suite2 = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suite2', project=self.project,
             buggy_impl_names=['bug{}'.format(i) for i in range(self.num_buggy_impls)],
             points_per_exposed_bug=self.points_per_bug_exposed
-        )  # type: ag_models.StudentTestSuite
+        )  # type: ag_models.MutationTestSuite
 
         self.group = obj_build.make_group(num_members=1, project=self.project)
         self.submission = obj_build.make_submission(group=self.group)
@@ -66,18 +66,18 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
         self.num_student_tests = 6
         self.student_tests = ['test{}'.format(i) for i in range(self.num_student_tests)]
-        self.student_suite_result1 = ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        self.student_suite_result1 = ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite1,
             submission=self.submission,
             student_tests=self.student_tests,
             bugs_exposed=self.student_suite1.buggy_impl_names
-        )  # type: ag_models.StudentTestSuiteResult
-        self.student_suite_result2 = ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        )  # type: ag_models.MutationTestSuiteResult
+        self.student_suite_result2 = ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite2,
             submission=self.submission,
             student_tests=self.student_tests,
             bugs_exposed=self.student_suite2.buggy_impl_names
-        )  # type: ag_models.StudentTestSuiteResult
+        )  # type: ag_models.MutationTestSuiteResult
 
         self.total_points_per_ag_suite = get_suite_fdbk(
             self.ag_suite_result1, ag_models.FeedbackCategory.max).total_points
@@ -96,7 +96,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             self.total_points_per_student_suite,
             self.student_suite_result1.get_fdbk(
                 ag_models.FeedbackCategory.max,
-                StudentTestSuitePreLoader(self.project)).total_points)
+                MutationTestSuitePreLoader(self.project)).total_points)
 
         print(self.total_points)
         self.assertNotEqual(0, self.total_points_per_ag_suite)
@@ -130,13 +130,13 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
     def test_student_suite_result_ordering(self):
         for i in range(2):
-            self.project.set_studenttestsuite_order(
+            self.project.set_mutationtestsuite_order(
                 [self.student_suite2.pk, self.student_suite1.pk])
             fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
             self.assertSequenceEqual([self.student_suite_result2, self.student_suite_result1],
                                      fdbk.student_test_suite_results)
 
-            self.project.set_studenttestsuite_order(
+            self.project.set_mutationtestsuite_order(
                 [self.student_suite1.pk, self.student_suite2.pk])
             fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
             self.assertSequenceEqual([self.student_suite_result1, self.student_suite_result2],
@@ -282,7 +282,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
     def test_individual_suite_result_order(self):
         self.project.set_agtestsuite_order([self.ag_test_suite2.pk, self.ag_test_suite1.pk])
-        self.project.set_studenttestsuite_order([self.student_suite2.pk, self.student_suite1.pk])
+        self.project.set_mutationtestsuite_order([self.student_suite2.pk, self.student_suite1.pk])
 
         self.submission = get_submissions_with_results_queryset().get(pk=self.submission.pk)
         fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
@@ -299,10 +299,10 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertSequenceEqual(
             [self.student_suite_result2.get_fdbk(
                 ag_models.FeedbackCategory.max,
-                StudentTestSuitePreLoader(self.project)).to_dict(),
+                MutationTestSuitePreLoader(self.project)).to_dict(),
              self.student_suite_result1.get_fdbk(
                  ag_models.FeedbackCategory.max,
-                 StudentTestSuitePreLoader(self.project)).to_dict()],
+                 MutationTestSuitePreLoader(self.project)).to_dict()],
             fdbk.to_dict()['student_test_suite_results'])
 
     def test_some_ag_and_student_test_suites_not_visible(self):
@@ -328,7 +328,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertSequenceEqual(
             [self.student_suite_result1.get_fdbk(
                 ag_models.FeedbackCategory.ultimate_submission,
-                StudentTestSuitePreLoader(self.project)).to_dict()],
+                MutationTestSuitePreLoader(self.project)).to_dict()],
             fdbk.to_dict()['student_test_suite_results'])
 
     def test_fdbk_to_dict(self):
@@ -343,10 +343,10 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             'student_test_suite_results': [
                 self.student_suite_result1.get_fdbk(
                     ag_models.FeedbackCategory.max,
-                    StudentTestSuitePreLoader(self.project)).to_dict(),
+                    MutationTestSuitePreLoader(self.project)).to_dict(),
                 self.student_suite_result2.get_fdbk(
                     ag_models.FeedbackCategory.max,
-                    StudentTestSuitePreLoader(self.project)).to_dict(),
+                    MutationTestSuitePreLoader(self.project)).to_dict(),
             ]
         }
 

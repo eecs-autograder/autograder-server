@@ -31,7 +31,7 @@ def make_result_output_url(url_name: str,
                            submission: ag_models.Submission,
                            result: Union[ag_models.AGTestCommandResult,
                                          ag_models.AGTestSuiteResult,
-                                         ag_models.StudentTestSuiteResult],
+                                         ag_models.MutationTestSuiteResult],
                            fdbk_category: ag_models.FeedbackCategory):
     url_kwargs = {'pk': submission.pk, 'result_pk': result.pk}
     return reverse(url_name, kwargs=url_kwargs) + f'?feedback_category={fdbk_category.value}'

@@ -19,8 +19,8 @@ from .project.expected_student_file import ExpectedStudentFile
 from .project.instructor_file import InstructorFile
 from .rerun_submissions_task import RerunSubmissionsTask
 from .sandbox_docker_image import BuildImageStatus, BuildSandboxDockerImageTask, SandboxDockerImage
-from .student_test_suite import (BugsExposedFeedbackLevel, NewStudentTestSuiteFeedbackConfig,
-                                 StudentTestSuite, StudentTestSuiteResult)
+from .student_test_suite import (BugsExposedFeedbackLevel, MutationTestSuiteFeedbackConfig,
+                                 MutationTestSuite, MutationTestSuiteResult)
 from .submission import (Submission, get_student_test_suite_results_queryset,
                          get_submissions_with_results_queryset)
 from .task import Task

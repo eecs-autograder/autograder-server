@@ -170,7 +170,7 @@ def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk
     @retry_should_recover
     def _rerun_student_test_suite_impl():
         try:
-            student_suite = ag_models.StudentTestSuite.objects.get(pk=student_test_suite_pk)
+            student_suite = ag_models.MutationTestSuite.objects.get(pk=student_test_suite_pk)
             submission = ag_models.Submission.objects.get(pk=submission_pk)
 
             tasks.grade_student_test_suite_impl(student_suite, submission)

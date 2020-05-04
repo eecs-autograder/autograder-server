@@ -99,7 +99,7 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
             obj_build.make_incorrect_ag_test_command_result(
                 self.ag_test_cmd, submission=submission)
 
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             submission=submission, student_test_suite=self.student_test_suite)
 
         return update_denormalized_ag_test_results(submission.pk)

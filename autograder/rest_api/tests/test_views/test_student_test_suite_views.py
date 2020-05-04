@@ -11,7 +11,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 
 
-class ListStudentTestSuitesTestCase(UnitTestBase):
+class ListMutationTestSuitesTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.suite1 = obj_build.make_student_test_suite()
@@ -37,7 +37,7 @@ class ListStudentTestSuitesTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class CreateStudentTestSuiteTestCase(test_impls.CreateObjectTest, UnitTestBase):
+class CreateMutationTestSuiteTestCase(test_impls.CreateObjectTest, UnitTestBase):
     def setUp(self):
         super().setUp()
         self.project = obj_build.make_project()
@@ -51,24 +51,24 @@ class CreateStudentTestSuiteTestCase(test_impls.CreateObjectTest, UnitTestBase):
     def test_admin_valid_create(self):
         [admin] = obj_build.make_admin_users(self.project.course, 1)
         self.do_create_object_test(
-            ag_models.StudentTestSuite.objects, self.client, admin, self.url, self.create_data)
+            ag_models.MutationTestSuite.objects, self.client, admin, self.url, self.create_data)
 
     def test_non_admin_create_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.project.course, 1)
         self.client.force_authenticate(staff)
 
         self.do_permission_denied_create_test(
-            ag_models.StudentTestSuite.objects, self.client, staff, self.url, self.create_data)
+            ag_models.MutationTestSuite.objects, self.client, staff, self.url, self.create_data)
 
         [enrolled] = obj_build.make_student_users(self.project.course, 1)
 
         self.client.force_authenticate(enrolled)
 
         self.do_permission_denied_create_test(
-            ag_models.StudentTestSuite.objects, self.client, enrolled, self.url, self.create_data)
+            ag_models.MutationTestSuite.objects, self.client, enrolled, self.url, self.create_data)
 
 
-class StudentTestSuitesOrderTestCase(UnitTestBase):
+class MutationTestSuitesOrderTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -76,7 +76,7 @@ class StudentTestSuitesOrderTestCase(UnitTestBase):
         self.project = self.suite1.project
         self.suite2 = obj_build.make_student_test_suite(self.project)
 
-        self.suite_pks = list(self.project.get_studenttestsuite_order())
+        self.suite_pks = list(self.project.get_mutationtestsuite_order())
 
         self.client = APIClient()
         self.url = reverse('student_test_suite_order', kwargs={'project_pk': self.project.pk})
@@ -90,7 +90,7 @@ class StudentTestSuitesOrderTestCase(UnitTestBase):
         self.assertSequenceEqual(self.suite_pks, response.data)
 
         new_order = self.suite_pks[::-1]
-        self.project.set_studenttestsuite_order(new_order)
+        self.project.set_mutationtestsuite_order(new_order)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -107,10 +107,10 @@ class StudentTestSuitesOrderTestCase(UnitTestBase):
         [admin] = obj_build.make_admin_users(self.project.course, 1)
         self.client.force_authenticate(admin)
 
-        reverse_order = self.project.get_studenttestsuite_order()[::-1]
+        reverse_order = self.project.get_mutationtestsuite_order()[::-1]
         response = self.client.put(self.url, reverse_order)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertSequenceEqual(reverse_order, self.project.get_studenttestsuite_order())
+        self.assertSequenceEqual(reverse_order, self.project.get_mutationtestsuite_order())
 
     def test_non_admin_set_order_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.project.course, 1)
@@ -119,10 +119,10 @@ class StudentTestSuitesOrderTestCase(UnitTestBase):
         response = self.client.put(self.url, self.suite_pks[::-1])
 
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-        self.assertSequenceEqual(self.suite_pks, self.project.get_studenttestsuite_order())
+        self.assertSequenceEqual(self.suite_pks, self.project.get_mutationtestsuite_order())
 
 
-class GetUpdateDeleteStudentTestSuiteTestCase(test_impls.GetObjectTest,
+class GetUpdateDeleteMutationTestSuiteTestCase(test_impls.GetObjectTest,
                                               test_impls.UpdateObjectTest,
                                               test_impls.DestroyObjectTest,
                                               UnitTestBase):

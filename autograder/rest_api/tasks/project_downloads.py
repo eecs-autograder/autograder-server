@@ -13,7 +13,7 @@ from autograder.core.models.get_ultimate_submissions import get_ultimate_submiss
 import autograder.core.utils as core_ut
 from autograder import utils
 from autograder.core.submission_feedback import (
-    SubmissionResultFeedback, AGTestPreLoader, StudentTestSuitePreLoader)
+    SubmissionResultFeedback, AGTestPreLoader, MutationTestSuitePreLoader)
 from autograder.rest_api.views.submission_views.all_ultimate_submission_results_view import (
     serialize_ultimate_submission_results)
 
@@ -28,7 +28,7 @@ def _get_all_submissions(
         project: ag_models.Project,
         groups: Sequence[ag_models.Group]) -> Tuple[List[SubmissionResultFeedback], int]:
     ag_test_loader = AGTestPreLoader(project)
-    student_test_suite_loader = StudentTestSuitePreLoader(project)
+    student_test_suite_loader = MutationTestSuitePreLoader(project)
     submissions = [
         SubmissionResultFeedback(
             submission,
@@ -59,7 +59,7 @@ def all_submission_scores_task(project_pk, task_pk, include_staff, *args, **kwar
             )
         )
         ag_test_loader = AGTestPreLoader(project)
-        student_test_suite_loader = StudentTestSuitePreLoader(project)
+        student_test_suite_loader = MutationTestSuitePreLoader(project)
         fdbks = [
             SubmissionResultFeedback(
                 submission,

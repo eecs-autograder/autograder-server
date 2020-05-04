@@ -495,12 +495,12 @@ def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestComma
 
 
 def make_student_test_suite(project: ag_models.Project=None,
-                            **student_test_suite_kwargs) -> ag_models.StudentTestSuite:
+                            **student_test_suite_kwargs) -> ag_models.MutationTestSuite:
     if project is None:
         project = make_project()
 
     if 'name' not in student_test_suite_kwargs:
         student_test_suite_kwargs['name'] = 'student_test_suite{}'.format(get_unique_id())
 
-    return ag_models.StudentTestSuite.objects.validate_and_create(
+    return ag_models.MutationTestSuite.objects.validate_and_create(
         project=project, **student_test_suite_kwargs)

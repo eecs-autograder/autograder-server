@@ -13,7 +13,7 @@ import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from . import ag_model_base
-from .student_test_suite import StudentTestSuiteResult
+from .student_test_suite import MutationTestSuiteResult
 
 
 def _get_submission_file_upload_to_dir(submission, filename):
@@ -345,7 +345,7 @@ def get_submissions_with_results_queryset(base_manager=Submission.objects):
 
 
 def get_student_test_suite_results_queryset():
-    return StudentTestSuiteResult.objects.select_related(
+    return MutationTestSuiteResult.objects.select_related(
         'setup_result',
         'get_test_names_result',
     )

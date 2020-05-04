@@ -18,7 +18,7 @@ def _estimated_grading_time(project_pk: int):
     student_test_suite_time_max = sum(
         suite.student_test_validity_check_command.time_limit * suite.max_num_student_tests
         for suite in
-        ag_models.StudentTestSuite.objects.filter(project=project_pk).exclude(deferred=True)
+        ag_models.MutationTestSuite.objects.filter(project=project_pk).exclude(deferred=True)
     )
 
     return ag_test_time_max + student_test_suite_time_max

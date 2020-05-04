@@ -8,7 +8,7 @@ from .submission import Submission
 from .project import Project
 from .ag_test.ag_test_suite import AGTestSuite
 from .ag_test.ag_test_case import AGTestCase
-from .student_test_suite import StudentTestSuite
+from .student_test_suite import MutationTestSuite
 
 
 class RerunSubmissionsTask(Task):
@@ -51,9 +51,9 @@ class RerunSubmissionsTask(Task):
 
     rerun_all_student_test_suites = models.BooleanField(
         default=True,
-        help_text="""When True, indicates that all StudentTestSuites belonging
+        help_text="""When True, indicates that all MutationTestSuites belonging
                      to the specified project should be rerun. Otherwise,
-                     only the StudentTestSuites specified in student_test_suite_pks
+                     only the MutationTestSuites specified in student_test_suite_pks
                      should be rerun.""")
     student_suite_pks = ArrayField(
         models.IntegerField(), blank=True, default=list,
@@ -91,7 +91,7 @@ class RerunSubmissionsTask(Task):
                 num_ag_test_suites = len(self.ag_test_suite_data)
 
             if self.rerun_all_student_test_suites:
-                num_student_suites = StudentTestSuite.objects.filter(project=self.project).count()
+                num_student_suites = MutationTestSuite.objects.filter(project=self.project).count()
             else:
                 num_student_suites = len(self.student_suite_pks)
 
@@ -141,7 +141,7 @@ class RerunSubmissionsTask(Task):
                             suite_pk, ', '.join((str(pk) for pk in not_found_pks))))
 
         if not self.rerun_all_student_test_suites:
-            student_suites = StudentTestSuite.objects.filter(
+            student_suites = MutationTestSuite.objects.filter(
                 pk__in=self.student_suite_pks, project=self.project)
             found_pks = {suite.pk for suite in student_suites}
             not_found_pks = set(self.student_suite_pks) - found_pks

@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.db.models import Prefetch
 
 from autograder.core.submission_feedback import (
-    SubmissionResultFeedback, AGTestPreLoader, StudentTestSuitePreLoader)
+    SubmissionResultFeedback, AGTestPreLoader, MutationTestSuitePreLoader)
 from .project import Project, UltimateSubmissionPolicy
 from .ag_test.feedback_category import FeedbackCategory
 from .group import Group
@@ -22,7 +22,7 @@ def get_ultimate_submission(group: Group, user: Optional[User]=None) -> Optional
             group,
             FeedbackCategory.normal,
             ag_test_preloader=AGTestPreLoader(project),
-            student_test_suite_preloader=StudentTestSuitePreLoader(project),
+            student_test_suite_preloader=MutationTestSuitePreLoader(project),
             user=user
         )
         return best.submission if best is not None else None
@@ -31,7 +31,7 @@ def get_ultimate_submission(group: Group, user: Optional[User]=None) -> Optional
             group,
             FeedbackCategory.max,
             ag_test_preloader=AGTestPreLoader(project),
-            student_test_suite_preloader=StudentTestSuitePreLoader(project),
+            student_test_suite_preloader=MutationTestSuitePreLoader(project),
             user=user
         )
         return best.submission if best is not None else None
@@ -53,7 +53,7 @@ def get_ultimate_submissions(
     """
     filter_groups = _prefetch_submissions(project, filter_groups)
 
-    student_test_suite_preloader = StudentTestSuitePreLoader(project)
+    student_test_suite_preloader = MutationTestSuitePreLoader(project)
 
     if project.ultimate_submission_policy == UltimateSubmissionPolicy.most_recent:
         return (
@@ -116,7 +116,7 @@ def _get_most_recent_submission(group: Group, user: Optional[User]=None) -> Opti
 
 def _get_best_submission(group: Group, fdbk_category: FeedbackCategory,
                          ag_test_preloader: AGTestPreLoader,
-                         student_test_suite_preloader: StudentTestSuitePreLoader,
+                         student_test_suite_preloader: MutationTestSuitePreLoader,
                          user: Optional[User]=None) -> Optional[SubmissionResultFeedback]:
     best: Optional[SubmissionResultFeedback] = None
     for submission in group.submissions.all():

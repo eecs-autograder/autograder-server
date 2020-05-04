@@ -10,7 +10,7 @@ from .project import Project, InstructorFile
 from .ag_test.ag_test_suite import AGTestSuite
 from .ag_test.ag_test_case import AGTestCase
 from .ag_test.ag_test_command import AGTestCommand
-from .student_test_suite import StudentTestSuite
+from .student_test_suite import MutationTestSuite
 from .sandbox_docker_image import SandboxDockerImage
 
 
@@ -138,7 +138,7 @@ def _copy_student_suites(project, new_project):
                 ]
             )
         )
-        StudentTestSuite.objects.validate_and_create(
+        MutationTestSuite.objects.validate_and_create(
             project=new_project,
             instructor_files_needed=instructor_files_needed,
             student_files_needed=student_files_needed,
@@ -146,7 +146,7 @@ def _copy_student_suites(project, new_project):
                 student_suite.sandbox_docker_image, new_project.course),
             **utils.exclude_dict(
                 student_suite.to_dict(),
-                ('pk', 'project') + StudentTestSuite.get_serialize_related_fields())
+                ('pk', 'project') + MutationTestSuite.get_serialize_related_fields())
         )
 
 

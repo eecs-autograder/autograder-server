@@ -10,21 +10,21 @@ import autograder.core.utils as core_ut
 from ..ag_command import AGCommandResult
 from ..ag_model_base import AutograderModel, ToDictMixin
 from ..ag_test.feedback_category import FeedbackCategory
-from .student_test_suite import (BugsExposedFeedbackLevel, NewStudentTestSuiteFeedbackConfig,
-                                 StudentTestSuite)
+from .student_test_suite import (BugsExposedFeedbackLevel, MutationTestSuiteFeedbackConfig,
+                                 MutationTestSuite)
 
 
 def _make_get_test_names_result_default() -> int:
     return AGCommandResult.objects.validate_and_create().pk
 
 
-class StudentTestSuiteResult(AutograderModel):
+class MutationTestSuiteResult(AutograderModel):
 
     class Meta:
         unique_together = ('student_test_suite', 'submission')
         ordering = ('student_test_suite___order',)
 
-    student_test_suite = models.ForeignKey(StudentTestSuite, on_delete=models.CASCADE)
+    student_test_suite = models.ForeignKey(MutationTestSuite, on_delete=models.CASCADE)
     submission = models.ForeignKey('Submission', related_name='student_test_suite_results',
                                    on_delete=models.CASCADE)
 
@@ -90,20 +90,20 @@ class StudentTestSuiteResult(AutograderModel):
     def get_fdbk(
         self,
         fdbk_category: FeedbackCategory,
-        student_test_suite_preloader: 'StudentTestSuitePreLoader'
-    ) -> 'StudentTestSuiteResult.FeedbackCalculator':
-        return StudentTestSuiteResult.FeedbackCalculator(
+        student_test_suite_preloader: 'MutationTestSuitePreLoader'
+    ) -> 'MutationTestSuiteResult.FeedbackCalculator':
+        return MutationTestSuiteResult.FeedbackCalculator(
             self, fdbk_category, student_test_suite_preloader)
 
     class FeedbackCalculator(ToDictMixin):
         """
         Instances of this class dynamically calculate the appropriate
-        feedback data to give for a StudentTestSuiteResult
+        feedback data to give for a MutationTestSuiteResult
         """
 
-        def __init__(self, student_test_suite_result: 'StudentTestSuiteResult',
+        def __init__(self, student_test_suite_result: 'MutationTestSuiteResult',
                      fdbk_category: FeedbackCategory,
-                     student_test_suite_preloader: 'StudentTestSuitePreLoader'):
+                     student_test_suite_preloader: 'MutationTestSuitePreLoader'):
             self._student_test_suite_result = student_test_suite_result
             self._student_test_suite = student_test_suite_preloader.get_student_test_suite(
                 self._student_test_suite_result.student_test_suite_id)
@@ -117,7 +117,7 @@ class StudentTestSuiteResult(AutograderModel):
             elif fdbk_category == FeedbackCategory.staff_viewer:
                 self._fdbk = self._student_test_suite.staff_viewer_fdbk_config
             elif fdbk_category == FeedbackCategory.max:
-                self._fdbk = NewStudentTestSuiteFeedbackConfig.max_fdbk_config()
+                self._fdbk = MutationTestSuiteFeedbackConfig.max_fdbk_config()
 
         @property
         def pk(self):
@@ -132,9 +132,9 @@ class StudentTestSuiteResult(AutograderModel):
             return self._student_test_suite.pk
 
         @property
-        def fdbk_conf(self) -> NewStudentTestSuiteFeedbackConfig:
+        def fdbk_conf(self) -> MutationTestSuiteFeedbackConfig:
             """
-            :return: The StudentTestCaseFeedbackConfig object that this object
+            :return: The MutationTestSuiteFeedbackConfig object that this object
                      was initialized with.
             """
             return self._fdbk

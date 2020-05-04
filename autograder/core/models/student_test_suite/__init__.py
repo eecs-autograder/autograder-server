@@ -1,3 +1,3 @@
-from .student_test_suite import (BugsExposedFeedbackLevel, NewStudentTestSuiteFeedbackConfig,
-                                 StudentTestSuite)
-from .student_test_suite_result import StudentTestSuiteResult
+from .student_test_suite import (BugsExposedFeedbackLevel, MutationTestSuiteFeedbackConfig,
+                                 MutationTestSuite)
+from .student_test_suite_result import MutationTestSuiteResult

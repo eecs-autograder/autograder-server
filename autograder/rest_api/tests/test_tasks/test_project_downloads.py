@@ -21,7 +21,7 @@ from autograder.core.submission_feedback import (
     update_denormalized_ag_test_results, SubmissionResultFeedback, AGTestPreLoader)
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_submission_fdbk)
-from autograder.core.submission_feedback import StudentTestSuitePreLoader
+from autograder.core.submission_feedback import MutationTestSuitePreLoader
 from autograder.utils.testing import UnitTestBase
 
 
@@ -758,11 +758,11 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
                                                       submission=self.group1_submission1_best)
         obj_build.make_correct_ag_test_command_result(self.suite2_cmd,
                                                       submission=self.group1_submission1_best)
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite1,
             submission=self.group1_submission1_best,
             bugs_exposed=self.student_suite1_bugs)
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite2,
             submission=self.group1_submission1_best,
             bugs_exposed=self.student_suite2_bugs)
@@ -772,11 +772,11 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
                                                       submission=self.group1_submission2)
         obj_build.make_incorrect_ag_test_command_result(self.suite2_cmd,
                                                         submission=self.group1_submission2)
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite1,
             submission=self.group1_submission2,
             bugs_exposed=[])
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite2,
             submission=self.group1_submission2,
             bugs_exposed=[])
@@ -793,11 +793,11 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
                                                         submission=self.group2_only_submission)
         obj_build.make_incorrect_ag_test_command_result(self.suite2_cmd,
                                                         submission=self.group2_only_submission)
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite1,
             submission=self.group2_only_submission,
             bugs_exposed=self.student_suite1_bugs[:-1])
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite2,
             submission=self.group2_only_submission,
             bugs_exposed=self.student_suite2_bugs[:-1])
@@ -813,11 +813,11 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
                                                       submission=self.staff_submission1)
         obj_build.make_correct_ag_test_command_result(self.suite2_cmd,
                                                       submission=self.staff_submission1)
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite1,
             submission=self.staff_submission1,
             bugs_exposed=self.student_suite1_bugs[:-1])
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite2,
             submission=self.staff_submission1,
             bugs_exposed=self.student_suite2_bugs)
@@ -916,7 +916,7 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
         # Intentionally reversing the ag and student test suite ordering as an
         # extra check that we get the ag and student test suite results in the right order.
         project.set_agtestsuite_order(project.get_agtestsuite_order()[::-1])
-        project.set_studenttestsuite_order(project.get_studenttestsuite_order()[::-1])
+        project.set_mutationtestsuite_order(project.get_mutationtestsuite_order()[::-1])
 
         self.client.force_authenticate(self.admin)
 
@@ -978,7 +978,7 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
 
             for suite_result in fdbk.student_test_suite_results:
                 suite_fdbk = suite_result.get_fdbk(
-                    ag_models.FeedbackCategory.max, StudentTestSuitePreLoader(self.project))
+                    ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
                 values += [str(suite_fdbk.total_points), str(suite_fdbk.total_points_possible)]
 
             self.assertEqual(len(expected_headers), len(values))

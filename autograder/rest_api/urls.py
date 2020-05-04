@@ -164,10 +164,10 @@ urlpatterns = [
          name='ag-test-command-detail'),
 
     path('projects/<int:project_pk>/student_test_suites/',
-        views.StudentTestSuiteListCreateView.as_view(), name='student_test_suites'),
+        views.MutationTestSuiteListCreateView.as_view(), name='student_test_suites'),
     path('projects/<int:project_pk>/student_test_suites/order/',
-        views.StudentTestSuiteOrderView.as_view(), name='student_test_suite_order'),
-    path('student_test_suites/<int:pk>/', views.StudentTestSuiteDetailView.as_view(),
+        views.MutationTestSuiteOrderView.as_view(), name='student_test_suite_order'),
+    path('student_test_suites/<int:pk>/', views.MutationTestSuiteDetailView.as_view(),
          name='student-test-suite-detail'),
 
     path('projects/<int:project_pk>/rerun_submissions_tasks/',
@@ -219,34 +219,34 @@ urlpatterns = [
          name='ag-test-cmd-result-output-size'),
 
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/setup_stdout/',
-         views.StudentTestSuiteResultSetupStdoutView.as_view(),
+         views.MutationTestSuiteResultSetupStdoutView.as_view(),
          name='student-suite-setup-stdout'),
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/setup_stderr/',
-         views.StudentTestSuiteResultSetupStderrView.as_view(),
+         views.MutationTestSuiteResultSetupStderrView.as_view(),
          name='student-suite-setup-stderr'),
 
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/get_student_test_names_stdout/',  # noqa
-         views.StudentTestSuiteResultGetStudentTestsStdoutView.as_view(),
+         views.MutationTestSuiteResultGetStudentTestsStdoutView.as_view(),
          name='student-suite-get-student-test-names-stdout'),
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/get_student_test_names_stderr/',  # noqa
-         views.StudentTestSuiteResultGetStudentTestsStderrView.as_view(),
+         views.MutationTestSuiteResultGetStudentTestsStderrView.as_view(),
          name='student-suite-get-student-test-names-stderr'),
 
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/validity_check_stdout/',
-         views.StudentTestSuiteResultValidityCheckStdoutView.as_view(),
+         views.MutationTestSuiteResultValidityCheckStdoutView.as_view(),
          name='student-suite-validity-check-stdout'),
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/validity_check_stderr/',
-         views.StudentTestSuiteResultValidityCheckStderrView.as_view(),
+         views.MutationTestSuiteResultValidityCheckStderrView.as_view(),
          name='student-suite-validity-check-stderr'),
 
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/grade_buggy_impls_stdout/',  # noqa
-         views.StudentTestSuiteResultGradeBuggyImplsStdoutView.as_view(),
+         views.MutationTestSuiteResultGradeBuggyImplsStdoutView.as_view(),
          name='student-suite-grade-buggy-impls-stdout'),
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/grade_buggy_impls_stderr/',  # noqa
-         views.StudentTestSuiteResultGradeBuggyImplsStderrView.as_view(),
+         views.MutationTestSuiteResultGradeBuggyImplsStderrView.as_view(),
          name='student-suite-grade-buggy-impls-stderr'),
 
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/output_size/',
-         views.StudentTestSuiteOutputSizeView.as_view(),
+         views.MutationTestSuiteOutputSizeView.as_view(),
          name='student-suite-result-output-size'),
 ]

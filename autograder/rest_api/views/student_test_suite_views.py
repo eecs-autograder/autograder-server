@@ -13,9 +13,9 @@ from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDet
                                                       NestedModelView)
 
 
-class StudentTestSuiteListCreateView(NestedModelView):
+class MutationTestSuiteListCreateView(NestedModelView):
     schema = AGListCreateViewSchemaGenerator(
-        [APITags.student_test_suites], ag_models.StudentTestSuite)
+        [APITags.student_test_suites], ag_models.MutationTestSuite)
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
@@ -32,8 +32,8 @@ class StudentTestSuiteListCreateView(NestedModelView):
         return self.do_create()
 
 
-class StudentTestSuiteOrderView(AGModelAPIView):
-    schema = OrderViewSchema([APITags.student_test_suites], ag_models.StudentTestSuite)
+class MutationTestSuiteOrderView(AGModelAPIView):
+    schema = OrderViewSchema([APITags.student_test_suites], ag_models.MutationTestSuite)
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
@@ -43,24 +43,24 @@ class StudentTestSuiteOrderView(AGModelAPIView):
 
     def get(self, *args, **kwargs):
         project = self.get_object()
-        return response.Response(list(project.get_studenttestsuite_order()))
+        return response.Response(list(project.get_mutationtestsuite_order()))
 
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             project = self.get_object()
-            project.set_studenttestsuite_order(request.data)
+            project.set_mutationtestsuite_order(request.data)
             clear_submission_results_cache(project.pk)
-            return response.Response(list(project.get_studenttestsuite_order()))
+            return response.Response(list(project.get_mutationtestsuite_order()))
 
 
-class StudentTestSuiteDetailView(AGModelDetailView):
+class MutationTestSuiteDetailView(AGModelDetailView):
     schema = AGDetailViewSchemaGenerator([APITags.student_test_suites])
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
             lambda student_suite: student_suite.project.course)]
 
-    model_manager = ag_models.StudentTestSuite.objects
+    model_manager = ag_models.MutationTestSuite.objects
 
     def get(self, *args, **kwargs):
         return self.do_get()

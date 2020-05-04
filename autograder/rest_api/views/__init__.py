@@ -40,20 +40,20 @@ from .sandbox_docker_image_views import (BuildTaskDetailView, CancelBuildTaskVie
                                          ListCreateSandboxDockerImageForCourseView,
                                          ListGlobalBuildTasksView, RebuildSandboxDockerImageView,
                                          SandboxDockerImageDetailView)
-from .student_test_suite_views import (StudentTestSuiteDetailView, StudentTestSuiteListCreateView,
-                                       StudentTestSuiteOrderView)
+from .student_test_suite_views import (MutationTestSuiteDetailView, MutationTestSuiteListCreateView,
+                                       MutationTestSuiteOrderView)
 from .submission_views.all_ultimate_submission_results_view import AllUltimateSubmissionResults
 from .submission_views.submission_result_views import (
     AGTestCommandResultOutputSizeView, AGTestCommandResultStderrDiffView,
     AGTestCommandResultStderrView, AGTestCommandResultStdoutDiffView,
     AGTestCommandResultStdoutView, AGTestSuiteResultOutputSizeView, AGTestSuiteResultStderrView,
-    AGTestSuiteResultStdoutView, StudentTestSuiteOutputSizeView,
-    StudentTestSuiteResultGetStudentTestsStderrView,
-    StudentTestSuiteResultGetStudentTestsStdoutView,
-    StudentTestSuiteResultGradeBuggyImplsStderrView,
-    StudentTestSuiteResultGradeBuggyImplsStdoutView, StudentTestSuiteResultSetupStderrView,
-    StudentTestSuiteResultSetupStdoutView, StudentTestSuiteResultValidityCheckStderrView,
-    StudentTestSuiteResultValidityCheckStdoutView, SubmissionResultsView)
+    AGTestSuiteResultStdoutView, MutationTestSuiteOutputSizeView,
+    MutationTestSuiteResultGetStudentTestsStderrView,
+    MutationTestSuiteResultGetStudentTestsStdoutView,
+    MutationTestSuiteResultGradeBuggyImplsStderrView,
+    MutationTestSuiteResultGradeBuggyImplsStdoutView, MutationTestSuiteResultSetupStderrView,
+    MutationTestSuiteResultSetupStdoutView, MutationTestSuiteResultValidityCheckStderrView,
+    MutationTestSuiteResultValidityCheckStdoutView, SubmissionResultsView)
 from .submission_views.submission_views import (GetSubmittedFileView, ListCreateSubmissionView,
                                                 ListSubmissionsWithResults,
                                                 RemoveSubmissionFromQueueView,

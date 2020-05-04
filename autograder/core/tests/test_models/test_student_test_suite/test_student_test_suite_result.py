@@ -2,24 +2,24 @@ import decimal
 import os
 
 import autograder.core.models as ag_models
-from autograder.core.submission_feedback import StudentTestSuitePreLoader
+from autograder.core.submission_feedback import MutationTestSuitePreLoader
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.core.utils as core_ut
 
 
-class StudentTestSuiteResultTestCase(UnitTestBase):
+class MutationTestSuiteResultTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.submission = obj_build.make_submission()
         self.project = self.submission.group.project
-        self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        self.student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='qewirqwekljr', project=self.project)
 
     def test_default_init(self):
-        result = ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite, submission=self.submission
-        )  # type: ag_models.StudentTestSuiteResult
+        )  # type: ag_models.MutationTestSuiteResult
 
         self.assertEqual(self.student_suite, result.student_test_suite)
         self.assertEqual(self.submission, result.submission)
@@ -32,7 +32,7 @@ class StudentTestSuiteResultTestCase(UnitTestBase):
         self.assertIsInstance(result.get_test_names_result, ag_models.AGCommandResult)
 
     def test_output_filenames(self):
-        result = ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite, submission=self.submission)
 
         self.assertEqual(
@@ -53,7 +53,7 @@ class StudentTestSuiteResultTestCase(UnitTestBase):
             result.grade_buggy_impls_stderr_filename)
 
 
-class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
+class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.submission = obj_build.make_submission()
@@ -63,7 +63,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.points_per_exposed_bug = decimal.Decimal('2.5')
         self.points_possible = len(self.bug_names) * self.points_per_exposed_bug
 
-        self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        self.student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='adnfa;kdsfj', project=self.project,
             buggy_impl_names=self.bug_names,
 
@@ -72,7 +72,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
                 'cmd': 'echo waaaluigi',
             },
             points_per_exposed_bug=self.points_per_exposed_bug,
-        )  # type: ag_models.StudentTestSuite
+        )  # type: ag_models.MutationTestSuite
 
         self.setup_stdout = 'adskfja;nrstslekjaf'
         self.setup_stderr = 'amnak;sdjvaie'
@@ -110,7 +110,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.bugs_exposed = self.bug_names
         self.points_awarded = len(self.bugs_exposed) * self.points_per_exposed_bug
 
-        self.result = ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        self.result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite, submission=self.submission,
             student_tests=self.student_tests,
             invalid_tests=self.invalid_tests,
@@ -118,7 +118,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             bugs_exposed=self.bugs_exposed,
             setup_result=self.setup_result,
             get_test_names_result=self.get_test_names_result
-        )  # type: ag_models.StudentTestSuiteResult
+        )  # type: ag_models.MutationTestSuiteResult
 
         with open(self.result.validity_check_stdout_filename, 'w') as f:
             f.write(self.validity_check_stdout)
@@ -134,26 +134,26 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             self.student_suite.normal_fdbk_config.to_dict(),
             self.result.get_fdbk(
                 ag_models.FeedbackCategory.normal,
-                StudentTestSuitePreLoader(self.project)).fdbk_settings)
+                MutationTestSuitePreLoader(self.project)).fdbk_settings)
         self.assertEqual(
             self.student_suite.ultimate_submission_fdbk_config.to_dict(),
             self.result.get_fdbk(
                 ag_models.FeedbackCategory.ultimate_submission,
-                StudentTestSuitePreLoader(self.project)).fdbk_settings)
+                MutationTestSuitePreLoader(self.project)).fdbk_settings)
         self.assertEqual(
             self.student_suite.past_limit_submission_fdbk_config.to_dict(),
             self.result.get_fdbk(
                 ag_models.FeedbackCategory.past_limit_submission,
-                StudentTestSuitePreLoader(self.project)).fdbk_settings)
+                MutationTestSuitePreLoader(self.project)).fdbk_settings)
         self.assertEqual(
             self.student_suite.staff_viewer_fdbk_config.to_dict(),
             self.result.get_fdbk(
                 ag_models.FeedbackCategory.staff_viewer,
-                StudentTestSuitePreLoader(self.project)).fdbk_settings)
+                MutationTestSuitePreLoader(self.project)).fdbk_settings)
 
         max_fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project)).fdbk_conf
+            MutationTestSuitePreLoader(self.project)).fdbk_conf
         self.assertTrue(max_fdbk.visible)
         self.assertTrue(max_fdbk.show_setup_return_code)
         self.assertTrue(max_fdbk.show_setup_stdout)
@@ -172,13 +172,13 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.result.discarded_tests = discarded_tests
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertSequenceEqual(discarded_tests, fdbk.discarded_tests)
 
     def test_points_values_catch_all_bugs(self):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.points_awarded, fdbk.total_points)
         self.assertEqual(self.points_possible, fdbk.total_points_possible)
 
@@ -190,7 +190,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(num_bugs_exposed * self.points_per_exposed_bug, fdbk.total_points)
         self.assertEqual(self.points_possible, fdbk.total_points_possible)
 
@@ -200,7 +200,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(0, fdbk.total_points)
         self.assertEqual(self.points_possible, fdbk.total_points_possible)
 
@@ -211,7 +211,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(max_points, fdbk.total_points)
         self.assertEqual(max_points, fdbk.total_points_possible)
 
@@ -225,7 +225,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(0, fdbk.total_points)
         self.assertEqual(max_points, fdbk.total_points_possible)
 
@@ -235,13 +235,13 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(name, fdbk.setup_command_name)
 
     def test_has_setup_command(self):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertTrue(fdbk.has_setup_command)
 
     def test_show_and_hide_setup_return_code(self):
@@ -253,7 +253,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.setup_result.save()
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(return_code, fdbk.setup_return_code)
         self.assertIsNotNone(fdbk.setup_timed_out)
         self.assertFalse(fdbk.setup_timed_out)
@@ -263,7 +263,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNone(fdbk.setup_timed_out)
 
@@ -280,7 +280,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.setup_result.save()
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNotNone(fdbk.setup_timed_out)
         self.assertTrue(fdbk.setup_timed_out)
@@ -292,7 +292,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNotNone(self.result.setup_result.return_code)
         self.assertEqual(self.result.setup_result.return_code, fdbk.setup_return_code)
 
@@ -308,7 +308,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.result.save()
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNone(fdbk.setup_timed_out)
 
@@ -316,14 +316,14 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.student_suite.validate_and_update(normal_fdbk_config={'show_setup_stdout': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.setup_stdout, fdbk.setup_stdout.read().decode())
         self.assertEqual(len(self.setup_stdout), fdbk.get_setup_stdout_size())
 
         self.student_suite.validate_and_update(normal_fdbk_config={'show_setup_stdout': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.setup_stdout)
         self.assertIsNone(fdbk.get_setup_stdout_size())
 
@@ -331,14 +331,14 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.student_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.setup_stderr, fdbk.setup_stderr.read().decode())
         self.assertEqual(len(self.setup_stderr), fdbk.get_setup_stderr_size())
 
         self.student_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.setup_stderr)
         self.assertIsNone(fdbk.get_setup_stderr_size())
 
@@ -348,7 +348,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_setup_stdout': True, 'show_setup_stderr': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.setup_stdout, fdbk.setup_stdout.read().decode())
         self.assertEqual(len(self.setup_stdout), fdbk.get_setup_stdout_size())
         self.assertEqual(self.setup_stderr, fdbk.setup_stderr.read().decode())
@@ -363,7 +363,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.result.save()
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.setup_stdout)
         self.assertIsNone(fdbk.get_setup_stderr_size())
         self.assertIsNone(fdbk.setup_stderr)
@@ -375,7 +375,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.get_test_names_return_code, fdbk.get_student_test_names_return_code)
         self.assertIsNotNone(fdbk.get_student_test_names_timed_out)
         self.assertFalse(fdbk.get_student_test_names_timed_out)
@@ -385,7 +385,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.get_student_test_names_return_code)
         self.assertIsNone(fdbk.get_student_test_names_timed_out)
 
@@ -394,7 +394,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_get_test_names_stdout': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.get_test_names_stdout,
                          fdbk.get_student_test_names_stdout.read().decode())
         self.assertEqual(len(self.get_test_names_stdout),
@@ -404,7 +404,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_get_test_names_stdout': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.get_student_test_names_stdout)
         self.assertIsNone(fdbk.get_student_test_names_stdout_size())
 
@@ -413,7 +413,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_get_test_names_stderr': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.get_test_names_stderr,
                          fdbk.get_student_test_names_stderr.read().decode())
         self.assertEqual(len(self.get_test_names_stderr),
@@ -423,7 +423,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_get_test_names_stderr': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.get_student_test_names_stderr)
         self.assertIsNone(fdbk.get_student_test_names_stderr_size())
 
@@ -432,7 +432,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_validity_check_stdout': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.validity_check_stdout, fdbk.validity_check_stdout.read().decode())
         self.assertEqual(len(self.validity_check_stdout), fdbk.get_validity_check_stdout_size())
 
@@ -440,7 +440,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_validity_check_stdout': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.validity_check_stdout)
         self.assertIsNone(fdbk.get_validity_check_stdout_size())
 
@@ -449,7 +449,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_validity_check_stderr': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.validity_check_stderr, fdbk.validity_check_stderr.read().decode())
         self.assertEqual(len(self.validity_check_stderr), fdbk.get_validity_check_stderr_size())
 
@@ -457,7 +457,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_validity_check_stderr': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.validity_check_stderr)
         self.assertIsNone(fdbk.get_validity_check_stdout_size())
 
@@ -466,7 +466,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_grade_buggy_impls_stdout': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.grade_buggy_impls_stdout,
                          fdbk.grade_buggy_impls_stdout.read().decode())
         self.assertEqual(len(self.grade_buggy_impls_stdout),
@@ -476,7 +476,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_grade_buggy_impls_stdout': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.grade_buggy_impls_stdout)
         self.assertIsNone(fdbk.get_grade_buggy_impls_stdout_size())
 
@@ -485,7 +485,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_grade_buggy_impls_stderr': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(self.grade_buggy_impls_stderr,
                          fdbk.grade_buggy_impls_stderr.read().decode())
         self.assertEqual(len(self.grade_buggy_impls_stderr),
@@ -495,7 +495,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_grade_buggy_impls_stderr': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.grade_buggy_impls_stderr)
         self.assertIsNone(fdbk.get_grade_buggy_impls_stderr_size())
 
@@ -504,7 +504,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_invalid_test_names': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertSequenceEqual(self.student_tests, fdbk.student_tests)
         self.assertSequenceEqual(self.invalid_tests, fdbk.invalid_tests)
         self.assertSequenceEqual(self.timeout_tests, fdbk.timed_out_tests)
@@ -513,7 +513,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_invalid_test_names': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertSequenceEqual(self.student_tests, fdbk.student_tests)
         self.assertIsNone(fdbk.invalid_tests)
         self.assertIsNone(fdbk.timed_out_tests)
@@ -526,7 +526,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
             fdbk = self.result.get_fdbk(
                 ag_models.FeedbackCategory.normal,
-                StudentTestSuitePreLoader(self.project))
+                MutationTestSuitePreLoader(self.project))
 
             self.assertEqual(0, fdbk.total_points)
             self.assertEqual(0, fdbk.total_points_possible)
@@ -541,7 +541,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.num_bugs_exposed)
         self.assertIsNone(fdbk.bugs_exposed)
         self.assertEqual(0, fdbk.total_points)
@@ -557,7 +557,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(len(self.bugs_exposed), fdbk.num_bugs_exposed)
         self.assertIsNone(fdbk.bugs_exposed)
         self.assertEqual(self.points_awarded, fdbk.total_points)
@@ -573,7 +573,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(len(self.bugs_exposed), fdbk.num_bugs_exposed)
         self.assertSequenceEqual(self.bugs_exposed, fdbk.bugs_exposed)
         self.assertEqual(self.points_awarded, fdbk.total_points)
@@ -584,13 +584,13 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             len(self.bug_names) * self.points_per_exposed_bug - self.points_per_exposed_bug)
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertGreater(fdbk.total_points_possible, max_points)
 
         self.student_suite.validate_and_update(max_points=max_points)
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         self.assertEqual(max_points, fdbk.total_points)
         self.assertEqual(max_points, fdbk.total_points_possible)
 
@@ -601,7 +601,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project))
+            MutationTestSuitePreLoader(self.project))
         # Keep these magic numbers up to date with setUp.
         # Do NOT compute the expected result with multiplication.
         # These numbers have been specifically chosen to test
@@ -637,5 +637,5 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         serialized = self.result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project)).to_dict()
+            MutationTestSuitePreLoader(self.project)).to_dict()
         self.assertCountEqual(expected_fields, serialized.keys())

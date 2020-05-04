@@ -4,16 +4,16 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-from autograder.core.submission_feedback import StudentTestSuitePreLoader
+from autograder.core.submission_feedback import MutationTestSuitePreLoader
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase
 
 
-class StudentTestSuiteResultsTestCase(UnitTestBase):
+class MutationTestSuiteResultsTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.project = obj_build.make_project()
-        self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        self.student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suitte', project=self.project,
             buggy_impl_names=['bug{}'.format(i) for i in range(4)],
             setup_command={
@@ -24,7 +24,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
                 'bugs_exposed_fdbk_level': ag_models.BugsExposedFeedbackLevel.num_bugs_exposed,
                 'show_invalid_test_names': True,
             }
-        )  # type: ag_models.StudentTestSuite
+        )  # type: ag_models.MutationTestSuite
 
         self.submission = obj_build.make_submission(
             group=obj_build.make_group(
@@ -56,7 +56,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             f.write(self.get_test_names_stderr)
 
         student_tests = ['test{}'.format(i) for i in range(5)]
-        self.student_suite_result = ag_models.StudentTestSuiteResult.objects.validate_and_create(
+        self.student_suite_result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite,
             submission=self.submission,
             student_tests=student_tests,
@@ -65,7 +65,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             bugs_exposed=self.student_suite.buggy_impl_names[:-1],
             setup_result=setup_result,
             get_test_names_result=get_test_names_result
-        )  # type: ag_models.StudentTestSuiteResult
+        )  # type: ag_models.MutationTestSuiteResult
 
         with open(self.student_suite_result.validity_check_stdout_filename, 'w') as f:
             f.write(self.validity_check_stdout)
@@ -132,7 +132,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
         expected_content = [
             self.student_suite_result.get_fdbk(
                 ag_models.FeedbackCategory.max,
-                StudentTestSuitePreLoader(self.project)
+                MutationTestSuitePreLoader(self.project)
             ).to_dict()
         ]
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -223,11 +223,11 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
         self.maxDiff = None
         max_fdbk_settings = self.student_suite_result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project)
+            MutationTestSuitePreLoader(self.project)
         ).fdbk_settings
         staff_viewer_fdbk_settings = self.student_suite_result.get_fdbk(
             ag_models.FeedbackCategory.staff_viewer,
-            StudentTestSuitePreLoader(self.project)
+            MutationTestSuitePreLoader(self.project)
         ).fdbk_settings
         self.assertEqual(max_fdbk_settings, staff_viewer_fdbk_settings)
 
