@@ -13,11 +13,11 @@ import django.contrib.postgres.fields as pg_fields
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import Field, fields
+from django.db.models import Field, Model, fields
 from django.db.models.fields.reverse_related import ForeignObjectRel
 from django.utils.functional import cached_property
-from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator
-from timezone_field.fields import TimeZoneField
+from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator  # type: ignore
+from timezone_field.fields import TimeZoneField  # type: ignore
 
 import autograder.core.fields as ag_fields
 import autograder.core.models as ag_models
@@ -29,6 +29,7 @@ from autograder.core.submission_feedback import (AGTestCaseResultFeedback,
                                                  AGTestCommandResultFeedback,
                                                  AGTestSuiteResultFeedback,
                                                  SubmissionResultFeedback)
+from django.db.models.fields.related import RelatedField
 
 
 def stderr(*args, **kwargs):
@@ -217,7 +218,7 @@ APIClassType = Union[
     Type[AutograderModel],
     Type[ToDictMixin],
     Type[DictSerializableMixin],
-    # Type[User]  # FIXME: Type[User] is Any; we need a type definition for it
+    Type[Model],
     Type[Enum]
 ]
 FieldType = Union[Field, ForeignObjectRel, property, cached_property]
@@ -311,7 +312,7 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator[Type[AutograderModel]
         try:
             field = cast(Type[AutograderModel], self._class)._meta.get_field(field_name)
             return (
-                not field.many_to_many
+                not cast(RelatedField, field).many_to_many
                 and not field.blank
                 and field.default == fields.NOT_PROVIDED
             )
@@ -386,8 +387,8 @@ def _get_field_schema(
 @_get_field_schema.register(ForeignObjectRel)
 @_get_field_schema.register(Field)
 def _django_field(
-    field: Union[Field, ForeignObjectRel],
-    api_class: Union[Type[AutograderModel], Type[User]],
+    field: Field,
+    api_class: Type[AutograderModel],
     name: str,
     include_readonly: bool = False
 ) -> dict:
@@ -429,14 +430,14 @@ def _django_field(
         return result
 
     if field.is_relation:
-        model_class: Union[Type[AutograderModel], Type[User]] = field.model
-        if field.many_to_many or field.one_to_many:
+        related_field = cast(RelatedField, field)
+        if related_field.many_to_many or related_field.one_to_many:
             if isinstance(field, ForeignObjectRel):
                 result['nullable'] = False
-            if field.name in model_class.get_serialize_related_fields():
+            if field.name in api_class.get_serialize_related_fields():
                 result.update({
                     'type': 'array',
-                    'items': as_schema_ref(field.related_model),
+                    'items': as_schema_ref(related_field.related_model),
                 })
                 return result
             else:
@@ -446,9 +447,9 @@ def _django_field(
                 })
                 return result
 
-        if field.name in model_class.get_serialize_related_fields():
+        if field.name in api_class.get_serialize_related_fields():
             result.update({
-                'allOf': [as_schema_ref(field.related_model)]
+                'allOf': [as_schema_ref(related_field.related_model)]
             })
             return result
         else:
