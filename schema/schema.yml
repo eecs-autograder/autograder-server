@@ -3606,9 +3606,9 @@ paths:
         '204':
           description: ''
       tags: *id041
-  /api/projects/{project_pk}/student_test_suites/:
+  /api/projects/{project_pk}/mutation_test_suites/:
     get:
-      operationId: listStudentTestSuites
+      operationId: listMutationTestSuites
       description: ''
       parameters:
       - name: project_pk
@@ -3624,12 +3624,12 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/StudentTestSuite'
+                  $ref: '#/components/schemas/MutationTestSuite'
           description: ''
       tags: &id042
-      - student_test_suites
+      - mutation_test_suites
     post:
-      operationId: createStudentTestSuite
+      operationId: createMutationTestSuite
       description: ''
       parameters:
       - name: project_pk
@@ -3643,7 +3643,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StudentTestSuite'
+                $ref: '#/components/schemas/MutationTestSuite'
           description: ''
       requestBody:
         required: true
@@ -3654,13 +3654,13 @@ paths:
               properties:
                 pk: *id006
                 name:
-                  description: "The name used to identify this StudentTestSuite.\n\
+                  description: "The name used to identify this MutationTestSuite.\n\
                     \                     Must be non-empty and non-null."
                   nullable: false
                   readOnly: false
                   type: string
                 project:
-                  description: The Project that this student test suite belongs to.
+                  description: The Project that this mutation test suite belongs to.
                   nullable: false
                   readOnly: true
                   type: integer
@@ -3737,8 +3737,7 @@ paths:
                     \ must contain the placeholder ${student_test_name} at least once.\
                     \ That\n                     placeholder will be replaced with\
                     \ the name of the student test case\n                     that\
-                    \ is to be checked for validity.\n                     NOTE: This\
-                    \ AGCommand's 'cmd' field must not be blank."
+                    \ is to be checked for validity."
                   nullable: false
                   readOnly: false
                   allOf:
@@ -3754,8 +3753,7 @@ paths:
                     \ will be replaced with the name of a valid student test case.\n\
                     \            The placeholder ${buggy_impl_name} will be replaced\
                     \ with the name of\n            the buggy impl that the student\
-                    \ test is being run against.\n            NOTE: This AGCommand's\
-                    \ 'cmd' field must not be blank."
+                    \ test is being run against."
                   nullable: false
                   readOnly: false
                   allOf:
@@ -3775,7 +3773,7 @@ paths:
                   readOnly: false
                   type: integer
                 deferred:
-                  description: "If true, this student test suite can be graded asynchronously.\n\
+                  description: "If true, this mutation test suite can be graded asynchronously.\n\
                     \                     Deferred suites that have yet to be graded\
                     \ do not prevent members\n                     of a group from\
                     \ submitting again."
@@ -3800,27 +3798,27 @@ paths:
                   nullable: false
                   readOnly: false
                   allOf:
-                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                  - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
                 ultimate_submission_fdbk_config:
                   description: Feedback settings for an ultimate Submission.
                   nullable: false
                   readOnly: false
                   allOf:
-                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                  - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
                 past_limit_submission_fdbk_config:
                   description: Feedback settings for a Submission that is past the
                     daily limit.
                   nullable: false
                   readOnly: false
                   allOf:
-                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                  - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
                 staff_viewer_fdbk_config:
                   description: Feedback settings for a staff member viewing a Submission
                     from another group.
                   nullable: false
                   readOnly: false
                   allOf:
-                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                  - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
                 last_modified:
                   description: ''
                   nullable: false
@@ -3831,9 +3829,9 @@ paths:
               - name
               - project
       tags: *id042
-  /api/projects/{project_pk}/student_test_suites/order/:
+  /api/projects/{project_pk}/mutation_test_suites/order/:
     get:
-      operationId: getStudentTestSuiteOrder
+      operationId: getMutationTestSuiteOrder
       description: ''
       parameters:
       - name: project_pk
@@ -3852,9 +3850,9 @@ paths:
                   type: integer
                   format: id
       tags: &id043
-      - student_test_suites
+      - mutation_test_suites
     put:
-      operationId: setStudentTestSuiteOrder
+      operationId: setMutationTestSuiteOrder
       description: ''
       parameters:
       - name: project_pk
@@ -3882,9 +3880,9 @@ paths:
                 type: integer
                 format: id
       tags: *id043
-  /api/student_test_suites/{id}/:
+  /api/mutation_test_suites/{id}/:
     get:
-      operationId: getStudentTestSuite
+      operationId: getMutationTestSuite
       description: ''
       parameters:
       - name: id
@@ -3898,12 +3896,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StudentTestSuite'
+                $ref: '#/components/schemas/MutationTestSuite'
           description: ''
       tags: &id044
-      - student_test_suites
+      - mutation_test_suites
     patch:
-      operationId: updateStudentTestSuite
+      operationId: updateMutationTestSuite
       description: ''
       parameters:
       - name: id
@@ -3917,7 +3915,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StudentTestSuite'
+                $ref: '#/components/schemas/MutationTestSuite'
           description: ''
       requestBody:
         required: true
@@ -3928,13 +3926,13 @@ paths:
               properties:
                 pk: *id006
                 name:
-                  description: "The name used to identify this StudentTestSuite.\n\
+                  description: "The name used to identify this MutationTestSuite.\n\
                     \                     Must be non-empty and non-null."
                   nullable: false
                   readOnly: false
                   type: string
                 project:
-                  description: The Project that this student test suite belongs to.
+                  description: The Project that this mutation test suite belongs to.
                   nullable: false
                   readOnly: true
                   type: integer
@@ -4011,8 +4009,7 @@ paths:
                     \ must contain the placeholder ${student_test_name} at least once.\
                     \ That\n                     placeholder will be replaced with\
                     \ the name of the student test case\n                     that\
-                    \ is to be checked for validity.\n                     NOTE: This\
-                    \ AGCommand's 'cmd' field must not be blank."
+                    \ is to be checked for validity."
                   nullable: false
                   readOnly: false
                   allOf:
@@ -4028,8 +4025,7 @@ paths:
                     \ will be replaced with the name of a valid student test case.\n\
                     \            The placeholder ${buggy_impl_name} will be replaced\
                     \ with the name of\n            the buggy impl that the student\
-                    \ test is being run against.\n            NOTE: This AGCommand's\
-                    \ 'cmd' field must not be blank."
+                    \ test is being run against."
                   nullable: false
                   readOnly: false
                   allOf:
@@ -4049,7 +4045,7 @@ paths:
                   readOnly: false
                   type: integer
                 deferred:
-                  description: "If true, this student test suite can be graded asynchronously.\n\
+                  description: "If true, this mutation test suite can be graded asynchronously.\n\
                     \                     Deferred suites that have yet to be graded\
                     \ do not prevent members\n                     of a group from\
                     \ submitting again."
@@ -4074,27 +4070,27 @@ paths:
                   nullable: false
                   readOnly: false
                   allOf:
-                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                  - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
                 ultimate_submission_fdbk_config:
                   description: Feedback settings for an ultimate Submission.
                   nullable: false
                   readOnly: false
                   allOf:
-                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                  - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
                 past_limit_submission_fdbk_config:
                   description: Feedback settings for a Submission that is past the
                     daily limit.
                   nullable: false
                   readOnly: false
                   allOf:
-                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                  - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
                 staff_viewer_fdbk_config:
                   description: Feedback settings for a staff member viewing a Submission
                     from another group.
                   nullable: false
                   readOnly: false
                   allOf:
-                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                  - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
                 last_modified:
                   description: ''
                   nullable: false
@@ -4103,7 +4099,7 @@ paths:
                   format: date-time
       tags: *id044
     delete:
-      operationId: deleteStudentTestSuite
+      operationId: deleteMutationTestSuite
       description: ''
       parameters:
       - name: id
@@ -4240,18 +4236,18 @@ paths:
                   nullable: false
                   readOnly: true
                   type: object
-                rerun_all_student_test_suites:
-                  description: "When True, indicates that all StudentTestSuites belonging\n\
+                rerun_all_mutation_test_suites:
+                  description: "When True, indicates that all MutationTestSuites belonging\n\
                     \                     to the specified project should be rerun.\
-                    \ Otherwise,\n                     only the StudentTestSuites\
-                    \ specified in student_test_suite_pks\n                     should\
+                    \ Otherwise,\n                     only the MutationTestSuites\
+                    \ specified in mutation_test_suite_pks\n                     should\
                     \ be rerun."
                   nullable: false
                   readOnly: true
                   type: boolean
-                student_suite_pks:
-                  description: "When rerun_all_student_test_suites is False, specifies\
-                    \ which\n                     student test suites should be rerun."
+                mutation_suite_pks:
+                  description: "When rerun_all_mutation_test_suites is False, specifies\
+                    \ which\n                     mutation test suites should be rerun."
                   nullable: false
                   readOnly: true
                   type: array
@@ -4348,8 +4344,8 @@ paths:
         in: query
         description: "When \"false\", the submission result data\n               \
           \         will not contain the \"ag_test_suite_results\"\n             \
-          \           or \"student_test_suite_results\" fields.\n                \
-          \        Defaults to \"false\"."
+          \           or \"mutation_test_suite_results\" fields.\n               \
+          \         Defaults to \"false\"."
         schema:
           type: string
           enum:
@@ -4646,9 +4642,9 @@ paths:
                     nullable: true
       tags:
       - submission_output
-  /api/submissions/{id}/student_test_suite_results/{result_pk}/setup_stdout/:
+  /api/submissions/{id}/mutation_test_suite_results/{result_pk}/setup_stdout/:
     get:
-      operationId: getStudentTestSuiteResultSetupStdout
+      operationId: getMutationTestSuiteResultSetupStdout
       description: ''
       parameters:
       - name: id
@@ -4673,9 +4669,9 @@ paths:
                 format: binary
       tags:
       - submission_output
-  /api/submissions/{id}/student_test_suite_results/{result_pk}/setup_stderr/:
+  /api/submissions/{id}/mutation_test_suite_results/{result_pk}/setup_stderr/:
     get:
-      operationId: getStudentTestSuiteResultSetupStderr
+      operationId: getMutationTestSuiteResultSetupStderr
       description: ''
       parameters:
       - name: id
@@ -4700,9 +4696,9 @@ paths:
                 format: binary
       tags:
       - submission_output
-  /api/submissions/{id}/student_test_suite_results/{result_pk}/get_student_test_names_stdout/:
+  /api/submissions/{id}/mutation_test_suite_results/{result_pk}/get_student_test_names_stdout/:
     get:
-      operationId: getStudentTestSuiteResultTestDiscoveryStdout
+      operationId: getMutationTestSuiteResultTestDiscoveryStdout
       description: ''
       parameters:
       - name: id
@@ -4727,9 +4723,9 @@ paths:
                 format: binary
       tags:
       - submission_output
-  /api/submissions/{id}/student_test_suite_results/{result_pk}/get_student_test_names_stderr/:
+  /api/submissions/{id}/mutation_test_suite_results/{result_pk}/get_student_test_names_stderr/:
     get:
-      operationId: getStudentTestSuiteResultTestDiscoveryStderr
+      operationId: getMutationTestSuiteResultTestDiscoveryStderr
       description: ''
       parameters:
       - name: id
@@ -4754,9 +4750,9 @@ paths:
                 format: binary
       tags:
       - submission_output
-  /api/submissions/{id}/student_test_suite_results/{result_pk}/validity_check_stdout/:
+  /api/submissions/{id}/mutation_test_suite_results/{result_pk}/validity_check_stdout/:
     get:
-      operationId: getStudentTestSuiteResultValidityCheckStdout
+      operationId: getMutationTestSuiteResultValidityCheckStdout
       description: ''
       parameters:
       - name: id
@@ -4781,9 +4777,9 @@ paths:
                 format: binary
       tags:
       - submission_output
-  /api/submissions/{id}/student_test_suite_results/{result_pk}/validity_check_stderr/:
+  /api/submissions/{id}/mutation_test_suite_results/{result_pk}/validity_check_stderr/:
     get:
-      operationId: getStudentTestSuiteResultValidityCheckStderr
+      operationId: getMutationTestSuiteResultValidityCheckStderr
       description: ''
       parameters:
       - name: id
@@ -4808,9 +4804,9 @@ paths:
                 format: binary
       tags:
       - submission_output
-  /api/submissions/{id}/student_test_suite_results/{result_pk}/grade_buggy_impls_stdout/:
+  /api/submissions/{id}/mutation_test_suite_results/{result_pk}/grade_buggy_impls_stdout/:
     get:
-      operationId: getStudentTestSuiteResultGradeBuggyImplsStdout
+      operationId: getMutationTestSuiteResultGradeBuggyImplsStdout
       description: ''
       parameters:
       - name: id
@@ -4835,9 +4831,9 @@ paths:
                 format: binary
       tags:
       - submission_output
-  /api/submissions/{id}/student_test_suite_results/{result_pk}/grade_buggy_impls_stderr/:
+  /api/submissions/{id}/mutation_test_suite_results/{result_pk}/grade_buggy_impls_stderr/:
     get:
-      operationId: getStudentTestSuiteResultGradeBuggyImplsStderr
+      operationId: getMutationTestSuiteResultGradeBuggyImplsStderr
       description: ''
       parameters:
       - name: id
@@ -4862,9 +4858,9 @@ paths:
                 format: binary
       tags:
       - submission_output
-  /api/submissions/{id}/student_test_suite_results/{result_pk}/output_size/:
+  /api/submissions/{id}/mutation_test_suite_results/{result_pk}/output_size/:
     get:
-      operationId: getStudentTestSuiteResultOutputSize
+      operationId: getMutationTestSuiteResultOutputSize
       description: ''
       parameters:
       - name: id
@@ -7686,11 +7682,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AGTestSuiteResultFeedback'
-        student_test_suite_results:
+        mutation_test_suite_results:
           description: ''
           type: array
           items:
-            $ref: '#/components/schemas/StudentTestSuiteResultFeedback'
+            $ref: '#/components/schemas/MutationTestSuiteResultFeedback'
     AGTestSuiteResultFeedback:
       type: object
       properties:
@@ -7820,17 +7816,17 @@ components:
       - past_limit_submission
       - staff_viewer
       - max
-    StudentTestSuite:
+    MutationTestSuite:
       type: object
       properties:
         pk: *id061
         name:
-          description: "The name used to identify this StudentTestSuite.\n       \
-            \              Must be non-empty and non-null."
+          description: "The name used to identify this MutationTestSuite.\n      \
+            \               Must be non-empty and non-null."
           nullable: false
           type: string
         project:
-          description: The Project that this student test suite belongs to.
+          description: The Project that this mutation test suite belongs to.
           nullable: false
           type: integer
           format: id
@@ -7893,8 +7889,7 @@ components:
             \  is invalid.\n                     This command must contain the placeholder\
             \ ${student_test_name} at least once. That\n                     placeholder\
             \ will be replaced with the name of the student test case\n          \
-            \           that is to be checked for validity.\n                    \
-            \ NOTE: This AGCommand's 'cmd' field must not be blank."
+            \           that is to be checked for validity."
           nullable: false
           allOf:
           - $ref: '#/components/schemas/Command'
@@ -7908,8 +7903,7 @@ components:
             \            ${student_test_name} will be replaced with the name of a\
             \ valid student test case.\n            The placeholder ${buggy_impl_name}\
             \ will be replaced with the name of\n            the buggy impl that the\
-            \ student test is being run against.\n            NOTE: This AGCommand's\
-            \ 'cmd' field must not be blank."
+            \ student test is being run against."
           nullable: false
           allOf:
           - $ref: '#/components/schemas/Command'
@@ -7926,7 +7920,7 @@ components:
           nullable: true
           type: integer
         deferred:
-          description: "If true, this student test suite can be graded asynchronously.\n\
+          description: "If true, this mutation test suite can be graded asynchronously.\n\
             \                     Deferred suites that have yet to be graded do not\
             \ prevent members\n                     of a group from submitting again."
           nullable: false
@@ -7945,29 +7939,29 @@ components:
           description: Feedback settings for a normal Submission.
           nullable: false
           allOf:
-          - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+          - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
         ultimate_submission_fdbk_config:
           description: Feedback settings for an ultimate Submission.
           nullable: false
           allOf:
-          - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+          - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
         past_limit_submission_fdbk_config:
           description: Feedback settings for a Submission that is past the daily limit.
           nullable: false
           allOf:
-          - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+          - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
         staff_viewer_fdbk_config:
           description: Feedback settings for a staff member viewing a Submission from
             another group.
           nullable: false
           allOf:
-          - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+          - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
         last_modified:
           description: ''
           nullable: false
           type: string
           format: date-time
-    StudentTestSuiteFeedbackConfig:
+    MutationTestSuiteFeedbackConfig:
       type: object
       properties:
         visible:
@@ -8018,14 +8012,14 @@ components:
       - no_feedback
       - num_bugs_exposed
       - exposed_bug_names
-    StudentTestSuiteResultFeedback:
+    MutationTestSuiteResultFeedback:
       type: object
       properties:
         pk: *id061
-        student_test_suite_name:
+        mutation_test_suite_name:
           description: ''
           type: string
-        student_test_suite_pk:
+        mutation_test_suite_pk:
           description: ''
           type: integer
         fdbk_settings:
@@ -8157,16 +8151,16 @@ components:
             \        belonging to that ag test suite will be rerun."
           nullable: false
           type: object
-        rerun_all_student_test_suites:
-          description: "When True, indicates that all StudentTestSuites belonging\n\
+        rerun_all_mutation_test_suites:
+          description: "When True, indicates that all MutationTestSuites belonging\n\
             \                     to the specified project should be rerun. Otherwise,\n\
-            \                     only the StudentTestSuites specified in student_test_suite_pks\n\
+            \                     only the MutationTestSuites specified in mutation_test_suite_pks\n\
             \                     should be rerun."
           nullable: false
           type: boolean
-        student_suite_pks:
-          description: "When rerun_all_student_test_suites is False, specifies which\n\
-            \                     student test suites should be rerun."
+        mutation_suite_pks:
+          description: "When rerun_all_mutation_test_suites is False, specifies which\n\
+            \                     mutation test suites should be rerun."
           nullable: false
           type: array
           items:
@@ -8512,7 +8506,7 @@ tags:
 - name: ag_test_suites
 - name: ag_test_cases
 - name: ag_test_commands
-- name: student_test_suites
+- name: mutation_test_suites
 - name: group_invitations
 - name: groups
 - name: submissions
