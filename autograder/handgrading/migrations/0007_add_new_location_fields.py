@@ -43,13 +43,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='appliedannotation',
             name='location',
-            field=autograder.core.fields.ValidatedJSONField(default={'filename': 'PLACEHOLDER', 'first_line': 0, 'last_line': 0}, help_text='The source code location where the Annotation was applied.', serializable_class=autograder.handgrading.models.NewLocation),
+            field=autograder.core.fields.ValidatedJSONField(default={'filename': 'PLACEHOLDER', 'first_line': 0, 'last_line': 0}, help_text='The source code location where the Annotation was applied.', serializable_class=autograder.handgrading.models.Location),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='comment',
             name='location',
-            field=autograder.core.fields.ValidatedJSONField(blank=True, default=None, help_text='When not None, specifies the source code location this comment\n                     applies to.', null=True, serializable_class=autograder.handgrading.models.NewLocation),
+            field=autograder.core.fields.ValidatedJSONField(blank=True, default=None, help_text='When not None, specifies the source code location this comment\n                     applies to.', null=True, serializable_class=autograder.handgrading.models.Location),
         ),
 
         migrations.RunPython(
