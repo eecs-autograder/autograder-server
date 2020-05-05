@@ -15,13 +15,13 @@ def _estimated_grading_time(project_pk: int):
         ).exclude(ag_test_case__ag_test_suite__deferred=True)
     )
 
-    student_test_suite_time_max = sum(
+    mutation_test_suite_time_max = sum(
         suite.student_test_validity_check_command.time_limit * suite.max_num_student_tests
         for suite in
         ag_models.MutationTestSuite.objects.filter(project=project_pk).exclude(deferred=True)
     )
 
-    return ag_test_time_max + student_test_suite_time_max
+    return ag_test_time_max + mutation_test_suite_time_max
 
 
 @celery.shared_task

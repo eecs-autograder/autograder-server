@@ -36,7 +36,7 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         self.ag_test_case = obj_build.make_ag_test_case(self.ag_test_suite)
         self.ag_test_cmd = obj_build.make_full_ag_test_command(self.ag_test_case)
 
-        self.student_test_suite = obj_build.make_student_test_suite(self.project)
+        self.mutation_test_suite = obj_build.make_mutation_test_suite(self.project)
 
         self.client = APIClient()
         self.base_url = reverse('all-ultimate-submission-results',
@@ -100,7 +100,7 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
                 self.ag_test_cmd, submission=submission)
 
         ag_models.MutationTestSuiteResult.objects.validate_and_create(
-            submission=submission, student_test_suite=self.student_test_suite)
+            submission=submission, mutation_test_suite=self.mutation_test_suite)
 
         return update_denormalized_ag_test_results(submission.pk)
 

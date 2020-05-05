@@ -55,7 +55,7 @@ class CopyProjectTestCase(UnitTestBase):
 
         suite3 = obj_build.make_ag_test_suite(project)
 
-        student_suite1 = obj_build.make_student_test_suite(
+        mutation_suite1 = obj_build.make_mutation_test_suite(
             project,
             sandbox_docker_image={'pk': self._custom_image.pk},
             instructor_files_needed=[instructor_file1, instructor_file2],
@@ -65,12 +65,12 @@ class CopyProjectTestCase(UnitTestBase):
                 'cmd': 'yorp'
             })
 
-        student_suite2 = obj_build.make_student_test_suite(
+        mutation_suite2 = obj_build.make_mutation_test_suite(
             project,
             instructor_files_needed=[instructor_file1],
             student_files_needed=[student_file1, student_file2])
 
-        student_suite3 = obj_build.make_student_test_suite(project)
+        mutation_suite3 = obj_build.make_mutation_test_suite(project)
 
         handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
             project=project,
@@ -168,9 +168,9 @@ class CopyProjectTestCase(UnitTestBase):
                 ag_test_case__ag_test_suite__project=new_project)}
         self.assertTrue(old_cmd_pks.isdisjoint(new_cmd_pks))
 
-        old_student_suite_pks = {suite.pk for suite in project.student_test_suites.all()}
-        new_student_suite_pks = {suite.pk for suite in new_project.student_test_suites.all()}
-        self.assertTrue(old_student_suite_pks.isdisjoint(new_student_suite_pks))
+        old_mutation_suite_pks = {suite.pk for suite in project.mutation_test_suites.all()}
+        new_mutation_suite_pks = {suite.pk for suite in new_project.mutation_test_suites.all()}
+        self.assertTrue(old_mutation_suite_pks.isdisjoint(new_mutation_suite_pks))
 
         ignore_fields = ['pk', 'project', 'last_modified',
                          'ag_test_suite', 'ag_test_case', 'ag_test_command']
@@ -186,17 +186,17 @@ class CopyProjectTestCase(UnitTestBase):
             dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
         self.assertEqual(expected_ag_tests, actual_ag_tests)
 
-        expected_student_suites = _recursive_pop(
-            [suite.to_dict() for suite in project.student_test_suites.all()], ignore_fields)
-        for dict_ in expected_student_suites:
+        expected_mutation_suites = _recursive_pop(
+            [suite.to_dict() for suite in project.mutation_test_suites.all()], ignore_fields)
+        for dict_ in expected_mutation_suites:
             dict_['instructor_files_needed'].sort(key=lambda obj: obj['name'])
             dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
-        actual_student_suites = _recursive_pop(
-            [suite.to_dict() for suite in new_project.student_test_suites.all()], ignore_fields)
-        for dict_ in actual_student_suites:
+        actual_mutation_suites = _recursive_pop(
+            [suite.to_dict() for suite in new_project.mutation_test_suites.all()], ignore_fields)
+        for dict_ in actual_mutation_suites:
             dict_['instructor_files_needed'].sort(key=lambda obj: obj['name'])
             dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
-        self.assertEqual(expected_student_suites, actual_student_suites)
+        self.assertEqual(expected_mutation_suites, actual_mutation_suites)
 
         new_rubric = new_project.handgrading_rubric
         self.assertNotEqual(handgrading_rubric.pk, new_rubric.pk)
@@ -261,7 +261,7 @@ class SandboxImageCopyingTestCase(UnitTestBase):
         )
         self.course1_project = obj_build.make_project(self.course1)
         obj_build.make_ag_test_suite(self.course1_project, sandbox_docker_image=self.course1_image)
-        obj_build.make_student_test_suite(
+        obj_build.make_mutation_test_suite(
             self.course1_project, sandbox_docker_image=self.course1_image)
 
         self.course2 = obj_build.make_course()
@@ -272,7 +272,7 @@ class SandboxImageCopyingTestCase(UnitTestBase):
         self.assertEqual(
             self.course1_image, new_project.ag_test_suites.first().sandbox_docker_image)
         self.assertEqual(
-            self.course1_image, new_project.student_test_suites.first().sandbox_docker_image)
+            self.course1_image, new_project.mutation_test_suites.first().sandbox_docker_image)
 
         self.assertEqual(original_num_images, ag_models.SandboxDockerImage.objects.count())
 
@@ -281,10 +281,10 @@ class SandboxImageCopyingTestCase(UnitTestBase):
         self.assertNotEqual(
             self.course1_image, new_project.ag_test_suites.first().sandbox_docker_image)
         self.assertNotEqual(
-            self.course1_image, new_project.student_test_suites.first().sandbox_docker_image)
+            self.course1_image, new_project.mutation_test_suites.first().sandbox_docker_image)
 
         self.assertEqual(new_project.ag_test_suites.first().sandbox_docker_image,
-                         new_project.student_test_suites.first().sandbox_docker_image)
+                         new_project.mutation_test_suites.first().sandbox_docker_image)
 
         new_image = new_project.ag_test_suites.first().sandbox_docker_image
         self.assertEqual(self.course1_image.display_name, new_image.display_name)
@@ -311,7 +311,7 @@ class SandboxImageCopyingTestCase(UnitTestBase):
         self.assertEqual(
             course2_image, new_project.ag_test_suites.first().sandbox_docker_image)
         self.assertEqual(
-            course2_image, new_project.student_test_suites.first().sandbox_docker_image)
+            course2_image, new_project.mutation_test_suites.first().sandbox_docker_image)
 
         self.assertEqual(2, ag_models.SandboxDockerImage.objects.exclude(course=None).count())
 

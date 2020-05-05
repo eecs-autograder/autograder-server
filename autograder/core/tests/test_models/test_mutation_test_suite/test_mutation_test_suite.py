@@ -16,43 +16,43 @@ class MutationTestSuiteTestCase(UnitTestBase):
         self.name = 'qewioruqiwoeiru'
 
     def test_default_init(self):
-        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
+        mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name=self.name, project=self.project)  # type: ag_models.MutationTestSuite
 
-        self.assertEqual(self.name, student_suite.name)
-        self.assertEqual(self.project, student_suite.project)
-        self.assertSequenceEqual([], student_suite.instructor_files_needed.all())
-        self.assertTrue(student_suite.read_only_instructor_files)
-        self.assertSequenceEqual([], student_suite.student_files_needed.all())
-        self.assertSequenceEqual([], student_suite.buggy_impl_names)
+        self.assertEqual(self.name, mutation_suite.name)
+        self.assertEqual(self.project, mutation_suite.project)
+        self.assertSequenceEqual([], mutation_suite.instructor_files_needed.all())
+        self.assertTrue(mutation_suite.read_only_instructor_files)
+        self.assertSequenceEqual([], mutation_suite.student_files_needed.all())
+        self.assertSequenceEqual([], mutation_suite.buggy_impl_names)
 
-        self.assertFalse(student_suite.use_setup_command)
-        self.assertIsInstance(student_suite.setup_command,
+        self.assertFalse(mutation_suite.use_setup_command)
+        self.assertIsInstance(mutation_suite.setup_command,
                               ag_models.Command)
-        self.assertIsInstance(student_suite.get_student_test_names_command,
+        self.assertIsInstance(mutation_suite.get_student_test_names_command,
                               ag_models.Command)
         self.assertEqual(ag_models.MutationTestSuite.DEFAULT_STUDENT_TEST_MAX,
-                         student_suite.max_num_student_tests)
+                         mutation_suite.max_num_student_tests)
 
-        self.assertIsInstance(student_suite.student_test_validity_check_command,
+        self.assertIsInstance(mutation_suite.student_test_validity_check_command,
                               ag_models.Command)
-        self.assertIsInstance(student_suite.grade_buggy_impl_command,
+        self.assertIsInstance(mutation_suite.grade_buggy_impl_command,
                               ag_models.Command)
 
-        self.assertEqual(0, student_suite.points_per_exposed_bug)
-        self.assertIsNone(student_suite.max_points)
-        self.assertFalse(student_suite.deferred)
+        self.assertEqual(0, mutation_suite.points_per_exposed_bug)
+        self.assertIsNone(mutation_suite.max_points)
+        self.assertFalse(mutation_suite.deferred)
         self.assertEqual(ag_models.SandboxDockerImage.objects.get(name='default'),
-                         student_suite.sandbox_docker_image)
-        self.assertFalse(student_suite.allow_network_access)
+                         mutation_suite.sandbox_docker_image)
+        self.assertFalse(mutation_suite.allow_network_access)
 
-        self.assertIsInstance(student_suite.normal_fdbk_config,
+        self.assertIsInstance(mutation_suite.normal_fdbk_config,
                               ag_models.MutationTestSuiteFeedbackConfig)
-        self.assertIsInstance(student_suite.ultimate_submission_fdbk_config,
+        self.assertIsInstance(mutation_suite.ultimate_submission_fdbk_config,
                               ag_models.MutationTestSuiteFeedbackConfig)
-        self.assertIsInstance(student_suite.past_limit_submission_fdbk_config,
+        self.assertIsInstance(mutation_suite.past_limit_submission_fdbk_config,
                               ag_models.MutationTestSuiteFeedbackConfig)
-        self.assertIsInstance(student_suite.staff_viewer_fdbk_config,
+        self.assertIsInstance(mutation_suite.staff_viewer_fdbk_config,
                               ag_models.MutationTestSuiteFeedbackConfig)
 
         self.maxDiff = None
@@ -63,13 +63,13 @@ class MutationTestSuiteTestCase(UnitTestBase):
             'bugs_exposed_fdbk_level': ag_models.BugsExposedFeedbackLevel.num_bugs_exposed
         })
         self.assertEqual(ultimate_fdbk.to_dict(),
-                         student_suite.ultimate_submission_fdbk_config.to_dict())
+                         mutation_suite.ultimate_submission_fdbk_config.to_dict())
 
         low_fdbk = ag_models.MutationTestSuiteFeedbackConfig.from_dict({})
         self.assertEqual(low_fdbk.to_dict(),
-                         student_suite.normal_fdbk_config.to_dict())
+                         mutation_suite.normal_fdbk_config.to_dict())
 
-        past_limit_fdbk = student_suite.past_limit_submission_fdbk_config
+        past_limit_fdbk = mutation_suite.past_limit_submission_fdbk_config
         self.assertFalse(past_limit_fdbk.show_invalid_test_names)
         self.assertEqual(ag_models.BugsExposedFeedbackLevel.get_min(),
                          past_limit_fdbk.bugs_exposed_fdbk_level)
@@ -121,39 +121,39 @@ class MutationTestSuiteTestCase(UnitTestBase):
             }
         }
 
-        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
+        mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             **values
         )  # type: ag_models.MutationTestSuite
 
         self.assertCountEqual(
             [instructor_file['pk'] for instructor_file in values['instructor_files_needed']],
             [instructor_file.pk for instructor_file in
-             student_suite.instructor_files_needed.all()])
+             mutation_suite.instructor_files_needed.all()])
         values.pop('instructor_files_needed')
 
         self.assertCountEqual(
             [student_file['pk'] for student_file in values['student_files_needed']],
-            [student_file.pk for student_file in student_suite.student_files_needed.all()])
+            [student_file.pk for student_file in mutation_suite.student_files_needed.all()])
         values.pop('student_files_needed')
 
         for key, value in values.items():
             if isinstance(value, dict):
-                self.assert_dict_is_subset(value, getattr(student_suite, key).to_dict())
+                self.assert_dict_is_subset(value, getattr(mutation_suite, key).to_dict())
             elif isinstance(value, list):
-                self.assertSequenceEqual(value, getattr(student_suite, key))
+                self.assertSequenceEqual(value, getattr(mutation_suite, key))
             else:
-                self.assertEqual(value, getattr(student_suite, key))
+                self.assertEqual(value, getattr(mutation_suite, key))
 
     def test_valid_float_points_per_exposed_bug(self):
-        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
+        mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name=self.name, project=self.project,
             points_per_exposed_bug='.75'
         )  # type: ag_models.MutationTestSuite
 
-        student_suite.refresh_from_db()
+        mutation_suite.refresh_from_db()
 
-        self.assertEqual(decimal.Decimal('.75'), student_suite.points_per_exposed_bug)
-        self.assertEqual('0.75', student_suite.to_dict()['points_per_exposed_bug'])
+        self.assertEqual(decimal.Decimal('.75'), mutation_suite.points_per_exposed_bug)
+        self.assertEqual('0.75', mutation_suite.to_dict()['points_per_exposed_bug'])
 
     def test_float_points_per_exposed_bug_too_many_decimal_places(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -182,10 +182,12 @@ class MutationTestSuiteTestCase(UnitTestBase):
         self.assertCountEqual([suite1.pk, suite2.pk], self.project.get_mutationtestsuite_order())
 
         self.project.set_mutationtestsuite_order([suite2.pk, suite1.pk])
-        self.assertSequenceEqual([suite2.pk, suite1.pk], self.project.get_mutationtestsuite_order())
+        self.assertSequenceEqual(
+            [suite2.pk, suite1.pk], self.project.get_mutationtestsuite_order())
 
         self.project.set_mutationtestsuite_order([suite1.pk, suite2.pk])
-        self.assertSequenceEqual([suite1.pk, suite2.pk], self.project.get_mutationtestsuite_order())
+        self.assertSequenceEqual(
+            [suite1.pk, suite2.pk], self.project.get_mutationtestsuite_order())
 
     def test_error_name_not_unique(self):
         name = 'spam'
@@ -316,14 +318,14 @@ class MutationTestSuiteTestCase(UnitTestBase):
         instructor_file = obj_build.make_instructor_file(self.project)
         student_file = obj_build.make_expected_student_file(self.project)
 
-        student_suite = ag_models.MutationTestSuite.objects.validate_and_create(
+        mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name=self.name, project=self.project,
             setup_command={'cmd': 'setuppy'},
             instructor_files_needed=[instructor_file],
             student_files_needed=[student_file]
         )  # type: ag_models.MutationTestSuite
 
-        serialized = student_suite.to_dict()
+        serialized = mutation_suite.to_dict()
         self.assertCountEqual(expected_field_names, serialized.keys())
 
         self.assertIsInstance(serialized['instructor_files_needed'][0], dict)
@@ -340,12 +342,12 @@ class MutationTestSuiteTestCase(UnitTestBase):
 
         self.assertIsInstance(serialized['sandbox_docker_image'], dict)
 
-        update_dict = student_suite.to_dict()
+        update_dict = mutation_suite.to_dict()
         non_editable = ['pk', 'project', 'last_modified']
         for field in non_editable:
             update_dict.pop(field)
 
-        student_suite.validate_and_update(**update_dict)
+        mutation_suite.validate_and_update(**update_dict)
 
 
 class MutationTestSuiteSandboxImageOnDeleteTestCase(TransactionUnitTestBase):

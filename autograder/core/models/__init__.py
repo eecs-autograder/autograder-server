@@ -13,14 +13,14 @@ from .ag_test.ag_test_suite_result import AGTestSuiteResult
 from .ag_test.feedback_category import FeedbackCategory
 from .course import Course, LateDaysRemaining, Semester
 from .group import Group, GroupInvitation
+from .mutation_test_suite import (BugsExposedFeedbackLevel, MutationTestSuite,
+                                  MutationTestSuiteFeedbackConfig, MutationTestSuiteResult)
 from .project import Project, UltimateSubmissionPolicy
 from .project.download_task import DownloadTask, DownloadType
 from .project.expected_student_file import ExpectedStudentFile
 from .project.instructor_file import InstructorFile
 from .rerun_submissions_task import RerunSubmissionsTask
 from .sandbox_docker_image import BuildImageStatus, BuildSandboxDockerImageTask, SandboxDockerImage
-from .student_test_suite import (BugsExposedFeedbackLevel, MutationTestSuiteFeedbackConfig,
-                                 MutationTestSuite, MutationTestSuiteResult)
-from .submission import (Submission, get_student_test_suite_results_queryset,
+from .submission import (Submission, get_mutation_test_suite_results_queryset,
                          get_submissions_with_results_queryset)
 from .task import Task

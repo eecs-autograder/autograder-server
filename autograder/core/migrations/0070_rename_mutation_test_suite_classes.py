@@ -20,11 +20,6 @@ class Migration(migrations.Migration):
             new_name='MutationTestSuiteResult',
         ),
         migrations.AlterField(
-            model_name='rerunsubmissionstask',
-            name='rerun_all_student_test_suites',
-            field=models.BooleanField(default=True, help_text='When True, indicates that all MutationTestSuites belonging\n                     to the specified project should be rerun. Otherwise,\n                     only the MutationTestSuites specified in student_test_suite_pks\n                     should be rerun.'),
-        ),
-        migrations.AlterField(
             model_name='mutationtestsuite',
             name='name',
             field=autograder.core.fields.ShortStringField(help_text='The name used to identify this MutationTestSuite.\n                     Must be non-empty and non-null.', max_length=255, strip=False),

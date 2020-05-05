@@ -196,7 +196,7 @@ API_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     ag_models.MutationTestSuite: ag_models.MutationTestSuite.__name__,
     ag_models.MutationTestSuiteFeedbackConfig: ag_models.MutationTestSuiteFeedbackConfig.__name__,
     ag_models.BugsExposedFeedbackLevel: ag_models.BugsExposedFeedbackLevel.__name__,
-    # Hack: SubmissionResultFeedback.student_test_suite_results returns
+    # Hack: SubmissionResultFeedback.mutation_test_suite_results returns
     # List[MutationTestSuiteResult], but it gets serialized to MutationTestSuiteResultFeedback
     ag_models.MutationTestSuiteResult: 'MutationTestSuiteResultFeedback',
     ag_models.MutationTestSuiteResult.FeedbackCalculator: 'MutationTestSuiteResultFeedback',
@@ -626,7 +626,7 @@ class APITags(enum.Enum):
     ag_test_cases = 'ag_test_cases'
     ag_test_commands = 'ag_test_commands'
 
-    student_test_suites = 'student_test_suites'
+    mutation_test_suites = 'mutation_test_suites'
 
     group_invitations = 'group_invitations'
     groups = 'groups'

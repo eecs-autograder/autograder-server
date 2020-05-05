@@ -356,7 +356,7 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         best_submission = obj_build.make_finished_submission(
             self.group, does_not_count_for=[self.does_not_count_for_user.username])
         ag_models.MutationTestSuiteResult.objects.validate_and_create(
-            student_test_suite=suite,
+            mutation_test_suite=suite,
             submission=best_submission, bugs_exposed=suite.buggy_impl_names
         )
         self.assertEqual(
@@ -388,7 +388,7 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         best_submission = obj_build.make_finished_submission(
             self.group, does_not_count_for=[self.does_not_count_for_user.username])
         ag_models.MutationTestSuiteResult.objects.validate_and_create(
-            student_test_suite=suite,
+            mutation_test_suite=suite,
             submission=best_submission, bugs_exposed=suite.buggy_impl_names
         )
         self.assertEqual(
@@ -397,7 +397,7 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         second_best_submission = obj_build.make_finished_submission(
             self.group, does_not_count_for=[self.does_not_count_for_user.username])
         ag_models.MutationTestSuiteResult.objects.validate_and_create(
-            student_test_suite=suite,
+            mutation_test_suite=suite,
             submission=second_best_submission, bugs_exposed=suite.buggy_impl_names[:-1]
         )
         self.assertEqual(

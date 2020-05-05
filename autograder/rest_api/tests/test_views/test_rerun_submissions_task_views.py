@@ -14,7 +14,7 @@ from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import
     get_submission_fdbk)
 from autograder.grading_tasks import tasks
 from autograder.rest_api.views.rerun_submissions_task_views import (
-    rerun_ag_test_suite, rerun_student_test_suite)
+    rerun_ag_test_suite, rerun_mutation_test_suite)
 from autograder.utils.testing import TransactionUnitTestBase
 from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 
@@ -104,7 +104,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
         self.ag_test_case3_points_possible = 4
         self.ag_test_suite2_points_possible = self.ag_test_case3_points_possible
 
-        self.student_suite1 = obj_build.make_student_test_suite(
+        self.mutation_suite1 = obj_build.make_mutation_test_suite(
             self.project,
             buggy_impl_names=['bug1', 'bug2'],
             get_student_test_names_command={
@@ -119,9 +119,9 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
             },
             points_per_exposed_bug=1)
 
-        self.student_suite1_points_possible = 2
+        self.mutation_suite1_points_possible = 2
 
-        self.student_suite2 = obj_build.make_student_test_suite(
+        self.mutation_suite2 = obj_build.make_mutation_test_suite(
             self.project,
             buggy_impl_names=['bug1', 'bug2'],
             get_student_test_names_command={
@@ -136,14 +136,14 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
             },
             points_per_exposed_bug=2)
 
-        self.student_suite2_points_possible = 4
+        self.mutation_suite2_points_possible = 4
 
-        self.student_suite_total_points_possible = (
-            self.student_suite1_points_possible + self.student_suite2_points_possible)
+        self.mutation_suite_total_points_possible = (
+            self.mutation_suite1_points_possible + self.mutation_suite2_points_possible)
 
         self.total_points_possible = (self.ag_test_suite1_points_possible
                                       + self.ag_test_suite2_points_possible
-                                      + self.student_suite_total_points_possible)
+                                      + self.mutation_suite_total_points_possible)
 
         tasks.grade_submission(self.submission1.pk)
         tasks.grade_submission(self.submission2.pk)
@@ -154,13 +154,13 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
         self.ag_test_cmd2.validate_and_update(cmd='true')
         self.ag_test_cmd3.validate_and_update(cmd='true')
 
-        self.student_suite1.validate_and_update(
+        self.mutation_suite1.validate_and_update(
             grade_buggy_impl_command={
                 # Will expose all the bugs
                 'cmd': 'bash -c "echo ${student_test_name} ${buggy_impl_name}; false"'
             })
 
-        self.student_suite2.validate_and_update(
+        self.mutation_suite2.validate_and_update(
             grade_buggy_impl_command={
                 'cmd': 'bash -c "echo ${student_test_name} ${buggy_impl_name}; false"'
             })
@@ -217,7 +217,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
         request_body = {
             'rerun_all_ag_test_suites': False,
             'ag_test_suite_data': {str(self.ag_test_suite1.pk): []},
-            'rerun_all_student_test_suites': False
+            'rerun_all_mutation_test_suites': False
         }
         self.do_rerun_submissions_test_case(
             request_body, (self.submission1, self.ag_test_suite1_points_possible),
@@ -227,21 +227,21 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
         request_body = {
             'rerun_all_ag_test_suites': False,
             'ag_test_suite_data': {str(self.ag_test_suite1.pk): [self.ag_test_case1.pk]},
-            'rerun_all_student_test_suites': False
+            'rerun_all_mutation_test_suites': False
         }
         self.do_rerun_submissions_test_case(
             request_body, (self.submission1, self.ag_test_case1_points_possible),
             (self.submission2, self.ag_test_case1_points_possible))
 
-    def test_admin_rerun_specific_student_suites(self, *args):
+    def test_admin_rerun_specific_mutation_suites(self, *args):
         request_body = {
             'rerun_all_ag_test_suites': False,
-            'rerun_all_student_test_suites': False,
-            'student_suite_pks': [self.student_suite1.pk]
+            'rerun_all_mutation_test_suites': False,
+            'mutation_suite_pks': [self.mutation_suite1.pk]
         }
         self.do_rerun_submissions_test_case(
-            request_body, (self.submission1, self.student_suite1_points_possible),
-            (self.submission2, self.student_suite1_points_possible))
+            request_body, (self.submission1, self.mutation_suite1_points_possible),
+            (self.submission2, self.mutation_suite1_points_possible))
 
     def test_admin_rerun_fatal_error_in_ag_test_suite(self, *args):
         class _MockException(Exception):
@@ -258,12 +258,12 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
             self.assertNotEqual('', rerun_task.error_msg)
             self.assertIn('Error rerunning ag test suite', rerun_task.error_msg)
 
-    def test_admin_rerun_fatal_error_in_student_test_suite(self, *args):
+    def test_admin_rerun_fatal_error_in_mutation_test_suite(self, *args):
         class _MockException(Exception):
             pass
 
         target = ('autograder.rest_api.views.rerun_submissions_task_views.'
-                  'tasks.grade_student_test_suite_impl')
+                  'tasks.grade_mutation_test_suite_impl')
         with mock.patch(target, new=mock.Mock(side_effect=_MockException)):
             self.client.force_authenticate(self.admin)
 
@@ -271,7 +271,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
             rerun_task = ag_models.RerunSubmissionsTask.objects.get(pk=response.data['pk'])
             print(rerun_task.error_msg)
             self.assertNotEqual('', rerun_task.error_msg)
-            self.assertIn('Error rerunning student test suite', rerun_task.error_msg)
+            self.assertIn('Error rerunning mutation test suite', rerun_task.error_msg)
 
     def test_one_item_celery_chord(self, *args):
         request_body = {
@@ -279,7 +279,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
             'submission_pks': [self.submission1.pk],
             'rerun_all_ag_test_suites': False,
             'ag_test_suite_data': {str(self.ag_test_suite2.pk): [self.ag_test_case3.pk]},
-            'rerun_all_student_test_suites': False,
+            'rerun_all_mutation_test_suites': False,
         }
         self.do_rerun_submissions_test_case(
             request_body, (self.submission1, self.ag_test_case3_points_possible),
@@ -289,7 +289,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
         request_body = {
             'rerun_all_submissions': False,
             'rerun_all_ag_test_suites': False,
-            'rerun_all_student_test_suites': False,
+            'rerun_all_mutation_test_suites': False,
         }
         self.do_rerun_submissions_test_case(
             request_body, (self.submission1, 0), (self.submission2, 0))
@@ -466,12 +466,12 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
 
         sleep_mock.assert_not_called()
 
-    def test_student_test_suite_not_found_no_retry(self, sleep_mock) -> None:
-        student_suite = obj_build.make_student_test_suite(self.project)
+    def test_mutation_test_suite_not_found_no_retry(self, sleep_mock) -> None:
+        mutation_suite = obj_build.make_mutation_test_suite(self.project)
 
-        ag_models.MutationTestSuite.objects.get(pk=student_suite.pk).delete()
+        ag_models.MutationTestSuite.objects.get(pk=mutation_suite.pk).delete()
 
-        rerun_student_test_suite(self.rerun_task.pk, self.submission.pk, student_suite.pk)
+        rerun_mutation_test_suite(self.rerun_task.pk, self.submission.pk, mutation_suite.pk)
         sleep_mock.assert_not_called()
 
 
@@ -496,8 +496,8 @@ class RerunCancelledTestCase(TransactionUnitTestBase):
         rerun_task.refresh_from_db()
         self.assertEqual(0, rerun_task.progress)
 
-    def test_student_test_suite_not_found_no_retry(self) -> None:
-        student_suite = obj_build.make_student_test_suite(self.project)
+    def test_mutation_test_suite_not_found_no_retry(self) -> None:
+        mutation_suite = obj_build.make_mutation_test_suite(self.project)
 
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
             project=self.project,
@@ -506,6 +506,6 @@ class RerunCancelledTestCase(TransactionUnitTestBase):
             total_num_subtasks=1,
         )
 
-        rerun_student_test_suite(rerun_task.pk, self.submission.pk, student_suite.pk)
+        rerun_mutation_test_suite(rerun_task.pk, self.submission.pk, mutation_suite.pk)
         rerun_task.refresh_from_db()
         self.assertEqual(0, rerun_task.progress)

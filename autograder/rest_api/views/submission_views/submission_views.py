@@ -287,7 +287,7 @@ class ListSubmissionsWithResults(AGModelAPIView):
             base_manager=group.submissions)
 
         ag_test_preloader = AGTestPreLoader(group.project)
-        student_test_suite_preloader = MutationTestSuitePreLoader(group.project)
+        mutation_test_suite_preloader = MutationTestSuitePreLoader(group.project)
 
         submissions = []
         for submission in submissions_queryset:
@@ -306,7 +306,7 @@ class ListSubmissionsWithResults(AGModelAPIView):
                     submission,
                     fdbk_category,
                     ag_test_preloader,
-                    student_test_suite_preloader
+                    mutation_test_suite_preloader
                 ),
                 full_results=True
             )

@@ -22,7 +22,7 @@ from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, NewAGTestS
 from autograder.core.models.ag_test.ag_test_suite_result import AGTestSuiteResult
 from autograder.core.models.ag_test.feedback_category import FeedbackCategory
 from autograder.core.models.project import Project
-from autograder.core.models.student_test_suite import MutationTestSuite
+from autograder.core.models.mutation_test_suite import MutationTestSuite
 
 
 class AGTestPreLoader:
@@ -78,7 +78,7 @@ class MutationTestSuitePreLoader:
         self._project = project
         self._suites_by_pk: Optional[Dict[int, MutationTestSuite]] = None
 
-    def get_student_test_suite(self, suite_pk: int) -> MutationTestSuite:
+    def get_mutation_test_suite(self, suite_pk: int) -> MutationTestSuite:
         return self._suites[suite_pk]
 
     @property
@@ -308,14 +308,14 @@ def update_denormalized_ag_test_results(submission_pk: int) -> Submission:
 class SubmissionResultFeedback(ToDictMixin):
     def __init__(self, submission: Submission, fdbk_category: FeedbackCategory,
                  ag_test_preloader: AGTestPreLoader,
-                 student_test_suite_preloader: Optional[MutationTestSuitePreLoader]=None):
+                 mutation_test_suite_preloader: Optional[MutationTestSuitePreLoader]=None):
         self._submission = submission
         self._fdbk_category = fdbk_category
         self._project = self._submission.group.project
 
         self._ag_test_loader = ag_test_preloader
-        self._student_test_suite_preloader = (
-            student_test_suite_preloader if student_test_suite_preloader is not None
+        self._mutation_test_suite_preloader = (
+            mutation_test_suite_preloader if mutation_test_suite_preloader is not None
             else MutationTestSuitePreLoader(self._project))
 
         self._ag_test_suite_results = _deserialize_denormed_ag_test_results(self._submission)
@@ -325,8 +325,8 @@ class SubmissionResultFeedback(ToDictMixin):
         return self._ag_test_loader
 
     @property
-    def student_test_suite_preloader(self):
-        return self._student_test_suite_preloader
+    def mutation_test_suite_preloader(self):
+        return self._mutation_test_suite_preloader
 
     @property
     def pk(self):
@@ -343,13 +343,13 @@ class SubmissionResultFeedback(ToDictMixin):
             for ag_test_suite_result in self.ag_test_suite_results
         ))
 
-        student_suite_points = sum((
-            student_test_suite_result.get_fdbk(
-                self._fdbk_category, self._student_test_suite_preloader).total_points
-            for student_test_suite_result in self._visible_student_test_suite_results
+        mutation_suite_points = sum((
+            mutation_test_suite_result.get_fdbk(
+                self._fdbk_category, self._mutation_test_suite_preloader).total_points
+            for mutation_test_suite_result in self._visible_mutation_test_suite_results
         ))
 
-        return ag_suite_points + student_suite_points
+        return ag_suite_points + mutation_suite_points
 
     @cached_property
     def total_points_possible(self) -> Union[int, Decimal]:
@@ -358,13 +358,13 @@ class SubmissionResultFeedback(ToDictMixin):
             for ag_test_suite_result in self.ag_test_suite_results
         ))
 
-        student_suite_points = sum((
-            student_test_suite_result.get_fdbk(
-                self._fdbk_category, self._student_test_suite_preloader).total_points_possible
-            for student_test_suite_result in self._visible_student_test_suite_results
+        mutation_suite_points = sum((
+            mutation_test_suite_result.get_fdbk(
+                self._fdbk_category, self._mutation_test_suite_preloader).total_points_possible
+            for mutation_test_suite_result in self._visible_mutation_test_suite_results
         ))
 
-        return ag_suite_points + student_suite_points
+        return ag_suite_points + mutation_suite_points
 
     @cached_property
     def ag_test_suite_results(self) -> List[AGTestSuiteResultFeedback]:
@@ -387,16 +387,16 @@ class SubmissionResultFeedback(ToDictMixin):
         return visible
 
     @cached_property
-    def student_test_suite_results(self) -> List[MutationTestSuiteResult]:
-        return list(self._visible_student_test_suite_results)
+    def mutation_test_suite_results(self) -> List[MutationTestSuiteResult]:
+        return list(self._visible_mutation_test_suite_results)
 
     @property
-    def _visible_student_test_suite_results(self) -> Sequence['MutationTestSuiteResult']:
+    def _visible_mutation_test_suite_results(self) -> Sequence['MutationTestSuiteResult']:
         return list(
             filter(
                 lambda result: result.get_fdbk(
-                    self._fdbk_category, self._student_test_suite_preloader).fdbk_conf.visible,
-                self._submission.student_test_suite_results.all()
+                    self._fdbk_category, self._mutation_test_suite_preloader).fdbk_conf.visible,
+                self._submission.mutation_test_suite_results.all()
             )
         )
 
@@ -407,10 +407,10 @@ class SubmissionResultFeedback(ToDictMixin):
             res_fdbk.to_dict() for res_fdbk in result['ag_test_suite_results']
         ]
 
-        result['student_test_suite_results'] = [
+        result['mutation_test_suite_results'] = [
             result.get_fdbk(
-                self._fdbk_category, self._student_test_suite_preloader).to_dict()
-            for result in result['student_test_suite_results']]
+                self._fdbk_category, self._mutation_test_suite_preloader).to_dict()
+            for result in result['mutation_test_suite_results']]
 
         return result
 
@@ -419,7 +419,7 @@ class SubmissionResultFeedback(ToDictMixin):
         'total_points',
         'total_points_possible',
         'ag_test_suite_results',
-        'student_test_suite_results'
+        'mutation_test_suite_results'
     )
 
 

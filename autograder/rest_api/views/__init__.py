@@ -16,6 +16,9 @@ from .group_invitation_views import (AcceptGroupInvitationView, GroupInvitationD
                                      ListCreateGroupInvitationView)
 from .group_views import (CreateSoloGroupView, GroupDetailView, GroupUltimateSubmissionView,
                           ListCreateGroupsView, MergeGroupsView)
+from .mutation_test_suite_views import (MutationTestSuiteDetailView,
+                                        MutationTestSuiteListCreateView,
+                                        MutationTestSuiteOrderView)
 from .oauth2callback import oauth2_callback
 from .project_views.expected_student_file_views import (ExpectedStudentFileDetailView,
                                                         ListCreateExpectedStudentFileView)
@@ -26,10 +29,9 @@ from .project_views.instructor_file_views import (InstructorFileContentView,
 from .project_views.project_views import (AllScoresTaskView, AllSubmittedFilesTaskView,
                                           ClearResultsCacheView, CopyProjectView,
                                           DownloadTaskDetailView, DownloadTaskResultView,
-                                          ImportHandgradingRubricView,
-                                          ListCreateProjectView, ListDownloadTasksView,
-                                          NumQueuedSubmissionsView, ProjectDetailView,
-                                          UltimateSubmissionScoresTaskView,
+                                          ImportHandgradingRubricView, ListCreateProjectView,
+                                          ListDownloadTasksView, NumQueuedSubmissionsView,
+                                          ProjectDetailView, UltimateSubmissionScoresTaskView,
                                           UltimateSubmissionSubmittedFilesTaskView)
 from .rerun_submissions_task_views import (CancelRerunSubmissionsTaskView,
                                            RerunSubmissionsTaskDetailView,
@@ -40,8 +42,6 @@ from .sandbox_docker_image_views import (BuildTaskDetailView, CancelBuildTaskVie
                                          ListCreateSandboxDockerImageForCourseView,
                                          ListGlobalBuildTasksView, RebuildSandboxDockerImageView,
                                          SandboxDockerImageDetailView)
-from .student_test_suite_views import (MutationTestSuiteDetailView, MutationTestSuiteListCreateView,
-                                       MutationTestSuiteOrderView)
 from .submission_views.all_ultimate_submission_results_view import AllUltimateSubmissionResults
 from .submission_views.submission_result_views import (
     AGTestCommandResultOutputSizeView, AGTestCommandResultStderrDiffView,

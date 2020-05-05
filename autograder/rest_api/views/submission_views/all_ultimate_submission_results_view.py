@@ -51,7 +51,7 @@ class AllUltimateSubmissionResults(AGModelAPIView):
                     'in': 'query',
                     'description': '''When "false", the submission result data
                         will not contain the "ag_test_suite_results"
-                        or "student_test_suite_results" fields.
+                        or "mutation_test_suite_results" fields.
                         Defaults to "false".
                     '''.strip(),
                     'schema': {

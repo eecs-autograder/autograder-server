@@ -31,7 +31,7 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
 
                     // Only present if full_points is True
                     "ag_test_suite_results": [<ag test suite result details>],
-                    "student_test_suite_results": [<student test suite result details>],
+                    "mutation_test_suite_results": [<mutation test suite result details>],
 
                     // Only present if include_handgrading is True
                     "handgrading_total_points": <int>,
@@ -74,7 +74,7 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
                         user_ultimate_submission,
                         ag_models.FeedbackCategory.max,
                         submission_fdbk.ag_test_preloader,
-                        submission_fdbk.student_test_suite_preloader
+                        submission_fdbk.mutation_test_suite_preloader
                     ),
                     full_results,
                     include_handgrading

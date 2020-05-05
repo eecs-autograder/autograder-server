@@ -10,8 +10,8 @@ import autograder.core.utils as core_ut
 from ..ag_command import AGCommandResult
 from ..ag_model_base import AutograderModel, ToDictMixin
 from ..ag_test.feedback_category import FeedbackCategory
-from .student_test_suite import (BugsExposedFeedbackLevel, MutationTestSuiteFeedbackConfig,
-                                 MutationTestSuite)
+from .mutation_test_suite import (BugsExposedFeedbackLevel, MutationTestSuite,
+                                  MutationTestSuiteFeedbackConfig)
 
 
 def _make_get_test_names_result_default() -> int:
@@ -21,11 +21,11 @@ def _make_get_test_names_result_default() -> int:
 class MutationTestSuiteResult(AutograderModel):
 
     class Meta:
-        unique_together = ('student_test_suite', 'submission')
-        ordering = ('student_test_suite___order',)
+        unique_together = ('mutation_test_suite', 'submission')
+        ordering = ('mutation_test_suite___order',)
 
-    student_test_suite = models.ForeignKey(MutationTestSuite, on_delete=models.CASCADE)
-    submission = models.ForeignKey('Submission', related_name='student_test_suite_results',
+    mutation_test_suite = models.ForeignKey(MutationTestSuite, on_delete=models.CASCADE)
+    submission = models.ForeignKey('Submission', related_name='mutation_test_suite_results',
                                    on_delete=models.CASCADE)
 
     student_tests = ag_fields.StringArrayField(
@@ -90,10 +90,10 @@ class MutationTestSuiteResult(AutograderModel):
     def get_fdbk(
         self,
         fdbk_category: FeedbackCategory,
-        student_test_suite_preloader: 'MutationTestSuitePreLoader'
+        mutation_test_suite_preloader: 'MutationTestSuitePreLoader'
     ) -> 'MutationTestSuiteResult.FeedbackCalculator':
         return MutationTestSuiteResult.FeedbackCalculator(
-            self, fdbk_category, student_test_suite_preloader)
+            self, fdbk_category, mutation_test_suite_preloader)
 
     class FeedbackCalculator(ToDictMixin):
         """
@@ -101,35 +101,35 @@ class MutationTestSuiteResult(AutograderModel):
         feedback data to give for a MutationTestSuiteResult
         """
 
-        def __init__(self, student_test_suite_result: 'MutationTestSuiteResult',
+        def __init__(self, mutation_test_suite_result: 'MutationTestSuiteResult',
                      fdbk_category: FeedbackCategory,
-                     student_test_suite_preloader: 'MutationTestSuitePreLoader'):
-            self._student_test_suite_result = student_test_suite_result
-            self._student_test_suite = student_test_suite_preloader.get_student_test_suite(
-                self._student_test_suite_result.student_test_suite_id)
+                     mutation_test_suite_preloader: 'MutationTestSuitePreLoader'):
+            self._mutation_test_suite_result = mutation_test_suite_result
+            self._mutation_test_suite = mutation_test_suite_preloader.get_mutation_test_suite(
+                self._mutation_test_suite_result.mutation_test_suite_id)
 
             if fdbk_category == FeedbackCategory.normal:
-                self._fdbk = self._student_test_suite.normal_fdbk_config
+                self._fdbk = self._mutation_test_suite.normal_fdbk_config
             elif fdbk_category == FeedbackCategory.ultimate_submission:
-                self._fdbk = self._student_test_suite.ultimate_submission_fdbk_config
+                self._fdbk = self._mutation_test_suite.ultimate_submission_fdbk_config
             elif fdbk_category == FeedbackCategory.past_limit_submission:
-                self._fdbk = self._student_test_suite.past_limit_submission_fdbk_config
+                self._fdbk = self._mutation_test_suite.past_limit_submission_fdbk_config
             elif fdbk_category == FeedbackCategory.staff_viewer:
-                self._fdbk = self._student_test_suite.staff_viewer_fdbk_config
+                self._fdbk = self._mutation_test_suite.staff_viewer_fdbk_config
             elif fdbk_category == FeedbackCategory.max:
                 self._fdbk = MutationTestSuiteFeedbackConfig.max_fdbk_config()
 
         @property
         def pk(self):
-            return self._student_test_suite_result.pk
+            return self._mutation_test_suite_result.pk
 
         @property
-        def student_test_suite_name(self) -> str:
-            return self._student_test_suite.name
+        def mutation_test_suite_name(self) -> str:
+            return self._mutation_test_suite.name
 
         @property
-        def student_test_suite_pk(self) -> int:
-            return self._student_test_suite.pk
+        def mutation_test_suite_pk(self) -> int:
+            return self._mutation_test_suite.pk
 
         @property
         def fdbk_conf(self) -> MutationTestSuiteFeedbackConfig:
@@ -148,106 +148,106 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def has_setup_command(self) -> bool:
-            return self._student_test_suite.use_setup_command
+            return self._mutation_test_suite.use_setup_command
 
         @property
         def setup_command_name(self) -> Optional[str]:
-            if not self._student_test_suite.use_setup_command:
+            if not self._mutation_test_suite.use_setup_command:
                 return None
 
-            return self._student_test_suite.setup_command.name
+            return self._mutation_test_suite.setup_command.name
 
         @property
         def setup_return_code(self) -> Optional[int]:
             if not self._fdbk.show_setup_return_code:
                 return None
 
-            if self._student_test_suite_result.setup_result is None:
+            if self._mutation_test_suite_result.setup_result is None:
                 return None
 
-            return self._student_test_suite_result.setup_result.return_code
+            return self._mutation_test_suite_result.setup_result.return_code
 
         @property
         def setup_timed_out(self) -> Optional[bool]:
             if not self._fdbk.show_setup_return_code:
                 return None
 
-            if self._student_test_suite_result.setup_result is None:
+            if self._mutation_test_suite_result.setup_result is None:
                 return None
 
-            return self._student_test_suite_result.setup_result.timed_out
+            return self._mutation_test_suite_result.setup_result.timed_out
 
         @property
         def setup_stdout(self) -> Optional[BinaryIO]:
             if not self._show_setup_stdout:
                 return None
 
-            return open(self._student_test_suite_result.setup_result.stdout_filename, 'rb')
+            return open(self._mutation_test_suite_result.setup_result.stdout_filename, 'rb')
 
         def get_setup_stdout_size(self) -> Optional[int]:
             if not self._show_setup_stdout:
                 return None
 
-            return os.path.getsize(self._student_test_suite_result.setup_result.stdout_filename)
+            return os.path.getsize(self._mutation_test_suite_result.setup_result.stdout_filename)
 
         @property
         def _show_setup_stdout(self):
             return (self._fdbk.show_setup_stdout
-                    and self._student_test_suite_result.setup_result is not None)
+                    and self._mutation_test_suite_result.setup_result is not None)
 
         @property
         def setup_stderr(self) -> Optional[BinaryIO]:
             if not self._show_setup_stderr:
                 return None
 
-            return open(self._student_test_suite_result.setup_result.stderr_filename, 'rb')
+            return open(self._mutation_test_suite_result.setup_result.stderr_filename, 'rb')
 
         def get_setup_stderr_size(self) -> Optional[int]:
             if not self._show_setup_stderr:
                 return None
 
-            return os.path.getsize(self._student_test_suite_result.setup_result.stderr_filename)
+            return os.path.getsize(self._mutation_test_suite_result.setup_result.stderr_filename)
 
         @property
         def _show_setup_stderr(self):
             return (self._fdbk.show_setup_stderr
-                    and self._student_test_suite_result.setup_result is not None)
+                    and self._mutation_test_suite_result.setup_result is not None)
 
         @property
         def student_tests(self) -> List[str]:
-            return self._student_test_suite_result.student_tests
+            return self._mutation_test_suite_result.student_tests
 
         @property
         def discarded_tests(self) -> List[str]:
-            return self._student_test_suite_result.discarded_tests
+            return self._mutation_test_suite_result.discarded_tests
 
         @property
         def invalid_tests(self) -> Optional[List[str]]:
             if not self._fdbk.show_invalid_test_names:
                 return None
 
-            return self._student_test_suite_result.invalid_tests
+            return self._mutation_test_suite_result.invalid_tests
 
         @property
         def timed_out_tests(self) -> Optional[List[str]]:
             if not self._fdbk.show_invalid_test_names:
                 return None
 
-            return self._student_test_suite_result.timed_out_tests
+            return self._mutation_test_suite_result.timed_out_tests
 
         @property
         def get_student_test_names_return_code(self) -> Optional[int]:
             if not self._fdbk.show_get_test_names_return_code:
                 return None
 
-            return self._student_test_suite_result.get_test_names_result.return_code
+            return self._mutation_test_suite_result.get_test_names_result.return_code
 
         @property
         def get_student_test_names_timed_out(self) -> Optional[bool]:
             if self.get_student_test_names_return_code is None:
                 return None
 
-            return self._student_test_suite_result.get_test_names_result.timed_out
+            return self._mutation_test_suite_result.get_test_names_result.timed_out
 
         @property
         def get_student_test_names_stdout(self) -> Optional[BinaryIO]:
@@ -255,14 +255,14 @@ class MutationTestSuiteResult(AutograderModel):
                 return None
 
             return open(
-                self._student_test_suite_result.get_test_names_result.stdout_filename, 'rb')
+                self._mutation_test_suite_result.get_test_names_result.stdout_filename, 'rb')
 
         def get_student_test_names_stdout_size(self) -> Optional[int]:
             if not self._fdbk.show_get_test_names_stdout:
                 return None
 
             return os.path.getsize(
-                self._student_test_suite_result.get_test_names_result.stdout_filename)
+                self._mutation_test_suite_result.get_test_names_result.stdout_filename)
 
         @property
         def get_student_test_names_stderr(self) -> Optional[BinaryIO]:
@@ -270,83 +270,83 @@ class MutationTestSuiteResult(AutograderModel):
                 return None
 
             return open(
-                self._student_test_suite_result.get_test_names_result.stderr_filename, 'rb')
+                self._mutation_test_suite_result.get_test_names_result.stderr_filename, 'rb')
 
         def get_student_test_names_stderr_size(self) -> Optional[int]:
             if not self._fdbk.show_get_test_names_stderr:
                 return None
 
             return os.path.getsize(
-                self._student_test_suite_result.get_test_names_result.stderr_filename)
+                self._mutation_test_suite_result.get_test_names_result.stderr_filename)
 
         @property
         def num_bugs_exposed(self) -> Optional[int]:
             if self._fdbk.bugs_exposed_fdbk_level < BugsExposedFeedbackLevel.num_bugs_exposed:
                 return None
 
-            return len(self._student_test_suite_result.bugs_exposed)
+            return len(self._mutation_test_suite_result.bugs_exposed)
 
         @property
         def bugs_exposed(self) -> Optional[List[str]]:
             if self._fdbk.bugs_exposed_fdbk_level != BugsExposedFeedbackLevel.exposed_bug_names:
                 return None
 
-            return self._student_test_suite_result.bugs_exposed
+            return self._mutation_test_suite_result.bugs_exposed
 
         @property
         def validity_check_stdout(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_validity_check_stdout:
                 return None
 
-            return open(self._student_test_suite_result.validity_check_stdout_filename, 'rb')
+            return open(self._mutation_test_suite_result.validity_check_stdout_filename, 'rb')
 
         def get_validity_check_stdout_size(self) -> Optional[int]:
             if not self._fdbk.show_validity_check_stdout:
                 return None
 
-            return os.path.getsize(self._student_test_suite_result.validity_check_stdout_filename)
+            return os.path.getsize(self._mutation_test_suite_result.validity_check_stdout_filename)
 
         @property
         def validity_check_stderr(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_validity_check_stderr:
                 return None
 
-            return open(self._student_test_suite_result.validity_check_stderr_filename, 'rb')
+            return open(self._mutation_test_suite_result.validity_check_stderr_filename, 'rb')
 
         def get_validity_check_stderr_size(self) -> Optional[int]:
             if not self._fdbk.show_validity_check_stderr:
                 return None
 
             return os.path.getsize(
-                self._student_test_suite_result.validity_check_stderr_filename)
+                self._mutation_test_suite_result.validity_check_stderr_filename)
 
         @property
         def grade_buggy_impls_stdout(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_grade_buggy_impls_stdout:
                 return None
 
-            return open(self._student_test_suite_result.grade_buggy_impls_stdout_filename, 'rb')
+            return open(self._mutation_test_suite_result.grade_buggy_impls_stdout_filename, 'rb')
 
         def get_grade_buggy_impls_stdout_size(self) -> Optional[int]:
             if not self._fdbk.show_grade_buggy_impls_stdout:
                 return None
 
             return os.path.getsize(
-                self._student_test_suite_result.grade_buggy_impls_stdout_filename)
+                self._mutation_test_suite_result.grade_buggy_impls_stdout_filename)
 
         @property
         def grade_buggy_impls_stderr(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_grade_buggy_impls_stderr:
                 return None
 
-            return open(self._student_test_suite_result.grade_buggy_impls_stderr_filename, 'rb')
+            return open(self._mutation_test_suite_result.grade_buggy_impls_stderr_filename, 'rb')
 
         def get_grade_buggy_impls_stderr_size(self) -> Optional[int]:
             if not self._fdbk.show_grade_buggy_impls_stderr:
                 return None
 
             return os.path.getsize(
-                self._student_test_suite_result.grade_buggy_impls_stderr_filename)
+                self._mutation_test_suite_result.grade_buggy_impls_stderr_filename)
 
         @property
         def total_points(self) -> Decimal:
@@ -354,23 +354,23 @@ class MutationTestSuiteResult(AutograderModel):
                 return 0
 
             return min(self.total_points_possible,
-                       self.num_bugs_exposed * self._student_test_suite.points_per_exposed_bug)
+                       self.num_bugs_exposed * self._mutation_test_suite.points_per_exposed_bug)
 
         @property
         def total_points_possible(self) -> Decimal:
             if not self._fdbk.show_points or self.num_bugs_exposed is None:
                 return 0
 
-            if self._student_test_suite.max_points is not None:
-                return Decimal(self._student_test_suite.max_points)
+            if self._mutation_test_suite.max_points is not None:
+                return Decimal(self._mutation_test_suite.max_points)
 
-            return (len(self._student_test_suite.buggy_impl_names)
-                    * self._student_test_suite.points_per_exposed_bug)
+            return (len(self._mutation_test_suite.buggy_impl_names)
+                    * self._mutation_test_suite.points_per_exposed_bug)
 
         SERIALIZABLE_FIELDS = (
             'pk',
-            'student_test_suite_name',
-            'student_test_suite_pk',
+            'mutation_test_suite_name',
+            'mutation_test_suite_pk',
             'fdbk_settings',
             'has_setup_command',
             'setup_command_name',

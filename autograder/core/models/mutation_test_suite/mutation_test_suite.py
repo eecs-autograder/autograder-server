@@ -148,8 +148,8 @@ class MutationTestSuite(AutograderModel):
                      Must be non-empty and non-null.""")
     project = models.ForeignKey(
         Project, on_delete=models.CASCADE,
-        related_name='student_test_suites',
-        help_text="The Project that this student test suite belongs to.")
+        related_name='mutation_test_suites',
+        help_text="The Project that this mutation test suite belongs to.")
 
     instructor_files_needed = models.ManyToManyField(
         InstructorFile,
@@ -242,7 +242,7 @@ class MutationTestSuite(AutograderModel):
 
     deferred = models.BooleanField(
         default=False,
-        help_text='''If true, this student test suite can be graded asynchronously.
+        help_text='''If true, this mutation test suite can be graded asynchronously.
                      Deferred suites that have yet to be graded do not prevent members
                      of a group from submitting again.''')
 

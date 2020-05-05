@@ -15,14 +15,14 @@ from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDet
 
 class MutationTestSuiteListCreateView(NestedModelView):
     schema = AGListCreateViewSchemaGenerator(
-        [APITags.student_test_suites], ag_models.MutationTestSuite)
+        [APITags.mutation_test_suites], ag_models.MutationTestSuite)
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
-    nested_field_name = 'student_test_suites'
+    nested_field_name = 'mutation_test_suites'
     parent_obj_field_name = 'project'
 
     def get(self, *args, **kwargs):
@@ -33,7 +33,7 @@ class MutationTestSuiteListCreateView(NestedModelView):
 
 
 class MutationTestSuiteOrderView(AGModelAPIView):
-    schema = OrderViewSchema([APITags.student_test_suites], ag_models.MutationTestSuite)
+    schema = OrderViewSchema([APITags.mutation_test_suites], ag_models.MutationTestSuite)
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
@@ -54,11 +54,11 @@ class MutationTestSuiteOrderView(AGModelAPIView):
 
 
 class MutationTestSuiteDetailView(AGModelDetailView):
-    schema = AGDetailViewSchemaGenerator([APITags.student_test_suites])
+    schema = AGDetailViewSchemaGenerator([APITags.mutation_test_suites])
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
-            lambda student_suite: student_suite.project.course)]
+            lambda mutation_suite: mutation_suite.project.course)]
 
     model_manager = ag_models.MutationTestSuite.objects
 

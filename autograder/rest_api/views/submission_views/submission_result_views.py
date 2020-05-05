@@ -434,11 +434,11 @@ class MutationTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
-        student_suite_result_pk = self.kwargs['result_pk']
-        return _get_student_suite_result_output_field(
+        mutation_suite_result_pk = self.kwargs['result_pk']
+        return _get_mutation_suite_result_output_field(
             submission_fdbk,
             fdbk_category,
-            student_suite_result_pk,
+            mutation_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.setup_stdout)
 
 
@@ -447,11 +447,11 @@ class MutationTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
-        student_suite_result_pk = self.kwargs['result_pk']
-        return _get_student_suite_result_output_field(
+        mutation_suite_result_pk = self.kwargs['result_pk']
+        return _get_mutation_suite_result_output_field(
             submission_fdbk,
             fdbk_category,
-            student_suite_result_pk,
+            mutation_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.setup_stderr)
 
 
@@ -460,11 +460,11 @@ class MutationTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
-        student_suite_result_pk = self.kwargs['result_pk']
-        return _get_student_suite_result_output_field(
+        mutation_suite_result_pk = self.kwargs['result_pk']
+        return _get_mutation_suite_result_output_field(
             submission_fdbk,
             fdbk_category,
-            student_suite_result_pk,
+            mutation_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.get_student_test_names_stdout)
 
 
@@ -473,11 +473,11 @@ class MutationTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
-        student_suite_result_pk = self.kwargs['result_pk']
-        return _get_student_suite_result_output_field(
+        mutation_suite_result_pk = self.kwargs['result_pk']
+        return _get_mutation_suite_result_output_field(
             submission_fdbk,
             fdbk_category,
-            student_suite_result_pk,
+            mutation_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.get_student_test_names_stderr)
 
 
@@ -486,11 +486,11 @@ class MutationTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
-        student_suite_result_pk = self.kwargs['result_pk']
-        return _get_student_suite_result_output_field(
+        mutation_suite_result_pk = self.kwargs['result_pk']
+        return _get_mutation_suite_result_output_field(
             submission_fdbk,
             fdbk_category,
-            student_suite_result_pk,
+            mutation_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.validity_check_stdout)
 
 
@@ -499,11 +499,11 @@ class MutationTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
-        student_suite_result_pk = self.kwargs['result_pk']
-        return _get_student_suite_result_output_field(
+        mutation_suite_result_pk = self.kwargs['result_pk']
+        return _get_mutation_suite_result_output_field(
             submission_fdbk,
             fdbk_category,
-            student_suite_result_pk,
+            mutation_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.validity_check_stderr)
 
 
@@ -512,11 +512,11 @@ class MutationTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
-        student_suite_result_pk = self.kwargs['result_pk']
-        return _get_student_suite_result_output_field(
+        mutation_suite_result_pk = self.kwargs['result_pk']
+        return _get_mutation_suite_result_output_field(
             submission_fdbk,
             fdbk_category,
-            student_suite_result_pk,
+            mutation_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.grade_buggy_impls_stdout)
 
 
@@ -525,11 +525,11 @@ class MutationTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
-        student_suite_result_pk = self.kwargs['result_pk']
-        return _get_student_suite_result_output_field(
+        mutation_suite_result_pk = self.kwargs['result_pk']
+        return _get_mutation_suite_result_output_field(
             submission_fdbk,
             fdbk_category,
-            student_suite_result_pk,
+            mutation_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.grade_buggy_impls_stderr)
 
 
@@ -588,12 +588,12 @@ class MutationTestSuiteOutputSizeView(SubmissionResultsViewBase):
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
-        student_suite_result_pk = self.kwargs['result_pk']
-        result = _find_student_suite_result(submission_fdbk, student_suite_result_pk)
+        mutation_suite_result_pk = self.kwargs['result_pk']
+        result = _find_mutation_suite_result(submission_fdbk, mutation_suite_result_pk)
         if result is None:
             return response.Response(None)
 
-        fdbk = result.get_fdbk(fdbk_category, submission_fdbk.student_test_suite_preloader)
+        fdbk = result.get_fdbk(fdbk_category, submission_fdbk.mutation_test_suite_preloader)
         return response.Response({
             'setup_stdout_size': fdbk.get_setup_stdout_size(),
             'setup_stderr_size': fdbk.get_setup_stderr_size(),
@@ -610,38 +610,38 @@ GetMutationTestSuiteOutputFnType = Callable[
     [ag_models.MutationTestSuiteResult.FeedbackCalculator], Optional[BinaryIO]]
 
 
-def _get_student_suite_result_output_field(
+def _get_mutation_suite_result_output_field(
         submission_fdbk: SubmissionResultFeedback,
         fdbk_category: ag_models.FeedbackCategory,
-        student_suite_result_pk,
+        mutation_suite_result_pk,
         get_output_fn: GetMutationTestSuiteOutputFnType):
-    result = _find_student_suite_result(submission_fdbk, student_suite_result_pk)
+    result = _find_mutation_suite_result(submission_fdbk, mutation_suite_result_pk)
     if result is None:
         return response.Response(None)
 
     output_stream = get_output_fn(
-        result.get_fdbk(fdbk_category, submission_fdbk.student_test_suite_preloader))
+        result.get_fdbk(fdbk_category, submission_fdbk.mutation_test_suite_preloader))
     if output_stream is None:
         return response.Response(None)
 
     return FileResponse(output_stream)
 
 
-def _find_student_suite_result(submission_fdbk: SubmissionResultFeedback,
-                               student_suite_result_pk: int):
+def _find_mutation_suite_result(submission_fdbk: SubmissionResultFeedback,
+                                mutation_suite_result_pk: int):
     """
-    :raises: Http404 exception if a student suite result with the given primary
+    :raises: Http404 exception if a mutation suite result with the given primary
              key doesn't exist in the database.
 
-    :return: The student suite result with the given primary key
+    :return: The mutation suite result with the given primary key
              if it can be found in submission_fdbk, None otherwise.
     """
-    student_suite_result = get_object_or_404(
+    mutation_suite_result = get_object_or_404(
         ag_models.MutationTestSuiteResult.objects.all(),
-        pk=student_suite_result_pk)
+        pk=mutation_suite_result_pk)
 
-    for result in submission_fdbk.student_test_suite_results:
-        if result.pk == student_suite_result.pk:
+    for result in submission_fdbk.mutation_test_suite_results:
+        if result.pk == mutation_suite_result.pk:
             return result
 
     return None
