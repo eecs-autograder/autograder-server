@@ -211,7 +211,7 @@ API_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     hg_models.CriterionResult: hg_models.CriterionResult.__name__,
     hg_models.AppliedAnnotation: hg_models.AppliedAnnotation.__name__,
     hg_models.Comment: hg_models.Comment.__name__,
-    hg_models.NewLocation: 'Location',
+    hg_models.Location: hg_models.Location.__name__,
 }
 
 APIClassType = Union[

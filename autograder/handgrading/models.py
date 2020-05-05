@@ -344,7 +344,7 @@ class CriterionResult(AutograderModel):
     SERIALIZE_RELATED = ('criterion',)
 
 
-class NewLocation(DictSerializableMixin):
+class Location(DictSerializableMixin):
     """
     A region of source code in a specific file with a starting and ending line.
     """
@@ -383,7 +383,7 @@ class AppliedAnnotation(AutograderModel):
         help_text='''The HandgradingResult the applied annotation belongs to.''')
 
     location = ag_fields.ValidatedJSONField(
-        NewLocation, help_text='The source code location where the Annotation was applied.')
+        Location, help_text='The source code location where the Annotation was applied.')
 
     def clean(self) -> None:
         """
@@ -420,7 +420,7 @@ class Comment(AutograderModel):
         ordering = ('pk',)
 
     location = ag_fields.ValidatedJSONField(
-        NewLocation, null=True, blank=True, default=None,
+        Location, null=True, blank=True, default=None,
         help_text='''When not None, specifies the source code location this comment
                      applies to.'''
     )
