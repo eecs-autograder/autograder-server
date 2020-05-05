@@ -50,12 +50,12 @@ def on_ag_test_command_delete(sender, instance: ag_models.AGTestCommand, *args, 
     clear_submission_results_cache(instance.ag_test_case.ag_test_suite.project_id)
 
 
-@receiver(post_save, sender=ag_models.StudentTestSuite)
-def on_student_test_suite_save(sender, instance: ag_models.StudentTestSuite, created, **kwargs):
+@receiver(post_save, sender=ag_models.MutationTestSuite)
+def on_mutation_test_suite_save(sender, instance: ag_models.MutationTestSuite, created, **kwargs):
     if not created:
         clear_submission_results_cache(instance.project_id)
 
 
-@receiver(post_delete, sender=ag_models.StudentTestSuite)
-def on_student_test_suite_delete(sender, instance: ag_models.StudentTestSuite, *args, **kwargs):
+@receiver(post_delete, sender=ag_models.MutationTestSuite)
+def on_mutation_test_suite_delete(sender, instance: ag_models.MutationTestSuite, *args, **kwargs):
     clear_submission_results_cache(instance.project_id)

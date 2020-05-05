@@ -9,8 +9,8 @@ import autograder.core.models.ag_test.ag_test_suite
 import autograder.core.models.project.download_task
 import autograder.core.models.project.instructor_file
 import autograder.core.models.project.project
-import autograder.core.models.student_test_suite.student_test_suite
-import autograder.core.models.student_test_suite.student_test_suite_result
+import autograder.core.models.mutation_test_suite.mutation_test_suite
+import autograder.core.models.mutation_test_suite.mutation_test_suite_result
 import autograder.core.utils
 import datetime
 from django.conf import settings
@@ -389,7 +389,7 @@ class Migration(migrations.Migration):
                 ('show_grade_buggy_impls_stderr', models.BooleanField(default=False, help_text='Whether to show stderr from grading all buggy impls.')),
                 ('show_invalid_test_names', models.BooleanField(default=True, help_text="Whether to show the names of student tests that failed the validity check.\n                     Setting this to true will also include information about whether\n                     invalid test cases exceeded the validity check command's time limit.")),
                 ('show_points', models.BooleanField(default=False, help_text='Whether to show how many points were awarded.')),
-                ('bugs_exposed_fdbk_level', autograder.core.fields.EnumField(default=autograder.core.models.student_test_suite.student_test_suite.BugsExposedFeedbackLevel('no_feedback'), enum_type=autograder.core.models.student_test_suite.student_test_suite.BugsExposedFeedbackLevel)),
+                ('bugs_exposed_fdbk_level', autograder.core.fields.EnumField(default=autograder.core.models.mutation_test_suite.mutation_test_suite.BugsExposedFeedbackLevel('no_feedback'), enum_type=autograder.core.models.mutation_test_suite.mutation_test_suite.BugsExposedFeedbackLevel)),
             ],
             options={
                 'abstract': False,
@@ -406,7 +406,7 @@ class Migration(migrations.Migration):
                 ('invalid_tests', autograder.core.fields.StringArrayField(allow_empty_strings=False, blank=True, default=list, help_text='The names of student test cases that failed the validity check.', max_string_length=255, size=None, string_validators=[], strip_strings=False)),
                 ('timed_out_tests', autograder.core.fields.StringArrayField(allow_empty_strings=False, blank=True, default=list, help_text='The names of student test cases that timed out during the validity check.', max_string_length=255, size=None, string_validators=[], strip_strings=False)),
                 ('bugs_exposed', autograder.core.fields.StringArrayField(allow_empty_strings=False, blank=True, default=list, help_text="The names of instructor buggy implementations that were exposed\n                     by the student's test cases.", max_string_length=255, size=None, string_validators=[], strip_strings=False)),
-                ('get_test_names_result', models.OneToOneField(default=autograder.core.models.student_test_suite.student_test_suite_result._make_get_test_names_result_default, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommandResult')),
+                ('get_test_names_result', models.OneToOneField(default=autograder.core.models.mutation_test_suite.mutation_test_suite_result._make_get_test_names_result_default, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommandResult')),
                 ('setup_result', models.OneToOneField(blank=True, default=None, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommandResult')),
                 ('student_test_suite', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.StudentTestSuite')),
             ],

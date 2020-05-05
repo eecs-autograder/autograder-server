@@ -9,8 +9,8 @@ import autograder.core.models as ag_models
 from autograder.core.caching import delete_cached_submission_result
 from autograder.utils.retry import retry_should_recover
 
-from .grade_student_test_suite import (
-    grade_student_test_suite_impl, grade_deferred_student_test_suite)
+from .grade_mutation_test_suite import (
+    grade_mutation_test_suite_impl, grade_deferred_mutation_test_suite)
 from .grade_ag_test import grade_ag_test_suite_impl, grade_deferred_ag_test_suite
 from .utils import mark_submission_as_error, load_queryset_with_retry
 
@@ -29,8 +29,8 @@ def grade_submission(submission_pk):
         for suite in load_queryset_with_retry(project.ag_test_suites.filter(deferred=False)):
             grade_ag_test_suite_impl(suite, submission)
 
-        for suite in load_queryset_with_retry(project.student_test_suites.filter(deferred=False)):
-            grade_student_test_suite_impl(suite, submission)
+        for suite in load_queryset_with_retry(project.mutation_test_suites.filter(deferred=False)):
+            grade_mutation_test_suite_impl(suite, submission)
 
         @retry_should_recover
         def mark_as_waiting_for_deferred():
@@ -51,17 +51,17 @@ def grade_submission(submission_pk):
             for ag_test_suite in deferred_ag_test_suites
         ]
 
-        deferred_student_test_suites = load_queryset_with_retry(
-            project.student_test_suites.filter(deferred=True))
+        deferred_mutation_test_suites = load_queryset_with_retry(
+            project.mutation_test_suites.filter(deferred=True))
 
-        student_suite_signatures = [
-            grade_deferred_student_test_suite.s(
+        mutation_suite_signatures = [
+            grade_deferred_mutation_test_suite.s(
                 suite.pk, submission.pk
             ).set(queue=settings.DEFERRED_QUEUE_TMPL.format(suite.project_id))
-            for suite in deferred_student_test_suites
+            for suite in deferred_mutation_test_suites
         ]
 
-        signatures = ag_suite_signatures + student_suite_signatures
+        signatures = ag_suite_signatures + mutation_suite_signatures
         if not signatures:
             _mark_submission_as_finished_impl(submission_pk)
             return

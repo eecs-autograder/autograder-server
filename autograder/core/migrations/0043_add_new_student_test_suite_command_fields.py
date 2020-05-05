@@ -2,7 +2,7 @@
 
 import autograder.core.fields
 import autograder.core.models.ag_command.ag_command_base
-import autograder.core.models.student_test_suite.student_test_suite
+import autograder.core.models.mutation_test_suite.mutation_test_suite
 import django.core.validators
 from django.db import migrations, models
 
@@ -44,22 +44,22 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studenttestsuite',
             name='get_student_test_names_command',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.new_make_default_get_student_test_names_cmd, help_text="This required command should print out a whitespace-separated\n                     list of detected student names. The output of this command will\n                     be parsed using Python's str.split().", serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.mutation_test_suite.mutation_test_suite.new_make_default_get_student_test_names_cmd, help_text="This required command should print out a whitespace-separated\n                     list of detected student names. The output of this command will\n                     be parsed using Python's str.split().", serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
             name='grade_buggy_impl_command',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.new_make_default_grade_buggy_impl_command, help_text="\n            This command will be run once for every (buggy implementation, valid test) pair.\n            A nonzero exit status indicates that the valid student tests exposed the\n            buggy impl, whereas an exit status of zero indicates that the student\n            tests did not expose the buggy impl.\n            This command must contain the placeholders ${student_test_name} and ${buggy_impl_name}. The placeholder\n            ${student_test_name} will be replaced with the name of a valid student test case.\n            The placeholder ${buggy_impl_name} will be replaced with the name of\n            the buggy impl that the student test is being run against.\n            NOTE: This AGCommand's 'cmd' field must not be blank.\n        ", serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.mutation_test_suite.mutation_test_suite.new_make_default_grade_buggy_impl_command, help_text="\n            This command will be run once for every (buggy implementation, valid test) pair.\n            A nonzero exit status indicates that the valid student tests exposed the\n            buggy impl, whereas an exit status of zero indicates that the student\n            tests did not expose the buggy impl.\n            This command must contain the placeholders ${student_test_name} and ${buggy_impl_name}. The placeholder\n            ${student_test_name} will be replaced with the name of a valid student test case.\n            The placeholder ${buggy_impl_name} will be replaced with the name of\n            the buggy impl that the student test is being run against.\n            NOTE: This AGCommand's 'cmd' field must not be blank.\n        ", serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
             name='setup_command',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.new_make_default_setup_cmd, help_text='A command to be run after student and project files have\n                     been added to the sandbox but before any other commands are run.\n                     To indicate that no setup command should be run,\n                     set use_setup_command to False.', serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.mutation_test_suite.mutation_test_suite.new_make_default_setup_cmd, help_text='A command to be run after student and project files have\n                     been added to the sandbox but before any other commands are run.\n                     To indicate that no setup command should be run,\n                     set use_setup_command to False.', serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
             name='student_test_validity_check_command',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.new_make_default_validity_check_command, help_text="This command will be run once for each detected student test case.\n                     An exit status of zero indicates that a student test case is valid,\n                     whereas a nonzero exit status indicates that a student test case\n                     is invalid.\n                     This command must contain the placeholder ${student_test_name} at least once. That\n                     placeholder will be replaced with the name of the student test case\n                     that is to be checked for validity.\n                     NOTE: This AGCommand's 'cmd' field must not be blank.\n                     ", serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.mutation_test_suite.mutation_test_suite.new_make_default_validity_check_command, help_text="This command will be run once for each detected student test case.\n                     An exit status of zero indicates that a student test case is valid,\n                     whereas a nonzero exit status indicates that a student test case\n                     is invalid.\n                     This command must contain the placeholder ${student_test_name} at least once. That\n                     placeholder will be replaced with the name of the student test case\n                     that is to be checked for validity.\n                     NOTE: This AGCommand's 'cmd' field must not be blank.\n                     ", serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
         ),
         # migrations.AlterField(
         #     model_name='agcommand',

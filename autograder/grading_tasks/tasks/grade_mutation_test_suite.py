@@ -20,46 +20,46 @@ from .utils import (
 
 
 @celery.shared_task(max_retries=1, acks_late=True)
-def grade_deferred_student_test_suite(student_test_suite_pk, submission_pk):
+def grade_deferred_mutation_test_suite(mutation_test_suite_pk, submission_pk):
 
     @retry_should_recover
-    def _grade_deferred_student_test_suite_impl():
+    def _grade_deferred_mutation_test_suite_impl():
         try:
-            grade_student_test_suite_impl(
-                ag_models.StudentTestSuite.objects.get(pk=student_test_suite_pk),
+            grade_mutation_test_suite_impl(
+                ag_models.MutationTestSuite.objects.get(pk=mutation_test_suite_pk),
                 ag_models.Submission.objects.get(pk=submission_pk))
         except ObjectDoesNotExist:
             # This means that the suite was deleted, so we skip it.
             pass
 
     try:
-        _grade_deferred_student_test_suite_impl()
+        _grade_deferred_mutation_test_suite_impl()
     except Exception:
-        print('Error grading deferred student test suite')
+        print('Error grading deferred mutation test suite')
         traceback.print_exc()
         mark_submission_as_error(submission_pk, traceback.format_exc())
 
 
-def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite,
-                                  submission: ag_models.Submission):
+def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSuite,
+                                   submission: ag_models.Submission):
     sandbox = AutograderSandbox(
         name='submission{}-suite{}-{}'.format(
-            submission.pk, student_test_suite.pk, uuid.uuid4().hex),
+            submission.pk, mutation_test_suite.pk, uuid.uuid4().hex),
         environment_variables={
             'usernames': ' '.join(submission.group.member_names)
         },
-        allow_network_access=student_test_suite.allow_network_access,
-        docker_image=student_test_suite.sandbox_docker_image.tag)
-    print(student_test_suite.sandbox_docker_image.to_dict())
+        allow_network_access=mutation_test_suite.allow_network_access,
+        docker_image=mutation_test_suite.sandbox_docker_image.tag)
+    print(mutation_test_suite.sandbox_docker_image.to_dict())
     print(sandbox.docker_image)
     with sandbox:
-        add_files_to_sandbox(sandbox, student_test_suite, submission)
+        add_files_to_sandbox(sandbox, mutation_test_suite, submission)
 
-        if student_test_suite.use_setup_command:
-            print('Running setup for', student_test_suite.name)
-            setup_run_result = run_ag_command(student_test_suite.setup_command, sandbox)
+        if mutation_test_suite.use_setup_command:
+            print('Running setup for', mutation_test_suite.name)
+            setup_run_result = run_ag_command(mutation_test_suite.setup_command, sandbox)
             if setup_run_result.return_code != 0:
-                _save_results(student_test_suite, submission, setup_run_result,
+                _save_results(mutation_test_suite, submission, setup_run_result,
                               student_tests=[],
                               discarded_tests=[],
                               invalid_tests=[],
@@ -70,10 +70,10 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
             setup_run_result = None
 
         get_test_names_result = run_ag_command(
-            student_test_suite.get_student_test_names_command, sandbox)
+            mutation_test_suite.get_student_test_names_command, sandbox)
 
         if get_test_names_result.return_code != 0:
-            _save_results(student_test_suite, submission, setup_run_result,
+            _save_results(mutation_test_suite, submission, setup_run_result,
                           student_tests=[],
                           discarded_tests=[],
                           invalid_tests=[],
@@ -85,9 +85,9 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
         student_tests = (
             get_test_names_result.stdout.read().decode(errors='backslashreplace').split())
         discarded_tests = []
-        if len(student_tests) > student_test_suite.max_num_student_tests:
-            discarded_tests = student_tests[student_test_suite.max_num_student_tests:]
-            student_tests = student_tests[:student_test_suite.max_num_student_tests]
+        if len(student_tests) > mutation_test_suite.max_num_student_tests:
+            discarded_tests = student_tests[mutation_test_suite.max_num_student_tests:]
+            student_tests = student_tests[:mutation_test_suite.max_num_student_tests]
 
         valid_tests = []
         invalid_tests = []
@@ -96,9 +96,9 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
         validity_check_stdout = tempfile.TemporaryFile()
         validity_check_stderr = tempfile.TemporaryFile()
         for test in student_tests:
-            validity_cmd = student_test_suite.student_test_validity_check_command
+            validity_cmd = mutation_test_suite.student_test_validity_check_command
             concrete_cmd = validity_cmd.cmd.replace(
-                ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, test)
+                ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, test)
 
             validity_run_result = run_ag_command(validity_cmd, sandbox,
                                                  cmd_str_override=concrete_cmd)
@@ -120,12 +120,12 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
 
         buggy_impls_stdout = tempfile.TemporaryFile()
         buggy_impls_stderr = tempfile.TemporaryFile()
-        for bug in student_test_suite.buggy_impl_names:
+        for bug in mutation_test_suite.buggy_impl_names:
             for valid_test in valid_tests:
-                grade_cmd = student_test_suite.grade_buggy_impl_command
+                grade_cmd = mutation_test_suite.grade_buggy_impl_command
                 concrete_cmd = grade_cmd.cmd.replace(
-                    ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, valid_test
-                ).replace(ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
+                    ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, valid_test
+                ).replace(ag_models.MutationTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
 
                 buggy_impl_run_result = run_ag_command(grade_cmd, sandbox,
                                                        cmd_str_override=concrete_cmd)
@@ -139,7 +139,7 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
                     exposed_bugs.append(bug)
                     break
 
-        _save_results(student_test_suite, submission,
+        _save_results(mutation_test_suite, submission,
                       setup_run_result,
                       student_tests, discarded_tests, invalid_tests, timed_out_tests, exposed_bugs,
                       get_test_names_run_result=get_test_names_result,
@@ -150,7 +150,7 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
 
 
 @retry_should_recover
-def _save_results(student_test_suite: ag_models.StudentTestSuite,
+def _save_results(mutation_test_suite: ag_models.MutationTestSuite,
                   submission: ag_models.Submission,
                   setup_run_result: CompletedCommand,
                   student_tests: List[str],
@@ -172,10 +172,10 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
                 'timed_out_tests': timed_out_tests,
                 'bugs_exposed': bugs_exposed
             }
-            result = ag_models.StudentTestSuiteResult.objects.update_or_create(
+            result = ag_models.MutationTestSuiteResult.objects.update_or_create(
                 defaults=result_kwargs,
-                student_test_suite=student_test_suite,
-                submission=submission)[0]  # type: ag_models.StudentTestSuiteResult
+                mutation_test_suite=mutation_test_suite,
+                submission=submission)[0]  # type: ag_models.MutationTestSuiteResult
 
             if setup_run_result is not None:
                 setup_result = ag_models.AGCommandResult.objects.validate_and_create(
@@ -222,5 +222,5 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
                 with open(result.grade_buggy_impls_stderr_filename, 'wb') as f:
                     shutil.copyfileobj(buggy_impls_stderr, f)
     except IntegrityError:
-        # The student test suite has likely been deleted, so do nothing
+        # The mutation test suite has likely been deleted, so do nothing
         pass

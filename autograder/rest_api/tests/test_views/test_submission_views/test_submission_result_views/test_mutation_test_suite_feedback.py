@@ -4,16 +4,16 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-from autograder.core.submission_feedback import StudentTestSuitePreLoader
+from autograder.core.submission_feedback import MutationTestSuitePreLoader
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase
 
 
-class StudentTestSuiteResultsTestCase(UnitTestBase):
+class MutationTestSuiteResultsTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.project = obj_build.make_project()
-        self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        self.mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suitte', project=self.project,
             buggy_impl_names=['bug{}'.format(i) for i in range(4)],
             setup_command={
@@ -24,7 +24,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
                 'bugs_exposed_fdbk_level': ag_models.BugsExposedFeedbackLevel.num_bugs_exposed,
                 'show_invalid_test_names': True,
             }
-        )  # type: ag_models.StudentTestSuite
+        )  # type: ag_models.MutationTestSuite
 
         self.submission = obj_build.make_submission(
             group=obj_build.make_group(
@@ -56,53 +56,53 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             f.write(self.get_test_names_stderr)
 
         student_tests = ['test{}'.format(i) for i in range(5)]
-        self.student_suite_result = ag_models.StudentTestSuiteResult.objects.validate_and_create(
-            student_test_suite=self.student_suite,
+        self.mutation_suite_result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
+            mutation_test_suite=self.mutation_suite,
             submission=self.submission,
             student_tests=student_tests,
             invalid_tests=student_tests[:-1],
             timed_out_tests=student_tests[:1],
-            bugs_exposed=self.student_suite.buggy_impl_names[:-1],
+            bugs_exposed=self.mutation_suite.buggy_impl_names[:-1],
             setup_result=setup_result,
             get_test_names_result=get_test_names_result
-        )  # type: ag_models.StudentTestSuiteResult
+        )  # type: ag_models.MutationTestSuiteResult
 
-        with open(self.student_suite_result.validity_check_stdout_filename, 'w') as f:
+        with open(self.mutation_suite_result.validity_check_stdout_filename, 'w') as f:
             f.write(self.validity_check_stdout)
-        with open(self.student_suite_result.validity_check_stderr_filename, 'w') as f:
+        with open(self.mutation_suite_result.validity_check_stderr_filename, 'w') as f:
             f.write(self.validity_check_stderr)
-        with open(self.student_suite_result.grade_buggy_impls_stdout_filename, 'w') as f:
+        with open(self.mutation_suite_result.grade_buggy_impls_stdout_filename, 'w') as f:
             f.write(self.buggy_impls_stdout)
-        with open(self.student_suite_result.grade_buggy_impls_stderr_filename, 'w') as f:
+        with open(self.mutation_suite_result.grade_buggy_impls_stderr_filename, 'w') as f:
             f.write(self.buggy_impls_stderr)
 
         self.client = APIClient()
         self.admin = self.submission.group.members.first()
 
         self.setup_stdout_base_url = reverse(
-            'student-suite-setup-stdout',
-            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
+            'mutation-suite-setup-stdout',
+            kwargs={'pk': self.submission.pk, 'result_pk': self.mutation_suite_result.pk})
         self.setup_stderr_base_url = reverse(
-            'student-suite-setup-stderr',
-            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
+            'mutation-suite-setup-stderr',
+            kwargs={'pk': self.submission.pk, 'result_pk': self.mutation_suite_result.pk})
         self.get_test_names_stdout_base_url = reverse(
-            'student-suite-get-student-test-names-stdout',
-            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
+            'mutation-suite-get-student-test-names-stdout',
+            kwargs={'pk': self.submission.pk, 'result_pk': self.mutation_suite_result.pk})
         self.get_test_names_stderr_base_url = reverse(
-            'student-suite-get-student-test-names-stderr',
-            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
+            'mutation-suite-get-student-test-names-stderr',
+            kwargs={'pk': self.submission.pk, 'result_pk': self.mutation_suite_result.pk})
         self.validity_check_stdout_base_url = reverse(
-            'student-suite-validity-check-stdout',
-            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
+            'mutation-suite-validity-check-stdout',
+            kwargs={'pk': self.submission.pk, 'result_pk': self.mutation_suite_result.pk})
         self.validity_check_stderr_base_url = reverse(
-            'student-suite-validity-check-stderr',
-            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
+            'mutation-suite-validity-check-stderr',
+            kwargs={'pk': self.submission.pk, 'result_pk': self.mutation_suite_result.pk})
         self.buggy_impls_stdout_base_url = reverse(
-            'student-suite-grade-buggy-impls-stdout',
-            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
+            'mutation-suite-grade-buggy-impls-stdout',
+            kwargs={'pk': self.submission.pk, 'result_pk': self.mutation_suite_result.pk})
         self.buggy_impls_stderr_base_url = reverse(
-            'student-suite-grade-buggy-impls-stderr',
-            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
+            'mutation-suite-grade-buggy-impls-stderr',
+            kwargs={'pk': self.submission.pk, 'result_pk': self.mutation_suite_result.pk})
 
         self.base_urls = [
             self.setup_stdout_base_url,
@@ -121,7 +121,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
         self.client.force_authenticate(self.admin)
 
         self.maxDiff = None
-        self.assertNotEqual(0, self.submission.student_test_suite_results.count())
+        self.assertNotEqual(0, self.submission.mutation_test_suite_results.count())
 
         query_params = QueryDict(mutable=True)
         query_params.update({'feedback_category': ag_models.FeedbackCategory.max.value})
@@ -130,13 +130,13 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
         response = self.client.get(url)
         expected_content = [
-            self.student_suite_result.get_fdbk(
+            self.mutation_suite_result.get_fdbk(
                 ag_models.FeedbackCategory.max,
-                StudentTestSuitePreLoader(self.project)
+                MutationTestSuitePreLoader(self.project)
             ).to_dict()
         ]
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertSequenceEqual(expected_content, response.data['student_test_suite_results'])
+        self.assertSequenceEqual(expected_content, response.data['mutation_test_suite_results'])
 
     def test_get_setup_output(self):
         self.do_get_output_test(
@@ -156,9 +156,9 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             status.HTTP_200_OK, None, self.setup_stderr_base_url)
 
     def test_get_setup_output_no_setup_cmd(self):
-        self.student_suite.validate_and_update(use_setup_command=False)
-        self.student_suite_result.setup_result = None
-        self.student_suite_result.save()
+        self.mutation_suite.validate_and_update(use_setup_command=False)
+        self.mutation_suite_result.setup_result = None
+        self.mutation_suite_result.save()
 
         self.do_get_output_test(
             self.client, self.admin, ag_models.FeedbackCategory.max,
@@ -221,17 +221,17 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
     def test_get_output_suite_hidden(self):
         self.maxDiff = None
-        max_fdbk_settings = self.student_suite_result.get_fdbk(
+        max_fdbk_settings = self.mutation_suite_result.get_fdbk(
             ag_models.FeedbackCategory.max,
-            StudentTestSuitePreLoader(self.project)
+            MutationTestSuitePreLoader(self.project)
         ).fdbk_settings
-        staff_viewer_fdbk_settings = self.student_suite_result.get_fdbk(
+        staff_viewer_fdbk_settings = self.mutation_suite_result.get_fdbk(
             ag_models.FeedbackCategory.staff_viewer,
-            StudentTestSuitePreLoader(self.project)
+            MutationTestSuitePreLoader(self.project)
         ).fdbk_settings
         self.assertEqual(max_fdbk_settings, staff_viewer_fdbk_settings)
 
-        self.student_suite.validate_and_update(staff_viewer_fdbk_config={
+        self.mutation_suite.validate_and_update(staff_viewer_fdbk_config={
             'visible': False
         })
 
@@ -247,15 +247,15 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
     def test_get_output_suite_not_found(self):
         url_lookups = [
-            'student-suite-setup-stdout',
-            'student-suite-setup-stderr',
-            'student-suite-get-student-test-names-stdout',
-            'student-suite-get-student-test-names-stderr',
-            'student-suite-validity-check-stdout',
-            'student-suite-validity-check-stderr',
-            'student-suite-grade-buggy-impls-stdout',
-            'student-suite-grade-buggy-impls-stderr',
-            'student-suite-result-output-size'
+            'mutation-suite-setup-stdout',
+            'mutation-suite-setup-stderr',
+            'mutation-suite-get-student-test-names-stdout',
+            'mutation-suite-get-student-test-names-stderr',
+            'mutation-suite-validity-check-stdout',
+            'mutation-suite-validity-check-stderr',
+            'mutation-suite-grade-buggy-impls-stdout',
+            'mutation-suite-grade-buggy-impls-stderr',
+            'mutation-suite-result-output-size'
         ]
 
         for url_lookup in url_lookups:
@@ -303,8 +303,8 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
                              ''.join((chunk.decode() for chunk in response.streaming_content)))
 
     def make_output_size_url(self, fdbk_category: ag_models.FeedbackCategory):
-        url = reverse('student-suite-result-output-size',
+        url = reverse('mutation-suite-result-output-size',
                       kwargs={'pk': self.submission.pk,
-                              'result_pk': self.student_suite_result.pk})
+                              'result_pk': self.mutation_suite_result.pk})
         url += f'?feedback_category={fdbk_category.value}'
         return url

@@ -18,18 +18,18 @@ def create_default_image(apps, schemea_editor):
     )
 
 
-def migrate_legacy_images(apps, schema_editor):
-    """
-    Create a DB row for all images listed in constants.SupportedImages
-    """
-    SandboxDockerImage = apps.get_model('core', 'SandboxDockerImage')
+# def migrate_legacy_images(apps, schema_editor):
+#     """
+#     Create a DB row for all images listed in constants.SupportedImages
+#     """
+#     SandboxDockerImage = apps.get_model('core', 'SandboxDockerImage')
 
-    for image_name, image_tag in DOCKER_IMAGE_IDS_TO_URLS.items():
-        print(image_name, image_tag)
-        if image_name != SupportedImages.default:
-            print(
-                SandboxDockerImage.objects.create(
-                    name=image_name.value, display_name=image_name.value, tag=image_tag))
+#     for image_name, image_tag in DOCKER_IMAGE_IDS_TO_URLS.items():
+#         print(image_name, image_tag)
+#         if image_name != SupportedImages.default:
+#             print(
+#                 SandboxDockerImage.objects.create(
+#                     name=image_name.value, display_name=image_name.value, tag=image_tag))
 
 
 class Migration(migrations.Migration):
@@ -40,5 +40,5 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(create_default_image, reverse_code=lambda apps, schema_editor: None),
-        migrations.RunPython(migrate_legacy_images, reverse_code=lambda apps, schema_editor: None),
+        # migrations.RunPython(migrate_legacy_images, reverse_code=lambda apps, schema_editor: None),
     ]

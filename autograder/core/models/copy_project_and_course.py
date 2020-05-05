@@ -10,7 +10,7 @@ from .project import Project, InstructorFile
 from .ag_test.ag_test_suite import AGTestSuite
 from .ag_test.ag_test_case import AGTestCase
 from .ag_test.ag_test_command import AGTestCommand
-from .student_test_suite import StudentTestSuite
+from .mutation_test_suite import MutationTestSuite
 from .sandbox_docker_image import SandboxDockerImage
 
 
@@ -50,7 +50,7 @@ def copy_project(project: Project, target_course: Course,
         student_file.save()
 
     _copy_ag_tests(project, new_project)
-    _copy_student_suites(project, new_project)
+    _copy_mutation_suites(project, new_project)
 
     if hasattr(project, 'handgrading_rubric'):
         import_handgrading_rubric(import_to=new_project, import_from=project)
@@ -123,30 +123,30 @@ def _copy_ag_tests(project, new_project):
                 )
 
 
-def _copy_student_suites(project, new_project):
-    for student_suite in project.student_test_suites.all():
+def _copy_mutation_suites(project, new_project):
+    for mutation_suite in project.mutation_test_suites.all():
         instructor_files_needed = [
             file_ for file_ in new_project.instructor_files.all()
-            if utils.find_if(student_suite.instructor_files_needed.all(),
+            if utils.find_if(mutation_suite.instructor_files_needed.all(),
                              lambda instr_file: instr_file.name == file_.name)
         ]
         student_files_needed = list(
             new_project.expected_student_files.filter(
                 pattern__in=[
                     expected_file.pattern for expected_file in
-                    student_suite.student_files_needed.all()
+                    mutation_suite.student_files_needed.all()
                 ]
             )
         )
-        StudentTestSuite.objects.validate_and_create(
+        MutationTestSuite.objects.validate_and_create(
             project=new_project,
             instructor_files_needed=instructor_files_needed,
             student_files_needed=student_files_needed,
             sandbox_docker_image=_copy_sandbox_docker_image(
-                student_suite.sandbox_docker_image, new_project.course),
+                mutation_suite.sandbox_docker_image, new_project.course),
             **utils.exclude_dict(
-                student_suite.to_dict(),
-                ('pk', 'project') + StudentTestSuite.get_serialize_related_fields())
+                mutation_suite.to_dict(),
+                ('pk', 'project') + MutationTestSuite.get_serialize_related_fields())
         )
 
 

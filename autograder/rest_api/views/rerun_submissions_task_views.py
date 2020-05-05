@@ -55,10 +55,10 @@ class RerunSubmissionsTaskListCreateView(NestedModelView):
         if not request.data.get('rerun_all_ag_test_suites', True):
             ag_test_suites = ag_test_suites.filter(pk__in=ag_suites_data.keys())
 
-        student_suites = project.student_test_suites.all()
-        if not request.data.get('rerun_all_student_test_suites', True):
-            student_suites = student_suites.filter(
-                pk__in=request.data.get('student_suite_pks', []))
+        mutation_suites = project.mutation_test_suites.all()
+        if not request.data.get('rerun_all_mutation_test_suites', True):
+            mutation_suites = mutation_suites.filter(
+                pk__in=request.data.get('mutation_suite_pks', []))
 
         signatures = []
         for submission in submissions:
@@ -70,15 +70,15 @@ class RerunSubmissionsTaskListCreateView(NestedModelView):
                 for ag_suite in ag_test_suites
             ]
 
-            student_suite_sigs = [
-                rerun_student_test_suite.s(
-                    rerun_task.pk, submission.pk, student_suite.pk
-                ).set(queue=settings.RERUN_QUEUE_TMPL.format(student_suite.project_id))
-                for student_suite in student_suites
+            mutation_suite_sigs = [
+                rerun_mutation_test_suite.s(
+                    rerun_task.pk, submission.pk, mutation_suite.pk
+                ).set(queue=settings.RERUN_QUEUE_TMPL.format(mutation_suite.project_id))
+                for mutation_suite in mutation_suites
             ]
 
             signatures += ag_suite_sigs
-            signatures += student_suite_sigs
+            signatures += mutation_suite_sigs
 
         from autograder.celery import app
         if signatures:
@@ -163,27 +163,27 @@ def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test
 
 
 @celery.shared_task(max_retries=1, acks_late=True)
-def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk):
+def rerun_mutation_test_suite(rerun_task_pk, submission_pk, mutation_test_suite_pk):
     if _rerun_is_cancelled(rerun_task_pk):
         return
 
     @retry_should_recover
-    def _rerun_student_test_suite_impl():
+    def _rerun_mutation_test_suite_impl():
         try:
-            student_suite = ag_models.StudentTestSuite.objects.get(pk=student_test_suite_pk)
+            mutation_suite = ag_models.MutationTestSuite.objects.get(pk=mutation_test_suite_pk)
             submission = ag_models.Submission.objects.get(pk=submission_pk)
 
-            tasks.grade_student_test_suite_impl(student_suite, submission)
+            tasks.grade_mutation_test_suite_impl(mutation_suite, submission)
         except ObjectDoesNotExist:
             pass
 
         _update_rerun_progress(rerun_task_pk)
 
     try:
-        _rerun_student_test_suite_impl()
+        _rerun_mutation_test_suite_impl()
     except Exception as e:
         error_msg = (
-            f'\nError rerunning student test suite {student_test_suite_pk} for submission '
+            f'\nError rerunning mutation test suite {mutation_test_suite_pk} for submission '
             f'{submission_pk}\n'
             f'{str(e)} {traceback.format_exc()}\n'
         )

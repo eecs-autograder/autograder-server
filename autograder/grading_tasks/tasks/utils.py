@@ -31,7 +31,7 @@ def mark_submission_as_error(submission_pk, error_msg):
 
 
 def add_files_to_sandbox(sandbox: AutograderSandbox,
-                         suite: Union[ag_models.AGTestSuite, ag_models.StudentTestSuite],
+                         suite: Union[ag_models.AGTestSuite, ag_models.MutationTestSuite],
                          submission: ag_models.Submission):
     student_files_to_add = []
     for student_file in load_queryset_with_retry(suite.student_files_needed.all()):
