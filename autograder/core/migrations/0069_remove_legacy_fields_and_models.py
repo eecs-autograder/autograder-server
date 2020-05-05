@@ -13,18 +13,103 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RemoveField(
+            model_name='agtestcase',
+            name='old_normal_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='agtestcase',
+            name='old_past_limit_submission_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='agtestcase',
+            name='old_staff_viewer_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='agtestcase',
+            name='old_ultimate_submission_fdbk_config',
+        ),
         migrations.DeleteModel(
             name='AGTestCaseFeedbackConfig',
+        ),
+
+        migrations.RemoveField(
+            model_name='agtestcommand',
+            name='old_normal_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='agtestcommand',
+            name='old_past_limit_submission_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='agtestcommand',
+            name='old_staff_viewer_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='agtestcommand',
+            name='old_ultimate_submission_fdbk_config',
         ),
         migrations.DeleteModel(
             name='AGTestCommandFeedbackConfig',
         ),
+
+        migrations.RemoveField(
+            model_name='agtestsuite',
+            name='old_normal_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='agtestsuite',
+            name='old_past_limit_submission_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='agtestsuite',
+            name='old_staff_viewer_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='agtestsuite',
+            name='old_ultimate_submission_fdbk_config',
+        ),
         migrations.DeleteModel(
             name='AGTestSuiteFeedbackConfig',
+        ),
+
+        migrations.RemoveField(
+            model_name='studenttestsuite',
+            name='old_normal_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='studenttestsuite',
+            name='old_past_limit_submission_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='studenttestsuite',
+            name='old_staff_viewer_fdbk_config',
+        ),
+        migrations.RemoveField(
+            model_name='studenttestsuite',
+            name='old_ultimate_submission_fdbk_config',
         ),
         migrations.DeleteModel(
             name='StudentTestSuiteFeedbackConfig',
         ),
+
+        migrations.RemoveField(
+            model_name='studenttestsuite',
+            name='old_get_student_test_names_command',
+        ),
+        migrations.RemoveField(
+            model_name='studenttestsuite',
+            name='old_grade_buggy_impl_command',
+        ),
+        migrations.RemoveField(
+            model_name='studenttestsuite',
+            name='old_setup_command',
+        ),
+        migrations.RemoveField(
+            model_name='studenttestsuite',
+            name='old_student_test_validity_check_command',
+        ),
+
         migrations.RemoveField(
             model_name='agcommandresult',
             name='ag_command',

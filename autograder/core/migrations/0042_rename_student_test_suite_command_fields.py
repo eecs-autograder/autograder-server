@@ -10,24 +10,24 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # migrations.RenameField(
-        #     model_name='studenttestsuite',
-        #     old_name='get_student_test_names_command',
-        #     new_name='old_get_student_test_names_command',
-        # ),
-        # migrations.RenameField(
-        #     model_name='studenttestsuite',
-        #     old_name='grade_buggy_impl_command',
-        #     new_name='old_grade_buggy_impl_command',
-        # ),
-        # migrations.RenameField(
-        #     model_name='studenttestsuite',
-        #     old_name='setup_command',
-        #     new_name='old_setup_command',
-        # ),
-        # migrations.RenameField(
-        #     model_name='studenttestsuite',
-        #     old_name='student_test_validity_check_command',
-        #     new_name='old_student_test_validity_check_command',
-        # ),
+        migrations.RenameField(
+            model_name='studenttestsuite',
+            old_name='get_student_test_names_command',
+            new_name='old_get_student_test_names_command',
+        ),
+        migrations.RenameField(
+            model_name='studenttestsuite',
+            old_name='grade_buggy_impl_command',
+            new_name='old_grade_buggy_impl_command',
+        ),
+        migrations.RenameField(
+            model_name='studenttestsuite',
+            old_name='setup_command',
+            new_name='old_setup_command',
+        ),
+        migrations.RenameField(
+            model_name='studenttestsuite',
+            old_name='student_test_validity_check_command',
+            new_name='old_student_test_validity_check_command',
+        ),
     ]
