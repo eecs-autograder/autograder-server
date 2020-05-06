@@ -1,14 +1,14 @@
 import itertools
+from typing import List
 
 from django.contrib.auth.models import User
 from django.core import exceptions
 from django.db import models, transaction
-from typing import List
 
-from .. import ag_model_base
-from .. project import Project
 from autograder.core import fields as ag_fields
 
+from .. import ag_model_base
+from ..project import Project
 from . import verification
 
 
@@ -85,7 +85,10 @@ class GroupInvitation(ag_model_base.AutograderModel):
         """
         The usernames of the Users that will receive this invitation.
         """
-        return [user.username for user in self.recipients.all()]
+        # Use python sorting instead of DB order by to take advantage
+        # of prefetching.
+        return [user.username for user in
+                sorted(self.recipients.all(), key=lambda user: user.username)]
 
     @property
     def recipients_who_accepted(self) -> List[str]:
@@ -127,3 +130,8 @@ class GroupInvitation(ag_model_base.AutograderModel):
     )
 
     SERIALIZE_RELATED = ('sender', 'recipients')
+
+    def to_dict(self) -> dict:
+        result = super().to_dict()
+        result['recipients'].sort(key=lambda user: user['username'])
+        return result
