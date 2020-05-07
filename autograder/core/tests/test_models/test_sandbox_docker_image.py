@@ -326,8 +326,8 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             'return_code': task.return_code,
             'timed_out': task.timed_out,
             'filenames': task.filenames,
-            'course': self.course.pk,
-            'image_to_update': image_to_update.pk,
+            'course_id': self.course.pk,
+            'image_to_update': image_to_update.to_dict(),
             'validation_error_msg': '',
             'internal_error_msg': '',
         }

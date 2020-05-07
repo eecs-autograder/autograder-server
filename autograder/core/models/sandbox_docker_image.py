@@ -203,10 +203,14 @@ class BuildSandboxDockerImageTask(AutograderModel):
         'return_code',
         'timed_out',
         'filenames',
-        'course',
+        'course_id',
         'image_to_update',
         'validation_error_msg',
         'internal_error_msg',
+    ]
+
+    SERIALIZE_RELATED = [
+        'image_to_update',
     ]
 
 
