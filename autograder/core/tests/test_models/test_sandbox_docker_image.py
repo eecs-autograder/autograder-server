@@ -106,6 +106,7 @@ class SandboxDockerImageTestCase(UnitTestBase):
             'pk': image.pk,
             'course': image.course.pk,
             'display_name': image.display_name,
+            'last_modified': image.last_modified,
         }
 
         self.assertEqual(expected, serialized)

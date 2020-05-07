@@ -64,6 +64,7 @@ class SandboxDockerImage(AutograderModel):
         'pk',
         'display_name',
         'course',
+        'last_modified',
     ]
 
     EDITABLE_FIELDS = [
