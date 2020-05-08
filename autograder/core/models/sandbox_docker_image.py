@@ -64,6 +64,7 @@ class SandboxDockerImage(AutograderModel):
         'pk',
         'display_name',
         'course',
+        'last_modified',
     ]
 
     EDITABLE_FIELDS = [
@@ -203,10 +204,14 @@ class BuildSandboxDockerImageTask(AutograderModel):
         'return_code',
         'timed_out',
         'filenames',
-        'course',
+        'course_id',
         'image_to_update',
         'validation_error_msg',
         'internal_error_msg',
+    ]
+
+    SERIALIZE_RELATED = [
+        'image_to_update',
     ]
 
 

@@ -2282,6 +2282,12 @@ paths:
                   readOnly: true
                   type: integer
                   format: id
+                last_modified:
+                  description: ''
+                  nullable: false
+                  readOnly: true
+                  type: string
+                  format: date-time
       tags: *id032
   /api/projects/{project_pk}/ag_test_suites/:
     get:
@@ -7162,6 +7168,11 @@ components:
           nullable: true
           type: integer
           format: id
+        last_modified:
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
     BuildSandboxDockerImageTask:
       type: object
       properties:
@@ -7184,7 +7195,7 @@ components:
           nullable: false
           type: array
           items: *id026
-        course:
+        course_id:
           description: "The course this task is associated with.\n            Only\
             \ superusers can create or update images with no associated course."
           nullable: true
@@ -7194,8 +7205,8 @@ components:
           description: "When null, indicates that a new image will be created.\n \
             \           Otherwise, refers to the image to be updated on build success."
           nullable: true
-          type: integer
-          format: id
+          allOf:
+          - $ref: '#/components/schemas/SandboxDockerImage'
         validation_error_msg:
           description: Information for the user as to while the built image is invalid.
           nullable: false

@@ -106,6 +106,7 @@ class SandboxDockerImageTestCase(UnitTestBase):
             'pk': image.pk,
             'course': image.course.pk,
             'display_name': image.display_name,
+            'last_modified': image.last_modified,
         }
 
         self.assertEqual(expected, serialized)
@@ -326,8 +327,8 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             'return_code': task.return_code,
             'timed_out': task.timed_out,
             'filenames': task.filenames,
-            'course': self.course.pk,
-            'image_to_update': image_to_update.pk,
+            'course_id': self.course.pk,
+            'image_to_update': image_to_update.to_dict(),
             'validation_error_msg': '',
             'internal_error_msg': '',
         }
