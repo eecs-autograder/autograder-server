@@ -112,8 +112,7 @@ class RetrieveHandgradingResultTestCase(_SetUp):
                 self.assertEqual(status.HTTP_200_OK, response.status_code)
                 self.assertIn('Content-Length', response)
                 file_.seek(0)
-                self.assertEqual(file_.read(),
-                                 b''.join((chunk for chunk in response.streaming_content)))
+                self.assertEqual(file_.read(), b''.join(response.streaming_content))
 
     def test_get_file_not_found(self):
         self.client.force_authenticate(self.staff)

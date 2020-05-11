@@ -255,6 +255,23 @@ class BuildTaskDetailViewTestCase(AGViewTestBase):
         url = reverse('image-build-task-detail', kwargs={'pk': task.pk})
         self.do_permission_denied_get_test(self.client, self.admin, url)
 
+    def test_superuser_get_global_task_output(self) -> None:
+        output = b'oniresatonwunroeivbmnoiufaoniremvoinemofnt'
+        task = self._make_global_build_task()
+        with open(task.output_filename, 'wb') as f:
+            f.write(output)
+
+        self.client.force_authenticate(self.superuser)
+        response = self.client.get(reverse('image-build-task-output', kwargs={'pk': task.pk}))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self.assertEqual(output, b''.join(response.streaming_content))
+
+    def test_non_superuser_get_global_task_output(self) -> None:
+        task = self._make_global_build_task()
+        url = reverse('image-build-task-output', kwargs={'pk': task.pk})
+        self.do_permission_denied_get_test(self.client, self.admin, url)
+
     def test_admin_get_build_task_for_course(self) -> None:
         task = self._make_build_task_for_course()
         url = reverse('image-build-task-detail', kwargs={'pk': task.pk})
@@ -263,6 +280,23 @@ class BuildTaskDetailViewTestCase(AGViewTestBase):
     def test_non_admin_get_build_task_for_course_permission_denied(self) -> None:
         task = self._make_build_task_for_course()
         url = reverse('image-build-task-detail', kwargs={'pk': task.pk})
+        self.do_permission_denied_get_test(self.client, self.staff, url)
+
+    def test_admin_get_task_for_course_output(self) -> None:
+        output = b'noxcievmnowufyvzncevtnof'
+        task = self._make_build_task_for_course()
+        with open(task.output_filename, 'wb') as f:
+            f.write(output)
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(reverse('image-build-task-output', kwargs={'pk': task.pk}))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self.assertEqual(output, b''.join(response.streaming_content))
+
+    def test_non_admin_get_task_for_course_output(self) -> None:
+        task = self._make_build_task_for_course()
+        url = reverse('image-build-task-output', kwargs={'pk': task.pk})
         self.do_permission_denied_get_test(self.client, self.staff, url)
 
     def test_superuser_cancel_global_build_task(self) -> None:

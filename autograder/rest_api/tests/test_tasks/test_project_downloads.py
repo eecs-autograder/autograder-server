@@ -203,7 +203,7 @@ class DownloadSubmissionFilesTestCase(UnitTestBase):
         self.assertEqual('application/zip', response['Content-Type'])
 
         with tempfile.TemporaryFile() as result:
-            result.write(b''.join((chunk for chunk in response.streaming_content)))
+            result.write(b''.join(response.streaming_content))
             self._check_zip_content(result, expected_filenames)
 
         # Make sure that other admin users can request results for downloads
@@ -216,7 +216,7 @@ class DownloadSubmissionFilesTestCase(UnitTestBase):
         self.assertEqual('application/zip', response['Content-Type'])
 
         with tempfile.TemporaryFile() as result:
-            result.write(b''.join((chunk for chunk in response.streaming_content)))
+            result.write(b''.join(response.streaming_content))
             self._check_zip_content(result, expected_filenames)
 
     def _get_expected_filenames(self, expected_submissions):

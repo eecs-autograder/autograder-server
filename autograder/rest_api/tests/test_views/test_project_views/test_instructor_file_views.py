@@ -228,7 +228,7 @@ class RetrieveUploadedFileContentTestCase(_DetailViewTestSetup):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertIn('Content-Length', response)
         self.assertEqual(
-            expected_content, b''.join((chunk for chunk in response.streaming_content)))
+            expected_content, b''.join(response.streaming_content))
 
 
 class UpdateUploadedFileContentTestCase(_DetailViewTestSetup):

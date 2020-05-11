@@ -135,6 +135,8 @@ urlpatterns = [
          name='list-course-image-builds'),
     path('image_build_tasks/<int:pk>/', views.BuildTaskDetailView.as_view(),
          name='image-build-task-detail'),
+    path('image_build_tasks/<int:pk>/output/', views.BuildTaskOutputView.as_view(),
+         name='image-build-task-output'),
     path('image_build_tasks/<int:pk>/cancel/', views.CancelBuildTaskView.as_view(),
          name='cancel-image-build-task'),
     path('sandbox_docker_images/<int:pk>/', views.SandboxDockerImageDetailView.as_view(),
