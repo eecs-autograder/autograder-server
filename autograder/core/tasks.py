@@ -15,7 +15,7 @@ import autograder.core.models as ag_models
 from autograder.utils.retry import retry_should_recover
 
 
-@celery.shared_task(acks_late=True)
+@celery.shared_task(queue='build_sandbox_image', acks_late=True)
 def build_sandbox_docker_image(build_task_pk: int):
     @retry_should_recover
     def load_build_task():
