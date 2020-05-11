@@ -2224,6 +2224,26 @@ paths:
           description: ''
       tags:
       - sandbox_docker_images
+  /api/image_build_tasks/{id}/output/:
+    get:
+      operationId: getBuildSandboxDockerImageTaskOutput
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      tags:
+      - sandbox_docker_images
   /api/sandbox_docker_images/{id}/:
     get:
       operationId: getSandboxDockerImage
