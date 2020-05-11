@@ -126,8 +126,7 @@ class _FeedbackTestsBase(UnitTestBase):
             self.assertIsNone(response.data)
         else:
             self.assertIn('Content-Length', response)
-            self.assertEqual(
-                expected.read(), b''.join((chunk for chunk in response.streaming_content)))
+            self.assertEqual(expected.read(), b''.join(response.streaming_content))
 
     def do_get_diff_test(self, client, url, expected: Optional[core_ut.DiffResult]):
         response = client.get(url)

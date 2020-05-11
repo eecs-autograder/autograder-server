@@ -151,8 +151,7 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
             if expected is None or not fdbk.fdbk_conf.visible:
                 self.assertIsNone(response.data)
             else:
-                self.assertEqual(expected.read(),
-                                 b''.join((chunk for chunk in response.streaming_content)))
+                self.assertEqual(expected.read(), b''.join(response.streaming_content))
 
         # Output size endpoint
         url = reverse('ag-test-suite-result-output-size', kwargs=url_kwargs) + url_query_str

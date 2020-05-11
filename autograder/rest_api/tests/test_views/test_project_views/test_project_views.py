@@ -595,7 +595,7 @@ class DownloadTaskEndpointsTestCase(UnitTestBase):
             response = self.client.get(url)
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertIn('Content-Length', response)
-            self.assertEqual(f.read(), b''.join((chunk for chunk in response.streaming_content)))
+            self.assertEqual(f.read(), b''.join(response.streaming_content))
 
     def test_invalid_get_in_progress_download_task_result(self):
         [user] = obj_build.make_admin_users(self.project.course, 1)

@@ -9,6 +9,7 @@ from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
                                         APITags, CustomViewMethodData, CustomViewSchema,
                                         as_array_content_obj, as_content_obj, as_schema_ref)
+from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import convert_django_validation_error
 
 from . import ag_model_views as ag_views
@@ -204,6 +205,30 @@ class BuildTaskDetailView(ag_views.AGModelDetailView):
 
     def get(self, *args, **kwargs):
         return self.do_get()
+
+
+class BuildTaskOutputView(ag_views.AGModelAPIView):
+    schema = CustomViewSchema([APITags.sandbox_docker_images], {
+        'GET': {
+            'operation_id': 'getBuildSandboxDockerImageTaskOutput',
+            'responses': {
+                '200': {
+                    'content': {
+                        'application/octet-stream': {
+                            'schema': {'type': 'string', 'format': 'binary'}
+                        }
+                    }
+                }
+            }
+        }
+    })
+
+    permission_classes = [ImageBuildTaskDetailPermissions]
+    model_manager = ag_models.BuildSandboxDockerImageTask.objects
+
+    def get(self, *args, **kwargs):
+        task = self.get_object()
+        return SizeFileResponse(open(task.output_filename, 'rb'))
 
 
 class CancelBuildTaskView(ag_views.AGModelAPIView):
