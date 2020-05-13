@@ -3225,13 +3225,6 @@ paths:
                   nullable: false
                   readOnly: false
                   type: integer
-                stack_size_limit:
-                  description: "The maximum stack size in bytes.\n            Must\
-                    \ be > 0\n            Must be <= 100000000\n            NOTE:\
-                    \ Setting this value too low may cause the command to crash prematurely."
-                  nullable: false
-                  readOnly: false
-                  type: integer
                 use_virtual_memory_limit:
                   description: "When set to false, the virtual memory limit will not\n\
                     \            be applied to the command. Note that the sandbox\
@@ -3248,18 +3241,12 @@ paths:
                   nullable: false
                   readOnly: false
                   type: integer
-                process_spawn_limit:
-                  description: "The maximum number of processes that the command is\
-                    \ allowed to spawn.\n            Must be >= 0\n            Must\
-                    \ be <= 150\n            NOTE: This limit applies cumulatively\
-                    \ to the processes\n                  spawned by the main program\
-                    \ being run. i.e. If a\n                  spawned process spawns\
-                    \ it's own child process, both\n                  of those processes\
-                    \ will count towards the main\n                  program's process\
-                    \ limit."
+                block_process_spawn:
+                  description: When true, prevents the command from spawning child
+                    processes.
                   nullable: false
                   readOnly: false
-                  type: integer
+                  type: boolean
               required:
               - name
               - ag_test_case
@@ -3582,13 +3569,6 @@ paths:
                   nullable: false
                   readOnly: false
                   type: integer
-                stack_size_limit:
-                  description: "The maximum stack size in bytes.\n            Must\
-                    \ be > 0\n            Must be <= 100000000\n            NOTE:\
-                    \ Setting this value too low may cause the command to crash prematurely."
-                  nullable: false
-                  readOnly: false
-                  type: integer
                 use_virtual_memory_limit:
                   description: "When set to false, the virtual memory limit will not\n\
                     \            be applied to the command. Note that the sandbox\
@@ -3605,18 +3585,12 @@ paths:
                   nullable: false
                   readOnly: false
                   type: integer
-                process_spawn_limit:
-                  description: "The maximum number of processes that the command is\
-                    \ allowed to spawn.\n            Must be >= 0\n            Must\
-                    \ be <= 150\n            NOTE: This limit applies cumulatively\
-                    \ to the processes\n                  spawned by the main program\
-                    \ being run. i.e. If a\n                  spawned process spawns\
-                    \ it's own child process, both\n                  of those processes\
-                    \ will count towards the main\n                  program's process\
-                    \ limit."
+                block_process_spawn:
+                  description: When true, prevents the command from spawning child
+                    processes.
                   nullable: false
                   readOnly: false
-                  type: integer
+                  type: boolean
       tags: *id041
     delete:
       operationId: deleteAGTestCommand
@@ -7149,9 +7123,7 @@ components:
             \           Must be > 0\n            Must be <= 90"
           type: integer
         stack_size_limit:
-          description: "The maximum stack size in bytes.\n            Must be > 0\n\
-            \            Must be <= 100000000\n            NOTE: Setting this value\
-            \ too low may cause the command to crash prematurely."
+          description: This field is IGNORED and will be removed in version 5.0.0.
           type: integer
         use_virtual_memory_limit:
           description: "When set to false, the virtual memory limit will not\n   \
@@ -7164,14 +7136,12 @@ components:
             \            Must be > 0\n            Must be <= 4000000000\n        \
             \    NOTE: Setting this value too low may cause the command to crash prematurely."
           type: integer
+        block_process_spawn:
+          description: When true, prevents the command from spawning child processes.
+          type: boolean
         process_spawn_limit:
-          description: "The maximum number of processes the command is allowed to\
-            \ spawn.\n            Must be >= 0\n            Must be <= 150\n     \
-            \       NOTE: This limit applies cumulatively to the processes\n     \
-            \             spawned by the main program being run. i.e. If a\n     \
-            \             spawned process spawns it's own child process, both\n  \
-            \                of those processes will count towards the main\n    \
-            \              program's process limit."
+          description: "This field is IGNORED and will be removed in version 5.0.0.\n\
+            \            Use block_process_spawn instead."
           type: integer
     SandboxDockerImage:
       type: object
@@ -7605,12 +7575,6 @@ components:
             \           Must be > 0\n            Must be <= 90"
           nullable: false
           type: integer
-        stack_size_limit:
-          description: "The maximum stack size in bytes.\n            Must be > 0\n\
-            \            Must be <= 100000000\n            NOTE: Setting this value\
-            \ too low may cause the command to crash prematurely."
-          nullable: false
-          type: integer
         use_virtual_memory_limit:
           description: "When set to false, the virtual memory limit will not\n   \
             \         be applied to the command. Note that the sandbox will still\
@@ -7625,16 +7589,10 @@ components:
             \ command to crash prematurely."
           nullable: false
           type: integer
-        process_spawn_limit:
-          description: "The maximum number of processes that the command is allowed\
-            \ to spawn.\n            Must be >= 0\n            Must be <= 150\n  \
-            \          NOTE: This limit applies cumulatively to the processes\n  \
-            \                spawned by the main program being run. i.e. If a\n  \
-            \                spawned process spawns it's own child process, both\n\
-            \                  of those processes will count towards the main\n  \
-            \                program's process limit."
+        block_process_spawn:
+          description: When true, prevents the command from spawning child processes.
           nullable: false
-          type: integer
+          type: boolean
     AGTestCommandFeedbackConfig:
       type: object
       properties:

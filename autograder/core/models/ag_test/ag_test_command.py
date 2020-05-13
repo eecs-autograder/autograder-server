@@ -8,7 +8,6 @@ from django.db import models, transaction, connection
 import autograder.core.fields as ag_fields
 from autograder.core import constants
 import autograder.core.utils as core_ut
-from ..ag_command import AGCommandBase
 from .ag_test_case import AGTestCase
 from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import InstructorFile
@@ -116,7 +115,7 @@ class ExpectedReturnCode(enum.Enum):
 MAX_EXPECTED_OUTPUT_TEXT_LENGTH = 8 * pow(10, 6)  # 8,000,000 characters
 
 
-class AGTestCommand(AGCommandBase):
+class AGTestCommand(AutograderModel):
     """
     An AGTestCommand represents a single command to evaluate student code.
     """
@@ -130,6 +129,15 @@ class AGTestCommand(AGCommandBase):
                          Must be non-empty and non-null.
                          Must be unique among commands that belong to the same autograder test.
                          This field is REQUIRED.''')
+
+    cmd = models.CharField(
+        max_length=constants.MAX_COMMAND_LENGTH,
+        help_text='''A string containing the command to be run.
+                     Note: This string will be inserted into ['bash', '-c', <cmd>]
+                        in order to be executed.
+                     Note: This string defaults to the "true" command
+                     (which does nothing and returns 0) so that AGCommands are
+                     default-creatable.''')
 
     ag_test_case = models.ForeignKey(
         AGTestCase,
@@ -261,12 +269,59 @@ class AGTestCommand(AGCommandBase):
         help_text='Feedback settings for a staff member viewing a Submission from another group.'
     )
 
+    time_limit = models.IntegerField(
+        default=constants.DEFAULT_SUBPROCESS_TIMEOUT,
+        validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_SUBPROCESS_TIMEOUT)],
+        help_text=f"""The time limit in seconds to be placed on the command.
+            Must be > 0
+            Must be <= {constants.MAX_SUBPROCESS_TIMEOUT}""")
+
+    # Remove in version 5.0.0
+    stack_size_limit = models.IntegerField(
+        default=constants.DEFAULT_STACK_SIZE_LIMIT,
+        validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_STACK_SIZE_LIMIT)],
+        help_text=f"""This field is IGNORED and will be removed in version 5.0.0.
+            The maximum stack size in bytes.
+            Must be > 0
+            Must be <= {constants.MAX_STACK_SIZE_LIMIT}
+            NOTE: Setting this value too low may cause the command to crash prematurely.""")
+
     use_virtual_memory_limit = models.BooleanField(
         default=True, blank=True,
         help_text="""When set to false, the virtual memory limit will not
             be applied to the command. Note that the sandbox will still apply
             a physical memory limit to all commands run in the sandbox."""
     )
+
+    virtual_memory_limit = models.BigIntegerField(
+        default=constants.DEFAULT_VIRTUAL_MEM_LIMIT,
+        validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_VIRTUAL_MEM_LIMIT)],
+        help_text=f"""The maximum amount of virtual memory
+            (in bytes) the command can use.
+            Must be > 0
+            Must be <= {constants.MAX_VIRTUAL_MEM_LIMIT}
+            NOTE: Setting this value too low may cause the command to crash prematurely.""")
+
+    block_process_spawn = models.BooleanField(
+        default=False, blank=True,
+        help_text="When true, prevents the command from spawning child processes."
+    )
+
+    # Remove in version 5.0.0
+    process_spawn_limit = models.IntegerField(
+        default=constants.DEFAULT_PROCESS_LIMIT,
+        validators=[MinValueValidator(0), MaxValueValidator(constants.MAX_PROCESS_LIMIT)],
+        help_text=f"""This field is IGNORED and will be removed in version 5.0.0.
+            Use block_process_spawn instead.
+
+            The maximum number of processes that the command is allowed to spawn.
+            Must be >= 0
+            Must be <= {constants.MAX_PROCESS_LIMIT}
+            NOTE: This limit applies cumulatively to the processes
+                  spawned by the main program being run. i.e. If a
+                  spawned process spawns it's own child process, both
+                  of those processes will count towards the main
+                  program's process limit.""")
 
     def clean(self):
         error_dict = {}
@@ -375,10 +430,9 @@ class AGTestCommand(AGCommandBase):
         'staff_viewer_fdbk_config',
 
         'time_limit',
-        'stack_size_limit',
         'use_virtual_memory_limit',
         'virtual_memory_limit',
-        'process_spawn_limit',
+        'block_process_spawn',
     )
 
     EDITABLE_FIELDS = (
@@ -420,10 +474,9 @@ class AGTestCommand(AGCommandBase):
         'staff_viewer_fdbk_config',
 
         'time_limit',
-        'stack_size_limit',
         'use_virtual_memory_limit',
         'virtual_memory_limit',
-        'process_spawn_limit',
+        'block_process_spawn',
     )
 
     SERIALIZE_RELATED = (

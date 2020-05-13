@@ -106,8 +106,7 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     setup_result = run_command_from_args(
         cmd=ag_test_suite.setup_suite_cmd,
         sandbox=sandbox,
-        max_num_processes=constants.MAX_PROCESS_LIMIT,
-        max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
+        block_process_spawn=False,
         max_virtual_memory=None,
         timeout=constants.MAX_SUBPROCESS_TIMEOUT)
     suite_result.setup_return_code = setup_result.return_code
