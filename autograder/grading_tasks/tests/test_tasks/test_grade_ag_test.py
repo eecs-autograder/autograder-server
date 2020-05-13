@@ -470,17 +470,12 @@ sys.stderr.flush()
         self.ag_test_suite.validate_and_update(setup_suite_cmd='printf waluigi')
 
         time_limit = random.randint(1, constants.MAX_SUBPROCESS_TIMEOUT)
-        # process_spawn_limit = random.randint(constants.DEFAULT_PROCESS_LIMIT + 1,
-        #                                      constants.MAX_PROCESS_LIMIT)
-        # stack_size_limit = random.randint(constants.DEFAULT_STACK_SIZE_LIMIT,
-        #                                   constants.MAX_STACK_SIZE_LIMIT)
         virtual_memory_limit = random.randint(
             constants.DEFAULT_VIRTUAL_MEM_LIMIT, constants.MAX_VIRTUAL_MEM_LIMIT)
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case, cmd='printf spam',
             time_limit=time_limit,
-            # process_spawn_limit=process_spawn_limit,
-            # stack_size_limit=stack_size_limit,
+            block_process_spawn=True,
             virtual_memory_limit=virtual_memory_limit,
         )
 
@@ -500,16 +495,14 @@ sys.stderr.flush()
 
         expected_setup_resource_kwargs = {
             'timeout': constants.MAX_SUBPROCESS_TIMEOUT,
-            # 'max_num_processes': constants.MAX_PROCESS_LIMIT,
-            # 'max_stack_size': constants.MAX_STACK_SIZE_LIMIT,
+            'block_process_spawn': False,
             'max_virtual_memory': None,
             'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
             'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,
         }
         expected_cmd_args = {
             'timeout': time_limit,
-            # 'max_num_processes': process_spawn_limit,
-            # 'max_stack_size': stack_size_limit,
+            'block_process_spawn': True,
             'max_virtual_memory': virtual_memory_limit,
             'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
             'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,
@@ -550,6 +543,7 @@ sys.stderr.flush()
         expected_cmd_args = {
             'timeout': time_limit,
             'max_virtual_memory': None,
+            'block_process_spawn': False,
             'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
             'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,
         }

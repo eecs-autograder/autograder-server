@@ -72,6 +72,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertEqual(constants.DEFAULT_STACK_SIZE_LIMIT, ag_cmd.stack_size_limit)
         self.assertTrue(ag_cmd.use_virtual_memory_limit)
         self.assertEqual(constants.DEFAULT_VIRTUAL_MEM_LIMIT, ag_cmd.virtual_memory_limit)
+        self.assertFalse(ag_cmd.block_process_spawn)
         self.assertEqual(constants.DEFAULT_PROCESS_LIMIT, ag_cmd.process_spawn_limit)
 
     def test_normal_fdbk_default(self):
@@ -530,10 +531,9 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             'staff_viewer_fdbk_config',
 
             'time_limit',
-            'stack_size_limit',
             'use_virtual_memory_limit',
             'virtual_memory_limit',
-            'process_spawn_limit',
+            'block_process_spawn',
         ]
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,

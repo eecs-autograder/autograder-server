@@ -52,20 +52,16 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
             use_setup_command=True,
             setup_command={
                 'cmd': 'make student_tests.exe',
-                'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
             get_student_test_names_command={
                 'cmd': 'make -s get_test_names',
-                'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
             student_test_validity_check_command={
                 'cmd': 'make ${student_test_name}.validity_check',
-                'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
             grade_buggy_impl_command={
                 'cmd': ('make student_test=${student_test_name} '
                         'bug_name=${buggy_impl_name} buggy_impl'),
-                'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
             points_per_exposed_bug=1)  # type: ag_models.MutationTestSuite
 
@@ -386,6 +382,73 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
             mutation_test_suite=mutation_suite)
         self.assertEqual(0, result.setup_result.return_code)
 
+    def test_resource_limits_applied(self, *args) -> None:
+        mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
+            name='Suiteo',
+            project=self.project,
+            buggy_impl_names=['bug1'],
+            use_setup_command=True,
+            setup_command={
+                'cmd': 'true',
+                'block_process_spawn': True,
+                'use_virtual_memory_limit': True,
+                'virtual_memory_limit': 40000000,
+                'time_limit': 10,
+            },
+            get_student_test_names_command={
+                'cmd': 'echo test1',
+                'block_process_spawn': False,
+                'use_virtual_memory_limit': True,
+                'virtual_memory_limit': 40000001,
+                'time_limit': 11,
+            },
+        )
+        mutation_suite.student_test_validity_check_command.update({
+            'block_process_spawn': True,
+            'use_virtual_memory_limit': True,
+            'virtual_memory_limit': 40000002,
+            'time_limit': 12,
+        })
+        mutation_suite.grade_buggy_impl_command.update({
+            'block_process_spawn': True,
+            'use_virtual_memory_limit': True,
+            'virtual_memory_limit': 40000003,
+            'time_limit': 13,
+        })
+        mutation_suite.save()
+
+        sandbox = AutograderSandbox()
+        original_run_command = sandbox.run_command
+
+        def wrapped_run_command(*args, **kwargs):
+            return original_run_command(*args, **kwargs)
+
+        run_command_mock = mock.Mock(side_effect=wrapped_run_command)
+        sandbox.run_command = run_command_mock
+        with mock.patch(
+            'autograder.grading_tasks.tasks.grade_mutation_test_suite.AutograderSandbox',
+            return_value=sandbox
+        ):
+            tasks.grade_submission(self.submission.pk)
+
+        expected_cmds = ['true', 'echo test1', 'echo test1', 'echo bug1 test1']
+        expected_calls = [
+            mock.call(
+                ['bash', '-c', expected_cmds[i]], stdin=None, as_root=False,
+                block_process_spawn=cmd.block_process_spawn,
+                max_virtual_memory=cmd.virtual_memory_limit,
+                timeout=cmd.time_limit,
+                truncate_stdout=constants.MAX_RECORDED_OUTPUT_LENGTH,
+                truncate_stderr=constants.MAX_RECORDED_OUTPUT_LENGTH,
+            )
+            for (i, cmd) in enumerate((mutation_suite.setup_command,
+                                       mutation_suite.get_student_test_names_command,
+                                       mutation_suite.student_test_validity_check_command,
+                                       mutation_suite.grade_buggy_impl_command))
+        ]
+
+        run_command_mock.assert_has_calls(expected_calls)
+
     def test_use_virtual_memory_limit_false_no_limit_applied(self, *args) -> None:
         time_limit = 5
         mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
@@ -418,6 +481,7 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
 
         expected_cmd_args = {
             'timeout': time_limit,
+            'block_process_spawn': False,
             'max_virtual_memory': None,
             'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
             'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,

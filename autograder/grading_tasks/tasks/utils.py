@@ -71,8 +71,7 @@ def run_ag_test_command(cmd: ag_models.AGTestCommand,
         return run_command_from_args(
             cmd=cmd.cmd,
             sandbox=sandbox,
-            max_num_processes=cmd.process_spawn_limit,
-            max_stack_size=cmd.stack_size_limit,
+            block_process_spawn=cmd.block_process_spawn,
             max_virtual_memory=cmd.virtual_memory_limit if cmd.use_virtual_memory_limit else None,
             timeout=cmd.time_limit,
             stdin=stdin
@@ -85,8 +84,7 @@ def run_ag_command(cmd: ag_models.Command, sandbox: AutograderSandbox,
     return run_command_from_args(
         cmd_str,
         sandbox=sandbox,
-        max_num_processes=cmd.process_spawn_limit,
-        max_stack_size=cmd.stack_size_limit,
+        block_process_spawn=cmd.block_process_spawn,
         max_virtual_memory=cmd.virtual_memory_limit if cmd.use_virtual_memory_limit else None,
         timeout=cmd.time_limit,
         stdin=None
@@ -96,18 +94,15 @@ def run_ag_command(cmd: ag_models.Command, sandbox: AutograderSandbox,
 def run_command_from_args(cmd: str,
                           sandbox: AutograderSandbox,
                           *,
-                          max_num_processes: int,  # DEPRECATED and ignored
-                          max_stack_size: int,  # DEPRECATED and ignored
                           max_virtual_memory: Optional[int],
+                          block_process_spawn: bool,
                           timeout: int,
                           stdin: Optional[FileIO]=None) -> CompletedCommand:
     run_result = sandbox.run_command(['bash', '-c', cmd],
                                      stdin=stdin,
                                      as_root=False,
-                                     # To be removed entirely at a later date
-                                     # max_num_processes=max_num_processes,
-                                     # max_stack_size=max_stack_size,
                                      max_virtual_memory=max_virtual_memory,
+                                     block_process_spawn=block_process_spawn,
                                      timeout=timeout,
                                      truncate_stdout=constants.MAX_RECORDED_OUTPUT_LENGTH,
                                      truncate_stderr=constants.MAX_RECORDED_OUTPUT_LENGTH)

@@ -16,6 +16,7 @@ class CommandTestCase(SimpleTestCase):
         self.assertEqual(constants.DEFAULT_STACK_SIZE_LIMIT, cmd.stack_size_limit)
         self.assertTrue(cmd.use_virtual_memory_limit)
         self.assertEqual(constants.DEFAULT_VIRTUAL_MEM_LIMIT, cmd.virtual_memory_limit)
+        self.assertFalse(cmd.block_process_spawn)
         self.assertEqual(constants.DEFAULT_PROCESS_LIMIT, cmd.process_spawn_limit)
 
     def test_from_dict_non_default_values(self):
@@ -26,7 +27,8 @@ class CommandTestCase(SimpleTestCase):
             'stack_size_limit': 15000,
             'use_virtual_memory_limit': False,
             'virtual_memory_limit': 200000,
-            'process_spawn_limit': 8
+            'block_process_spawn': True,
+            'process_spawn_limit': 8,
         })
 
         self.assertEqual('cmdy', cmd.cmd)
@@ -35,6 +37,7 @@ class CommandTestCase(SimpleTestCase):
         self.assertEqual(15000, cmd.stack_size_limit)
         self.assertFalse(cmd.use_virtual_memory_limit)
         self.assertEqual(200000, cmd.virtual_memory_limit)
+        self.assertTrue(cmd.block_process_spawn)
         self.assertEqual(8, cmd.process_spawn_limit)
 
     def test_error_cmd_missing(self):
@@ -125,6 +128,7 @@ class CommandTestCase(SimpleTestCase):
             'stack_size_limit',
             'use_virtual_memory_limit',
             'virtual_memory_limit',
+            'block_process_spawn',
             'process_spawn_limit',
         ]
 

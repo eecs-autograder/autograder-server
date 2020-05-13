@@ -1,6 +1,6 @@
 # Import all Model classes here.
 
-from .ag_command import AGCommandBase, AGCommandResult, AGCommandResultBase, Command
+from .ag_command import AGCommandResult, AGCommandResultBase, Command
 from .ag_model_base import AutograderModel
 from .ag_test.ag_test_case import AGTestCase, NewAGTestCaseFeedbackConfig
 from .ag_test.ag_test_case_result import AGTestCaseResult
