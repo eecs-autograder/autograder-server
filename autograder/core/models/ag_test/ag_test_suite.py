@@ -8,7 +8,7 @@ from ..project import ExpectedStudentFile, Project, InstructorFile
 from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
 
-class NewAGTestSuiteFeedbackConfig(DictSerializableMixin):
+class AGTestSuiteFeedbackConfig(DictSerializableMixin):
     """
     Contains feedback options for an AGTestSuite.
     """
@@ -120,13 +120,13 @@ class AGTestSuite(AutograderModel):
                      again.''')
 
     normal_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestSuiteFeedbackConfig, default=NewAGTestSuiteFeedbackConfig)
+        AGTestSuiteFeedbackConfig, default=AGTestSuiteFeedbackConfig)
     ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestSuiteFeedbackConfig, default=NewAGTestSuiteFeedbackConfig)
+        AGTestSuiteFeedbackConfig, default=AGTestSuiteFeedbackConfig)
     past_limit_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestSuiteFeedbackConfig, default=NewAGTestSuiteFeedbackConfig)
+        AGTestSuiteFeedbackConfig, default=AGTestSuiteFeedbackConfig)
     staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestSuiteFeedbackConfig, default=NewAGTestSuiteFeedbackConfig)
+        AGTestSuiteFeedbackConfig, default=AGTestSuiteFeedbackConfig)
 
     def clean(self):
         if self.pk is None:

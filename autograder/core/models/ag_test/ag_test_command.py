@@ -19,7 +19,7 @@ class ValueFeedbackLevel(core_ut.OrderedEnum):
     expected_and_actual = 'expected_and_actual'
 
 
-class NewAGTestCommandFeedbackConfig(DictSerializableMixin):
+class AGTestCommandFeedbackConfig(DictSerializableMixin):
     """
     Contains feedback options for an AGTestCommand
     """
@@ -49,7 +49,7 @@ class NewAGTestCommandFeedbackConfig(DictSerializableMixin):
 
     @classmethod
     def default_ultimate_submission_fdbk_config(cls):
-        return NewAGTestCommandFeedbackConfig(
+        return AGTestCommandFeedbackConfig(
             return_code_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
             stdout_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
             stderr_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
@@ -66,7 +66,7 @@ class NewAGTestCommandFeedbackConfig(DictSerializableMixin):
 
     @classmethod
     def max_fdbk_config(cls):
-        return NewAGTestCommandFeedbackConfig(
+        return AGTestCommandFeedbackConfig(
             return_code_fdbk_level=ValueFeedbackLevel.get_max(),
             stdout_fdbk_level=ValueFeedbackLevel.get_max(),
             stderr_fdbk_level=ValueFeedbackLevel.get_max(),
@@ -242,30 +242,30 @@ class AGTestCommand(AutograderModel):
                      but the total points for an AGTestCase will be capped at zero.''')
 
     normal_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCommandFeedbackConfig,
-        default=NewAGTestCommandFeedbackConfig,
+        AGTestCommandFeedbackConfig,
+        default=AGTestCommandFeedbackConfig,
         help_text='Feedback settings for a normal Submission.'
     )
     first_failed_test_normal_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCommandFeedbackConfig,
+        AGTestCommandFeedbackConfig,
         blank=True, null=True, default=None,
         help_text="""When non-null, specifies feedback to be given when
                      this command is in the first test case that failed
                      within a suite."""
     )
     ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCommandFeedbackConfig,
-        default=NewAGTestCommandFeedbackConfig.default_ultimate_submission_fdbk_config,
+        AGTestCommandFeedbackConfig,
+        default=AGTestCommandFeedbackConfig.default_ultimate_submission_fdbk_config,
         help_text='Feedback settings for an ultimate Submission.'
     )
     past_limit_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCommandFeedbackConfig,
-        default=NewAGTestCommandFeedbackConfig,
+        AGTestCommandFeedbackConfig,
+        default=AGTestCommandFeedbackConfig,
         help_text='Feedback settings for a Submission that is past the daily limit.'
     )
     staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCommandFeedbackConfig,
-        default=NewAGTestCommandFeedbackConfig.default_staff_viewer_fdbk_config,
+        AGTestCommandFeedbackConfig,
+        default=AGTestCommandFeedbackConfig.default_staff_viewer_fdbk_config,
         help_text='Feedback settings for a staff member viewing a Submission from another group.'
     )
 

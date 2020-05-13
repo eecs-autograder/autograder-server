@@ -8,7 +8,7 @@ from .ag_test_suite import AGTestSuite
 from ..ag_model_base import AutograderModel, DictSerializableMixin
 
 
-class NewAGTestCaseFeedbackConfig(DictSerializableMixin):
+class AGTestCaseFeedbackConfig(DictSerializableMixin):
     """
     Contains feedback options for an AGTestCase.
     """
@@ -43,13 +43,13 @@ class AGTestCase(AutograderModel):
                      This field is REQUIRED.''')
 
     normal_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+        AGTestCaseFeedbackConfig, default=AGTestCaseFeedbackConfig)
     ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+        AGTestCaseFeedbackConfig, default=AGTestCaseFeedbackConfig)
     past_limit_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+        AGTestCaseFeedbackConfig, default=AGTestCaseFeedbackConfig)
     staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+        AGTestCaseFeedbackConfig, default=AGTestCaseFeedbackConfig)
 
     @transaction.atomic
     def validate_and_update(self, ag_test_suite: Optional[Union[int, AGTestSuite]]=None, **kwargs):

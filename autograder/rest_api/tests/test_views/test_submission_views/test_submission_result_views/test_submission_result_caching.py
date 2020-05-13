@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.models.ag_test.ag_test_command import NewAGTestCommandFeedbackConfig
+from autograder.core.models.ag_test.ag_test_command import AGTestCommandFeedbackConfig
 from autograder.core.submission_feedback import update_denormalized_ag_test_results
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
     get_submission_fdbk
@@ -26,7 +26,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
     def test_submission_normal_fdbk_results_cached_by_default(self):
         self.maxDiff = None
         cmd = obj_build.make_full_ag_test_command(
-            normal_fdbk_config=NewAGTestCommandFeedbackConfig.max_fdbk_config())
+            normal_fdbk_config=AGTestCommandFeedbackConfig.max_fdbk_config())
         project = cmd.ag_test_case.ag_test_suite.project
         project.validate_and_update(visible_to_students=True)
 
@@ -66,9 +66,9 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
 
     def test_non_normal_feedback_results_not_cached(self):
         cmd = obj_build.make_full_ag_test_command(
-            normal_fdbk_config=NewAGTestCommandFeedbackConfig.max_fdbk_config(),
-            ultimate_submission_fdbk_config=NewAGTestCommandFeedbackConfig.max_fdbk_config(),
-            past_limit_submission_fdbk_config=NewAGTestCommandFeedbackConfig.max_fdbk_config())
+            normal_fdbk_config=AGTestCommandFeedbackConfig.max_fdbk_config(),
+            ultimate_submission_fdbk_config=AGTestCommandFeedbackConfig.max_fdbk_config(),
+            past_limit_submission_fdbk_config=AGTestCommandFeedbackConfig.max_fdbk_config())
         project = cmd.ag_test_case.ag_test_suite.project
         project.validate_and_update(visible_to_students=True)
 
@@ -110,9 +110,9 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         """
         self.maxDiff = None
         cmd = obj_build.make_full_ag_test_command(
-            normal_fdbk_config=NewAGTestCommandFeedbackConfig.max_fdbk_config(),
-            ultimate_submission_fdbk_config=NewAGTestCommandFeedbackConfig.max_fdbk_config(),
-            past_limit_submission_fdbk_config=NewAGTestCommandFeedbackConfig.max_fdbk_config())
+            normal_fdbk_config=AGTestCommandFeedbackConfig.max_fdbk_config(),
+            ultimate_submission_fdbk_config=AGTestCommandFeedbackConfig.max_fdbk_config(),
+            past_limit_submission_fdbk_config=AGTestCommandFeedbackConfig.max_fdbk_config())
         project = cmd.ag_test_case.ag_test_suite.project
         project.validate_and_update(visible_to_students=True)
 
@@ -195,7 +195,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
     def test_submission_normal_fdbk_results_use_cache_false(self):
         self.maxDiff = None
         cmd = obj_build.make_full_ag_test_command(
-            normal_fdbk_config=NewAGTestCommandFeedbackConfig.max_fdbk_config())
+            normal_fdbk_config=AGTestCommandFeedbackConfig.max_fdbk_config())
         project = cmd.ag_test_case.ag_test_suite.project
         project.validate_and_update(visible_to_students=True)
 
@@ -253,13 +253,13 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         course = obj_build.make_course()
         project1 = obj_build.make_project(course)
         project1_cmd = obj_build.make_full_ag_test_command(
-            normal_fdbk_config=NewAGTestCommandFeedbackConfig.max_fdbk_config(),
+            normal_fdbk_config=AGTestCommandFeedbackConfig.max_fdbk_config(),
             ag_test_case=obj_build.make_ag_test_case(
                 ag_test_suite=obj_build.make_ag_test_suite(project=project1)))
 
         project2 = obj_build.make_project(course)
         project2_cmd = obj_build.make_full_ag_test_command(
-            normal_fdbk_config=NewAGTestCommandFeedbackConfig.max_fdbk_config(),
+            normal_fdbk_config=AGTestCommandFeedbackConfig.max_fdbk_config(),
             ag_test_case=obj_build.make_ag_test_case(
                 ag_test_suite=obj_build.make_ag_test_suite(project=project2)))
 
