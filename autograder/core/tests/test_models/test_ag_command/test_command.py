@@ -95,14 +95,6 @@ class CommandTestCase(SimpleTestCase):
 
         self.assertIn('virtual_memory_limit', cm.exception.message)
 
-        with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.Command.from_dict({
-                'cmd': 'cmdy',
-                'virtual_memory_limit': constants.MAX_VIRTUAL_MEM_LIMIT + 1,
-            })
-
-        self.assertIn('virtual_memory_limit', cm.exception.message)
-
     def test_error_process_spawn_limit_out_of_range(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Command.from_dict({

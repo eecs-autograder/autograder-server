@@ -3235,9 +3235,14 @@ paths:
                   type: boolean
                 virtual_memory_limit:
                   description: "The maximum amount of virtual memory\n           \
-                    \ (in bytes) the command can use.\n            Must be > 0\n \
-                    \           Must be <= 4000000000\n            NOTE: Setting this\
-                    \ value too low may cause the command to crash prematurely."
+                    \ (in bytes) the command can use. Must be > 0.\n            Limiting\
+                    \ virtual memory can help produce cleaner\n            error messages\
+                    \ when the command uses too much memory. However, some programs\
+                    \ allocate\n            a large amount of virtual memory but use\
+                    \ very little *physical* memory. For these\n            kinds\
+                    \ of programs (e.g. Java programs), we recommend NOT limiting\
+                    \ virtual memory.\n            Note that physical memory usage\
+                    \ will still be limited for security reasons."
                   nullable: false
                   readOnly: false
                   type: integer
@@ -3579,9 +3584,14 @@ paths:
                   type: boolean
                 virtual_memory_limit:
                   description: "The maximum amount of virtual memory\n           \
-                    \ (in bytes) the command can use.\n            Must be > 0\n \
-                    \           Must be <= 4000000000\n            NOTE: Setting this\
-                    \ value too low may cause the command to crash prematurely."
+                    \ (in bytes) the command can use. Must be > 0.\n            Limiting\
+                    \ virtual memory can help produce cleaner\n            error messages\
+                    \ when the command uses too much memory. However, some programs\
+                    \ allocate\n            a large amount of virtual memory but use\
+                    \ very little *physical* memory. For these\n            kinds\
+                    \ of programs (e.g. Java programs), we recommend NOT limiting\
+                    \ virtual memory.\n            Note that physical memory usage\
+                    \ will still be limited for security reasons."
                   nullable: false
                   readOnly: false
                   type: integer
@@ -7132,9 +7142,14 @@ components:
             \ sandbox."
           type: boolean
         virtual_memory_limit:
-          description: "The maximum amount of virtual memory (in bytes) allowed.\n\
-            \            Must be > 0\n            Must be <= 4000000000\n        \
-            \    NOTE: Setting this value too low may cause the command to crash prematurely."
+          description: "The maximum amount of virtual memory\n            (in bytes)\
+            \ the command can use. Must be > 0.\n            Limiting virtual memory\
+            \ can help produce cleaner\n            error messages when the command\
+            \ uses too much memory. However, some programs allocate\n            a\
+            \ large amount of virtual memory but use very little *physical* memory.\
+            \ For these\n            kinds of programs (e.g. Java programs), we recommend\
+            \ NOT limiting virtual memory.\n            Note that physical memory\
+            \ usage will still be limited for security reasons."
           type: integer
         block_process_spawn:
           description: When true, prevents the command from spawning child processes.
@@ -7584,9 +7599,13 @@ components:
           type: boolean
         virtual_memory_limit:
           description: "The maximum amount of virtual memory\n            (in bytes)\
-            \ the command can use.\n            Must be > 0\n            Must be <=\
-            \ 4000000000\n            NOTE: Setting this value too low may cause the\
-            \ command to crash prematurely."
+            \ the command can use. Must be > 0.\n            Limiting virtual memory\
+            \ can help produce cleaner\n            error messages when the command\
+            \ uses too much memory. However, some programs allocate\n            a\
+            \ large amount of virtual memory but use very little *physical* memory.\
+            \ For these\n            kinds of programs (e.g. Java programs), we recommend\
+            \ NOT limiting virtual memory.\n            Note that physical memory\
+            \ usage will still be limited for security reasons."
           nullable: false
           type: integer
         block_process_spawn:
