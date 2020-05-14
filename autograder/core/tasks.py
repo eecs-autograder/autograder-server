@@ -1,4 +1,5 @@
 import json
+import os
 import signal
 import subprocess
 import threading
@@ -13,6 +14,12 @@ from django.db import transaction
 
 import autograder.core.models as ag_models
 from autograder.utils.retry import retry_should_recover
+
+# See https://docs.docker.com/config/containers/resource_constraints/#memory
+# for allowed values for IMAGE_BUILD_MEMORY_LIMIT
+IMAGE_BUILD_MEMORY_LIMIT = os.environ.get('IMAGE_BUILD_MEMORY_LIMIT', '4g')
+IMAGE_BUILD_NPROC_LIMIT = int(os.environ.get('IMAGE_BUILD_NPROC_LIMIT', 1000))
+IMAGE_BUILD_TIMEOUT = int(os.environ.get('IMAGE_BUILD_TIMEOUT', 600))  # 10 minutes
 
 
 @celery.shared_task(queue='build_sandbox_image', acks_late=True)
@@ -167,9 +174,6 @@ def _save_internal_error_msg(build_task: ag_models.BuildSandboxDockerImageTask, 
     )
 
 
-IMAGE_BUILD_TIMEOUT = 60 * 10
-
-
 class _ImageBuilder(threading.Thread):
     def __init__(self, *, build_dir: str, output_filename: str, tag: str):
         super().__init__()
@@ -206,9 +210,9 @@ class _ImageBuilder(threading.Thread):
                     'docker', 'build',
                     '--no-cache',
                     '--pull',
-                    '--memory', '8GB',
-                    '--memory-swap', '8GB',
-                    '--ulimit', 'nproc=1000:1000',
+                    '--memory', IMAGE_BUILD_MEMORY_LIMIT,
+                    '--memory-swap', IMAGE_BUILD_MEMORY_LIMIT,
+                    '--ulimit', f'nproc={IMAGE_BUILD_NPROC_LIMIT}:{IMAGE_BUILD_NPROC_LIMIT}',
                     # Use up to 50% of the CPU(s)
                     '--cpu-period=100000',
                     '--cpu-quota=50000',
