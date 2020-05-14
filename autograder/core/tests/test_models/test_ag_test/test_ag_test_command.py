@@ -482,12 +482,10 @@ class AGTestCommandMiscTestCase(UnitTestBase):
                 name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
                 time_limit=constants.MAX_SUBPROCESS_TIMEOUT + 1,
                 stack_size_limit=constants.MAX_STACK_SIZE_LIMIT + 1,
-                virtual_memory_limit=constants.MAX_VIRTUAL_MEM_LIMIT + 1,
                 process_spawn_limit=constants.MAX_PROCESS_LIMIT + 1)
 
         self.assertIn('time_limit', cm.exception.message_dict)
         self.assertIn('stack_size_limit', cm.exception.message_dict)
-        self.assertIn('virtual_memory_limit', cm.exception.message_dict)
         self.assertIn('process_spawn_limit', cm.exception.message_dict)
 
     def test_serialize(self):

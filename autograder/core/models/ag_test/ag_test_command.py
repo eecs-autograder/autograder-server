@@ -295,12 +295,14 @@ class AGTestCommand(AutograderModel):
 
     virtual_memory_limit = models.BigIntegerField(
         default=constants.DEFAULT_VIRTUAL_MEM_LIMIT,
-        validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_VIRTUAL_MEM_LIMIT)],
-        help_text=f"""The maximum amount of virtual memory
-            (in bytes) the command can use.
-            Must be > 0
-            Must be <= {constants.MAX_VIRTUAL_MEM_LIMIT}
-            NOTE: Setting this value too low may cause the command to crash prematurely.""")
+        validators=[MinValueValidator(1)],
+        help_text="""The maximum amount of virtual memory
+            (in bytes) the command can use. Must be > 0.
+            Limiting virtual memory can help produce cleaner
+            error messages when the command uses too much memory. However, some programs allocate
+            a large amount of virtual memory but use very little *physical* memory. For these
+            kinds of programs (e.g. Java programs), we recommend NOT limiting virtual memory.
+            Note that physical memory usage will still be limited for security reasons.""")
 
     block_process_spawn = models.BooleanField(
         default=False, blank=True,

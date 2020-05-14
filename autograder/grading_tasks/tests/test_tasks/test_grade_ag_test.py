@@ -471,7 +471,7 @@ sys.stderr.flush()
 
         time_limit = random.randint(1, constants.MAX_SUBPROCESS_TIMEOUT)
         virtual_memory_limit = random.randint(
-            constants.DEFAULT_VIRTUAL_MEM_LIMIT, constants.MAX_VIRTUAL_MEM_LIMIT)
+            constants.DEFAULT_VIRTUAL_MEM_LIMIT, constants.DEFAULT_VIRTUAL_MEM_LIMIT * 100)
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case, cmd='printf spam',
             time_limit=time_limit,
@@ -519,7 +519,7 @@ sys.stderr.flush()
 
         time_limit = 5
         virtual_memory_limit = random.randint(
-            constants.DEFAULT_VIRTUAL_MEM_LIMIT, constants.MAX_VIRTUAL_MEM_LIMIT)
+            constants.DEFAULT_VIRTUAL_MEM_LIMIT, constants.DEFAULT_VIRTUAL_MEM_LIMIT * 100)
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case, cmd='printf spam',
             use_virtual_memory_limit=False,

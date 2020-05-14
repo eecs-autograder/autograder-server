@@ -43,8 +43,7 @@ class Command(DictSerializableMixin):
                        make_max_value_validator(constants.MAX_SUBPROCESS_TIMEOUT)],
         'stack_size_limit': [make_min_value_validator(1),
                              make_max_value_validator(constants.MAX_STACK_SIZE_LIMIT)],
-        'virtual_memory_limit': [make_min_value_validator(1),
-                                 make_max_value_validator(constants.MAX_VIRTUAL_MEM_LIMIT)],
+        'virtual_memory_limit': [make_min_value_validator(1)],
         'process_spawn_limit': [make_min_value_validator(0),
                                 make_max_value_validator(constants.MAX_PROCESS_LIMIT)],
     }
@@ -61,10 +60,13 @@ class Command(DictSerializableMixin):
         'use_virtual_memory_limit': """When set to false, the virtual memory limit will not
             be applied to the command. Note that the sandbox will still apply
             a physical memory limit to all commands run in the sandbox.""",
-        'virtual_memory_limit': f"""The maximum amount of virtual memory (in bytes) allowed.
-            Must be > 0
-            Must be <= {constants.MAX_VIRTUAL_MEM_LIMIT}
-            NOTE: Setting this value too low may cause the command to crash prematurely.""",
+        'virtual_memory_limit': """The maximum amount of virtual memory
+            (in bytes) the command can use. Must be > 0.
+            Limiting virtual memory can help produce cleaner
+            error messages when the command uses too much memory. However, some programs allocate
+            a large amount of virtual memory but use very little *physical* memory. For these
+            kinds of programs (e.g. Java programs), we recommend NOT limiting virtual memory.
+            Note that physical memory usage will still be limited for security reasons.""",
         'block_process_spawn': "When true, prevents the command from spawning child processes.",
         'process_spawn_limit': """This field is IGNORED and will be removed in version 5.0.0.
             Use block_process_spawn instead.""",
