@@ -37,22 +37,22 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agtestcase',
             name='normal_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_case.NewAGTestCaseFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_case.NewAGTestCaseFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_case.AGTestCaseFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_case.AGTestCaseFeedbackConfig),
         ),
         migrations.AddField(
             model_name='agtestcase',
             name='past_limit_submission_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_case.NewAGTestCaseFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_case.NewAGTestCaseFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_case.AGTestCaseFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_case.AGTestCaseFeedbackConfig),
         ),
         migrations.AddField(
             model_name='agtestcase',
             name='staff_viewer_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_case.NewAGTestCaseFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_case.NewAGTestCaseFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_case.AGTestCaseFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_case.AGTestCaseFeedbackConfig),
         ),
         migrations.AddField(
             model_name='agtestcase',
             name='ultimate_submission_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_case.NewAGTestCaseFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_case.NewAGTestCaseFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_case.AGTestCaseFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_case.AGTestCaseFeedbackConfig),
         ),
 
         # migrations.RunPython(

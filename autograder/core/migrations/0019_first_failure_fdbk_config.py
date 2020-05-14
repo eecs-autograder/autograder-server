@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agtestcommand',
             name='first_failed_test_normal_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(blank=True, default=None, help_text='When non-null, specifies feedback to be given when\n                     this command is in the first test case that failed\n                     within a suite.', null=True, serializable_class=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(blank=True, default=None, help_text='When non-null, specifies feedback to be given when\n                     this command is in the first test case that failed\n                     within a suite.', null=True, serializable_class=autograder.core.models.ag_test.ag_test_command.AGTestCommandFeedbackConfig),
         ),
     ]

@@ -48,22 +48,22 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agtestcommand',
             name='normal_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig, help_text='Feedback settings for a normal Submission.', serializable_class=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_command.AGTestCommandFeedbackConfig, help_text='Feedback settings for a normal Submission.', serializable_class=autograder.core.models.ag_test.ag_test_command.AGTestCommandFeedbackConfig),
         ),
         migrations.AddField(
             model_name='agtestcommand',
             name='past_limit_submission_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig, help_text='Feedback settings for a Submission that is past the daily limit.', serializable_class=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_command.AGTestCommandFeedbackConfig, help_text='Feedback settings for a Submission that is past the daily limit.', serializable_class=autograder.core.models.ag_test.ag_test_command.AGTestCommandFeedbackConfig),
         ),
         migrations.AddField(
             model_name='agtestcommand',
             name='staff_viewer_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig.default_staff_viewer_fdbk_config, help_text='Feedback settings for a staff member viewing a Submission from another group.', serializable_class=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_command.AGTestCommandFeedbackConfig.default_staff_viewer_fdbk_config, help_text='Feedback settings for a staff member viewing a Submission from another group.', serializable_class=autograder.core.models.ag_test.ag_test_command.AGTestCommandFeedbackConfig),
         ),
         migrations.AddField(
             model_name='agtestcommand',
             name='ultimate_submission_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig.default_ultimate_submission_fdbk_config, help_text='Feedback settings for an ultimate Submission.', serializable_class=autograder.core.models.ag_test.ag_test_command.NewAGTestCommandFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_command.AGTestCommandFeedbackConfig.default_ultimate_submission_fdbk_config, help_text='Feedback settings for an ultimate Submission.', serializable_class=autograder.core.models.ag_test.ag_test_command.AGTestCommandFeedbackConfig),
         ),
 
         # migrations.RunPython(

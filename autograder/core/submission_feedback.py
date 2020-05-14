@@ -12,13 +12,13 @@ from django.utils.functional import cached_property
 import autograder.core.utils as core_ut
 from autograder.core.models import AGTestCommandResult, MutationTestSuiteResult, Submission
 from autograder.core.models.ag_model_base import ToDictMixin
-from autograder.core.models.ag_test.ag_test_case import AGTestCase, NewAGTestCaseFeedbackConfig
+from autograder.core.models.ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 from autograder.core.models.ag_test.ag_test_case_result import AGTestCaseResult
 from autograder.core.models.ag_test.ag_test_command import (AGTestCommand, ExpectedOutputSource,
                                                             ExpectedReturnCode,
-                                                            NewAGTestCommandFeedbackConfig,
+                                                            AGTestCommandFeedbackConfig,
                                                             ValueFeedbackLevel)
-from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, NewAGTestSuiteFeedbackConfig
+from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
 from autograder.core.models.ag_test.ag_test_suite_result import AGTestSuiteResult
 from autograder.core.models.ag_test.feedback_category import FeedbackCategory
 from autograder.core.models.project import Project
@@ -445,7 +445,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         elif fdbk_category == FeedbackCategory.staff_viewer:
             self._fdbk = self._ag_test_suite.staff_viewer_fdbk_config
         elif fdbk_category == FeedbackCategory.max:
-            self._fdbk = NewAGTestSuiteFeedbackConfig()
+            self._fdbk = AGTestSuiteFeedbackConfig()
 
     @property
     def fdbk_conf(self):
@@ -635,7 +635,7 @@ class AGTestCaseResultFeedback(ToDictMixin):
         elif fdbk_category == FeedbackCategory.staff_viewer:
             self._fdbk = self._ag_test_case.staff_viewer_fdbk_config
         elif fdbk_category == FeedbackCategory.max:
-            self._fdbk = NewAGTestCaseFeedbackConfig()
+            self._fdbk = AGTestCaseFeedbackConfig()
 
         self.is_first_failure = is_first_failure
 
@@ -751,7 +751,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
         elif fdbk_category == FeedbackCategory.staff_viewer:
             self._fdbk = self._cmd.staff_viewer_fdbk_config
         elif fdbk_category == FeedbackCategory.max:
-            self._fdbk = NewAGTestCommandFeedbackConfig.max_fdbk_config()
+            self._fdbk = AGTestCommandFeedbackConfig.max_fdbk_config()
 
     @property
     def pk(self):
