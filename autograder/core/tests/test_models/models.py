@@ -53,29 +53,12 @@ class DummyAutograderModel(AutograderModel):
     nullable_one_to_one = models.OneToOneField(
         DummyForeignAutograderModel, related_name='+', blank=True, null=True, default=None,
         on_delete=models.SET_NULL)
-    transparent_to_one = models.OneToOneField(
-        DummyForeignAutograderModel, related_name='+',
-        default=_make_default_dummy_foreign_ag_model,
-        null=True,
-        on_delete=models.SET_NULL)
-    transparent_nullable_to_one = models.OneToOneField(
-        DummyForeignAutograderModel, related_name='+',
-        default=None, blank=True, null=True,
-        on_delete=models.SET_NULL)
 
     foreign_key = models.ForeignKey(DummyForeignAutograderModel, related_name='rev_foreign_key',
                                     on_delete=models.CASCADE)
     nullable_foreign_key = models.ForeignKey(
         DummyForeignAutograderModel, related_name='+', blank=True, null=True, default=None,
         on_delete=models.CASCADE)
-    transparent_foreign_key = models.ForeignKey(
-        DummyForeignAutograderModel, related_name='+',
-        default=_make_default_dummy_foreign_ag_model,
-        on_delete=models.CASCADE)
-    transparent_nullable_foreign_key = models.ForeignKey(
-        DummyForeignAutograderModel, related_name='+',
-        on_delete=models.CASCADE,
-        default=None, blank=True, null=True)
 
     many_to_many = models.ManyToManyField(DummyToManyModel, related_name='many_to_manys')
     another_many_to_many = models.ManyToManyField(DummyToManyModel)
@@ -103,15 +86,11 @@ class DummyAutograderModel(AutograderModel):
         'one_to_one_id',
         'nullable_one_to_one',
         'nullable_one_to_one_id',
-        'transparent_to_one',
-        'transparent_nullable_to_one',
 
         'foreign_key',
         'foreign_key_id',
         'nullable_foreign_key',
         'nullable_foreign_key_id',
-        'transparent_foreign_key',
-        'transparent_nullable_foreign_key',
 
         'many_to_many',
         'another_many_to_many',
@@ -127,25 +106,14 @@ class DummyAutograderModel(AutograderModel):
 
         'one_to_one',
         'nullable_one_to_one',
-        'transparent_to_one',
-        'transparent_nullable_to_one',
 
         'foreign_key',
         'nullable_foreign_key',
-        'transparent_foreign_key',
-        'transparent_nullable_foreign_key',
 
         'many_to_many',
         'another_many_to_many',
 
         'users'
-    )
-
-    TRANSPARENT_TO_ONE_FIELDS = (
-        'transparent_to_one',
-        'transparent_nullable_to_one',
-        'transparent_foreign_key',
-        'transparent_nullable_foreign_key',
     )
 
 
