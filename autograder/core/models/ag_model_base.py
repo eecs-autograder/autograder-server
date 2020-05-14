@@ -64,11 +64,7 @@ class AutograderModelManager(models.Manager):
 
         with transaction.atomic():
             for field_name, value in kwargs.items():
-                if field_name in instance.get_transparent_to_one_fields():
-                    related_model = instance._meta.get_field(field_name).related_model
-                    setattr(instance, field_name,
-                            related_model.objects.validate_and_create(**value))
-                elif _field_is_to_one(instance, field_name):
+                if _field_is_to_one(instance, field_name):
                     _set_to_one_relationship(instance, field_name, value)
                 else:
                     field = instance._meta.get_field(field_name)
@@ -167,42 +163,6 @@ class ToDictMixin:
 
     SERIALIZE_RELATED: Sequence[str] = tuple()
 
-    @classmethod
-    def get_transparent_to_one_fields(cls) -> Sequence[str]:
-        """
-        DEPRECATED. Do not use.
-
-        Returns a Sequence of the names of database -to-one fields
-        that should be treated as "transparent" when serializing and
-        updating instances of this class.
-        This introduces the following default behaviors for affected fields:
-        - The related object will be serialized using its to_dict() method.
-        - When the field is being set, either in validate_and_create or
-          validate_and_update, the parameter value for the field MUST
-          be a dictionary. In the case of validate_and_create, a new
-          related object will be created using the dictionary contents
-          as keyword arguments. In the case of validate_and_update,
-          the dictionary contents will be unpacked and passed to the
-          related object's validate_and_update method. If the related
-          object is None, then a new related object will be created
-          similarly to in validate_and_create.
-          If the related object is being set to None in validate_and_update,
-          the current related object will be deleted. Keep this in mind
-          especially if those objects have children that could be
-          cascade-deleted because of this.
-
-        Marking a -to-one relationship as transparent effectively makes it
-        behave like a normal member of the class rather than a database relationship.
-
-        The base class version of this function returns the value of
-        cls.TRANSPARENT_TO_ONE_FIELDS, which defaults to an empty Sequence.
-        """
-        warnings.warn(
-            'Transparent -to-one functionality is deprecated. Use a ValidatedJSONField instead.')
-        return cls.TRANSPARENT_TO_ONE_FIELDS
-
-    TRANSPARENT_TO_ONE_FIELDS: Sequence[str] = tuple()
-
     def to_dict(self) -> dict:
         """
         Returns a dictionary representation of this model instance.
@@ -242,8 +202,7 @@ class ToDictMixin:
                     if field_val is None:
                         continue
 
-                    if (field_name in self.get_serialize_related_fields()
-                            or field_name in self.get_transparent_to_one_fields()):
+                    if field_name in self.get_serialize_related_fields():
                         result[field_name] = _serialize_model_obj(field_val)
                     else:
                         if isinstance(field_val, int):  # serializing an '_id' field
@@ -576,27 +535,6 @@ class AutograderModel(ToDictMixin, models.Model):
             if field.many_to_many:
                 loaded_vals = _load_related_to_many_objs(field.related_model, val)
                 getattr(self, field_name).set(loaded_vals, clear=True)
-            elif field_name in self.get_transparent_to_one_fields():
-                if val is not None and not isinstance(val, dict):
-                    raise ValueError(
-                        'Expected a dictionary or None when updating the transparent '
-                        '-to-one field {} on model object of type {}, but got {} instead.'.format(
-                            field_name, self.__class__, type(val)))
-
-                if getattr(self, field_name) is None:
-                    if val is None:
-                        pass
-                    else:
-                        setattr(self, field_name,
-                                field.related_model.objects.validate_and_create(**val))
-                else:
-                    if val is None:
-                        getattr(self, field_name).delete()
-                        setattr(self, field_name, None)
-                    else:
-                        update_vals = {key: value for key, value in val.items()
-                                       if key in field.related_model.get_editable_fields()}
-                        getattr(self, field_name).validate_and_update(**update_vals)
             elif _field_is_to_one(self, field_name):
                 _set_to_one_relationship(self, field_name, val)
             else:

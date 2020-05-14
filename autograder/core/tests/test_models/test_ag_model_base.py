@@ -24,9 +24,7 @@ class AGModelBaseToDictTest(UnitTestBase):
             pos_num_val=15,
             non_empty_str_val='spam',
             one_to_one=DummyForeignAutograderModel.objects.create(name='akdsjhfalsd'),
-            foreign_key=DummyForeignAutograderModel.objects.create(name='bekjfahsdf'),
-            transparent_to_one=DummyForeignAutograderModel.objects.create(name='kadhfkasdhfl'),
-            transparent_foreign_key=DummyForeignAutograderModel.objects.create(name='JHBQDFJASD'))
+            foreign_key=DummyForeignAutograderModel.objects.create(name='bekjfahsdf'))
 
         self.many_to_manys = [
             DummyToManyModel.objects.create(name='wee{}'.format(i)) for i in range(3)]
@@ -51,15 +49,11 @@ class AGModelBaseToDictTest(UnitTestBase):
             'one_to_one_id': self.ag_model.one_to_one.pk,
             'nullable_one_to_one': None,
             'nullable_one_to_one_id': None,
-            'transparent_to_one': self.ag_model.transparent_to_one.to_dict(),
-            'transparent_nullable_to_one': None,
 
             'foreign_key': self.ag_model.foreign_key.pk,
             'foreign_key_id': self.ag_model.foreign_key.pk,
             'nullable_foreign_key': None,
             'nullable_foreign_key_id': None,
-            'transparent_foreign_key': self.ag_model.transparent_foreign_key.to_dict(),
-            'transparent_nullable_foreign_key': None,
 
             'many_to_many': [obj.pk for obj in self.many_to_manys],
             'another_many_to_many': [],
@@ -95,15 +89,11 @@ class AGModelBaseToDictTest(UnitTestBase):
                 'one_to_one_id': self.ag_model.one_to_one.pk,
                 'nullable_one_to_one': None,
                 'nullable_one_to_one_id': None,
-                'transparent_to_one': self.ag_model.transparent_to_one.to_dict(),
-                'transparent_nullable_to_one': None,
 
                 'foreign_key': self.ag_model.foreign_key.to_dict(),
                 'foreign_key_id': self.ag_model.foreign_key.pk,
                 'nullable_foreign_key': None,
                 'nullable_foreign_key_id': None,
-                'transparent_foreign_key': self.ag_model.transparent_foreign_key.to_dict(),
-                'transparent_nullable_foreign_key': None,
 
                 'many_to_many': [obj.to_dict() for obj in self.many_to_manys],
                 'another_many_to_many': [],
@@ -155,20 +145,15 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
         one_to_one = DummyForeignAutograderModel.objects.create(name='akjdnkajhsdf')
         foreign_key = DummyForeignAutograderModel.objects.create(name='qbdbfakdfl')
 
-        transparent_to_one_name = 'qiwefhsd'
-        transparent_foreign_key_name = 'aksjdhfakj'
-
         ag_model = DummyAutograderModel.objects.validate_and_create(
             pos_num_val=num_val,
             non_empty_str_val=str_val,
 
             one_to_one=one_to_one,
             nullable_one_to_one=None,
-            transparent_to_one={'name': transparent_to_one_name},
 
             foreign_key=foreign_key,
             nullable_foreign_key=None,
-            transparent_foreign_key={'name': transparent_foreign_key_name},
 
             many_to_many=[obj.to_dict() for obj in self.many_to_manys],
             another_many_to_many=self.many_to_manys,
@@ -182,13 +167,9 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
 
         self.assertEqual(one_to_one, ag_model.one_to_one)
         self.assertIsNone(ag_model.nullable_one_to_one)
-        self.assertEqual(transparent_to_one_name, ag_model.transparent_to_one.name)
-        self.assertIsNone(ag_model.transparent_nullable_to_one)
 
         self.assertEqual(foreign_key, ag_model.foreign_key)
         self.assertIsNone(ag_model.nullable_foreign_key)
-        self.assertEqual(transparent_foreign_key_name, ag_model.transparent_foreign_key.name)
-        self.assertIsNone(ag_model.transparent_nullable_foreign_key)
 
         self.assertSequenceEqual(self.many_to_manys, ag_model.many_to_many.all())
         self.assertSequenceEqual(self.many_to_manys, ag_model.another_many_to_many.all())
@@ -261,10 +242,8 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         one_to_one = DummyForeignAutograderModel.objects.create(name='akjdnkajhsdf')
         foreign_key = DummyForeignAutograderModel.objects.create(name='qbdbfakdfl')
 
-        orig_transparent_to_one = self.ag_model.transparent_to_one
-        transparent_to_one_name = 'qiwefhsd'
-        orig_transparent_foreign_key = self.ag_model.transparent_foreign_key
-        transparent_foreign_key_name = 'aksjdhfakj'
+        nullable_one_to_one = DummyForeignAutograderModel.objects.create(name='akjdnkajhsdf')
+        nullable_foreign_key = DummyForeignAutograderModel.objects.create(name='qbdbfakdfl')
 
         many_to_manys = [
             DummyToManyModel.objects.create(name='wee{}'.format(i)) for i in range(3)]
@@ -278,8 +257,8 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
 
             one_to_one=one_to_one,
             foreign_key=foreign_key,
-            transparent_to_one={'name': transparent_to_one_name},
-            transparent_foreign_key={'name': transparent_foreign_key_name},
+            nullable_one_to_one=nullable_one_to_one,
+            nullable_foreign_key=nullable_foreign_key,
             many_to_many=[obj.to_dict() for obj in many_to_manys],
             another_many_to_many=many_to_manys,
             users=users)
@@ -291,16 +270,10 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.assertEqual(AnEnum.egg, self.ag_model.enum_field)
 
         self.assertEqual(one_to_one, self.ag_model.one_to_one)
-        self.assertIsNone(self.ag_model.nullable_one_to_one)
-        # Make sure we updated the transparent object rather than replacing it
-        # with a new one.
-        self.assertEqual(orig_transparent_to_one, self.ag_model.transparent_to_one)
-        self.assertEqual(transparent_to_one_name, self.ag_model.transparent_to_one.name)
+        self.assertEqual(nullable_one_to_one, self.ag_model.nullable_one_to_one)
 
         self.assertEqual(foreign_key, self.ag_model.foreign_key)
-        self.assertIsNone(self.ag_model.nullable_foreign_key)
-        self.assertEqual(orig_transparent_foreign_key, self.ag_model.transparent_foreign_key)
-        self.assertEqual(transparent_foreign_key_name, self.ag_model.transparent_foreign_key.name)
+        self.assertEqual(nullable_foreign_key, self.ag_model.nullable_foreign_key)
 
         self.assertSequenceEqual(many_to_manys, self.ag_model.many_to_many.all())
         self.assertSequenceEqual(many_to_manys, self.ag_model.another_many_to_many.all())
@@ -309,10 +282,12 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         second_new_num = new_num + 1
         self.ag_model.validate_and_update(
             pos_num_val=second_new_num,
+            nullable_one_to_one=None,
             nullable_foreign_key=None,
             many_to_many=[])
         self.ag_model.refresh_from_db()
         self.assertEqual(second_new_num, self.ag_model.pos_num_val)
+        self.assertIsNone(self.ag_model.nullable_one_to_one)
         self.assertIsNone(self.ag_model.nullable_foreign_key)
         self.assertSequenceEqual([], self.ag_model.many_to_many.all())
 
@@ -365,57 +340,6 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
 
         self.assertEqual(new_one_to_one_obj, obj.one_to_one)
         self.assertEqual(new_foreign_obj, obj.foreign_key)
-
-    def test_update_nullable_to_one_from_null_to_value(self):
-        one_to_one_obj = DummyForeignAutograderModel.objects.create(name='qehkfdnm')
-        foreign_obj = DummyForeignAutograderModel.objects.create(name='cmnbse')
-
-        obj = DummyAutograderModel.objects.validate_and_create(
-            pos_num_val=15,
-            non_empty_str_val='spam',
-            read_only_field='blah',
-
-            one_to_one=one_to_one_obj,
-            foreign_key=foreign_obj)  # type: DummyAutograderModel
-
-        self.assertIsNone(obj.transparent_nullable_to_one)
-        self.assertIsNone(obj.transparent_nullable_foreign_key)
-
-        name1 = 'qewrasdfoiadsuf'
-        name2 = 'avaejfa'
-        obj.validate_and_update(
-            transparent_nullable_to_one={'name': name1},
-            transparent_nullable_foreign_key={'name': name2})
-
-        self.assertEqual(name1, obj.transparent_nullable_to_one.name)
-        self.assertEqual(name2, obj.transparent_nullable_foreign_key.name)
-
-    def test_update_nullable_to_one_from_value_to_null_value_deleted(self):
-        one_to_one_obj = DummyForeignAutograderModel.objects.create(name='qehkfdnm')
-        foreign_obj = DummyForeignAutograderModel.objects.create(name='cmnbse')
-
-        obj = DummyAutograderModel.objects.validate_and_create(
-            pos_num_val=15,
-            non_empty_str_val='spam',
-            read_only_field='blah',
-
-            one_to_one=one_to_one_obj,
-            foreign_key=foreign_obj,
-            transparent_nullable_to_one={'name': 'asdfnaoiwej'},
-            transparent_nullable_foreign_key={'name': 'skdfjs'})  # type: DummyAutograderModel
-
-        num_foreign_objs = DummyForeignAutograderModel.objects.count()
-
-        obj.validate_and_update(
-            transparent_nullable_to_one=None,
-            transparent_nullable_foreign_key=None)
-
-        obj.refresh_from_db()
-
-        self.assertIsNone(obj.transparent_nullable_to_one)
-        self.assertIsNone(obj.transparent_nullable_foreign_key)
-
-        self.assertEqual(num_foreign_objs - 2, DummyForeignAutograderModel.objects.count())
 
     def test_invalid_update_bad_values(self):
         old_vals = self.ag_model.to_dict()

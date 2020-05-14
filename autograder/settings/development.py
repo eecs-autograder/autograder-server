@@ -8,6 +8,12 @@ MEDIA_ROOT += '_dev'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+INSTALLED_APPS += [
+    # Used for testing ag_model_base
+    'autograder.core.tests.test_models',
+]
+
+
 # !!! IMPORTANT !!!
 # As of 22 April, 2020, django-debug-toolbar 2.2 (required when using Django 3)
 # causes a memory leak, which in turn causes MemoryError in tests that create
