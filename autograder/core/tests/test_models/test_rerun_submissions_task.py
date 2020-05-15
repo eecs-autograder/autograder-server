@@ -45,7 +45,6 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
             ag_test_suite_data={str(self.ag_test_suite.pk): [self.ag_test_case.pk]},
             rerun_all_mutation_test_suites=False,
             mutation_suite_pks=[self.mutation_test_suite.pk],
-            celery_group_result_id=uuid.uuid4().hex,
         )  # type: ag_models.RerunSubmissionsTask
 
         self.assertEqual(self.project, rerun_task.project)
