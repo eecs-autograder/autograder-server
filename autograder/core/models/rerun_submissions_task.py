@@ -68,8 +68,6 @@ class RerunSubmissionsTask(Task):
     num_completed_subtasks = models.IntegerField(default=0)
     total_num_subtasks = models.IntegerField(default=0)
 
-    celery_group_result_id = models.UUIDField(blank=True, null=True, default=None)
-
     @property
     def progress(self) -> int:
         if self.total_num_subtasks == 0:

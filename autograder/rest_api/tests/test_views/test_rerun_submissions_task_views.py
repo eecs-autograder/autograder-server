@@ -321,10 +321,8 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
         expected_response = task.to_dict()
 
         if task.num_completed_subtasks != 0:
-            # Unless there were no subtasks, there
-            # should be a celery group result id, and
+            # Unless there were no subtasks,
             # the response should return progress of 0.
-            self.assertIsNotNone(task.celery_group_result_id)
             expected_response['progress'] = 0
 
         self.assertEqual(expected_response, response.data)
