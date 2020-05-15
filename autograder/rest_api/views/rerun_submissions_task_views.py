@@ -38,60 +38,52 @@ class RerunSubmissionsTaskListCreateView(NestedModelView):
         return self.do_list()
 
     @convert_django_validation_error
-    @transaction.atomic()
     def post(self, request: Request, *args, **kwargs):
-        project: ag_models.Project = self.get_object()
+        with transaction.atomic():
+            project: ag_models.Project = self.get_object()
 
-        task_args = dict(request.data)
-        task_args.update({'project': project, 'creator': request.user})
-        rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(**task_args)
+            task_args = dict(request.data)
+            task_args.update({'project': project, 'creator': request.user})
+            rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(**task_args)
 
-        submissions = ag_models.Submission.objects.filter(group__project=project)
-        if not request.data.get('rerun_all_submissions', True):
-            submissions = submissions.filter(pk__in=request.data.get('submission_pks', []))
+            submissions = ag_models.Submission.objects.filter(group__project=project)
+            if not request.data.get('rerun_all_submissions', True):
+                submissions = submissions.filter(pk__in=request.data.get('submission_pks', []))
 
-        ag_test_suites = project.ag_test_suites.all()
-        ag_suites_data = request.data.get('ag_test_suite_data', {})
-        if not request.data.get('rerun_all_ag_test_suites', True):
-            ag_test_suites = ag_test_suites.filter(pk__in=ag_suites_data.keys())
+            ag_test_suites = project.ag_test_suites.all()
+            ag_suites_data = request.data.get('ag_test_suite_data', {})
+            if not request.data.get('rerun_all_ag_test_suites', True):
+                ag_test_suites = ag_test_suites.filter(pk__in=ag_suites_data.keys())
 
-        mutation_suites = project.mutation_test_suites.all()
-        if not request.data.get('rerun_all_mutation_test_suites', True):
-            mutation_suites = mutation_suites.filter(
-                pk__in=request.data.get('mutation_suite_pks', []))
+            mutation_suites = project.mutation_test_suites.all()
+            if not request.data.get('rerun_all_mutation_test_suites', True):
+                mutation_suites = mutation_suites.filter(
+                    pk__in=request.data.get('mutation_suite_pks', []))
 
-        signatures = []
-        for submission in submissions:
-            ag_suite_sigs = [
-                rerun_ag_test_suite.s(
-                    rerun_task.pk, submission.pk, ag_suite.pk,
-                    *ag_suites_data.get(str(ag_suite.pk), [])
-                ).set(queue=settings.RERUN_QUEUE_TMPL.format(ag_suite.project_id))
-                for ag_suite in ag_test_suites
-            ]
+            signatures = []
+            for submission in submissions:
+                ag_suite_sigs = [
+                    rerun_ag_test_suite.s(
+                        rerun_task.pk, submission.pk, ag_suite.pk,
+                        *ag_suites_data.get(str(ag_suite.pk), [])
+                    ).set(queue=settings.RERUN_QUEUE_TMPL.format(ag_suite.project_id))
+                    for ag_suite in ag_test_suites
+                ]
 
-            mutation_suite_sigs = [
-                rerun_mutation_test_suite.s(
-                    rerun_task.pk, submission.pk, mutation_suite.pk
-                ).set(queue=settings.RERUN_QUEUE_TMPL.format(mutation_suite.project_id))
-                for mutation_suite in mutation_suites
-            ]
+                mutation_suite_sigs = [
+                    rerun_mutation_test_suite.s(
+                        rerun_task.pk, submission.pk, mutation_suite.pk
+                    ).set(queue=settings.RERUN_QUEUE_TMPL.format(mutation_suite.project_id))
+                    for mutation_suite in mutation_suites
+                ]
 
-            signatures += ag_suite_sigs
-            signatures += mutation_suite_sigs
+                signatures += ag_suite_sigs
+                signatures += mutation_suite_sigs
 
         from autograder.celery import app
         if signatures:
             clear_cache_sig = clear_cached_submission_results.s(project.pk)
-
-            chord_result = celery.chord(signatures, body=clear_cache_sig, app=app).apply_async()
-
-            # In case any of the subtasks finish before we reach this line
-            # (definitely happens in testing), make sure we don't
-            # accidentally overwrite the task's progress or error messages.
-            ag_models.RerunSubmissionsTask.objects.filter(
-                pk=rerun_task.pk
-            ).update(celery_group_result_id=chord_result.id)
+            celery.chord(signatures, body=clear_cache_sig, app=app).apply_async()
 
         return response.Response(rerun_task.to_dict(), status=status.HTTP_201_CREATED)
 
