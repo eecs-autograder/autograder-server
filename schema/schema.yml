@@ -2309,6 +2309,20 @@ paths:
                   type: string
                   format: date-time
       tags: *id032
+    delete:
+      operationId: deleteSandboxDockerImage
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+      tags: *id032
   /api/projects/{project_pk}/ag_test_suites/:
     get:
       operationId: listAGTestSuites

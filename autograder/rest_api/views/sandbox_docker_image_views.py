@@ -289,6 +289,17 @@ class SandboxDockerImageDetailView(ag_views.AGModelDetailView):
     def patch(self, *args, **kwargs):
         return self.do_patch()
 
+    @transaction.atomic
+    def delete(self, *args, **kwargs):
+        image = self.get_object()
+        if image.display_name == 'Default':
+            return response.Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data='You may not delete the default image.')
+
+        image.delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class RebuildSandboxDockerImageView(ag_views.AGModelAPIView):
     schema = CustomViewSchema([APITags.sandbox_docker_images], {
