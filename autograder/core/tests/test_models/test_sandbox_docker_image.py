@@ -131,7 +131,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         self.assertFalse(loaded.timed_out)
         self.assertEqual(['spam.sh', 'Dockerfile', 'sausage.sh'], loaded.filenames)
         self.assertIsNone(loaded.course)
-        self.assertIsNone(loaded.image_to_update)
+        self.assertIsNone(loaded.image)
         self.assertEqual('', loaded.internal_error_msg)
 
         for file_ in files:
@@ -147,13 +147,13 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
                 SimpleUploadedFile('Dockerfile', b'blee'),
             ],
             course=None,
-            image_to_update=image_to_update
+            image=image_to_update
         )
         loaded = ag_models.BuildSandboxDockerImageTask.objects.get(pk=task.pk)
         self.assertEqual(ag_models.BuildImageStatus.queued, loaded.status)
         self.assertEqual(['Dockerfile'], loaded.filenames)
         self.assertIsNone(loaded.course)
-        self.assertEqual(image_to_update, loaded.image_to_update)
+        self.assertEqual(image_to_update, loaded.image)
 
     def test_create_build_task_course_and_image_to_update_not_none(self) -> None:
         image_to_update = obj_build.make_sandbox_docker_image(self.course)
@@ -162,20 +162,20 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
                 SimpleUploadedFile('Dockerfile', b'blee'),
             ],
             course=self.course,
-            image_to_update=image_to_update
+            image=image_to_update
         )
         loaded = ag_models.BuildSandboxDockerImageTask.objects.get(pk=task.pk)
         self.assertEqual(ag_models.BuildImageStatus.queued, loaded.status)
         self.assertEqual(['Dockerfile'], loaded.filenames)
         self.assertEqual(self.course, loaded.course)
-        self.assertEqual(image_to_update, loaded.image_to_update)
+        self.assertEqual(image_to_update, loaded.image)
 
     def test_image_to_update_has_finished_build_task(self) -> None:
         image_to_update = obj_build.make_sandbox_docker_image()
         task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
             files=[SimpleUploadedFile('Dockerfile', b'')],
             course=None,
-            image_to_update=image_to_update
+            image=image_to_update
         )
         done_statuses = [
             ag_models.BuildImageStatus.done,
@@ -189,7 +189,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             new_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
                 files=[SimpleUploadedFile('Dockerfile', b'')],
                 course=None,
-                image_to_update=image_to_update,
+                image=image_to_update,
             )
             new_task.delete()
 
@@ -198,16 +198,16 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
             files=[SimpleUploadedFile('Dockerfile', b'')],
             course=None,
-            image_to_update=image_to_update
+            image=image_to_update
         )
 
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
                 files=[SimpleUploadedFile('Dockerfile', b'')],
                 course=None,
-                image_to_update=image_to_update,
+                image=image_to_update,
             )
-        self.assertIn('image_to_update', cm.exception.message_dict)
+        self.assertIn('image', cm.exception.message_dict)
 
         task.status = ag_models.BuildImageStatus.in_progress
         task.save()
@@ -216,9 +216,9 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
                 files=[SimpleUploadedFile('Dockerfile', b'')],
                 course=None,
-                image_to_update=image_to_update,
+                image=image_to_update,
             )
-        self.assertIn('image_to_update', cm.exception.message_dict)
+        self.assertIn('image', cm.exception.message_dict)
 
     def test_task_output_filename_with_course(self) -> None:
         task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
@@ -259,9 +259,9 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
                 files=[SimpleUploadedFile('Dockerfile', b'hi')],
                 course=self.course,
-                image_to_update=image_to_update,
+                image=image_to_update,
             )
-        self.assertIn('image_to_update', cm.exception.message_dict)
+        self.assertIn('image', cm.exception.message_dict)
 
     def test_error_image_to_update_has_no_course_and_course_not_null(self) -> None:
         other_course = obj_build.make_course()
@@ -271,9 +271,9 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
                 files=[SimpleUploadedFile('Dockerfile', b'hi')],
                 course=self.course,
-                image_to_update=image_to_update,
+                image=image_to_update,
             )
-        self.assertIn('image_to_update', cm.exception.message_dict)
+        self.assertIn('image', cm.exception.message_dict)
 
     def test_error_illegal_filename(self) -> None:
         bad_filenames = ['..', '.', '']
@@ -296,19 +296,19 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         self.assertIn('files', cm.exception.message_dict)
         self.assertIn('Dockerfile', cm.exception.message_dict['files'][0])
 
-    def test_image_to_update_set_to_null_on_delete(self) -> None:
+    def test_build_tasks_deleted_on_image_delete(self) -> None:
         image_to_update = obj_build.make_sandbox_docker_image(self.course)
         task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
             files=[
                 SimpleUploadedFile('Dockerfile', b'blee'),
             ],
             course=self.course,
-            image_to_update=image_to_update
+            image=image_to_update
         )
 
         image_to_update.delete()
-        task.refresh_from_db()
-        self.assertIsNone(task.image_to_update)
+        with self.assertRaises(exceptions.ObjectDoesNotExist):
+            task.refresh_from_db()
 
     def test_serialize_build_task(self):
         image_to_update = obj_build.make_sandbox_docker_image(self.course)
@@ -317,7 +317,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
                 SimpleUploadedFile('Dockerfile', b'blee'),
             ],
             course=self.course,
-            image_to_update=image_to_update
+            image=image_to_update
         )
 
         serialized = task.to_dict()
@@ -328,7 +328,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             'timed_out': task.timed_out,
             'filenames': task.filenames,
             'course_id': self.course.pk,
-            'image_to_update': image_to_update.to_dict(),
+            'image': image_to_update.to_dict(),
             'validation_error_msg': '',
             'internal_error_msg': '',
         }

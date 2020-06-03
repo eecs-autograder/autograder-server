@@ -78,14 +78,16 @@ def build_sandbox_docker_image(build_task_pk: int):
         @retry_should_recover
         @transaction.atomic
         def _create_or_save_image():
-            if task.image_to_update is None:
-                ag_models.SandboxDockerImage.objects.validate_and_create(
+            if task.image is None:
+                image = ag_models.SandboxDockerImage.objects.validate_and_create(
                     course=task.course,
                     display_name=f'New Image {uuid.uuid4().hex}',
                     tag=builder.tag,
                 )
+                task.image = image
+                task.save()
             else:
-                image = task.image_to_update
+                image = task.image
                 # Make sure we don't overwrite, say, "display_name"
                 ag_models.SandboxDockerImage.objects.select_for_update().filter(
                     pk=image.pk
