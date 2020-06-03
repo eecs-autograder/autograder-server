@@ -75,18 +75,18 @@ class SandboxDockerImage(AutograderModel):
 class _BuildSandboxDockerImageManager(AutograderModelManager):
     @transaction.atomic
     def validate_and_create(
-        self, files, course, image_to_update=None
+        self, files, course, image=None
     ) -> 'BuildSandboxDockerImageTask':
         pending_tasks_for_image = BuildSandboxDockerImageTask.objects.filter(
-            image_to_update=image_to_update,
+            image=image,
             status__in=[BuildImageStatus.queued, BuildImageStatus.in_progress]
         )
-        if image_to_update is not None and pending_tasks_for_image.exists():
-            raise exceptions.ValidationError({'image_to_update': 'There is a '})
+        if image is not None and pending_tasks_for_image.exists():
+            raise exceptions.ValidationError({'image': 'There is a '})
 
         build_task = self.model(
             course=course,
-            image_to_update=image_to_update,
+            image=image,
         )
         # Create the directory to put the files in (needs a pk)
         build_task.save()
@@ -153,11 +153,14 @@ class BuildSandboxDockerImageTask(AutograderModel):
         """
     )
 
-    image_to_update = models.ForeignKey(
+    image = models.ForeignKey(
         SandboxDockerImage, blank=True, null=True, default=None,
-        on_delete=models.SET_NULL,
-        help_text="""When null, indicates that a new image will be created.
-            Otherwise, refers to the image to be updated on build success."""
+        on_delete=models.CASCADE,
+        help_text="""When initially null, indicates that a new image will be created.
+            That new image will then be set as the value for this field.
+
+            When not null initially, indicates that the specified image
+            should be updated when the build finishes."""
     )
 
     validation_error_msg = models.TextField(
@@ -189,12 +192,12 @@ class BuildSandboxDockerImageTask(AutograderModel):
             os.makedirs(dirname)
 
     def clean(self, *args, **kwargs):
-        if self.image_to_update is None:
+        if self.image is None:
             return
 
-        if self.image_to_update.course != self.course:
+        if self.image.course != self.course:
             raise exceptions.ValidationError({
-                'image_to_update':
+                'image':
                     'Image to update must belong to the same course as the build task.'
             })
 
@@ -205,13 +208,13 @@ class BuildSandboxDockerImageTask(AutograderModel):
         'timed_out',
         'filenames',
         'course_id',
-        'image_to_update',
+        'image',
         'validation_error_msg',
         'internal_error_msg',
     ]
 
     SERIALIZE_RELATED = [
-        'image_to_update',
+        'image',
     ]
 
 

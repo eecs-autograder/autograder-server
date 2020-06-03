@@ -2309,6 +2309,20 @@ paths:
                   type: string
                   format: date-time
       tags: *id032
+    delete:
+      operationId: deleteSandboxDockerImage
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+      tags: *id032
   /api/projects/{project_pk}/ag_test_suites/:
     get:
       operationId: listAGTestSuites
@@ -7206,9 +7220,11 @@ components:
           nullable: true
           type: integer
           format: id
-        image_to_update:
-          description: "When null, indicates that a new image will be created.\n \
-            \           Otherwise, refers to the image to be updated on build success."
+        image:
+          description: "When initially null, indicates that a new image will be created.\n\
+            \            That new image will then be set as the value for this field.\n\
+            \n            When not null initially, indicates that the specified image\n\
+            \            should be updated when the build finishes."
           nullable: true
           allOf:
           - $ref: '#/components/schemas/SandboxDockerImage'

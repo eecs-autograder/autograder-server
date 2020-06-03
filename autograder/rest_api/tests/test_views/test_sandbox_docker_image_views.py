@@ -354,7 +354,7 @@ class BuildTaskDetailViewTestCase(AGViewTestBase):
         self.assertEqual(ag_models.BuildImageStatus.queued, loaded.status)
 
 
-class GetUpdateSandboxImageViewTestCase(_SetUp):
+class SandboxImageDetailViewTestCase(_SetUp):
     def test_superuser_get_global_sandbox_image(self):
         url = reverse('sandbox-docker-image-detail', kwargs={'pk': self.image1.pk})
         self.client.force_authenticate(self.superuser)
@@ -436,6 +436,55 @@ class GetUpdateSandboxImageViewTestCase(_SetUp):
             image_with_course, self.client, other_admin,
             reverse('sandbox-docker-image-detail', kwargs={'pk': image_with_course.pk}),
             {'display_name': 'New Display Name', 'tag': 'new_taggy'})
+
+    def test_superuser_delete_global_sandbox_image(self) -> None:
+        image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            display_name='Image 3', tag='tag3'
+        )
+        self.do_delete_object_test(
+            image, self.client, self.superuser,
+            reverse('sandbox-docker-image-detail', kwargs={'pk': image.pk})
+        )
+
+    def test_delete_default_image_bad_request(self) -> None:
+        image = ag_models.SandboxDockerImage.objects.get(display_name='Default')
+        self.client.force_authenticate(self.superuser)
+        url = reverse('sandbox-docker-image-detail', kwargs={'pk': image.pk})
+
+        response = self.client.delete(url)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        image.refresh_from_db()
+
+    def test_admin_delete_global_sanbdox_image_permission_denied(self) -> None:
+        image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            display_name='Image 3', tag='tag3'
+        )
+        self.do_delete_object_permission_denied_test(
+            image, self.client, self.admin,
+            reverse('sandbox-docker-image-detail', kwargs={'pk': image.pk})
+        )
+
+    def test_admin_delete_course_sandbox_image(self) -> None:
+        image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            display_name='Image 3', tag='tag3', course=self.course
+        )
+        self.do_delete_object_test(
+            image, self.client, self.admin,
+            reverse('sandbox-docker-image-detail', kwargs={'pk': image.pk})
+        )
+
+    def test_non_admin_delete_course_sandbox_image_permission_denied(self) -> None:
+        image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            display_name='Image 3', tag='tag3', course=self.course
+        )
+
+        other_course = obj_build.make_course()
+        other_admin = obj_build.make_admin_user(other_course)
+
+        self.do_delete_object_permission_denied_test(
+            image, self.client, other_admin,
+            reverse('sandbox-docker-image-detail', kwargs={'pk': image.pk})
+        )
 
 
 @mock.patch('autograder.core.tasks.push_image')

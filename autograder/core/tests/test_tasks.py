@@ -29,17 +29,17 @@ class BuildSandboxDockerImageTestCase(UnitTestBase):
         self.maxDiff = None
 
     def test_build_new_default_image(self, push_image_mock) -> None:
-        self._do_build_image_test(course=None, image_to_update=None)
+        self._do_build_image_test(course=None, image=None)
         push_image_mock.assert_called_once()
 
     def test_build_new_course_image(self, push_image_mock) -> None:
-        self._do_build_image_test(course=obj_build.make_course(), image_to_update=None)
+        self._do_build_image_test(course=obj_build.make_course(), image=None)
         push_image_mock.assert_called_once()
 
     def test_build_and_update_default_image(self, push_image_mock) -> None:
         self._do_build_image_test(
             course=None,
-            image_to_update=ag_models.SandboxDockerImage.objects.get(display_name='Default')
+            image=ag_models.SandboxDockerImage.objects.get(display_name='Default')
         )
         push_image_mock.assert_called_once()
 
@@ -51,10 +51,10 @@ class BuildSandboxDockerImageTestCase(UnitTestBase):
 
     def _do_build_image_test(
         self, course: Optional[ag_models.Course],
-        image_to_update: Optional[ag_models.SandboxDockerImage]
+        image: Optional[ag_models.SandboxDockerImage]
     ):
         task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
-            [_DOCKERFILE], course, image_to_update
+            [_DOCKERFILE], course, image
         )
         build_sandbox_docker_image(task.pk)
 
@@ -70,15 +70,16 @@ class BuildSandboxDockerImageTestCase(UnitTestBase):
         self.assertNotEqual('', output)
         print(output)
 
-        if image_to_update is None:
+        if image is None:
             image = ag_models.SandboxDockerImage.objects.get(
                 display_name__startswith='New Image',
                 course=course,
             )
+            self.assertEqual(image, task.image)
         else:
             image = ag_models.SandboxDockerImage.objects.get(
-                display_name=image_to_update.display_name,
-                course=image_to_update.course,
+                display_name=image.display_name,
+                course=image.course,
             )
         self.assertIn(
             f'localhost:{settings.SANDBOX_IMAGE_REGISTRY_PORT}/build{task.pk}_result',
