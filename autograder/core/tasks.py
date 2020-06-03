@@ -115,7 +115,7 @@ def _save_task_status(
     ).update(status=status)
 
 
-# Thin wrapper for mocking the "docker push" step.
+# Thin wrapper to enable mocking the "docker push" step.
 def push_image(tag: str):
     _run_and_check_cmd(['docker', 'push', tag])
 
