@@ -179,6 +179,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         )
         done_statuses = [
             ag_models.BuildImageStatus.done,
+            ag_models.BuildImageStatus.failed,
             ag_models.BuildImageStatus.image_invalid,
             ag_models.BuildImageStatus.internal_error,
             ag_models.BuildImageStatus.cancelled
@@ -323,6 +324,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         serialized = task.to_dict()
         expected = {
             'pk': task.pk,
+            'created_at': task.created_at,
             'status': task.status.value,
             'return_code': task.return_code,
             'timed_out': task.timed_out,
