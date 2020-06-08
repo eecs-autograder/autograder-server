@@ -7196,6 +7196,11 @@ components:
       type: object
       properties:
         pk: *id061
+        created_at:
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
         status:
           description: The status of the build.
           nullable: false
@@ -7243,6 +7248,7 @@ components:
       - queued
       - in_progress
       - done
+      - failed
       - image_invalid
       - cancelled
       - internal_error
