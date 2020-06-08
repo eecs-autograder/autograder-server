@@ -4,6 +4,7 @@ import os
 from django.conf import settings
 from django.core import exceptions
 from django.db import models, transaction
+from django.utils import timezone
 
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
@@ -116,6 +117,7 @@ class BuildImageStatus(enum.Enum):
     queued = 'queued'
     in_progress = 'in_progress'
     done = 'done'
+    failed = 'failed'
     image_invalid = 'image_invalid'
     cancelled = 'cancelled'
     internal_error = 'internal_error'
@@ -123,6 +125,8 @@ class BuildImageStatus(enum.Enum):
 
 class BuildSandboxDockerImageTask(AutograderModel):
     objects = _BuildSandboxDockerImageManager()
+
+    created_at = models.DateTimeField(default=timezone.now)
 
     status = ag_fields.EnumField(
         BuildImageStatus, blank=True, default=BuildImageStatus.queued,
@@ -203,6 +207,7 @@ class BuildSandboxDockerImageTask(AutograderModel):
 
     SERIALIZABLE_FIELDS = [
         'pk',
+        'created_at',
         'status',
         'return_code',
         'timed_out',

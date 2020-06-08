@@ -127,15 +127,15 @@ class ListCreateSandboxDockerImageForCourseView(ag_views.NestedModelView):
         return self.do_list()
 
     @convert_django_validation_error
-    @transaction.atomic
     def post(self, request, *args, **kwargs):
         """
         List all sandbox images for the specified course.
         """
-        course = self.get_object()
-        build_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
-            request.data.getlist('files'), course
-        )
+        with transaction.atomic():
+            course = self.get_object()
+            build_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+                request.data.getlist('files'), course
+            )
 
         return _start_build_task(build_task)
 
@@ -310,15 +310,15 @@ class RebuildSandboxDockerImageView(ag_views.AGModelAPIView):
     model_manager = ag_models.SandboxDockerImage.objects
 
     @convert_django_validation_error
-    @transaction.atomic
     def put(self, request, *args, **kwargs):
         """
         Rebuild the specified image using the files uploaded.
         """
-        image_to_update = self.get_object()
-        build_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
-            request.data.getlist('files'), image_to_update.course, image_to_update
-        )
+        with transaction.atomic():
+            image_to_update = self.get_object()
+            build_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+                request.data.getlist('files'), image_to_update.course, image_to_update
+            )
 
         return _start_build_task(build_task)
 
