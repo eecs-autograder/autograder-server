@@ -126,6 +126,9 @@ class BuildImageStatus(enum.Enum):
 class BuildSandboxDockerImageTask(AutograderModel):
     objects = _BuildSandboxDockerImageManager()
 
+    class Meta:
+        ordering = ['-pk']
+
     created_at = models.DateTimeField(default=timezone.now)
 
     status = ag_fields.EnumField(
