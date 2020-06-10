@@ -219,6 +219,7 @@ class BuildSandboxDockerImageTask(AutograderModel):
         'image',
         'validation_error_msg',
         'internal_error_msg',
+        'last_modified',
     ]
 
     SERIALIZE_RELATED = [
