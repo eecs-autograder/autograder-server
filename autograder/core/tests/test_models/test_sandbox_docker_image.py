@@ -333,6 +333,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             'image': image_to_update.to_dict(),
             'validation_error_msg': '',
             'internal_error_msg': '',
+            'last_modified': task.last_modified,
         }
 
         self.assertEqual(expected, serialized)
