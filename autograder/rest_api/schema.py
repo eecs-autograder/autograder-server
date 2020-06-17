@@ -871,7 +871,12 @@ RequestParam = TypedDict('RequestParam', {
 
 
 # Add to this as needed
-ContentTypeVal = Literal['application/json', 'multipart/form-data', 'application/octet-stream']
+ContentTypeVal = Literal[
+    'application/json',
+    'multipart/form-data',
+    'application/octet-stream',
+    'application/zip',
+]
 
 
 class RequestBody(TypedDict, total=False):
