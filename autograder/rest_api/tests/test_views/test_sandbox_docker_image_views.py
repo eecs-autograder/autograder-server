@@ -1,3 +1,4 @@
+import zipfile
 from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -8,6 +9,7 @@ from rest_framework.test import APIClient
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
+import tempfile
 
 
 class _SetUp(AGViewTestBase):
@@ -267,9 +269,25 @@ class BuildTaskDetailViewTestCase(AGViewTestBase):
 
         self.assertEqual(output, b''.join(response.streaming_content))
 
-    def test_non_superuser_get_global_task_output(self) -> None:
+    def test_non_superuser_get_global_task_output_permission_denied(self) -> None:
         task = self._make_global_build_task()
         url = reverse('image-build-task-output', kwargs={'pk': task.pk})
+        self.do_permission_denied_get_test(self.client, self.admin, url)
+
+    def test_superuser_download_global_task_files(self) -> None:
+        files = [
+            SimpleUploadedFile('Dockerfile', b'norsetanoretaso'),
+            SimpleUploadedFile('an_file.txt', b'onuvmzoifuzorvta'),
+            SimpleUploadedFile('weeee.sh', b'zouvffovzhfvzo'),
+        ]
+        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            files=files, course=None)
+
+        self._do_get_files_test(self.superuser, task, files)
+
+    def test_non_superuser_download_global_task_files_permission_denied(self) -> None:
+        task = self._make_global_build_task()
+        url = reverse('image-build-task-files', kwargs={'pk': task.pk})
         self.do_permission_denied_get_test(self.client, self.admin, url)
 
     def test_admin_get_build_task_for_course(self) -> None:
@@ -294,9 +312,24 @@ class BuildTaskDetailViewTestCase(AGViewTestBase):
 
         self.assertEqual(output, b''.join(response.streaming_content))
 
-    def test_non_admin_get_task_for_course_output(self) -> None:
+    def test_non_admin_get_task_for_course_output_permission_denied(self) -> None:
         task = self._make_build_task_for_course()
         url = reverse('image-build-task-output', kwargs={'pk': task.pk})
+        self.do_permission_denied_get_test(self.client, self.staff, url)
+
+    def test_admin_download_task_for_course_files(self) -> None:
+        files = [
+            SimpleUploadedFile('Dockerfile', b'norsetanoretaso'),
+            SimpleUploadedFile('waaaa.sh', b'nofurvtnor'),
+        ]
+        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            files=files, course=self.course)
+
+        self._do_get_files_test(self.admin, task, files)
+
+    def test_non_admin_download_task_for_course_files_permission_denied(self) -> None:
+        task = self._make_build_task_for_course()
+        url = reverse('image-build-task-files', kwargs={'pk': task.pk})
         self.do_permission_denied_get_test(self.client, self.staff, url)
 
     def test_superuser_cancel_global_build_task(self) -> None:
@@ -331,6 +364,21 @@ class BuildTaskDetailViewTestCase(AGViewTestBase):
 
             response = self.client.post(url)
             self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def _do_get_files_test(self, user, task: ag_models.BuildSandboxDockerImageTask, files):
+        url = reverse('image-build-task-files', kwargs={'pk': task.pk})
+        self.client.force_authenticate(user)
+        response = self.client.get(url)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        with tempfile.NamedTemporaryFile() as f:
+            for chunk in response.streaming_content:
+                f.write(chunk)
+            with zipfile.ZipFile(f, 'r') as z:
+                self.assertCountEqual([file_.name for file_ in files], z.namelist())
+                for file_ in files:
+                    file_.seek(0)
+                    self.assertEqual(file_.read(), z.read(file_.name))
 
     def _do_cancel_task_test(self, user, task: ag_models.BuildSandboxDockerImageTask):
         self.client.force_authenticate(user)

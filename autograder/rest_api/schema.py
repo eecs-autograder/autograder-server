@@ -664,7 +664,6 @@ class AGViewSchemaGenerator(AutoSchema):
         return self._get_operation_id_impl(path, method)
 
     def _get_operation_id_impl(self, path, method) -> str:
-        # return super()._get_operation_id(path, method)
         raise NotImplementedError(
             f'Unable to create operation ID for {type(self.view).__name__} {method} {path}.\n'
             'You must either use an appropriate "AGxxSchema" class or provide the '
