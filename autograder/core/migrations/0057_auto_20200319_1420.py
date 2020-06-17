@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='sandboxdockerimage',
             name='tag',
-            field=models.TextField(help_text="The full name and tag that can be used to fetch the image\n                     with the 'docker pull' command, e.g. localhost:5555/eecs280:latest."),
+            field=models.TextField(help_text="The full name and tag that can be used to fetch the image\n                     with the 'docker pull' command, e.g. localhost:5001/eecs280:latest."),
         ),
     ]

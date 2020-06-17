@@ -50,7 +50,7 @@ class SandboxDockerImage(AutograderModel):
     tag = models.TextField(
         blank=False,
         help_text="""The full name and tag that can be used to fetch the image
-                     with the 'docker pull' command, e.g. localhost:5555/eecs280:latest."""
+                     with the 'docker pull' command, e.g. localhost:5001/eecs280:latest."""
     )
 
     def full_clean(self, *args, **kwargs):
