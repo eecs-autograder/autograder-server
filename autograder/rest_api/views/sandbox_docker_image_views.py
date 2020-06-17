@@ -1,9 +1,13 @@
+import tempfile
+import zipfile
+
 from django.db import transaction
 from drf_composable_permissions.p import P
 from rest_framework import decorators, exceptions, mixins, permissions, response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
+from autograder import utils
 from autograder.core.tasks import build_sandbox_docker_image
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
@@ -259,6 +263,41 @@ class CancelBuildTaskView(ag_views.AGModelAPIView):
         task.status = ag_models.BuildImageStatus.cancelled
         task.save()
         return response.Response(task.to_dict(), status.HTTP_200_OK)
+
+
+class DownloadBuildTaskFilesView(ag_views.AGModelAPIView):
+    schema = CustomViewSchema([APITags.sandbox_docker_images], {
+        'GET': {
+            'operation_id': 'getBuildSandboxDockerImageTaskFiles',
+            'responses': {
+                '200': {
+                    'content': {
+                        'application/zip': {
+                            'schema': {
+                                'type': 'string',
+                                'format': 'binary',
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    })
+
+    permission_classes = [ImageBuildTaskDetailPermissions]
+    model_manager = ag_models.BuildSandboxDockerImageTask.objects
+
+    def get(self, *args, **kwargs):
+        task = self.get_object()
+
+        archive = tempfile.NamedTemporaryFile()
+        with zipfile.ZipFile(archive, 'w') as z:
+            with utils.ChangeDirectory(task.build_dir):
+                for filename in task.filenames:
+                    z.write(filename)
+
+        archive.seek(0)
+        return SizeFileResponse(archive)
 
 
 class SandboxDockerImageDetailPermissions(permissions.BasePermission):

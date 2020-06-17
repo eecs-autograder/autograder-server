@@ -2244,6 +2244,26 @@ paths:
                 format: binary
       tags:
       - sandbox_docker_images
+  /api/image_build_tasks/{id}/files/:
+    get:
+      operationId: getBuildSandboxDockerImageTaskFiles
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+      tags:
+      - sandbox_docker_images
   /api/sandbox_docker_images/{id}/:
     get:
       operationId: getSandboxDockerImage
@@ -7242,6 +7262,11 @@ components:
             here.
           nullable: false
           type: string
+        last_modified:
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
     BuildImageStatus:
       type: string
       enum:
