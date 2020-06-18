@@ -283,7 +283,7 @@ class IsFirstFailedTestFeedbackTestCase(UnitTestBase):
         self.ag_test_case1_cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case1,
             first_failed_test_normal_fdbk_config=(
-                ag_models.NewAGTestCommandFeedbackConfig.max_fdbk_config())
+                ag_models.AGTestCommandFeedbackConfig.max_fdbk_config())
         )
         self.total_points_possible = (self.ag_test_case1_cmd.points_for_correct_return_code
                                       + self.ag_test_case1_cmd.points_for_correct_stdout
@@ -292,7 +292,7 @@ class IsFirstFailedTestFeedbackTestCase(UnitTestBase):
         self.ag_test_case2_cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case2,
             first_failed_test_normal_fdbk_config=(
-                ag_models.NewAGTestCommandFeedbackConfig.max_fdbk_config())
+                ag_models.AGTestCommandFeedbackConfig.max_fdbk_config())
         )
 
         self.case1_cmd_res = obj_build.make_correct_ag_test_command_result(

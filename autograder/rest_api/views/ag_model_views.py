@@ -1,19 +1,33 @@
-from typing import Optional, List
+from abc import abstractmethod
+from functools import wraps
+from typing import List, Optional, Protocol
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, permissions, mixins, response, status
-from rest_framework.exceptions import ValidationError as RestFrameworkValidationError
+from rest_framework import mixins, permissions, response, status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from autograder.rest_api.views.schema_generation import (
-    AGModelViewAutoSchema, NestedModelViewAutoSchema, APITags)
-from ..transaction_mixins import (
-    TransactionCreateMixin, TransactionPartialUpdateMixin,
-    TransactionDestroyMixin)
+
+def convert_django_validation_error(func):
+    """
+    If the decorated function raises django.core.exceptions.ValidationError,
+    catches the error and raises rest_framework.exceptions.ValidationError
+    with the same content.
+    """
+    @wraps(func)
+    def decorated_func(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except DjangoValidationError as e:
+            raise ValidationError(e.message_dict)
+
+    return decorated_func
 
 
 class GetObjectLockOnUnsafeMixin:
@@ -71,191 +85,93 @@ class AGModelAPIView(GetObjectLockOnUnsafeMixin, AlwaysIsAuthenticatedMixin, API
     A derived class of APIView that inherits from the mixins
     GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
     """
-    swagger_schema = AGModelViewAutoSchema
-
-    # Tags to apply to all operations in this view.
-    # This can be overridden on individual operations by passing
-    # 'api_tags' to @swagger_auto_schema
-    api_tags = None  # type: Optional[List[APITags]]
-
-
-class AGModelGenericViewSet(GetObjectLockOnUnsafeMixin,
-                            AlwaysIsAuthenticatedMixin,
-                            viewsets.GenericViewSet):
-    """
-    A derived class of GenericViewSet that inherits from the mixins
-    GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
-    """
-    swagger_schema = AGModelViewAutoSchema
-
-    # Tags to apply to all operations in this view.
-    # This can be overridden on individual operations by passing
-    # 'api_tags' to @swagger_auto_schema
-    api_tags = None  # type: Optional[List[APITags]]
-
-
-class NestedModelViewSet(GetObjectLockOnUnsafeMixin,
-                         AlwaysIsAuthenticatedMixin,
-                         viewsets.GenericViewSet):
-    """
-    A generic view set used for defining nested endpoints
-    (one level of nesting only).
-
-    This allows Django REST Framework's object-level permission checking
-    to examine the -to-one (foreign) object when requesting
-    the -to-many or -to-one (related) objects or creating a new related
-    object.
-
-    See mixin classes ListNestedModelMixin and CreateNestedModelMixin
-    for more details and examples.
-
-    NOTE: Do NOT use Django Rest Framework permissions classes with
-    this kind of view set, as those classes may not have overridden
-    has_object_permissions() as needed.
-    """
-
-    swagger_schema = NestedModelViewAutoSchema
-
-    reverse_to_one_field_name = None
-
-    def get_queryset(self):
-        if self.reverse_to_one_field_name is None:
-            raise ValueError('"reverse_to_one_field_name" must not be None.')
-
-        return getattr(self.get_object(), self.reverse_to_one_field_name).all()
-
-
-class ListNestedModelMixin(mixins.ListModelMixin):
-    """
-    Provides 'list' functionality when mixed with a NestedModelViewSet.
-
-    For example, setting
-    NestedModelViewSet.reverse_foreign_key_field_name to
-    'projects' could allow the following:
-        A GET request to /courses/2/projects/ could return a list of
-        Projects that belong to Course 2, but only if the user is staff
-        for or enrolled in that Course.
-
-    NOTE: Do NOT mix ListNestedModelMixin with RetrieveNestedModelMixin,
-    as the GET implementations will interfere.
-    """
     pass
 
 
-class RetrieveNestedModelMixin(mixins.RetrieveModelMixin):
+class AGModelDetailView(AGModelAPIView):
     """
-    Provides 'retrieve' functionality when mixed with a
-    NestedModelViewSet.
-
-    For example, setting
-    NestedModelViewSet.reverse_one_to_one_field_name to
-    'handgrading_rubric' could allow the following:
-        A GET request to /project/2/handgrading_rubric/ returns the
-        designated Project 2's handgrading rubric, but only if the user
-        is staff for or enrolled in Project 2's Course.
-
-    NOTE: Do NOT mix ListNestedModelMixin with RetrieveNestedModelMixin,
-    as the GET implementations will interfere.
+    A view base class used for defining endpoints that operate on a
+    single object, e.g. retrieving, updating, deleting.
     """
+    def do_get(self):
+        return response.Response(self.serialize_object(self.get_object()))
 
-    def retrieve(self, *args, **kwargs):
-        if self.reverse_to_one_field_name is None:
-            raise ValueError('"reverse_to_one_field_name" must not be None.')
+    @convert_django_validation_error
+    @transaction.atomic
+    def do_patch(self):
+        obj = self.get_object()
+        obj.validate_and_update(**self.request.data)
+        return response.Response(data=self.serialize_object(obj), status=status.HTTP_200_OK)
 
-        instance = getattr(self.get_object(), self.reverse_to_one_field_name)
-        serializer = self.get_serializer(instance)
-        return response.Response(serializer.data)
+    @transaction.atomic
+    def do_delete(self):
+        self.get_object().delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+    def serialize_object(self, obj):
+        return obj.to_dict()
 
 
-class CreateNestedModelMixin(TransactionCreateMixin):
+class NestedModelView(AGModelAPIView):
     """
-    Provides 'create' functionality when mixed with a
-    NestedModelViewSet.
-
-    For example, setting CreateNestedModelViewSet.one_to_one_field_name
-    to 'project' could allow the following:
-        A POST request to /courses/2/projects/ would create a new
-        Project that belongs to Course 2 (overriding any 'course' field
-        erroneously included in the request body), but only if the user
-        is admin for that Course.
+    A view base class used for defining endpoints that operate on collections
+    of objects that belong to one model type, e.g. Projects for a Course.
     """
+    def get_nested_manager(self):
+        """
+        Returns a model manager of objects related to the one loaded with
+        self.get_object().
+        """
+        if self.nested_field_name is None:
+            raise ValueError('"nested_field_name" must not be None.')
 
-    to_one_field_name = None
+        return getattr(self.get_object(), self.nested_field_name)
 
-    def perform_create(self, serializer):
-        if self.to_one_field_name is None:
-            raise ValueError(
-                'You must either set "to_one_field_name" or override this method.')
+    # The name of the relationship that can be used to load the nested objects.
+    # For example, if loading Projects from a Course, this attribute would
+    # have the value 'projects'.
+    # If NestedModelView.get_nested_manager() or NestedModelView.do_list() are
+    # to be called, this attribute must be non-null.
+    nested_field_name: Optional[str] = None
 
-        # This makes sure that the object specified in the url
-        # is the one that the newly created object belongs to,
-        # even if something different is specified in the
-        # request body.
-        serializer.save(**{self.to_one_field_name: self.get_object()})
+    # In the object being created, the name of the field whose
+    # value is the parent object (the object loaded with self.get_object()).
+    # For example, if creating a new Project for a Course, this attribute
+    # would have the value 'course'.
+    # If NestedModelView.do_create() is to be called,
+    # this attribute must be non-null.
+    parent_obj_field_name: Optional[str] = None
 
+    def do_list(self):
+        return Response(
+            data=[self.serialize_object(obj) for obj in self.get_nested_manager().all()],
+            status=status.HTTP_200_OK,
+        )
 
-class ListNestedModelViewSet(ListNestedModelMixin, NestedModelViewSet):
-    """
-    Shortcut class for a nested model view set with list functionality.
-    """
-    @classmethod
-    def as_view(cls, actions=None, **initkwargs):
-        if actions is None:
-            actions = {'get': 'list'}
-        return super().as_view(actions=actions, **initkwargs)
+    @convert_django_validation_error
+    @transaction.atomic
+    def do_create(self):
+        data = dict(self.request.data)
+        data[self.parent_obj_field_name] = self.get_object()
 
+        queryset = self.get_nested_manager()
+        result = queryset.validate_and_create(**data)
+        return Response(
+            data=self.serialize_object(result),
+            status=status.HTTP_201_CREATED
+        )
 
-class ListCreateNestedModelViewSet(ListNestedModelMixin,
-                                   CreateNestedModelMixin,
-                                   NestedModelViewSet):
-    """
-    Shortcut class for a nested model view set with list and create
-    functionality.
-    """
-    @classmethod
-    def as_view(cls, actions=None, **initkwargs):
-        return super().as_view(actions={'get': 'list', 'post': 'create'}, **initkwargs)
-
-
-class RetrieveCreateNestedModelViewSet(RetrieveNestedModelMixin,
-                                       CreateNestedModelMixin,
-                                       NestedModelViewSet):
-    """
-    Shortcut class for a nested model view set with retrieve and create
-    functionality.
-    """
-    @classmethod
-    def as_view(cls, actions=None, **initkwargs):
-        return super().as_view(actions={'get': 'retrieve', 'post': 'create'}, **initkwargs)
-
-
-class TransactionRetrievePatchDestroyMixin(mixins.RetrieveModelMixin,
-                                           TransactionPartialUpdateMixin,
-                                           TransactionDestroyMixin):
-    pass
+    def serialize_object(self, obj):
+        return obj.to_dict()
 
 
 def handle_object_does_not_exist_404(func):
+    @wraps(func)
     def decorated_func(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except ObjectDoesNotExist:
             raise Http404
-
-    return decorated_func
-
-
-def convert_django_validation_error(func):
-    """
-    If the decorated function raises django.core.exceptions.ValidationError,
-    catches the error and raises rest_framework.exceptions.ValidationError
-    with the same content.
-    """
-    def decorated_func(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except DjangoValidationError as e:
-            raise RestFrameworkValidationError(e.message_dict)
 
     return decorated_func
 

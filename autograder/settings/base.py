@@ -74,8 +74,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
 
-    'drf_yasg',
-
     'django_extensions',
 
     'timezone_field',
@@ -85,9 +83,6 @@ INSTALLED_APPS = [
     'autograder.grading_tasks',
     'autograder.utils',
     'autograder.handgrading',
-
-    # Used for testing ag_model_base
-    'autograder.core.tests.test_models',
 ]
 
 MIDDLEWARE = (
@@ -222,5 +217,7 @@ LOGGING = {
         },
     }
 }
+
+SANDBOX_IMAGE_REGISTRY_PORT = os.environ.get('SANDBOX_IMAGE_REGISTRY_PORT', '5001')
 
 from autograder.settings.celery_settings import *  # noqa

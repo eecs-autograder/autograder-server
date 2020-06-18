@@ -232,6 +232,14 @@ def make_course(**kwargs) -> ag_models.Course:
     return ag_models.Course.objects.validate_and_create(**kwargs)
 
 
+def make_sandbox_docker_image(course: ag_models.Course=None) -> ag_models.SandboxDockerImage:
+    return ag_models.SandboxDockerImage.objects.validate_and_create(
+        course=course,
+        display_name='Image ' + get_unique_id(),
+        tag='tag' + get_unique_id()
+    )
+
+
 def make_project(course: ag_models.Course=None, **project_kwargs) -> ag_models.Project:
     if course is None:
         course = make_course()
@@ -248,10 +256,13 @@ def make_instructor_file(project: ag_models.Project) -> ag_models.InstructorFile
         project=project)
 
 
-def make_expected_student_file(project: ag_models.Project) -> ag_models.ExpectedStudentFile:
-    return ag_models.ExpectedStudentFile.objects.validate_and_create(
-        project=project,
-        pattern='pattern' + get_unique_id())
+def make_expected_student_file(
+    project: ag_models.Project,
+    **kwargs
+) -> ag_models.ExpectedStudentFile:
+    if 'pattern' not in kwargs:
+        kwargs['pattern'] = 'pattern' + get_unique_id()
+    return ag_models.ExpectedStudentFile.objects.validate_and_create(project=project, **kwargs)
 
 
 class UserRole(core_ut.OrderedEnum):
@@ -265,15 +276,16 @@ class UserRole(core_ut.OrderedEnum):
 def make_group(num_members: int=1,
                members_role: UserRole=UserRole.student,
                project: ag_models.Project=None,
-               members: Optional[Sequence[User]]=None,
                **group_kwargs) -> ag_models.Group:
     if project is None:
         project = make_project()
 
-    if members is None:
-        members = create_dummy_users(num_members)
+    members = make_users(num_members)
+
+    original_guests_can_submit: Optional[bool] = None
 
     if members_role == UserRole.guest:
+        original_guests_can_submit = project.guests_can_submit
         project.validate_and_update(guests_can_submit=True)
     elif members_role == UserRole.student:
         project.course.students.add(*members)
@@ -282,11 +294,51 @@ def make_group(num_members: int=1,
     elif members_role == UserRole.admin:
         project.course.admins.add(*members)
 
-    return ag_models.Group.objects.validate_and_create(
+    result = ag_models.Group.objects.validate_and_create(
         members=members,
         project=project,
         check_group_size_limits=False,
         **group_kwargs)
+
+    if original_guests_can_submit is not None:
+        project.validate_and_update(guests_can_submit=original_guests_can_submit)
+
+    return result
+
+
+def make_group_invitation(
+    project: ag_models.Project=None,
+    num_recipients: int=1,
+    users_role: UserRole=UserRole.student,
+):
+    if project is None:
+        project = make_project()
+
+    sender = make_user()
+    recipients = make_users(num_recipients)
+
+    project.max_group_size = 1 + len(recipients)
+    project.save()
+
+    original_guests_can_submit: Optional[bool] = None
+
+    if users_role == UserRole.guest:
+        original_guests_can_submit = project.guests_can_submit
+        project.validate_and_update(guests_can_submit=True)
+    elif users_role == UserRole.student:
+        project.course.students.add(sender, *recipients)
+    elif users_role == UserRole.staff:
+        project.course.staff.add(sender, *recipients)
+    elif users_role == UserRole.admin:
+        project.course.admins.add(sender, *recipients)
+
+    result = ag_models.GroupInvitation.objects.validate_and_create(
+        sender, recipients, project=project)
+
+    if original_guests_can_submit is not None:
+        project.validate_and_update(guests_can_submit=original_guests_can_submit)
+
+    return result
 
 
 def make_ag_test_suite(project: ag_models.Project=None,
@@ -442,13 +494,13 @@ def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestComma
     return result
 
 
-def make_student_test_suite(project: ag_models.Project=None,
-                            **student_test_suite_kwargs) -> ag_models.StudentTestSuite:
+def make_mutation_test_suite(project: ag_models.Project=None,
+                             **mutation_test_suite_kwargs) -> ag_models.MutationTestSuite:
     if project is None:
         project = make_project()
 
-    if 'name' not in student_test_suite_kwargs:
-        student_test_suite_kwargs['name'] = 'student_test_suite{}'.format(get_unique_id())
+    if 'name' not in mutation_test_suite_kwargs:
+        mutation_test_suite_kwargs['name'] = 'mutation_test_suite{}'.format(get_unique_id())
 
-    return ag_models.StudentTestSuite.objects.validate_and_create(
-        project=project, **student_test_suite_kwargs)
+    return ag_models.MutationTestSuite.objects.validate_and_create(
+        project=project, **mutation_test_suite_kwargs)

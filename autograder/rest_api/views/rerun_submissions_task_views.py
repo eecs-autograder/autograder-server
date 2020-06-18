@@ -4,109 +4,122 @@ import celery
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.db.models import F
-from django.db.models import Value
+from django.db.models import F, Value
 from django.db.models.functions import Concat
-
 from rest_framework import mixins, response, status
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import action
 from rest_framework.request import Request
 
+import autograder.core.models as ag_models
+import autograder.rest_api.permissions as ag_permissions
 from autograder.core.caching import clear_submission_results_cache
 from autograder.grading_tasks import tasks
-from autograder.grading_tasks.tasks.utils import retry_should_recover
-from autograder.rest_api.views.ag_model_views import (
-    ListCreateNestedModelViewSet, AGModelGenericViewSet)
-import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
-import autograder.rest_api.permissions as ag_permissions
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator, APITags, CustomViewSchema,
+                                        as_content_obj)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      NestedModelView,
+                                                      convert_django_validation_error)
+from autograder.utils.retry import retry_should_recover
 
 
-class RerunSubmissionsTaskListCreateView(ListCreateNestedModelViewSet):
-    serializer_class = ag_serializers.RerunSubmissionTaskSerializer
-    permission_classes = [ag_permissions.is_admin(lambda project: project.course)]
+class RerunSubmissionsTaskListCreateView(NestedModelView):
+    schema = AGListCreateViewSchemaGenerator(
+        [APITags.rerun_submissions_tasks], ag_models.RerunSubmissionsTask)
+
+    permission_classes = [ag_permissions.is_admin()]
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
-    to_one_field_name = 'project'
-    reverse_to_one_field_name = 'rerun_submission_tasks'
+    nested_field_name = 'rerun_submission_tasks'
+    parent_obj_field_name = 'project'
 
-    @transaction.atomic()
-    def create(self, request: Request, *args, **kwargs):
-        project = self.get_object()  # type: ag_models.Project
+    def get(self, *args, **kwargs):
+        return self.do_list()
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid()
-        rerun_task = serializer.save(
-            project=project, creator=request.user
-        )  # type: ag_models.RerunSubmissionsTask
+    @convert_django_validation_error
+    def post(self, request: Request, *args, **kwargs):
+        with transaction.atomic():
+            project: ag_models.Project = self.get_object()
 
-        submissions = ag_models.Submission.objects.filter(group__project=project)
-        if not request.data.get('rerun_all_submissions', True):
-            submissions = submissions.filter(pk__in=request.data.get('submission_pks', []))
+            task_args = dict(request.data)
+            task_args.update({'project': project, 'creator': request.user})
+            rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(**task_args)
 
-        ag_test_suites = project.ag_test_suites.all()
-        ag_suites_data = request.data.get('ag_test_suite_data', {})
-        if not request.data.get('rerun_all_ag_test_suites', True):
-            ag_test_suites = ag_test_suites.filter(pk__in=ag_suites_data.keys())
+            submissions = ag_models.Submission.objects.filter(group__project=project)
+            if not request.data.get('rerun_all_submissions', True):
+                submissions = submissions.filter(pk__in=request.data.get('submission_pks', []))
 
-        student_suites = project.student_test_suites.all()
-        if not request.data.get('rerun_all_student_test_suites', True):
-            student_suites = student_suites.filter(
-                pk__in=request.data.get('student_suite_pks', []))
+            ag_test_suites = project.ag_test_suites.all()
+            ag_suites_data = request.data.get('ag_test_suite_data', {})
+            if not request.data.get('rerun_all_ag_test_suites', True):
+                ag_test_suites = ag_test_suites.filter(pk__in=ag_suites_data.keys())
 
-        signatures = []
-        for submission in submissions:
-            ag_suite_sigs = [
-                rerun_ag_test_suite.s(
-                    rerun_task.pk, submission.pk, ag_suite.pk,
-                    *ag_suites_data.get(str(ag_suite.pk), [])
-                ).set(queue=settings.RERUN_QUEUE_TMPL.format(ag_suite.project_id))
-                for ag_suite in ag_test_suites
-            ]
+            mutation_suites = project.mutation_test_suites.all()
+            if not request.data.get('rerun_all_mutation_test_suites', True):
+                mutation_suites = mutation_suites.filter(
+                    pk__in=request.data.get('mutation_suite_pks', []))
 
-            student_suite_sigs = [
-                rerun_student_test_suite.s(
-                    rerun_task.pk, submission.pk, student_suite.pk
-                ).set(queue=settings.RERUN_QUEUE_TMPL.format(student_suite.project_id))
-                for student_suite in student_suites
-            ]
+            signatures = []
+            for submission in submissions:
+                ag_suite_sigs = [
+                    rerun_ag_test_suite.s(
+                        rerun_task.pk, submission.pk, ag_suite.pk,
+                        *ag_suites_data.get(str(ag_suite.pk), [])
+                    ).set(queue=settings.RERUN_QUEUE_TMPL.format(ag_suite.project_id))
+                    for ag_suite in ag_test_suites
+                ]
 
-            signatures += ag_suite_sigs
-            signatures += student_suite_sigs
+                mutation_suite_sigs = [
+                    rerun_mutation_test_suite.s(
+                        rerun_task.pk, submission.pk, mutation_suite.pk
+                    ).set(queue=settings.RERUN_QUEUE_TMPL.format(mutation_suite.project_id))
+                    for mutation_suite in mutation_suites
+                ]
+
+                signatures += ag_suite_sigs
+                signatures += mutation_suite_sigs
 
         from autograder.celery import app
         if signatures:
             clear_cache_sig = clear_cached_submission_results.s(project.pk)
+            celery.chord(signatures, body=clear_cache_sig, app=app).apply_async()
 
-            chord_result = celery.chord(signatures, body=clear_cache_sig, app=app).apply_async()
-
-            # In case any of the subtasks finish before we reach this line
-            # (definitely happens in testing), make sure we don't
-            # accidentally overwrite the task's progress or error messages.
-            ag_models.RerunSubmissionsTask.objects.filter(
-                pk=rerun_task.pk
-            ).update(celery_group_result_id=chord_result.id)
-
-        return response.Response(self.get_serializer(rerun_task).data,
-                                 status=status.HTTP_201_CREATED)
+        return response.Response(rerun_task.to_dict(), status=status.HTTP_201_CREATED)
 
 
-class RerunSubmissionsTaskDetailVewSet(mixins.RetrieveModelMixin,
-                                       AGModelGenericViewSet):
+class RerunSubmissionsTaskDetailView(AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator([APITags.rerun_submissions_tasks])
+
     permission_classes = [ag_permissions.is_admin(lambda rerun_task: rerun_task.project.course)]
-    serializer_class = ag_serializers.RerunSubmissionTaskSerializer
+    model_manager = ag_models.RerunSubmissionsTask.objects
 
+    def get(self, *args, **kwargs):
+        return self.do_get()
+
+
+class CancelRerunSubmissionsTaskView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.rerun_submissions_tasks], {
+        'POST': {
+            'operation_id': 'cancelRerunSubmissionsTask',
+            'responses': {
+                '200': {
+                    'content': as_content_obj(ag_models.RerunSubmissionsTask)
+                }
+            }
+        }
+    })
+
+    permission_classes = [ag_permissions.is_admin(lambda rerun_task: rerun_task.project.course)]
     model_manager = ag_models.RerunSubmissionsTask.objects
 
     @transaction.atomic
-    @detail_route(methods=['POST'])
-    def cancel(self, *args, **kwargs):
+    def post(self, *args, **kwargs):
         task = self.get_object()
         task.is_cancelled = True
         task.save()
 
-        return response.Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
+        return response.Response(task.to_dict(), status=status.HTTP_200_OK)
 
 
 @celery.shared_task(max_retries=1, acks_late=True)
@@ -142,27 +155,27 @@ def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test
 
 
 @celery.shared_task(max_retries=1, acks_late=True)
-def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk):
+def rerun_mutation_test_suite(rerun_task_pk, submission_pk, mutation_test_suite_pk):
     if _rerun_is_cancelled(rerun_task_pk):
         return
 
     @retry_should_recover
-    def _rerun_student_test_suite_impl():
+    def _rerun_mutation_test_suite_impl():
         try:
-            student_suite = ag_models.StudentTestSuite.objects.get(pk=student_test_suite_pk)
+            mutation_suite = ag_models.MutationTestSuite.objects.get(pk=mutation_test_suite_pk)
             submission = ag_models.Submission.objects.get(pk=submission_pk)
 
-            tasks.grade_student_test_suite_impl(student_suite, submission)
+            tasks.grade_mutation_test_suite_impl(mutation_suite, submission)
         except ObjectDoesNotExist:
             pass
 
         _update_rerun_progress(rerun_task_pk)
 
     try:
-        _rerun_student_test_suite_impl()
+        _rerun_mutation_test_suite_impl()
     except Exception as e:
         error_msg = (
-            f'\nError rerunning student test suite {student_test_suite_pk} for submission '
+            f'\nError rerunning mutation test suite {mutation_test_suite_pk} for submission '
             f'{submission_pk}\n'
             f'{str(e)} {traceback.format_exc()}\n'
         )

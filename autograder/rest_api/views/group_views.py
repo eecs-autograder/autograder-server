@@ -9,57 +9,93 @@ from django.db.models import Prefetch
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, mixins, permissions, response, status
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
-import autograder.rest_api.serializers as ag_serializers
 import autograder.utils.testing as test_ut
 from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
-from autograder.rest_api import permissions as ag_permissions, transaction_mixins
-from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet,
-    ListCreateNestedModelViewSet, require_query_params, require_body_params)
-from autograder.rest_api.views.schema_generation import APITags
+from autograder.rest_api import permissions as ag_permissions
+from autograder.rest_api.schema import (AGListViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags,
+                                        CustomViewSchema, RequestBody, as_content_obj)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      NestedModelView,
+                                                      convert_django_validation_error,
+                                                      require_body_params, require_query_params)
+
+_MEMBER_NAMES_REQUEST_BODY: RequestBody = {
+    'content': {
+        'application/json': {
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'member_names': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'string',
+                            'format': 'username'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 
-class GroupsViewSet(ListCreateNestedModelViewSet):
-    serializer_class = ag_serializers.SubmissionGroupSerializer
-    permission_classes = (
+class _ListCreateGroupSchema(AGListViewSchemaMixin, CustomViewSchema):
+    pass
+
+
+class ListCreateGroupsView(NestedModelView):
+    schema = _ListCreateGroupSchema([APITags.groups], api_class=ag_models.Group, data={
+        'POST': {
+            'operation_id': 'createGroup',
+            'request': _MEMBER_NAMES_REQUEST_BODY,
+            'responses': {
+                '201': {
+                    'content': as_content_obj(ag_models.Group)
+                }
+            }
+        }
+    })
+
+    permission_classes = [
         P(ag_permissions.is_admin())
         | ((P(ag_permissions.is_staff()) | P(ag_permissions.is_handgrader()))
-            & ag_permissions.IsReadOnly),
-    )
+            & ag_permissions.IsReadOnly)
+    ]
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
-    to_one_field_name = 'project'
-    reverse_to_one_field_name = 'groups'
+    nested_field_name = 'groups'
+    parent_obj_field_name = 'project'
 
     def get_queryset(self):
         queryset = super().get_queryset()
         if self.request.method.lower() == 'get':
             queryset = queryset.prefetch_related(
+                'members',
                 Prefetch('submissions',
                          ag_models.Submission.objects.defer('denormalized_ag_test_results'))
             )
 
         return queryset
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='member_names', in_='body',
-                      description='Usernames to add to the new Group.',
-                      type='List[string]', required=True)]
-    )
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+    @convert_django_validation_error
     @transaction.atomic()
     @method_decorator(require_body_params('member_names'))
-    def create(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
+        """
+        Create a new group with the specified members.
+        Size restrictions are ignored.
+        Available to admins only.
+        """
         project = self.get_object()
-        request.data['project'] = project
 
         users = [
             User.objects.get_or_create(username=username)[0]
@@ -69,11 +105,12 @@ class GroupsViewSet(ListCreateNestedModelViewSet):
         # Keep this hook immediately after locking the users.
         test_ut.mocking_hook()
 
-        request.data['members'] = users
-        request.data['check_group_size_limits'] = (
-            not project.course.is_admin(request.user))
-
-        return super().create(request, *args, **kwargs)
+        group = ag_models.Group.objects.validate_and_create(
+            members=users,
+            project=project,
+            check_group_size_limits=not project.course.is_admin(request.user)
+        )
+        return response.Response(group.to_dict(), status.HTTP_201_CREATED)
 
 
 class _CanCreateSoloGroup(permissions.BasePermission):
@@ -84,22 +121,31 @@ class _CanCreateSoloGroup(permissions.BasePermission):
         if not project.visible_to_students:
             return False
 
-        return (project.course.is_student(request.user)
-                or project.guests_can_submit)
+        return (project.course.is_student(request.user) or project.guests_can_submit)
 
 
-class CreateSoloGroupView(mixins.CreateModelMixin, AGModelGenericViewSet):
-    permission_classes = (_CanCreateSoloGroup,)
-    serializer_class = ag_serializers.SubmissionGroupSerializer
+class CreateSoloGroupView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.groups], {
+        'POST': {
+            'operation_id': 'createSoloGroup',
+            'responses': {
+                '201': {
+                    'content': as_content_obj(ag_models.Group)
+                }
+            }
+        }
+    })
+
+    permission_classes = [_CanCreateSoloGroup]
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
 
     api_tags = [APITags.groups]
 
-    @swagger_auto_schema(request_body_parameters=[])
+    @convert_django_validation_error
     @transaction.atomic()
-    def create(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         """
         Creates a group containing only the user making the request.
         """
@@ -107,17 +153,12 @@ class CreateSoloGroupView(mixins.CreateModelMixin, AGModelGenericViewSet):
 
         utils.lock_users([request.user])
 
-        data = {
-            'project': project,
-            'members': [request.user],
-            'check_group_size_limits': (
-                not project.course.is_staff(request.user))
-        }
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid()
-        serializer.save()
-
-        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+        group = ag_models.Group.objects.validate_and_create(
+            members=[request.user],
+            project=project,
+            check_group_size_limits=not project.course.is_staff(request.user)
+        )
+        return response.Response(group.to_dict(), status.HTTP_201_CREATED)
 
 
 is_staff_or_member = ag_permissions.is_staff_or_group_member()
@@ -140,36 +181,54 @@ class _UltimateSubmissionPermissions(permissions.BasePermission):
                 and not project.hide_ultimate_submission_fdbk)
 
 
-class GroupDetailViewSet(mixins.RetrieveModelMixin,
-                         transaction_mixins.TransactionPartialUpdateMixin,
-                         AGModelGenericViewSet):
-    serializer_class = ag_serializers.SubmissionGroupSerializer
-    permission_classes = (group_permissions,)
+class _GroupDetailSchema(AGRetrieveViewSchemaMixin, CustomViewSchema):
+    pass
+
+
+class GroupDetailView(AGModelDetailView):
+    schema = _GroupDetailSchema([APITags.groups], {
+        'PATCH': {
+            'operation_id': 'updateGroup',
+            'request': _MEMBER_NAMES_REQUEST_BODY,
+            'responses': {
+                '200': {
+                    'content': as_content_obj(ag_models.Group)
+                }
+            }
+        },
+        'DELETE': {'operation_id': 'pseudoDeleteGroup'}
+    })
+
+    permission_classes = [group_permissions]
 
     model_manager = ag_models.Group.objects.select_related(
         'project__course').prefetch_related('members', 'submissions')
 
-    @swagger_auto_schema(
-        extra_request_body_parameters=[
-            Parameter(name='member_names', in_='body',
-                      description='Usernames to replace the current group members with.',
-                      type='List[string]')]
-    )
+    def get(self, *args, **kwargs):
+        return self.do_get()
+
+    @convert_django_validation_error
     @transaction.atomic()
-    def partial_update(self, request, *args, **kwargs):
-        if 'member_names' in request.data:
+    def patch(self, request, *args, **kwargs):
+        group = self.get_object()
+
+        update_data = dict(request.data)
+        if 'member_names' in update_data:
             users = [
                 User.objects.get_or_create(
                     username=username)[0]
-                for username in request.data.pop('member_names')]
+                for username in update_data.pop('member_names')]
 
             utils.lock_users(users)
             # Keep this hook just after the users are locked
             test_ut.mocking_hook()
 
-            request.data['members'] = users
-            request.data['check_group_size_limits'] = False
-        return super().partial_update(request, *args, **kwargs)
+            update_data['members'] = users
+            update_data['check_group_size_limits'] = False
+            update_data['ignore_guest_restrictions'] = False
+
+        group.validate_and_update(**update_data)
+        return response.Response(group.to_dict())
 
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
@@ -190,13 +249,23 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(
-        api_tags=[APITags.groups, APITags.submissions],
-        responses={'200': ag_serializers.SubmissionSerializer}
-    )
-    @decorators.detail_route(
-        permission_classes=(group_permissions, _UltimateSubmissionPermissions,))
-    def ultimate_submission(self, request, *args, **kwargs):
+
+class GroupUltimateSubmissionView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.groups, APITags.submissions], {
+        'GET': {
+            'operation_id': 'getUltimateSubmissionForGroup',
+            'responses': {
+                '200': {
+                    'content': as_content_obj(ag_models.Submission)
+                }
+            }
+        }
+    })
+
+    model_manager = model_manager = ag_models.Group.objects.select_related('project__course')
+    permission_classes = [group_permissions, _UltimateSubmissionPermissions]
+
+    def get(self, request, *args, **kwargs):
         """
         Permissions details:
         - The normal group and submission viewing permissions apply
@@ -216,25 +285,32 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
         if ultimate_submission is None:
             return response.Response(status=status.HTTP_404_NOT_FOUND)
 
-        return response.Response(ag_serializers.SubmissionSerializer(ultimate_submission).data)
+        return response.Response(ultimate_submission.to_dict())
 
-    @swagger_auto_schema(
-        manual_parameters=[
-            Parameter(name='other_group_pk', in_='query',
-                      type='int', required=True,
-                      description='The ID of the second group to merge.')
-        ],
-        request_body_parameters=[]
-    )
-    @method_decorator(require_query_params('other_group_pk'))
-    @decorators.detail_route(methods=['POST'])
+
+class MergeGroupsView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.groups], {
+        'POST': {
+            'operation_id': 'mergeGroups',
+            'responses': {
+                '201': {
+                    'content': as_content_obj(ag_models.Group)
+                }
+            }
+        }
+    })
+
+    permission_classes = [ag_permissions.is_admin()]
+    model_manager = ag_models.Group.objects
+
+    @convert_django_validation_error
     @transaction.atomic()
-    def merge_with(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         """
         Merge two groups together, preserving their submissions, and
         return the newly created group.
         """
-        other_group_pk = request.query_params.get('other_group_pk')
+        other_group_pk = kwargs['other_group_pk']
 
         group1 = self.get_object()
         group2 = self.get_object(pk_override=other_group_pk)
@@ -254,22 +330,28 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
         group1.members.clear()
         group2.members.clear()
 
-        merged_group_serializer = ag_serializers.SubmissionGroupSerializer(
-            data={'members': merged_members,
-                  'project': project,
-                  'extended_due_date': self._get_merged_extended_due_date(group1, group2),
-                  'check_group_size_limits': False})
-        merged_group_serializer.is_valid()
-        merged_group_serializer.save()
-        merged_group = merged_group_serializer.instance
+        merged_group = ag_models.Group.objects.validate_and_create(
+            merged_members,
+            check_group_size_limits=False,
+            project=project,
+            extended_due_date=self._get_merged_extended_due_date(group1, group2),
+            late_days_used={
+                **group1.late_days_used,
+                **group2.late_days_used,
+            },
+        )
+        # Group.save() sets bonus_submissions_remaining on create, so
+        # we overwrite that value here.
+        merged_group.bonus_submissions_remaining = min(
+            group1.bonus_submissions_remaining, group2.bonus_submissions_remaining)
+        merged_group.save()
 
         self._merge_group_files(group1=group1, group2=group2, merged_group=merged_group)
 
         group1.delete()
         group2.delete()
 
-        content = ag_serializers.SubmissionGroupSerializer(merged_group).data
-        return response.Response(content, status=status.HTTP_201_CREATED)
+        return response.Response(merged_group.to_dict(), status=status.HTTP_201_CREATED)
 
     def _merge_group_files(self, group1, group2, merged_group):
         tempdir_path = tempfile.mkdtemp()

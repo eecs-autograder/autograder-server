@@ -15,9 +15,9 @@ import autograder.core.utils as core_ut
 from autograder.core import constants
 from autograder.core.submission_feedback import \
     update_denormalized_ag_test_results
+from autograder.utils.retry import retry_ag_test_cmd, retry_should_recover
 
 from .utils import (FileCloser, add_files_to_sandbox, mark_submission_as_error,
-                    retry_ag_test_cmd, retry_should_recover,
                     run_ag_test_command, run_command_from_args)
 
 
@@ -106,9 +106,8 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     setup_result = run_command_from_args(
         cmd=ag_test_suite.setup_suite_cmd,
         sandbox=sandbox,
-        max_num_processes=constants.MAX_PROCESS_LIMIT,
-        max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-        max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
+        block_process_spawn=False,
+        max_virtual_memory=None,
         timeout=constants.MAX_SUBPROCESS_TIMEOUT)
     suite_result.setup_return_code = setup_result.return_code
     suite_result.setup_timed_out = setup_result.timed_out

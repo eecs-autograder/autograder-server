@@ -30,7 +30,6 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertEqual('', suite.setup_suite_cmd)
 
         self.assertFalse(suite.allow_network_access)
-        self.assertEqual(constants.SupportedImages.default, suite.docker_image_to_use)
         self.assertEqual(ag_models.SandboxDockerImage.objects.get(name='default'),
                          suite.sandbox_docker_image)
         self.assertFalse(suite.deferred)
@@ -95,7 +94,6 @@ class AGTestSuiteTestCase(UnitTestBase):
             setup_suite_cmd_name='steve',
             allow_network_access=allow_network_access,
             deferred=deferred,
-            docker_image_to_use=constants.SupportedImages.eecs490,
             sandbox_docker_image=sandbox_image.to_dict(),
             normal_fdbk_config={
                 'visible': False,
@@ -115,7 +113,6 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertCountEqual(student_files_needed, suite.student_files_needed.all())
         self.assertEqual(allow_network_access, suite.allow_network_access)
         self.assertEqual(deferred, suite.deferred)
-        self.assertEqual(constants.SupportedImages.eecs490, suite.docker_image_to_use)
         self.assertEqual(sandbox_image, suite.sandbox_docker_image)
         self.assertFalse(suite.normal_fdbk_config.visible)
 
@@ -147,6 +144,16 @@ class AGTestSuiteTestCase(UnitTestBase):
 
         self.assertIn('instructor_files_needed', cm.exception.message_dict)
         self.assertIn('student_files_needed', cm.exception.message_dict)
+
+    def test_error_sandbox_docker_image_belongs_to_other_course(self) -> None:
+        other_course = obj_build.make_course()
+        other_image = obj_build.make_sandbox_docker_image(other_course)
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AGTestSuite.objects.validate_and_create(
+                name='An suite', project=self.project,
+                sandbox_docker_image=other_image)
+
+        self.assertIn('sandbox_docker_image', cm.exception.message_dict)
 
     def test_suite_ordering(self):
         suite1 = ag_models.AGTestSuite.objects.validate_and_create(
@@ -207,7 +214,6 @@ class AGTestSuiteTestCase(UnitTestBase):
             'setup_suite_cmd',
             'setup_suite_cmd_name',
 
-            'docker_image_to_use',
             'sandbox_docker_image',
             'allow_network_access',
             'deferred',
@@ -238,22 +244,16 @@ class AGTestSuiteTestCase(UnitTestBase):
 
 
 class AGTestSuiteSandboxImageOnDeleteTestCase(TransactionUnitTestBase):
-    def test_sandbox_docker_image_cannot_be_deleted_and_name_cannot_be_changed_when_in_use(self):
-        """
-        Verifies that on_delete for AGTestSuite.sandbox_docker_image is set to PROTECT
-        and that the name of an image can't be changed if any foreign key references to it exist.
-        """
+    def test_sandbox_docker_image_set_to_default_on_delete(self):
         project = obj_build.make_project()
         sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
             name='waaaa', display_name='luigi', tag='taggy')
 
-        ag_models.AGTestSuite.objects.validate_and_create(
+        suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='suiteo', project=project, sandbox_docker_image=sandbox_image
         )
 
-        with self.assertRaises(IntegrityError):
-            sandbox_image.delete()
-
-        with self.assertRaises(IntegrityError):
-            sandbox_image.name = 'bad'
-            sandbox_image.save()
+        sandbox_image.delete()
+        suite.refresh_from_db()
+        self.assertEqual(ag_models.SandboxDockerImage.objects.get(display_name='Default'),
+                         suite.sandbox_docker_image)

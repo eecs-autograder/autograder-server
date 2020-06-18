@@ -213,14 +213,33 @@ class LateDaysRemaining(AutograderModel):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    late_days_remaining = models.IntegerField(validators=[validators.MinValueValidator(0)],
-                                              blank=True)
+    # Remove in version 5.0.0
+    old_late_days_remaining = models.IntegerField(
+        validators=[validators.MinValueValidator(0)], blank=True, default=0)
 
-    def save(self, *args, **kwargs):
-        if self.pk is None and self.late_days_remaining is None:
-            self.late_days_remaining = self.course.num_late_days
+    @property
+    def late_days_remaining(self) -> int:
+        return max(0, self._true_late_days_remaining)
 
-        return super().save(*args, **kwargs)
+    @late_days_remaining.setter
+    def late_days_remaining(self, value: int) -> None:
+        if value < 0:
+            raise ValidationError({
+                'late_days_remaining': 'This value cannot be negative.'
+            })
+
+        self._extra_late_days_granted += value - self._true_late_days_remaining
+
+    @property
+    def _true_late_days_remaining(self) -> int:
+        return (
+            self.course.num_late_days + self._extra_late_days_granted
+            - self.late_days_used
+        )
+
+    _extra_late_days_granted = models.IntegerField(blank=True, default=0)
+    late_days_used = models.IntegerField(
+        blank=True, default=0, validators=[MinValueValidator(0)])
 
 
 def clear_cached_user_roles(course_pk: int) -> None:

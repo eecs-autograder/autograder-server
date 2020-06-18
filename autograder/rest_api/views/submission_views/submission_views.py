@@ -9,24 +9,24 @@ from django.db.models import F
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Parameter, Schema
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, exceptions, mixins, response, status
 
 import autograder.core.models as ag_models
-from autograder.core.submission_feedback import (
-    AGTestPreLoader, StudentTestSuitePreLoader, SubmissionResultFeedback)
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
-from autograder.rest_api.serialize_ultimate_submission_results import (
-    get_submission_data_with_results)
-from autograder.rest_api.size_file_response import SizeFileResponse
 import autograder.utils.testing as test_ut
-from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import (
-    AGModelAPIView, AGModelGenericViewSet, ListCreateNestedModelViewSet,
-    require_query_params)
-from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
+from autograder.core.submission_feedback import (AGTestPreLoader, MutationTestSuitePreLoader,
+                                                 SubmissionResultFeedback)
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
+                                        APITags, CustomViewDict, CustomViewSchema, as_content_obj,
+                                        as_schema_ref)
+from autograder.rest_api.serialize_ultimate_submission_results import \
+    get_submission_data_with_results
+from autograder.rest_api.size_file_response import SizeFileResponse
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      NestedModelView,
+                                                      convert_django_validation_error,
+                                                      require_query_params)
 
 from .common import make_fdbk_category_param_docs, validate_fdbk_category
 
@@ -44,27 +44,53 @@ can_submit = (
 )
 
 
-list_create_submission_permissions = can_view_group | can_submit
+class _ListCreateSubmissionSchema(AGListViewSchemaMixin, CustomViewSchema):
+    def __init__(self, data: CustomViewDict):
+        super().__init__([APITags.submissions], api_class=ag_models.Submission, data=data)
 
 
-class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
-    serializer_class = ag_serializers.SubmissionSerializer
-    permission_classes = (list_create_submission_permissions,)
+class ListCreateSubmissionView(NestedModelView):
+    schema = _ListCreateSubmissionSchema({
+        'POST': {
+            'operation_id': 'createSubmission',
+            'request': {
+                'content': {
+                    'multipart/form-data': {
+                        'schema': {
+                            'properties': {
+                                'submitted_files': {
+                                    'type': 'array',
+                                    'items': {
+                                        'type': 'string',
+                                        'format': 'binary'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                'description': 'The files being submitted, as multipart/form-data.',
+            },
+            'responses': {
+                '201': {
+                    'content': as_content_obj(ag_models.Submission)
+                }
+            }
+        }
+    })
+
+    permission_classes = [can_view_group | can_submit]
 
     model_manager = ag_models.Group.objects.select_related('project__course')
+    nested_field_name = 'submissions'
+    parent_obj_field_name = 'group'
 
-    to_one_field_name = 'group'
-    reverse_to_one_field_name = 'submissions'
+    def get(self, *args, **kwargs):
+        return self.do_list()
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='submitted_files', in_='body',
-                      description='The files being submitted, as multipart/form-data.',
-                      type='List[file]')
-        ]
-    )
+    @convert_django_validation_error
     @transaction.atomic()
-    def create(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         # NOTE: The way that submitted_files gets encoded in requests,
         # sending no files (which is valid) will cause the key 'submitted_files'
         # to not show up in the request body. Therefore, we will NOT require
@@ -105,8 +131,8 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
 
         is_bonus_submission = False
         if is_past_daily_limit and group.bonus_submissions_remaining > 0:
-            group.validate_and_update(
-                bonus_submissions_remaining=group.bonus_submissions_remaining - 1)
+            group.bonus_submissions_used += 1
+            group.save()
             is_bonus_submission = True
             is_past_daily_limit = False
 
@@ -144,7 +170,7 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
                     late_days_needed = (timestamp - user_deadline).days + 1
 
                     if remaining.late_days_remaining >= late_days_needed:
-                        remaining.late_days_remaining -= late_days_needed
+                        remaining.late_days_used += late_days_needed
                         remaining.save()
                         group.late_days_used.setdefault(user.username, 0)
                         group.late_days_used[user.username] += late_days_needed
@@ -200,11 +226,12 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
                            *, is_past_daily_limit: bool,
                            is_bonus_submission: bool,
                            does_not_count_for: List[str]):
-        serializer = self.get_serializer(data=self.request.data)
-        serializer.is_valid()
-
-        submission: ag_models.Submission = serializer.save(
-            group=group, submitter=self.request.user.username, timestamp=timestamp)
+        submission: ag_models.Submission = ag_models.Submission.objects.validate_and_create(
+            self.request.data.getlist('submitted_files'),
+            group,
+            timestamp,
+            self.request.user.username
+        )
 
         # Some fields can't be set through Submission.objects.validate_and_create
         # for security reasons. Instead, we set those fields now.
@@ -216,38 +243,32 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
         return response.Response(data=submission.to_dict(), status=status.HTTP_201_CREATED)
 
 
-def _make_submission_with_results_schema():
-    submission_with_results_schema = Schema(
-        type='object',
-        properties=copy.deepcopy(
-            AGModelSchemaBuilder.get().get_schema(ag_models.Submission).properties
-        )
-    )
-    submission_with_results_schema.properties['results'] = AGModelSchemaBuilder.get().get_schema(
-        SubmissionResultFeedback)
-
-    submission_with_results_schema.properties.move_to_end('results', last=False)
-
-    return submission_with_results_schema
-
-
 class ListSubmissionsWithResults(AGModelAPIView):
-    permission_classes = (
-        P(ag_permissions.can_view_project()) & P(ag_permissions.is_staff_or_group_member()),
-    )
+    schema = CustomViewSchema([APITags.submissions], {
+        'GET': {
+            'operation_id': 'listSubmissionsWithResults',
+            'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
+            'responses': {
+                '200': {
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                'type': 'array',
+                                'items': {'$ref': '#/components/schemas/SubmissionWithResults'}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    })
+
+    permission_classes = [
+        P(ag_permissions.can_view_project()) & P(ag_permissions.is_staff_or_group_member())
+    ]
 
     model_manager = ag_models.Group.objects.select_related('project__course')
-    api_tags = (APITags.submissions,)
 
-    @swagger_auto_schema(
-        manual_parameters=[make_fdbk_category_param_docs(required=False)],
-        responses={
-            '200': Schema(
-                type='array',
-                items=_make_submission_with_results_schema()
-            )
-        }
-    )
     def get(self, *args, **kwargs):
         group = self.get_object()
 
@@ -266,7 +287,7 @@ class ListSubmissionsWithResults(AGModelAPIView):
             base_manager=group.submissions)
 
         ag_test_preloader = AGTestPreLoader(group.project)
-        student_test_suite_preloader = StudentTestSuitePreLoader(group.project)
+        mutation_test_suite_preloader = MutationTestSuitePreLoader(group.project)
 
         submissions = []
         for submission in submissions_queryset:
@@ -285,7 +306,7 @@ class ListSubmissionsWithResults(AGModelAPIView):
                     submission,
                     fdbk_category,
                     ag_test_preloader,
-                    student_test_suite_preloader
+                    mutation_test_suite_preloader
                 ),
                 full_results=True
             )
@@ -294,28 +315,59 @@ class ListSubmissionsWithResults(AGModelAPIView):
         return response.Response(status=status.HTTP_200_OK, data=submissions)
 
 
-class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
-                              transaction_mixins.TransactionPartialUpdateMixin,
-                              AGModelGenericViewSet):
-    model_manager = ag_models.Submission.objects.select_related(
-        'group__project__course')
+class SubmissionDetailView(AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator([APITags.submissions])
 
-    serializer_class = ag_serializers.SubmissionSerializer
-    permission_classes = ((P(ag_permissions.is_admin()) | P(ag_permissions.IsReadOnly)),
-                          ag_permissions.can_view_project(),
-                          ag_permissions.is_staff_or_group_member())
+    model_manager = ag_models.Submission.objects.select_related('group__project__course')
 
-    @swagger_auto_schema(
-        manual_parameters=[
-            Parameter(
-                name='filename', in_='query',
-                description='The name of the file to return.',
-                required=True, type='str')
-        ],
-        responses={'200': 'Returns the file contents.'})
+    permission_classes = [
+        P(ag_permissions.is_admin()) | P(ag_permissions.IsReadOnly),
+        ag_permissions.can_view_project(),
+        ag_permissions.is_staff_or_group_member()
+    ]
+
+    def get(self, *args, **kwargs):
+        return self.do_get()
+
+    def patch(self, *args, **kwargs):
+        return self.do_patch()
+
+
+class GetSubmittedFileView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.submissions], {
+        'GET': {
+            'operation_id': 'getSubmittedFile',
+            'parameters': [
+                {
+                    'name': 'filename',
+                    'in': 'query',
+                    'description': 'The name of the file to return.',
+                    'required': True,
+                    'schema': {'type': 'string'}
+                }
+            ],
+            'responses': {
+                '200': {
+                    'content': {
+                        'application/octet-stream': {
+                            'schema': {'type': 'string', 'format': 'binary'}
+                        }
+                    }
+                }
+            }
+        }
+    })
+
+    model_manager = ag_models.Submission.objects.select_related('group__project__course')
+
+    permission_classes = [
+        ag_permissions.can_view_project(),
+        ag_permissions.is_staff_or_group_member()
+    ]
+
     @method_decorator(require_query_params('filename'))
-    @decorators.detail_route()
-    def file(self, request, *args, **kwargs):
+    @transaction.atomic
+    def get(self, request, *args, **kwargs):
         submission = self.get_object()
         filename = request.query_params['filename']
         try:
@@ -324,14 +376,25 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
             return response.Response('File "{}" not found'.format(filename),
                                      status=status.HTTP_404_NOT_FOUND)
 
-    @swagger_auto_schema(responses={'204': 'The submission has been removed from the queue.'},
-                         request_body_parameters=[])
+
+class RemoveSubmissionFromQueueView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.submissions], {
+        'POST': {
+            'operation_id': 'removeSubmissionFromQueue',
+            'responses': {
+                '200': {
+                    'content': as_content_obj(ag_models.Submission)
+                }
+            }
+        }
+    })
+
+    permission_classes = [ag_permissions.can_view_project(), ag_permissions.is_group_member()]
+
+    model_manager = ag_models.Submission.objects.select_related('group__project__course')
+
     @transaction.atomic()
-    @decorators.detail_route(
-        methods=['post'],
-        # NOTE: Only group members can remove their own submissions from the queue.
-        permission_classes=(ag_permissions.can_view_project(), ag_permissions.is_group_member()))
-    def remove_from_queue(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         """
         Remove this submission from the grading queue.
         """
@@ -346,11 +409,11 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
         if refund_bonus_submission:
             ag_models.Group.objects.select_for_update().filter(
                 pk=submission.group_id
-            ).update(bonus_submissions_remaining=F('bonus_submissions_remaining') + 1)
+            ).update(bonus_submissions_used=F('bonus_submissions_used') - 1)
 
         submission.status = (
             ag_models.Submission.GradingStatus.removed_from_queue)
         submission.is_bonus_submission = False
         submission.save()
 
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
+        return response.Response(submission.to_dict(), status.HTTP_200_OK)

@@ -1,0 +1,3 @@
+SWAGGER_JSON=/root/schema.yml
+DOC_EXPANSION=none
+FILTER=

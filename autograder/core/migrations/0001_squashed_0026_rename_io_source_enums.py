@@ -9,8 +9,8 @@ import autograder.core.models.ag_test.ag_test_suite
 import autograder.core.models.project.download_task
 import autograder.core.models.project.instructor_file
 import autograder.core.models.project.project
-import autograder.core.models.student_test_suite.student_test_suite
-import autograder.core.models.student_test_suite.student_test_suite_result
+import autograder.core.models.mutation_test_suite.mutation_test_suite
+import autograder.core.models.mutation_test_suite.mutation_test_suite_result
 import autograder.core.utils
 import datetime
 from django.conf import settings
@@ -365,8 +365,8 @@ class Migration(migrations.Migration):
                 ('deferred', models.BooleanField(default=False, help_text='If true, this student test suite can be graded asynchronously.\n                     Deferred suites that have yet to be graded do not prevent members\n                     of a group from submitting again.')),
                 ('docker_image_to_use', autograder.core.fields.EnumField(default=autograder.core.constants.SupportedImages('default'), enum_type=autograder.core.constants.SupportedImages, help_text='An identifier for the Docker image that the sandbox should be created from.')),
                 ('allow_network_access', models.BooleanField(default=False, help_text='Specifies whether the sandbox should allow commands run inside of it to\n                     make network calls outside of the sandbox.')),
-                ('get_student_test_names_command', models.OneToOneField(blank=True, default=autograder.core.models.student_test_suite.student_test_suite.make_default_get_student_test_names_cmd, help_text="This required command should print out a whitespace-separated\n                     list of detected student names. The output of this command will\n                     be parsed using Python's str.split().\n                     NOTE: This AGCommand's 'cmd' field must not be blank.", on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommand')),
-                ('grade_buggy_impl_command', models.OneToOneField(blank=True, default=autograder.core.models.student_test_suite.student_test_suite.make_default_grade_buggy_impl_command, help_text="This command will be run once for every (buggy implementation, valid test)\n                    pair.\n                     A nonzero exit status indicates that the valid student tests exposed the\n                     buggy impl, whereas an exit status of zero indicates that the student\n                     tests did not expose the buggy impl.\n                     This command must contain the placeholders ${student_test_name} and ${buggy_impl_name}. The placeholder\n                     ${student_test_name} will be replaced with the name of a valid student test case.\n                     The placeholder ${buggy_impl_name} will be replaced with the name of\n                     the buggy impl that the student test is being run against.\n                     NOTE: This AGCommand's 'cmd' field must not be blank.\n                     ", on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommand')),
+                ('get_student_test_names_command', models.OneToOneField(blank=True, default=lambda: None, help_text="This required command should print out a whitespace-separated\n                     list of detected student names. The output of this command will\n                     be parsed using Python's str.split().\n                     NOTE: This AGCommand's 'cmd' field must not be blank.", on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommand')),
+                ('grade_buggy_impl_command', models.OneToOneField(blank=True, default=lambda: None, help_text="This command will be run once for every (buggy implementation, valid test)\n                    pair.\n                     A nonzero exit status indicates that the valid student tests exposed the\n                     buggy impl, whereas an exit status of zero indicates that the student\n                     tests did not expose the buggy impl.\n                     This command must contain the placeholders ${student_test_name} and ${buggy_impl_name}. The placeholder\n                     ${student_test_name} will be replaced with the name of a valid student test case.\n                     The placeholder ${buggy_impl_name} will be replaced with the name of\n                     the buggy impl that the student test is being run against.\n                     NOTE: This AGCommand's 'cmd' field must not be blank.\n                     ", on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommand')),
                 ('instructor_files_needed', models.ManyToManyField(help_text='The project files that will be copied into the sandbox before the suite\n                     is graded.', to='core.InstructorFile')),
             ],
             bases=(autograder.core.models.ag_model_base.ToDictMixin, models.Model),
@@ -389,7 +389,7 @@ class Migration(migrations.Migration):
                 ('show_grade_buggy_impls_stderr', models.BooleanField(default=False, help_text='Whether to show stderr from grading all buggy impls.')),
                 ('show_invalid_test_names', models.BooleanField(default=True, help_text="Whether to show the names of student tests that failed the validity check.\n                     Setting this to true will also include information about whether\n                     invalid test cases exceeded the validity check command's time limit.")),
                 ('show_points', models.BooleanField(default=False, help_text='Whether to show how many points were awarded.')),
-                ('bugs_exposed_fdbk_level', autograder.core.fields.EnumField(default=autograder.core.models.student_test_suite.student_test_suite.BugsExposedFeedbackLevel('no_feedback'), enum_type=autograder.core.models.student_test_suite.student_test_suite.BugsExposedFeedbackLevel)),
+                ('bugs_exposed_fdbk_level', autograder.core.fields.EnumField(default=autograder.core.models.mutation_test_suite.mutation_test_suite.BugsExposedFeedbackLevel('no_feedback'), enum_type=autograder.core.models.mutation_test_suite.mutation_test_suite.BugsExposedFeedbackLevel)),
             ],
             options={
                 'abstract': False,
@@ -406,7 +406,7 @@ class Migration(migrations.Migration):
                 ('invalid_tests', autograder.core.fields.StringArrayField(allow_empty_strings=False, blank=True, default=list, help_text='The names of student test cases that failed the validity check.', max_string_length=255, size=None, string_validators=[], strip_strings=False)),
                 ('timed_out_tests', autograder.core.fields.StringArrayField(allow_empty_strings=False, blank=True, default=list, help_text='The names of student test cases that timed out during the validity check.', max_string_length=255, size=None, string_validators=[], strip_strings=False)),
                 ('bugs_exposed', autograder.core.fields.StringArrayField(allow_empty_strings=False, blank=True, default=list, help_text="The names of instructor buggy implementations that were exposed\n                     by the student's test cases.", max_string_length=255, size=None, string_validators=[], strip_strings=False)),
-                ('get_test_names_result', models.OneToOneField(default=autograder.core.models.student_test_suite.student_test_suite_result._make_get_test_names_result_default, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommandResult')),
+                ('get_test_names_result', models.OneToOneField(default=autograder.core.models.mutation_test_suite.mutation_test_suite_result._make_get_test_names_result_default, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommandResult')),
                 ('setup_result', models.OneToOneField(blank=True, default=None, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommandResult')),
                 ('student_test_suite', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.StudentTestSuite')),
             ],
@@ -478,12 +478,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studenttestsuite',
             name='normal_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.student_test_suite.student_test_suite.make_default_command_fdbk, help_text='Feedback settings for a normal Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.StudentTestSuiteFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a normal Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.StudentTestSuiteFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
             name='past_limit_submission_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.student_test_suite.student_test_suite.make_default_past_limit_student_suite_fdbk, help_text='Feedback settings for a Submission that is past the daily limit.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.StudentTestSuiteFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a Submission that is past the daily limit.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.StudentTestSuiteFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
@@ -493,12 +493,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studenttestsuite',
             name='setup_command',
-            field=models.OneToOneField(default=autograder.core.models.student_test_suite.student_test_suite.make_default_setup_cmd, help_text="A command to be run after student and project files have\n                     been added to the sandbox but before any other commands are run.\n                     The AGCommand's 'cmd' field must not be blank. To indicate that no\n                     setup command should be run, set use_setup_command to False.", on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommand'),
+            field=models.OneToOneField(default=lambda: None, help_text="A command to be run after student and project files have\n                     been added to the sandbox but before any other commands are run.\n                     The AGCommand's 'cmd' field must not be blank. To indicate that no\n                     setup command should be run, set use_setup_command to False.", on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommand'),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
             name='staff_viewer_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.student_test_suite.student_test_suite.make_max_student_suite_fdbk, help_text='Feedback settings for a staff member viewing a Submission from another group.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.StudentTestSuiteFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a staff member viewing a Submission from another group.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.StudentTestSuiteFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
@@ -508,12 +508,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studenttestsuite',
             name='student_test_validity_check_command',
-            field=models.OneToOneField(blank=True, default=autograder.core.models.student_test_suite.student_test_suite.make_default_validity_check_command, help_text="This command will be run once for each detected student test case.\n                     An exit status of zero indicates that a student test case is valid,\n                     whereas a nonzero exit status indicates that a student test case\n                     is invalid.\n                     This command must contain the placeholder ${student_test_name} at least once. That\n                     placeholder will be replaced with the name of the student test case\n                     that is to be checked for validity.\n                     NOTE: This AGCommand's 'cmd' field must not be blank.\n                     ", on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommand'),
+            field=models.OneToOneField(blank=True, default=lambda: None, help_text="This command will be run once for each detected student test case.\n                     An exit status of zero indicates that a student test case is valid,\n                     whereas a nonzero exit status indicates that a student test case\n                     is invalid.\n                     This command must contain the placeholder ${student_test_name} at least once. That\n                     placeholder will be replaced with the name of the student test case\n                     that is to be checked for validity.\n                     NOTE: This AGCommand's 'cmd' field must not be blank.\n                     ", on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGCommand'),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
             name='ultimate_submission_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.student_test_suite.student_test_suite.make_default_ultimate_submission_command_fdbk, help_text='Feedback settings for an ultimate Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.StudentTestSuiteFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for an ultimate Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.StudentTestSuiteFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='instructorfile',
@@ -543,12 +543,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agtestsuite',
             name='normal_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_suite.make_default_suite_fdbk, help_text='Feedback settings for a normal submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestSuiteFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a normal submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestSuiteFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestsuite',
             name='past_limit_submission_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_suite.make_default_suite_fdbk, help_text='Feedback settings for a submission that is past the daily limit.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestSuiteFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a submission that is past the daily limit.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestSuiteFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestsuite',
@@ -558,7 +558,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agtestsuite',
             name='staff_viewer_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_suite.make_default_suite_fdbk, help_text='Feedback settings for a staff member viewing a submission from another group.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestSuiteFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a staff member viewing a submission from another group.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestSuiteFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestsuite',
@@ -568,7 +568,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agtestsuite',
             name='ultimate_submission_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_suite.make_default_suite_fdbk, help_text='Feedback settings for an ultimate submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestSuiteFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for an ultimate submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestSuiteFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestcommand',
@@ -583,17 +583,17 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agtestcommand',
             name='normal_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_command.make_default_command_fdbk, help_text='Feedback settings for a normal Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCommandFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a normal Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCommandFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestcommand',
             name='past_limit_submission_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_command.make_default_command_fdbk, help_text='Feedback settings for a Submission that is past the daily limit.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCommandFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a Submission that is past the daily limit.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCommandFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestcommand',
             name='staff_viewer_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_command.make_max_command_fdbk, help_text='Feedback settings for a staff member viewing a Submission from another group.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCommandFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a staff member viewing a Submission from another group.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCommandFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestcommand',
@@ -603,7 +603,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agtestcommand',
             name='ultimate_submission_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_command.make_default_ultimate_submission_command_fdbk, help_text='Feedback settings for an ultimate Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCommandFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for an ultimate Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCommandFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestcaseresult',
@@ -618,22 +618,22 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agtestcase',
             name='normal_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_case.make_default_test_fdbk, help_text='Feedback settings for a normal Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCaseFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a normal Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCaseFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestcase',
             name='past_limit_submission_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_case.make_default_test_fdbk, help_text='Feedback settings for a Submission that is past the daily limit.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCaseFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a Submission that is past the daily limit.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCaseFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestcase',
             name='staff_viewer_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_case.make_default_test_fdbk, help_text='Feedback settings for a staff member viewing a Submission from another group.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCaseFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for a staff member viewing a Submission from another group.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCaseFeedbackConfig'),
         ),
         migrations.AddField(
             model_name='agtestcase',
             name='ultimate_submission_fdbk_config',
-            field=models.OneToOneField(default=autograder.core.models.ag_test.ag_test_case.make_default_test_fdbk, help_text='Feedback settings for an ultimate Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCaseFeedbackConfig'),
+            field=models.OneToOneField(default=lambda: None, help_text='Feedback settings for an ultimate Submission.', on_delete=django.db.models.deletion.PROTECT, related_name='+', to='core.AGTestCaseFeedbackConfig'),
         ),
         migrations.AlterUniqueTogether(
             name='studenttestsuiteresult',

@@ -9,6 +9,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
     get_submission_fdbk
 from autograder.grading_tasks import tasks
+from autograder.utils.retry import MaxRetriesExceeded, retry
 from autograder.utils.testing import UnitTestBase
 
 
@@ -30,7 +31,7 @@ def _make_mock_grade_ag_test_cmd_fail_then_succeed(num_times_to_fail):
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class GradeSubmissionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -79,17 +80,17 @@ class GradeSubmissionTestCase(UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    def test_one_ag_suite_one_non_deferred_student_suite_one_deferred_student_suite(self, *args):
+    def test_one_ag_suite_one_non_deferred_mutation_suite_one_deferred_mutation_suite(self, *args):
         ag_suite = obj_build.make_ag_test_suite(self.project)
         ag_case = obj_build.make_ag_test_case(ag_suite)
         print_to_stdout_and_stderr = "bash -c 'printf hello; printf whoops >&2'"
         ag_cmd = obj_build.make_full_ag_test_command(ag_case, cmd=print_to_stdout_and_stderr)
 
-        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='mnkfoae',
             project=self.project)
 
-        deferred_student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        deferred_mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='deferryyyy',
             project=self.project,
             deferred=True)
@@ -99,13 +100,13 @@ class GradeSubmissionTestCase(UnitTestBase):
             ag_test_command=ag_cmd,
             ag_test_case_result__ag_test_suite_result__submission=self.submission)
 
-        student_suite_result = ag_models.StudentTestSuiteResult.objects.get(
+        mutation_suite_result = ag_models.MutationTestSuiteResult.objects.get(
             submission=self.submission,
-            student_test_suite=student_suite)
+            mutation_test_suite=mutation_suite)
 
-        deferred_student_suite_result = ag_models.StudentTestSuiteResult.objects.get(
+        deferred_mutation_suite_result = ag_models.MutationTestSuiteResult.objects.get(
             submission=self.submission,
-            student_test_suite=deferred_student_suite)
+            mutation_test_suite=deferred_mutation_suite)
 
     def test_non_default_docker_image(self, *args):
         eecs490_image = ag_models.SandboxDockerImage.objects.get_or_create(
@@ -301,7 +302,7 @@ void file2() {
         self.assertEqual(' '.join(self.submission.group.member_names),
                          open(res.stdout_filename).read())
 
-    def test_one_ag_suite_deferred_one_student_suite_deferred(self, *args):
+    def test_one_ag_suite_deferred_one_mutation_suite_deferred(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, deferred=False)
         case1 = obj_build.make_ag_test_case(suite1)
         cmd1 = obj_build.make_full_ag_test_command(
@@ -319,7 +320,7 @@ void file2() {
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=2)
 
-        deferred_student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+        deferred_mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='deferryyyy',
             project=self.project,
             deferred=True)
@@ -333,9 +334,9 @@ void file2() {
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-        deferred_student_suite_result = ag_models.StudentTestSuiteResult.objects.get(
+        deferred_mutation_suite_result = ag_models.MutationTestSuiteResult.objects.get(
             submission=self.submission,
-            student_test_suite=deferred_student_suite)
+            mutation_test_suite=deferred_mutation_suite)
 
     def test_all_suites_deferred(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, deferred=True)
@@ -408,7 +409,7 @@ void file2() {
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=3)
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
@@ -444,7 +445,7 @@ void file2() {
             get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).total_points)
 
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test.retry_should_recover',
-                new=tasks.retry(max_num_retries=2))
+                new=retry(max_num_retries=2))
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test.grade_ag_test_command_impl',
                 new=_make_mock_grade_ag_test_cmd_fail_then_succeed(None))
     def test_deferred_ag_test_error(self, *args):
@@ -457,7 +458,7 @@ void file2() {
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=3)
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()

@@ -1,14 +1,12 @@
-from django.urls import reverse
 from django.contrib.auth.models import User
-
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
-
-from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.rest_api.serialize_user import serialize_user
+from autograder.utils.testing import UnitTestBase
 
 
 class _SetUp(UnitTestBase):
@@ -26,10 +24,8 @@ class _SetUp(UnitTestBase):
 
 class ListStaffTestCase(_SetUp):
     def test_admin_or_staff_or_handgrader_list_staff(self):
-        staff = obj_build.create_dummy_users(3)
-        self.course.staff.add(*staff)
-
-        expected_content = ag_serializers.UserSerializer(staff, many=True).data
+        staff = obj_build.make_staff_users(self.course, 3)
+        expected_content = [serialize_user(user) for user in staff]
 
         for user in self.admin, staff[0], self.handgrader:
             self.client.force_authenticate(user)
@@ -98,16 +94,13 @@ class RemoveStaffTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
-        self.remaining_staff = obj_build.create_dummy_user()
-        self.staff_to_remove = obj_build.create_dummy_users(3)
+        self.remaining_staff = obj_build.make_staff_user(self.course)
+        self.staff_to_remove = obj_build.make_staff_users(self.course, 3)
         self.all_staff = [self.remaining_staff] + self.staff_to_remove
         self.total_num_staff = len(self.all_staff)
 
-        self.course.staff.add(*self.all_staff)
-
         self.request_body = {
-            'remove_staff': ag_serializers.UserSerializer(
-                self.staff_to_remove, many=True).data
+            'remove_staff': [serialize_user(user) for user in self.staff_to_remove]
         }
 
     def test_admin_remove_staff(self):

@@ -215,18 +215,6 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
         [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_get_test(self.client, enrolled, self.url)
 
-    def test_admin_or_staff_or_handgrader_update_bad_values(self):
-        bad_data = {
-            "location": "Not an editable field!",
-        }
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
-        [staff] = obj_build.make_staff_users(self.course, 1)
-
-        for user in admin, staff, handgrader:
-            self.do_patch_object_invalid_args_test(self.applied_annotation, self.client, user,
-                                                   self.url, bad_data)
-
     def test_admin_valid_delete(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_delete_object_test(self.applied_annotation, self.client, admin, self.url)

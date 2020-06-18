@@ -8,7 +8,7 @@ from .ag_test_suite import AGTestSuite
 from ..ag_model_base import AutograderModel, DictSerializableMixin
 
 
-class NewAGTestCaseFeedbackConfig(DictSerializableMixin):
+class AGTestCaseFeedbackConfig(DictSerializableMixin):
     """
     Contains feedback options for an AGTestCase.
     """
@@ -17,24 +17,6 @@ class NewAGTestCaseFeedbackConfig(DictSerializableMixin):
         self.show_individual_commands = show_individual_commands
 
     SERIALIZABLE_FIELDS = ('visible', 'show_individual_commands',)
-
-
-class AGTestCaseFeedbackConfig(AutograderModel):
-    """
-    Contains feedback options for an AGTestCase.
-    """
-    visible = models.BooleanField(default=True)
-    show_individual_commands = models.BooleanField(default=True)
-
-    SERIALIZABLE_FIELDS = ('visible', 'show_individual_commands',)
-    EDITABLE_FIELDS = ('visible', 'show_individual_commands',)
-
-
-def make_default_test_fdbk() -> int:
-    """
-    Creates a new default AGTestCaseFeedbackConfig and returns its pk.
-    """
-    return AGTestCaseFeedbackConfig.objects.validate_and_create().pk
 
 
 class AGTestCase(AutograderModel):
@@ -60,39 +42,14 @@ class AGTestCase(AutograderModel):
         help_text='''The suite this autograder test belongs to.
                      This field is REQUIRED.''')
 
-    old_normal_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_test_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a normal Submission.')
-    old_ultimate_submission_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_test_fdbk,
-        related_name='+',
-        help_text='Feedback settings for an ultimate Submission.')
-    old_past_limit_submission_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_test_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a Submission that is past the daily limit.')
-    old_staff_viewer_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_test_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a staff member viewing a Submission from another group.')
-
     normal_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+        AGTestCaseFeedbackConfig, default=AGTestCaseFeedbackConfig)
     ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+        AGTestCaseFeedbackConfig, default=AGTestCaseFeedbackConfig)
     past_limit_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+        AGTestCaseFeedbackConfig, default=AGTestCaseFeedbackConfig)
     staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+        AGTestCaseFeedbackConfig, default=AGTestCaseFeedbackConfig)
 
     @transaction.atomic
     def validate_and_update(self, ag_test_suite: Optional[Union[int, AGTestSuite]]=None, **kwargs):

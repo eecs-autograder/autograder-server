@@ -1,4 +1,3 @@
-from .ag_command_base import AGCommandBase, Command
-from .ag_command import AGCommand
+from .command import Command
 from .ag_command_result_base import AGCommandResultBase
 from .ag_command_result import AGCommandResult

@@ -8,7 +8,6 @@ from django.db import models, transaction, connection
 import autograder.core.fields as ag_fields
 from autograder.core import constants
 import autograder.core.utils as core_ut
-from ..ag_command import AGCommandBase
 from .ag_test_case import AGTestCase
 from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import InstructorFile
@@ -20,7 +19,7 @@ class ValueFeedbackLevel(core_ut.OrderedEnum):
     expected_and_actual = 'expected_and_actual'
 
 
-class NewAGTestCommandFeedbackConfig(DictSerializableMixin):
+class AGTestCommandFeedbackConfig(DictSerializableMixin):
     """
     Contains feedback options for an AGTestCommand
     """
@@ -50,7 +49,7 @@ class NewAGTestCommandFeedbackConfig(DictSerializableMixin):
 
     @classmethod
     def default_ultimate_submission_fdbk_config(cls):
-        return NewAGTestCommandFeedbackConfig(
+        return AGTestCommandFeedbackConfig(
             return_code_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
             stdout_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
             stderr_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
@@ -67,7 +66,7 @@ class NewAGTestCommandFeedbackConfig(DictSerializableMixin):
 
     @classmethod
     def max_fdbk_config(cls):
-        return NewAGTestCommandFeedbackConfig(
+        return AGTestCommandFeedbackConfig(
             return_code_fdbk_level=ValueFeedbackLevel.get_max(),
             stdout_fdbk_level=ValueFeedbackLevel.get_max(),
             stderr_fdbk_level=ValueFeedbackLevel.get_max(),
@@ -91,88 +90,6 @@ class NewAGTestCommandFeedbackConfig(DictSerializableMixin):
     )
 
 
-class AGTestCommandFeedbackConfig(AutograderModel):
-    """
-    Contains feedback options for an AGTestCommand
-    """
-    visible = models.BooleanField(default=True)
-
-    return_code_fdbk_level = ag_fields.EnumField(ValueFeedbackLevel,
-                                                 default=ValueFeedbackLevel.get_min())
-    stdout_fdbk_level = ag_fields.EnumField(ValueFeedbackLevel,
-                                            default=ValueFeedbackLevel.get_min())
-    stderr_fdbk_level = ag_fields.EnumField(ValueFeedbackLevel,
-                                            default=ValueFeedbackLevel.get_min())
-
-    show_points = models.BooleanField(default=False)
-    show_actual_return_code = models.BooleanField(default=False)
-    show_actual_stdout = models.BooleanField(default=False)
-    show_actual_stderr = models.BooleanField(default=False)
-    show_whether_timed_out = models.BooleanField(default=False)
-
-    SERIALIZABLE_FIELDS = (
-        'visible',
-        'return_code_fdbk_level',
-        'stdout_fdbk_level',
-        'stderr_fdbk_level',
-        'show_points',
-        'show_actual_return_code',
-        'show_actual_stdout',
-        'show_actual_stderr',
-        'show_whether_timed_out',
-    )
-
-    EDITABLE_FIELDS = (
-        'visible',
-        'return_code_fdbk_level',
-        'stdout_fdbk_level',
-        'stderr_fdbk_level',
-        'show_points',
-        'show_actual_return_code',
-        'show_actual_stdout',
-        'show_actual_stderr',
-        'show_whether_timed_out'
-    )
-
-
-def make_default_command_fdbk() -> int:
-    """
-    Creates a new default AGTestCommandFeedbackConfig and returns its pk.
-    """
-    return AGTestCommandFeedbackConfig.objects.validate_and_create().pk
-
-
-def make_default_ultimate_submission_command_fdbk() -> int:
-    return AGTestCommandFeedbackConfig.objects.validate_and_create(
-        return_code_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
-        stdout_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
-        stderr_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
-        show_points=True,
-        show_actual_return_code=True,
-        show_actual_stdout=True,
-        show_actual_stderr=True,
-        show_whether_timed_out=True
-    ).pk
-
-
-MAX_AG_TEST_COMMAND_FDBK_SETTINGS = {
-    'return_code_fdbk_level': ValueFeedbackLevel.get_max(),
-    'stdout_fdbk_level': ValueFeedbackLevel.get_max(),
-    'stderr_fdbk_level': ValueFeedbackLevel.get_max(),
-    'show_points': True,
-    'show_actual_return_code': True,
-    'show_actual_stdout': True,
-    'show_actual_stderr': True,
-    'show_whether_timed_out': True
-}
-
-
-def make_max_command_fdbk() -> int:
-    return AGTestCommandFeedbackConfig.objects.validate_and_create(
-        **MAX_AG_TEST_COMMAND_FDBK_SETTINGS
-    ).pk
-
-
 class StdinSource(enum.Enum):
     none = 'none'  # No input to redirect
     text = 'text'
@@ -193,7 +110,12 @@ class ExpectedReturnCode(enum.Enum):
     nonzero = 'nonzero'
 
 
-class AGTestCommand(AGCommandBase):
+# The maximum length of the "expected_stdout_text" and "expected_stderr_text"
+# fields in AGTestCommand.
+MAX_EXPECTED_OUTPUT_TEXT_LENGTH = 8 * pow(10, 6)  # 8,000,000 characters
+
+
+class AGTestCommand(AutograderModel):
     """
     An AGTestCommand represents a single command to evaluate student code.
     """
@@ -207,6 +129,15 @@ class AGTestCommand(AGCommandBase):
                          Must be non-empty and non-null.
                          Must be unique among commands that belong to the same autograder test.
                          This field is REQUIRED.''')
+
+    cmd = models.CharField(
+        max_length=constants.MAX_COMMAND_LENGTH,
+        help_text='''A string containing the command to be run.
+                     Note: This string will be inserted into ['bash', '-c', <cmd>]
+                        in order to be executed.
+                     Note: This string defaults to the "true" command
+                     (which does nothing and returns 0) so that AGCommands are
+                     default-creatable.''')
 
     ag_test_case = models.ForeignKey(
         AGTestCase,
@@ -238,7 +169,7 @@ class AGTestCommand(AGCommandBase):
         help_text="Specifies what kind of source this command's stdout should be compared to.")
     expected_stdout_text = models.TextField(
         blank=True,
-        validators=[MaxLengthValidator(constants.MAX_OUTPUT_LENGTH)],
+        validators=[MaxLengthValidator(MAX_EXPECTED_OUTPUT_TEXT_LENGTH)],
         help_text='''A string whose contents should be compared against this command's stdout.
                      This value is used when expected_stdout_source is ExpectedOutputSource.text
                      and is ignored otherwise.''')
@@ -254,7 +185,7 @@ class AGTestCommand(AGCommandBase):
         help_text="Specifies what kind of source this command's stderr should be compared to.")
     expected_stderr_text = models.TextField(
         blank=True,
-        validators=[MaxLengthValidator(constants.MAX_OUTPUT_LENGTH)],
+        validators=[MaxLengthValidator(MAX_EXPECTED_OUTPUT_TEXT_LENGTH)],
         help_text='''A string whose contents should be compared against this command's stderr.
                      This value is used when expected_stderr_source is ExpectedOutputSource.text
                      and is ignored otherwise.''')
@@ -310,58 +241,89 @@ class AGTestCommand(AGCommandBase):
                      Note: The total points given for a single command may be negative,
                      but the total points for an AGTestCase will be capped at zero.''')
 
-    old_normal_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_command_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a normal Submission.')
-    old_ultimate_submission_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_ultimate_submission_command_fdbk,
-        related_name='+',
-        help_text='Feedback settings for an ultimate Submission.')
-    old_past_limit_submission_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_default_command_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a Submission that is past the daily limit.')
-    old_staff_viewer_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig,
-        on_delete=models.PROTECT,
-        default=make_max_command_fdbk,
-        related_name='+',
-        help_text='Feedback settings for a staff member viewing a Submission from another group.')
-
     normal_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCommandFeedbackConfig,
-        default=NewAGTestCommandFeedbackConfig,
+        AGTestCommandFeedbackConfig,
+        default=AGTestCommandFeedbackConfig,
         help_text='Feedback settings for a normal Submission.'
     )
     first_failed_test_normal_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCommandFeedbackConfig,
+        AGTestCommandFeedbackConfig,
         blank=True, null=True, default=None,
         help_text="""When non-null, specifies feedback to be given when
                      this command is in the first test case that failed
                      within a suite."""
     )
     ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCommandFeedbackConfig,
-        default=NewAGTestCommandFeedbackConfig.default_ultimate_submission_fdbk_config,
+        AGTestCommandFeedbackConfig,
+        default=AGTestCommandFeedbackConfig.default_ultimate_submission_fdbk_config,
         help_text='Feedback settings for an ultimate Submission.'
     )
     past_limit_submission_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCommandFeedbackConfig,
-        default=NewAGTestCommandFeedbackConfig,
+        AGTestCommandFeedbackConfig,
+        default=AGTestCommandFeedbackConfig,
         help_text='Feedback settings for a Submission that is past the daily limit.'
     )
     staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
-        NewAGTestCommandFeedbackConfig,
-        default=NewAGTestCommandFeedbackConfig.default_staff_viewer_fdbk_config,
+        AGTestCommandFeedbackConfig,
+        default=AGTestCommandFeedbackConfig.default_staff_viewer_fdbk_config,
         help_text='Feedback settings for a staff member viewing a Submission from another group.'
     )
+
+    time_limit = models.IntegerField(
+        default=constants.DEFAULT_SUBPROCESS_TIMEOUT,
+        validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_SUBPROCESS_TIMEOUT)],
+        help_text=f"""The time limit in seconds to be placed on the command.
+            Must be > 0
+            Must be <= {constants.MAX_SUBPROCESS_TIMEOUT}""")
+
+    # Remove in version 5.0.0
+    stack_size_limit = models.IntegerField(
+        default=constants.DEFAULT_STACK_SIZE_LIMIT,
+        validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_STACK_SIZE_LIMIT)],
+        help_text=f"""This field is IGNORED and will be removed in version 5.0.0.
+            The maximum stack size in bytes.
+            Must be > 0
+            Must be <= {constants.MAX_STACK_SIZE_LIMIT}
+            NOTE: Setting this value too low may cause the command to crash prematurely.""")
+
+    use_virtual_memory_limit = models.BooleanField(
+        default=True, blank=True,
+        help_text="""When set to false, the virtual memory limit will not
+            be applied to the command. Note that the sandbox will still apply
+            a physical memory limit to all commands run in the sandbox."""
+    )
+
+    virtual_memory_limit = models.BigIntegerField(
+        default=constants.DEFAULT_VIRTUAL_MEM_LIMIT,
+        validators=[MinValueValidator(1)],
+        help_text="""The maximum amount of virtual memory
+            (in bytes) the command can use. Must be > 0.
+            Limiting virtual memory can help produce cleaner
+            error messages when the command uses too much memory. However, some programs allocate
+            a large amount of virtual memory but use very little *physical* memory. For these
+            kinds of programs (e.g. Java programs), we recommend NOT limiting virtual memory.
+            Note that physical memory usage will still be limited for security reasons.""")
+
+    block_process_spawn = models.BooleanField(
+        default=False, blank=True,
+        help_text="When true, prevents the command from spawning child processes."
+    )
+
+    # Remove in version 5.0.0
+    process_spawn_limit = models.IntegerField(
+        default=constants.DEFAULT_PROCESS_LIMIT,
+        validators=[MinValueValidator(0), MaxValueValidator(constants.MAX_PROCESS_LIMIT)],
+        help_text=f"""This field is IGNORED and will be removed in version 5.0.0.
+            Use block_process_spawn instead.
+
+            The maximum number of processes that the command is allowed to spawn.
+            Must be >= 0
+            Must be <= {constants.MAX_PROCESS_LIMIT}
+            NOTE: This limit applies cumulatively to the processes
+                  spawned by the main program being run. i.e. If a
+                  spawned process spawns it's own child process, both
+                  of those processes will count towards the main
+                  program's process limit.""")
 
     def clean(self):
         error_dict = {}
@@ -470,9 +432,9 @@ class AGTestCommand(AGCommandBase):
         'staff_viewer_fdbk_config',
 
         'time_limit',
-        'stack_size_limit',
+        'use_virtual_memory_limit',
         'virtual_memory_limit',
-        'process_spawn_limit',
+        'block_process_spawn',
     )
 
     EDITABLE_FIELDS = (
@@ -514,9 +476,9 @@ class AGTestCommand(AGCommandBase):
         'staff_viewer_fdbk_config',
 
         'time_limit',
-        'stack_size_limit',
+        'use_virtual_memory_limit',
         'virtual_memory_limit',
-        'process_spawn_limit',
+        'block_process_spawn',
     )
 
     SERIALIZE_RELATED = (

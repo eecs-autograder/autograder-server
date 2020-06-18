@@ -7,7 +7,7 @@ services:
 
 language: python
 python:
-    - "3.6"
+    - "3.8"
 
 addons:
     postgresql: "9.5"
@@ -30,5 +30,6 @@ before_script:
 script:
     pycodestyle autograder &&
     pydocstyle augograder &&
+    sh run_mypy.sh &&
     python3 manage.py makemigrations --check &&
-    python3 manage.py test autograder
+    python3 manage.py test -v 2 autograder

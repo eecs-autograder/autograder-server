@@ -13,7 +13,7 @@ from autograder.core.models.get_ultimate_submissions import get_ultimate_submiss
 import autograder.core.utils as core_ut
 from autograder import utils
 from autograder.core.submission_feedback import (
-    SubmissionResultFeedback, AGTestPreLoader, StudentTestSuitePreLoader)
+    SubmissionResultFeedback, AGTestPreLoader, MutationTestSuitePreLoader)
 from autograder.rest_api.views.submission_views.all_ultimate_submission_results_view import (
     serialize_ultimate_submission_results)
 
@@ -28,13 +28,13 @@ def _get_all_submissions(
         project: ag_models.Project,
         groups: Sequence[ag_models.Group]) -> Tuple[List[SubmissionResultFeedback], int]:
     ag_test_loader = AGTestPreLoader(project)
-    student_test_suite_loader = StudentTestSuitePreLoader(project)
+    mutation_test_suite_loader = MutationTestSuitePreLoader(project)
     submissions = [
         SubmissionResultFeedback(
             submission,
             ag_models.FeedbackCategory.max,
             ag_test_loader,
-            student_test_suite_loader
+            mutation_test_suite_loader
         )
         for submission in ag_models.Submission.objects.filter(group__in=groups)
     ]
@@ -59,13 +59,13 @@ def all_submission_scores_task(project_pk, task_pk, include_staff, *args, **kwar
             )
         )
         ag_test_loader = AGTestPreLoader(project)
-        student_test_suite_loader = StudentTestSuitePreLoader(project)
+        mutation_test_suite_loader = MutationTestSuitePreLoader(project)
         fdbks = [
             SubmissionResultFeedback(
                 submission,
                 ag_models.FeedbackCategory.max,
                 ag_test_loader,
-                student_test_suite_loader
+                mutation_test_suite_loader
             )
             for submission in submissions
         ]
@@ -265,8 +265,8 @@ def _make_ultimate_submission_scores_csv(task: ag_models.DownloadTask,
 AG_SUITE_TOTAL_TMPL = '{} Total'
 AG_SUITE_TOTAL_POSSIBLE_TMPL = '{} Total Possible'
 AG_TEST_HEADER_TMPL = '{} - {}'
-STUDENT_SUITE_TOTAL_TMPL = '{} Total'
-STUDENT_SUITE_TOTAL_POSSIBLE_TMPL = '{} Total Possible'
+MUTATION_SUITE_TOTAL_TMPL = '{} Total'
+MUTATION_SUITE_TOTAL_POSSIBLE_TMPL = '{} Total Possible'
 
 
 def _make_test_detail_headers(project: ag_models.Project):
@@ -274,8 +274,8 @@ def _make_test_detail_headers(project: ag_models.Project):
     AG_SUITE_TOTAL_TMPL = '{} Total'
     AG_SUITE_TOTAL_POSSIBLE_TMPL = '{} Total Possible'
     AG_TEST_HEADER_TMPL = '{} - {}'
-    STUDENT_SUITE_TOTAL_TMPL = '{} Total'
-    STUDENT_SUITE_TOTAL_POSSIBLE_TMPL = '{} Total Possible'
+    MUTATION_SUITE_TOTAL_TMPL = '{} Total'
+    MUTATION_SUITE_TOTAL_POSSIBLE_TMPL = '{} Total Possible'
 
     for suite in project.ag_test_suites.all():
         headers += [AG_SUITE_TOTAL_TMPL.format(suite.name),
@@ -283,9 +283,9 @@ def _make_test_detail_headers(project: ag_models.Project):
         headers += [AG_TEST_HEADER_TMPL.format(suite.name, case.name)
                     for case in suite.ag_test_cases.all()]
 
-    for suite in project.student_test_suites.all():
-        headers += [STUDENT_SUITE_TOTAL_TMPL.format(suite.name),
-                    STUDENT_SUITE_TOTAL_POSSIBLE_TMPL.format(suite.name)]
+    for suite in project.mutation_test_suites.all():
+        headers += [MUTATION_SUITE_TOTAL_TMPL.format(suite.name),
+                    MUTATION_SUITE_TOTAL_POSSIBLE_TMPL.format(suite.name)]
 
     return headers
 
@@ -304,13 +304,13 @@ def _make_test_detail_columns(submission_fdbk_dict: dict):
                 suite_fdbk['ag_test_suite_name'], case_fdbk['ag_test_case_name'])
             row[ag_test_total_header] = case_fdbk['total_points']
 
-    for suite_fdbk in submission_fdbk_dict['student_test_suite_results']:
-        student_suite_total_header = STUDENT_SUITE_TOTAL_TMPL.format(
-            suite_fdbk['student_test_suite_name'])
-        row[student_suite_total_header] = suite_fdbk['total_points']
+    for suite_fdbk in submission_fdbk_dict['mutation_test_suite_results']:
+        mutation_suite_total_header = MUTATION_SUITE_TOTAL_TMPL.format(
+            suite_fdbk['mutation_test_suite_name'])
+        row[mutation_suite_total_header] = suite_fdbk['total_points']
 
-        student_suite_total_possible_header = STUDENT_SUITE_TOTAL_POSSIBLE_TMPL.format(
-            suite_fdbk['student_test_suite_name'])
-        row[student_suite_total_possible_header] = suite_fdbk['total_points_possible']
+        mutation_suite_total_possible_header = MUTATION_SUITE_TOTAL_POSSIBLE_TMPL.format(
+            suite_fdbk['mutation_test_suite_name'])
+        row[mutation_suite_total_possible_header] = suite_fdbk['total_points_possible']
 
     return row

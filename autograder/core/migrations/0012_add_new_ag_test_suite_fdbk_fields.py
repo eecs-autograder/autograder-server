@@ -5,32 +5,32 @@ import autograder.core.models.ag_test.ag_test_suite
 from django.db import migrations
 
 
-def migrate_ag_test_suite_fdbk_configs(apps, schema_editor):
-    AGTestSuite = apps.get_model('core', 'AGTestSuite')
+# def migrate_ag_test_suite_fdbk_configs(apps, schema_editor):
+#     AGTestSuite = apps.get_model('core', 'AGTestSuite')
 
-    fdbk_field_names = [
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
-    ]
-    for suite in AGTestSuite.objects.all():
-        for field_name in fdbk_field_names:
-            old_field_name = 'old_' + field_name
-            fdbk = {
-                'visible': getattr(suite, old_field_name).visible,
-                'show_individual_tests': getattr(suite, old_field_name).show_individual_tests,
-                'show_setup_return_code': getattr(
-                    suite, old_field_name).show_setup_and_teardown_return_code,
-                'show_setup_timed_out': getattr(
-                    suite, old_field_name).show_setup_and_teardown_timed_out,
-                'show_setup_stdout': getattr(suite, old_field_name).show_setup_and_teardown_stdout,
-                'show_setup_stderr': getattr(suite, old_field_name).show_setup_and_teardown_stderr,
-            }
-            setattr(suite, field_name, fdbk)
+#     fdbk_field_names = [
+#         'normal_fdbk_config',
+#         'ultimate_submission_fdbk_config',
+#         'past_limit_submission_fdbk_config',
+#         'staff_viewer_fdbk_config',
+#     ]
+#     for suite in AGTestSuite.objects.all():
+#         for field_name in fdbk_field_names:
+#             old_field_name = 'old_' + field_name
+#             fdbk = {
+#                 'visible': getattr(suite, old_field_name).visible,
+#                 'show_individual_tests': getattr(suite, old_field_name).show_individual_tests,
+#                 'show_setup_return_code': getattr(
+#                     suite, old_field_name).show_setup_and_teardown_return_code,
+#                 'show_setup_timed_out': getattr(
+#                     suite, old_field_name).show_setup_and_teardown_timed_out,
+#                 'show_setup_stdout': getattr(suite, old_field_name).show_setup_and_teardown_stdout,
+#                 'show_setup_stderr': getattr(suite, old_field_name).show_setup_and_teardown_stderr,
+#             }
+#             setattr(suite, field_name, fdbk)
 
-        suite.full_clean()
-        suite.save()
+#         suite.full_clean()
+#         suite.save()
 
 
 class Migration(migrations.Migration):
@@ -43,25 +43,25 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agtestsuite',
             name='normal_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_suite.NewAGTestSuiteFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_suite.NewAGTestSuiteFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_suite.AGTestSuiteFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_suite.AGTestSuiteFeedbackConfig),
         ),
         migrations.AddField(
             model_name='agtestsuite',
             name='past_limit_submission_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_suite.NewAGTestSuiteFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_suite.NewAGTestSuiteFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_suite.AGTestSuiteFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_suite.AGTestSuiteFeedbackConfig),
         ),
         migrations.AddField(
             model_name='agtestsuite',
             name='staff_viewer_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_suite.NewAGTestSuiteFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_suite.NewAGTestSuiteFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_suite.AGTestSuiteFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_suite.AGTestSuiteFeedbackConfig),
         ),
         migrations.AddField(
             model_name='agtestsuite',
             name='ultimate_submission_fdbk_config',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_suite.NewAGTestSuiteFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_suite.NewAGTestSuiteFeedbackConfig),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.ag_test.ag_test_suite.AGTestSuiteFeedbackConfig, serializable_class=autograder.core.models.ag_test.ag_test_suite.AGTestSuiteFeedbackConfig),
         ),
 
-        migrations.RunPython(
-            migrate_ag_test_suite_fdbk_configs, lambda apps, schema_editor: None
-        )
+        # migrations.RunPython(
+        #     migrate_ag_test_suite_fdbk_configs, lambda apps, schema_editor: None
+        # )
     ]

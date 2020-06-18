@@ -36,7 +36,7 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         self.ag_test_case = obj_build.make_ag_test_case(self.ag_test_suite)
         self.ag_test_cmd = obj_build.make_full_ag_test_command(self.ag_test_case)
 
-        self.student_test_suite = obj_build.make_student_test_suite(self.project)
+        self.mutation_test_suite = obj_build.make_mutation_test_suite(self.project)
 
         self.client = APIClient()
         self.base_url = reverse('all-ultimate-submission-results',
@@ -63,11 +63,22 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
                 User.objects.create(username=f'group{self._num_groups}_user{i}')
                 for i in range(num_members)
             ]
-        group = obj_build.make_group(
-            members=members,
-            members_role=members_role,
+
+        if members_role == obj_build.UserRole.guest:
+            self.project.validate_and_update(guests_can_submit=True)
+        elif members_role == obj_build.UserRole.student:
+            self.course.students.add(*members)
+        elif members_role == obj_build.UserRole.staff:
+            self.course.staff.add(*members)
+        elif members_role == obj_build.UserRole.admin:
+            self.course.admins.add(*members)
+
+        group = ag_models.Group.objects.validate_and_create(
+            members,
+            check_group_size_limits=False,
             project=self.project,
-            **group_kwargs)
+            **group_kwargs
+        )
 
         # The first submission gets correct results so that it's the best.
         # The others get incorrect results.
@@ -88,8 +99,8 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
             obj_build.make_incorrect_ag_test_command_result(
                 self.ag_test_cmd, submission=submission)
 
-        ag_models.StudentTestSuiteResult.objects.validate_and_create(
-            submission=submission, student_test_suite=self.student_test_suite)
+        ag_models.MutationTestSuiteResult.objects.validate_and_create(
+            submission=submission, mutation_test_suite=self.mutation_test_suite)
 
         return update_denormalized_ag_test_results(submission.pk)
 

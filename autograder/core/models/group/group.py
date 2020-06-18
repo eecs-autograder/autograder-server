@@ -1,12 +1,12 @@
 import os
+from typing import List
 
+import django.contrib.postgres.fields as pg_fields
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.utils import timezone
-
-import django.contrib.postgres.fields as pg_fields
-from typing import List
 
 import autograder.core.utils as core_ut
 from autograder import utils
@@ -14,9 +14,7 @@ from autograder.core import constants
 
 from .. import ag_model_base
 from ..project import Project
-
 from ..submission import Submission
-
 from . import verification
 
 
@@ -90,12 +88,43 @@ class Group(ag_model_base.AutograderModel):
             date, overriding the project closing time.
             Default value: None""")
 
-    bonus_submissions_remaining = models.IntegerField(
+    # Remove in version 5.0.0
+    old_bonus_submissions_remaining = models.IntegerField(
         blank=True,
+        default=0,
         validators=[MinValueValidator(0)],
         help_text="""The number of bonus submissions this group has left.
             This field is automatically initialized to self.project.num_bonus_submissions"""
     )
+
+    @property
+    def bonus_submissions_remaining(self) -> int:
+        """The number of unused bonus submission tokens this group has."""
+        return max(0, self._true_bonus_submissions_remaining)
+
+    @bonus_submissions_remaining.setter
+    def bonus_submissions_remaining(self, value: int) -> None:
+        if value < 0:
+            raise ValidationError({
+                'bonus_submissions_remaining': 'This value cannot be negative.'
+            })
+
+        self._extra_bonus_submissions_granted += value - self._true_bonus_submissions_remaining
+
+    @property
+    def _true_bonus_submissions_remaining(self) -> int:
+        """
+        This internal computation of the Group's bonus submission count
+        can be negative and is used in computations to update the total.
+        """
+        return (
+            self.project.num_bonus_submissions + self._extra_bonus_submissions_granted
+            - self.bonus_submissions_used
+        )
+
+    _extra_bonus_submissions_granted = models.IntegerField(blank=True, default=0)
+    bonus_submissions_used = models.IntegerField(
+        blank=True, default=0, validators=[MinValueValidator(0)])
 
     late_days_used = pg_fields.JSONField(
         default=dict, blank=True,
@@ -131,21 +160,20 @@ class Group(ag_model_base.AutograderModel):
 
         def _is_towards_limit(submission):
             return (start_datetime <= submission.timestamp < end_datetime
-                    and submission.count_towards_daily_limit
                     and submission.status in Submission.GradingStatus.count_towards_limit_statuses)
 
         return utils.count_if(self.submissions.all(), _is_towards_limit)
 
     def save(self, *args, **kwargs):
-        if self.pk is None:
-            self.bonus_submissions_remaining = self.project.num_bonus_submissions
-
         super().save(*args, **kwargs)
 
         group_dir = core_ut.get_student_group_dir(self)
         if not os.path.isdir(group_dir):
             os.makedirs(group_dir)
 
+    # IMPORTANT: If you add additional non-field arguments
+    # (like check_group_size_limits), update group patching
+    # in autograder/rest_api/views/group_views.py - GroupDetailView.patch
     def validate_and_update(self, check_group_size_limits=True, ignore_guest_restrictions=False,
                             **kwargs):
         """
@@ -185,6 +213,7 @@ class Group(ag_model_base.AutograderModel):
         'project',
         'extended_due_date',
         'member_names',
+        'members',
 
         'bonus_submissions_remaining',
 
@@ -196,5 +225,11 @@ class Group(ag_model_base.AutograderModel):
         'created_at',
         'last_modified',
     )
+    SERIALIZE_RELATED = ('members',)
 
     EDITABLE_FIELDS = ('extended_due_date', 'bonus_submissions_remaining')
+
+    def to_dict(self):
+        result = super().to_dict()
+        result['members'].sort(key=lambda user: user['username'])
+        return result

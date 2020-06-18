@@ -6,7 +6,7 @@ from ..ag_model_base import AutograderModel
 class AGCommandResultBase(AutograderModel):
     """
     Contains the core information needed to store the results of
-    running an AGCommand.
+    running a command.
     """
 
     class Meta:

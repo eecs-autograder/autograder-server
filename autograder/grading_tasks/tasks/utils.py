@@ -19,119 +19,7 @@ import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 from autograder.core import constants
 
-
-class MaxRetriesExceeded(Exception):
-    pass
-
-
-# This thin wrapper around time.sleep is needed so that we can mock
-# the calls to sleep in this module only. As of this writing, patching
-# autograder.grading_tasks.tasks.utils.time.sleep also causes uses
-# of time.sleep in the subprocess module to be mocked.
-def sleep(secs: float):
-    return time.sleep(secs)
-
-
-def retry(max_num_retries,
-          retry_delay_start=0,
-          retry_delay_end=0,
-          retry_delay_step=None,
-          immediately_reraise_on=tuple()):
-    """
-    Returns a decorator that applies a synchronous retry loop to the
-    decorated function.
-
-    :param max_num_retries: The maximum number of times the decorated
-        function can be retried before raising an exception. This
-        parameter must be greater than zero.
-
-    :param retry_delay_start: The delay time, in seconds, before retrying
-        the function for the first time.
-
-    :param retry_delay_end: The delay time, in seconds, before retrying
-        the function for the last time.
-
-    :param retry_delay_step: The number of seconds to increase the retry
-        delay for each consecutive retry. If None, defaults to
-        (retry_delay_end - retry_delay_start) / max_num_retries
-
-    :param immediately_reraise_on: A tuple of exception classes. If any
-        of these exceptions are caught, they will be immediately be
-        re-raised, halting the retry attempts. The tuple will be passed
-        directly as the second argument to isinstance().
-    """
-    if retry_delay_step is None:
-        retry_delay_step = (retry_delay_end - retry_delay_start) / max_num_retries
-
-    def decorator(func):
-        def func_with_retry(*args, **kwargs):
-            num_retries_remaining = max_num_retries
-            retry_delay = retry_delay_start
-            latest_exception = None
-            while num_retries_remaining >= 0:
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    print('Error in', func.__name__)
-                    traceback.print_exc()
-
-                    if isinstance(e, immediately_reraise_on):
-                        raise
-
-                    # In case the database connection was closed unexpectedly
-                    # (this could happen if the database server restarts), we
-                    # want to tell Django to discard the connection so that it
-                    # will create a new one next time we try to access the database.
-                    # Otherwise, we could get stuck in an error loop due to a
-                    # "connection already closed" or similar error.
-                    #
-                    # To test this behavior:
-                    #   - Add a call to time.sleep in the middle of some retry-able
-                    #     task.
-                    #   - While the task is sleeping *restart* the postgres server.
-                    #     Note: With docker, use docker restart --time 0 <container>
-                    #   - When the task wakes up, it should raise an InterfaceError
-                    #     ("connection already closed") or OperationalError ("server
-                    #     closed the connection unexpectedly"),
-                    #     otherwise try putting the time.sleep somewhere else.
-                    if isinstance(e, db.Error):
-                        try:
-                            for conn in db.connections.all():
-                                conn.close_if_unusable_or_obsolete()
-                        except Exception:
-                            print('Error closing db connections')
-                            traceback.print_exc()
-
-                    print('Will try again in', retry_delay, 'seconds')
-                    num_retries_remaining -= 1
-                    sleep(retry_delay)
-                    retry_delay += retry_delay_step
-                    latest_exception = traceback.format_exc()
-
-            raise MaxRetriesExceeded(latest_exception)
-
-        return func_with_retry
-
-    return decorator
-
-
-RERAISE_IMMEDIATELY = (
-    db.IntegrityError,
-)
-
-
-# Specialization of the "retry" decorator to be used for synchronous
-# tasks that should always succeed unless there is a database issue.
-retry_should_recover = retry(max_num_retries=60,
-                             retry_delay_start=1,
-                             retry_delay_end=60,
-                             immediately_reraise_on=RERAISE_IMMEDIATELY)
-# Specialization of "retry" to be used for grading non-deferred
-# autograder test cases.
-retry_ag_test_cmd = retry(max_num_retries=settings.AG_TEST_MAX_RETRIES,
-                          retry_delay_start=settings.AG_TEST_MIN_RETRY_DELAY,
-                          retry_delay_end=settings.AG_TEST_MAX_RETRY_DELAY,
-                          immediately_reraise_on=RERAISE_IMMEDIATELY)
+from autograder.utils.retry import retry_should_recover
 
 
 @retry_should_recover
@@ -143,7 +31,7 @@ def mark_submission_as_error(submission_pk, error_msg):
 
 
 def add_files_to_sandbox(sandbox: AutograderSandbox,
-                         suite: Union[ag_models.AGTestSuite, ag_models.StudentTestSuite],
+                         suite: Union[ag_models.AGTestSuite, ag_models.MutationTestSuite],
                          submission: ag_models.Submission):
     student_files_to_add = []
     for student_file in load_queryset_with_retry(suite.student_files_needed.all()):
@@ -180,44 +68,44 @@ def run_ag_test_command(cmd: ag_models.AGTestCommand,
         stdin = get_stdin_file(cmd, ag_test_suite_result)
         file_closer.register_file(stdin)
 
-        return run_command_from_args(cmd=cmd.cmd,
-                                     sandbox=sandbox,
-                                     max_num_processes=cmd.process_spawn_limit,
-                                     max_stack_size=cmd.stack_size_limit,
-                                     max_virtual_memory=cmd.virtual_memory_limit,
-                                     timeout=cmd.time_limit,
-                                     stdin=stdin)
+        return run_command_from_args(
+            cmd=cmd.cmd,
+            sandbox=sandbox,
+            block_process_spawn=cmd.block_process_spawn,
+            max_virtual_memory=cmd.virtual_memory_limit if cmd.use_virtual_memory_limit else None,
+            timeout=cmd.time_limit,
+            stdin=stdin
+        )
 
 
-def run_ag_command(cmd: ag_models.AGCommand, sandbox: AutograderSandbox,
+def run_ag_command(cmd: ag_models.Command, sandbox: AutograderSandbox,
                    cmd_str_override: Optional[str]=None):
     cmd_str = cmd_str_override if cmd_str_override is not None else cmd.cmd
-    return run_command_from_args(cmd_str,
-                                 sandbox=sandbox,
-                                 max_num_processes=cmd.process_spawn_limit,
-                                 max_stack_size=cmd.stack_size_limit,
-                                 max_virtual_memory=cmd.virtual_memory_limit,
-                                 timeout=cmd.time_limit,
-                                 stdin=None)
+    return run_command_from_args(
+        cmd_str,
+        sandbox=sandbox,
+        block_process_spawn=cmd.block_process_spawn,
+        max_virtual_memory=cmd.virtual_memory_limit if cmd.use_virtual_memory_limit else None,
+        timeout=cmd.time_limit,
+        stdin=None
+    )
 
 
 def run_command_from_args(cmd: str,
                           sandbox: AutograderSandbox,
                           *,
-                          max_num_processes: int,
-                          max_stack_size: int,
-                          max_virtual_memory: int,
+                          max_virtual_memory: Optional[int],
+                          block_process_spawn: bool,
                           timeout: int,
                           stdin: Optional[FileIO]=None) -> CompletedCommand:
     run_result = sandbox.run_command(['bash', '-c', cmd],
                                      stdin=stdin,
                                      as_root=False,
-                                     max_num_processes=max_num_processes,
-                                     max_stack_size=max_stack_size,
                                      max_virtual_memory=max_virtual_memory,
+                                     block_process_spawn=block_process_spawn,
                                      timeout=timeout,
-                                     truncate_stdout=constants.MAX_OUTPUT_LENGTH,
-                                     truncate_stderr=constants.MAX_OUTPUT_LENGTH)
+                                     truncate_stdout=constants.MAX_RECORDED_OUTPUT_LENGTH,
+                                     truncate_stderr=constants.MAX_RECORDED_OUTPUT_LENGTH)
     return run_result
 
 

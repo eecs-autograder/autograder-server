@@ -1,62 +1,69 @@
 from django.db import transaction
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
 
-import autograder.handgrading.models as handgrading_models
-import autograder.handgrading.serializers as handgrading_serializers
+import autograder.handgrading.models as hg_models
 import autograder.rest_api.permissions as ag_permissions
-from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrievePatchDestroyMixin,
-    AGModelAPIView)
-from autograder.rest_api.views.schema_generation import APITags
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator, APITags, OrderViewSchema)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      NestedModelView)
 
 
-class AnnotationListCreateView(ListCreateNestedModelViewSet):
-    serializer_class = handgrading_serializers.AnnotationSerializer
+class ListCreateAnnotationView(NestedModelView):
+    schema = AGListCreateViewSchemaGenerator([APITags.annotations], hg_models.Annotation)
+
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
             lambda handgrading_rubric: handgrading_rubric.project.course)]
 
     pk_key = 'handgrading_rubric_pk'
-    model_manager = handgrading_models.HandgradingRubric.objects.select_related('project__course')
-    to_one_field_name = 'handgrading_rubric'
-    reverse_to_one_field_name = 'annotations'
+    model_manager = hg_models.HandgradingRubric.objects.select_related('project__course')
+    nested_field_name = 'annotations'
+    parent_obj_field_name = 'handgrading_rubric'
+
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+    def post(self, *args, **kwargs):
+        return self.do_create()
 
 
-class AnnotationDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGenericViewSet):
-    serializer_class = handgrading_serializers.AnnotationSerializer
+class AnnotationDetailView(AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator([APITags.annotations])
+
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
             lambda annotation: annotation.handgrading_rubric.project.course)
     ]
-    model_manager = handgrading_models.Annotation.objects.select_related(
+    model_manager = hg_models.Annotation.objects.select_related(
         'handgrading_rubric__project__course',
     )
 
+    def get(self, *args, **kwargs):
+        return self.do_get()
+
+    def patch(self, *args, **kwargs):
+        return self.do_patch()
+
+    def delete(self, *args, **kwargs):
+        return self.do_delete()
+
 
 class AnnotationOrderView(AGModelAPIView):
+    schema = OrderViewSchema([APITags.annotations], hg_models.Annotation)
+
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
             lambda handgrading_rubric: handgrading_rubric.project.course)]
 
     pk_key = 'handgrading_rubric_pk'
-    model_manager = handgrading_models.HandgradingRubric.objects.select_related('project__course')
+    model_manager = hg_models.HandgradingRubric.objects.select_related('project__course')
     api_tags = [APITags.annotations]
 
-    @swagger_auto_schema(
-        responses={'200': 'Returns a list of Annotation IDs, in their assigned order.'})
     def get(self, request, *args, **kwargs):
         handgrading_rubric = self.get_object()
         return response.Response(list(handgrading_rubric.get_annotation_order()))
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='', in_='body',
-                      type='List[string]',
-                      description='A list of Annotation IDs, in the new order to set.')],
-        responses={'200': 'Returns a list of Annotation IDs, in their new order.'}
-    )
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             handgrading_rubric = self.get_object()

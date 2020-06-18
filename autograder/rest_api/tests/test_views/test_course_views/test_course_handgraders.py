@@ -1,15 +1,13 @@
-from django.urls import reverse
 from django.contrib.auth.models import User
-
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
-
-from autograder.utils.testing import UnitTestBase
-import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.rest_api.serialize_user import serialize_user
+from autograder.utils.testing import UnitTestBase
 
 
 class _SetUp(UnitTestBase):
@@ -28,12 +26,10 @@ class _SetUp(UnitTestBase):
 class ListCourseHandgradersTestCase(test_impls.ListObjectsTest, _SetUp):
     def setUp(self):
         super().setUp()
-
-        self.handgraders = obj_build.create_dummy_users(4)
-        self.course.handgraders.add(*self.handgraders)
+        self.handgraders = obj_build.make_handgrader_users(self.course, 4)
 
     def test_admin_list_handgraders(self):
-        expected_content = ag_serializers.UserSerializer(self.handgraders, many=True).data
+        expected_content = [serialize_user(user) for user in self.handgraders]
 
         self.do_list_objects_test(self.client, self.admin, self.url, expected_content)
 
@@ -90,16 +86,13 @@ class RemoveCourseHandgraderTestCase(_SetUp, UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.remaining_handgraders = obj_build.create_dummy_users(2)
-        self.handgraders_to_remove = obj_build.create_dummy_users(5)
+        self.remaining_handgraders = obj_build.make_handgrader_users(self.course, 2)
+        self.handgraders_to_remove = obj_build.make_handgrader_users(self.course, 5)
         self.all_handgraders = self.remaining_handgraders + self.handgraders_to_remove
         self.total_num_handgraders = len(self.all_handgraders)
 
-        self.course.handgraders.add(*self.all_handgraders)
-
         self.request_body = {
-            "remove_handgraders":
-                ag_serializers.UserSerializer(self.handgraders_to_remove, many=True).data
+            "remove_handgraders": [serialize_user(user) for user in self.handgraders_to_remove]
         }
 
     def test_admin_remove_handgraders(self):

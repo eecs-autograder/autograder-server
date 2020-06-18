@@ -56,7 +56,8 @@ class GroupTestCase(_SetUp):
         group = ag_models.Group.objects.validate_and_create(
             members=self.student_users,
             project=self.project,
-            extended_due_date=extended_due_date)
+            extended_due_date=extended_due_date,
+        )
 
         group.refresh_from_db()
 
@@ -155,6 +156,7 @@ class GroupTestCase(_SetUp):
         expected_fields = [
             'pk',
             'member_names',
+            'members',
             'project',
             'extended_due_date',
 
@@ -169,16 +171,141 @@ class GroupTestCase(_SetUp):
             'last_modified',
         ]
 
-        self.assertCountEqual(
-            expected_fields,
-            ag_models.Group.get_serializable_fields())
-
         group = obj_build.build_group()
-        self.assertTrue(group.to_dict())
+        serialized = group.to_dict()
+        self.assertCountEqual(expected_fields, list(serialized.keys()))
+        self.assertIsInstance(serialized['members'], list)
+        self.assertIsInstance(serialized['members'][0], dict)
 
     def test_editable_fields(self):
         self.assertCountEqual(['extended_due_date', 'bonus_submissions_remaining'],
                               ag_models.Group.get_editable_fields())
+
+
+class BonusSubmissionTokenCountTestCase(test_ut.UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.project = obj_build.make_project(num_bonus_submissions=4)
+        self.course = self.project.course
+
+        self.no_tokens_used_group = obj_build.make_group(project=self.project)
+
+        self.some_tokens_used_group = obj_build.make_group(project=self.project)
+        self.some_tokens_used_group.bonus_submissions_used = 3
+        self.some_tokens_used_group.save()
+
+        self.all_tokens_used_group = obj_build.make_group(project=self.project)
+        self.all_tokens_used_group.bonus_submissions_used = 4
+        self.all_tokens_used_group.save()
+
+    def test_individual_group_given_extra_tokens(self) -> None:
+        self.assertEqual(4, self.no_tokens_used_group.bonus_submissions_remaining)
+        self.no_tokens_used_group.validate_and_update(bonus_submissions_remaining=5)
+        self.no_tokens_used_group.refresh_from_db()
+        self.assertEqual(5, self.no_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(0, self.no_tokens_used_group.bonus_submissions_used)
+
+        self.assertEqual(1, self.some_tokens_used_group.bonus_submissions_remaining)
+        self.some_tokens_used_group.validate_and_update(bonus_submissions_remaining=2)
+        self.some_tokens_used_group.refresh_from_db()
+        self.assertEqual(2, self.some_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(3, self.some_tokens_used_group.bonus_submissions_used)
+
+        self.assertEqual(0, self.all_tokens_used_group.bonus_submissions_remaining)
+        self.all_tokens_used_group.validate_and_update(bonus_submissions_remaining=3)
+        self.all_tokens_used_group.refresh_from_db()
+        self.assertEqual(3, self.all_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(4, self.all_tokens_used_group.bonus_submissions_used)
+
+    def test_individual_group_tokens_given_extra_and_revoked(self) -> None:
+        self.assertEqual(4, self.no_tokens_used_group.bonus_submissions_remaining)
+        self.no_tokens_used_group.validate_and_update(bonus_submissions_remaining=6)
+        self.no_tokens_used_group.refresh_from_db()
+
+        self.assertEqual(6, self.no_tokens_used_group.bonus_submissions_remaining)
+        self.no_tokens_used_group.validate_and_update(bonus_submissions_remaining=3)
+        self.no_tokens_used_group.refresh_from_db()
+        self.assertEqual(3, self.no_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(0, self.no_tokens_used_group.bonus_submissions_used)
+
+    def test_individual_group_tokens_revoked_then_given_extra(self) -> None:
+        self.assertEqual(4, self.no_tokens_used_group.bonus_submissions_remaining)
+        self.no_tokens_used_group.validate_and_update(bonus_submissions_remaining=3)
+        self.no_tokens_used_group.refresh_from_db()
+
+        self.assertEqual(3, self.no_tokens_used_group.bonus_submissions_remaining)
+        self.no_tokens_used_group.validate_and_update(bonus_submissions_remaining=5)
+        self.no_tokens_used_group.refresh_from_db()
+        self.assertEqual(5, self.no_tokens_used_group.bonus_submissions_remaining)
+
+    def test_bonus_submissions_remaining_set_to_zero(self) -> None:
+        self.some_tokens_used_group.validate_and_update(bonus_submissions_remaining=0)
+        self.some_tokens_used_group.refresh_from_db()
+        self.assertEqual(0, self.some_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(3, self.some_tokens_used_group.bonus_submissions_used)
+
+    def test_invalid_set_bonus_submissions_remaining_to_be_negative(self) -> None:
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.some_tokens_used_group.validate_and_update(
+                bonus_submissions_remaining=-1)
+
+        self.assertIn('bonus_submissions_remaining', cm.exception.message_dict)
+
+    def test_individual_group_given_extra_tokens_twice(self) -> None:
+        self.some_tokens_used_group.validate_and_update(bonus_submissions_remaining=2)
+        self.some_tokens_used_group.refresh_from_db()
+        self.assertEqual(2, self.some_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(3, self.some_tokens_used_group.bonus_submissions_used)
+
+        self.some_tokens_used_group.validate_and_update(bonus_submissions_remaining=3)
+        self.some_tokens_used_group.refresh_from_db()
+        self.assertEqual(3, self.some_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(3, self.some_tokens_used_group.bonus_submissions_used)
+
+    def test_project_token_count_lowered_then_raised(self) -> None:
+        self.assertEqual(0, self.all_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(1, self.some_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(4, self.no_tokens_used_group.bonus_submissions_remaining)
+
+        self.project.validate_and_update(
+            num_bonus_submissions=self.project.num_bonus_submissions - 2)
+
+        self.no_tokens_used_group.refresh_from_db()
+        self.some_tokens_used_group.refresh_from_db()
+        self.all_tokens_used_group.refresh_from_db()
+
+        self.assertEqual(0, self.all_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(0, self.some_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(2, self.no_tokens_used_group.bonus_submissions_remaining)
+
+        self.project.validate_and_update(
+            num_bonus_submissions=self.project.num_bonus_submissions + 3)
+
+        self.no_tokens_used_group.refresh_from_db()
+        self.some_tokens_used_group.refresh_from_db()
+        self.all_tokens_used_group.refresh_from_db()
+
+        self.assertEqual(1, self.all_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(2, self.some_tokens_used_group.bonus_submissions_remaining)
+        self.assertEqual(5, self.no_tokens_used_group.bonus_submissions_remaining)
+
+    def test_project_token_count_lowered_then_group_granted_extra(self) -> None:
+        self.assertEqual(0, self.all_tokens_used_group.bonus_submissions_remaining)
+        self.project.validate_and_update(
+            num_bonus_submissions=self.project.num_bonus_submissions - 2)
+        self.all_tokens_used_group.refresh_from_db()
+
+        self.assertEqual(0, self.all_tokens_used_group.bonus_submissions_remaining)
+        self.all_tokens_used_group.validate_and_update(bonus_submissions_remaining=2)
+        self.all_tokens_used_group.refresh_from_db()
+        self.assertEqual(2, self.all_tokens_used_group.bonus_submissions_remaining)
+
+        # If we re-raise the project count, the group's count should go up
+        # by the same amount
+        self.project.validate_and_update(
+            num_bonus_submissions=self.project.num_bonus_submissions + 3)
+        self.all_tokens_used_group.refresh_from_db()
+        self.assertEqual(5, self.all_tokens_used_group.bonus_submissions_remaining)
 
 
 class GroupSizeTestCase(_SetUp):

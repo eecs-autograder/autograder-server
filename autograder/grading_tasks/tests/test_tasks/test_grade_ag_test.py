@@ -18,7 +18,7 @@ from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class AGTestCommandCorrectnessTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -236,7 +236,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         self.assertFalse(res.stderr_correct)
 
 
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class AGTestCommandStdinSourceTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -298,7 +298,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
         self.assertEqual(self.setup_stderr, open(res.stdout_filename).read())
 
 
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class InstructorFilePermissionsTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -344,7 +344,7 @@ class InstructorFilePermissionsTestCase(UnitTestBase):
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class ResourceLimitsExceededTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -410,8 +410,10 @@ sys.stderr.flush()
         self.assertFalse(res.timed_out)
         self.assertTrue(res.stdout_truncated)
         self.assertTrue(res.stderr_truncated)
-        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.stdout_filename))
-        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.stderr_filename))
+        self.assertEqual(
+            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.stdout_filename))
+        self.assertEqual(
+            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.stderr_filename))
 
     def test_program_prints_non_unicode_chars(self, *args):
         cmd = obj_build.make_full_ag_test_command(
@@ -449,8 +451,10 @@ sys.stderr.flush()
         self.assertTrue(res.setup_stdout_truncated)
         self.assertTrue(res.setup_stderr_truncated)
 
-        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.setup_stdout_filename))
-        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.setup_stderr_filename))
+        self.assertEqual(
+            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.setup_stdout_filename))
+        self.assertEqual(
+            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.setup_stderr_filename))
 
     def test_setup_print_non_unicode_chars(self, *args):
         self.ag_test_suite.validate_and_update(
@@ -461,21 +465,17 @@ sys.stderr.flush()
         self.assertEqual(self.non_utf_bytes, res.open_setup_stdout().read())
         self.assertEqual(self.non_utf_bytes, res.open_setup_stderr().read())
 
+    # Remove process and stack limit tests in version 5.0.0
     def test_time_process_stack_and_virtual_mem_limits_passed_to_run_command(self, *args):
         self.ag_test_suite.validate_and_update(setup_suite_cmd='printf waluigi')
 
         time_limit = random.randint(1, constants.MAX_SUBPROCESS_TIMEOUT)
-        process_spawn_limit = random.randint(constants.DEFAULT_PROCESS_LIMIT + 1,
-                                             constants.MAX_PROCESS_LIMIT)
-        stack_size_limit = random.randint(constants.DEFAULT_STACK_SIZE_LIMIT,
-                                          constants.MAX_STACK_SIZE_LIMIT)
-        virtual_memory_limit = random.randint(constants.DEFAULT_VIRTUAL_MEM_LIMIT,
-                                              constants.MAX_VIRTUAL_MEM_LIMIT)
+        virtual_memory_limit = random.randint(
+            constants.DEFAULT_VIRTUAL_MEM_LIMIT, constants.DEFAULT_VIRTUAL_MEM_LIMIT * 100)
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case, cmd='printf spam',
             time_limit=time_limit,
-            process_spawn_limit=process_spawn_limit,
-            stack_size_limit=stack_size_limit,
+            block_process_spawn=True,
             virtual_memory_limit=virtual_memory_limit,
         )
 
@@ -495,19 +495,17 @@ sys.stderr.flush()
 
         expected_setup_resource_kwargs = {
             'timeout': constants.MAX_SUBPROCESS_TIMEOUT,
-            'max_num_processes': constants.MAX_PROCESS_LIMIT,
-            'max_stack_size': constants.MAX_STACK_SIZE_LIMIT,
-            'max_virtual_memory': constants.MAX_VIRTUAL_MEM_LIMIT,
-            'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
-            'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
+            'block_process_spawn': False,
+            'max_virtual_memory': None,
+            'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,
         }
         expected_cmd_args = {
             'timeout': time_limit,
-            'max_num_processes': process_spawn_limit,
-            'max_stack_size': stack_size_limit,
+            'block_process_spawn': True,
             'max_virtual_memory': virtual_memory_limit,
-            'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
-            'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
+            'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,
         }
         run_command_mock.assert_has_calls([
             mock.call(['bash', '-c', self.ag_test_suite.setup_suite_cmd],
@@ -516,9 +514,46 @@ sys.stderr.flush()
             mock.call(['bash', '-c', cmd.cmd], stdin=None, as_root=False, **expected_cmd_args),
         ])
 
+    def test_use_virtual_memory_limit_false_no_limit_applied(self, *args) -> None:
+        self.ag_test_suite.validate_and_update(setup_suite_cmd='')
+
+        time_limit = 5
+        virtual_memory_limit = random.randint(
+            constants.DEFAULT_VIRTUAL_MEM_LIMIT, constants.DEFAULT_VIRTUAL_MEM_LIMIT * 100)
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case, cmd='printf spam',
+            use_virtual_memory_limit=False,
+            time_limit=time_limit,
+        )
+
+        sandbox = AutograderSandbox()
+
+        def make_run_command_ret_val(*args, **kwargs):
+            return CompletedCommand(
+                return_code=0, stdout=tempfile.NamedTemporaryFile(),
+                stderr=tempfile.NamedTemporaryFile(), timed_out=False,
+                stdout_truncated=False, stderr_truncated=False)
+
+        run_command_mock = mock.Mock(side_effect=make_run_command_ret_val)
+        sandbox.run_command = run_command_mock
+        with mock.patch('autograder.grading_tasks.tasks.grade_ag_test.AutograderSandbox',
+                        return_value=sandbox):
+            tasks.grade_submission(self.submission.pk)
+
+        expected_cmd_args = {
+            'timeout': time_limit,
+            'max_virtual_memory': None,
+            'block_process_spawn': False,
+            'truncate_stdout': constants.MAX_RECORDED_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_RECORDED_OUTPUT_LENGTH,
+        }
+        run_command_mock.assert_has_calls([
+            mock.call(['bash', '-c', cmd.cmd], stdin=None, as_root=False, **expected_cmd_args),
+        ])
+
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class AGTestSuiteRerunTestCase(UnitTestBase):
     def setUp(self):
         # 1. Create an AGTestSuite with 2 test cases (one command per test).
@@ -612,7 +647,7 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         self.assertFalse(suite_result.setup_timed_out)
 
 
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
     def test_ag_test_suite_not_found_no_retry(self, sleep_mock) -> None:
         submission = obj_build.make_submission()

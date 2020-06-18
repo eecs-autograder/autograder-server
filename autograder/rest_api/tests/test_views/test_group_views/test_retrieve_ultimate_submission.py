@@ -247,9 +247,10 @@ class UltimateSubmissionLateDayEdgeCases(UnitTestBase):
         counts_for_user = obj_build.make_student_user(course)
         does_not_count_for_user = obj_build.make_student_user(course)
 
-        group = obj_build.make_group(
+        group = ag_models.Group.objects.validate_and_create(
             members=[counts_for_user, does_not_count_for_user],
-            project=project
+            project=project,
+            check_group_size_limits=False
         )
         url = reverse('group-ultimate-submission', kwargs={'pk': group.pk})
 

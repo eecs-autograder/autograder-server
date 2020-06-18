@@ -7,8 +7,8 @@ from django.test import tag
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.grading_tasks import tasks
-from autograder.grading_tasks.tasks.utils import (retry_ag_test_cmd,
-                                                  retry_should_recover)
+from autograder.utils.retry import (
+    retry, retry_ag_test_cmd, retry_should_recover, MaxRetriesExceeded)
 from autograder.utils.testing import UnitTestBase
 
 
@@ -20,7 +20,7 @@ class RetryDecoratorTestCase(UnitTestBase):
 
         should_throw = True
 
-        @tasks.retry(max_num_retries=1, retry_delay_start=0, retry_delay_end=0)
+        @retry(max_num_retries=1, retry_delay_start=0, retry_delay_end=0)
         def func_to_retry(test_case, arg, kwarg=None):
             test_case.assertEqual(arg_val, arg)
             test_case.assertEqual(kwarg_val, kwarg)
@@ -35,49 +35,48 @@ class RetryDecoratorTestCase(UnitTestBase):
         self.assertEqual(return_val, func_to_retry(self, arg_val, kwarg_val))
 
     def test_max_retries_exceeded(self):
-        @tasks.retry(max_num_retries=10, retry_delay_start=0, retry_delay_end=0)
+        @retry(max_num_retries=10, retry_delay_start=0, retry_delay_end=0)
         def func_to_retry():
             raise Exception('Errrrror')
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             func_to_retry()
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+    @mock.patch('autograder.utils.retry.sleep')
     def test_retry_delay(self, mocked_sleep):
         max_num_retries = 3
         min_delay = 2
         max_delay = 6
         delay_step = 2
 
-        @tasks.retry(max_num_retries=max_num_retries,
-                     retry_delay_start=min_delay, retry_delay_end=max_delay,
-                     retry_delay_step=delay_step)
+        @retry(max_num_retries=max_num_retries,
+               retry_delay_start=min_delay, retry_delay_end=max_delay,
+               retry_delay_step=delay_step)
         def func_to_retry():
             raise Exception
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             func_to_retry()
 
         mocked_sleep.assert_has_calls(
             [mock.call(delay) for delay in range(min_delay, max_delay, delay_step)])
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+    @mock.patch('autograder.utils.retry.sleep')
     def test_retry_zero_delay(self, mocked_sleep):
         max_num_retries = 1
 
-        @tasks.retry(max_num_retries=max_num_retries,
-                     retry_delay_start=0, retry_delay_end=0)
+        @retry(max_num_retries=max_num_retries, retry_delay_start=0, retry_delay_end=0)
         def func_to_retry():
             raise Exception
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             func_to_retry()
 
         mocked_sleep.assert_has_calls([mock.call(0) for i in range(max_num_retries)])
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+    @mock.patch('autograder.utils.retry.sleep')
     def test_immediatedly_reraise_on(self, sleep_mock) -> None:
-        @tasks.retry(max_num_retries=1, immediately_reraise_on=(ValueError, TypeError))
+        @retry(max_num_retries=1, immediately_reraise_on=(ValueError, TypeError))
         def func_to_retry(type_to_throw):
             raise type_to_throw
 
@@ -89,10 +88,10 @@ class RetryDecoratorTestCase(UnitTestBase):
 
         sleep_mock.assert_not_called()
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             func_to_retry(RuntimeError)
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+    @mock.patch('autograder.utils.retry.sleep')
     def test_immediately_reraise_retry_should_recover(self, sleep_mock) -> None:
         @retry_should_recover
         def func():
@@ -103,7 +102,7 @@ class RetryDecoratorTestCase(UnitTestBase):
 
         sleep_mock.assert_not_called()
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+    @mock.patch('autograder.utils.retry.sleep')
     def test_immediately_reraise_retry_ad_test_cmd(self, sleep_mock) -> None:
         @retry_ag_test_cmd
         def func():
@@ -119,13 +118,12 @@ class RetryDecoratorTestCase(UnitTestBase):
 class RunCommandTestCase(UnitTestBase):
     def test_shell_parse_error(self):
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='echo hello"')
+            command = ag_models.Command(cmd='echo hello"')
             result = tasks.run_command_from_args(
-                ag_command.cmd, sandbox,
-                max_num_processes=ag_command.process_spawn_limit,
-                max_stack_size=ag_command.stack_size_limit,
-                max_virtual_memory=ag_command.virtual_memory_limit,
-                timeout=ag_command.time_limit,
+                command.cmd, sandbox,
+                block_process_spawn=False,
+                max_virtual_memory=command.virtual_memory_limit,
+                timeout=command.time_limit,
             )
             self.assertNotEqual(0, result.return_code)
             print(result.stdout.read())
@@ -133,13 +131,12 @@ class RunCommandTestCase(UnitTestBase):
 
     def test_command_not_found(self):
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='not_a_command')
+            command = ag_models.Command(cmd='not_a_command')
             result = tasks.run_command_from_args(
-                ag_command.cmd, sandbox,
-                max_num_processes=ag_command.process_spawn_limit,
-                max_stack_size=ag_command.stack_size_limit,
-                max_virtual_memory=ag_command.virtual_memory_limit,
-                timeout=ag_command.time_limit,
+                command.cmd, sandbox,
+                block_process_spawn=False,
+                max_virtual_memory=command.virtual_memory_limit,
+                timeout=command.time_limit,
             )
             self.assertNotEqual(0, result.return_code)
             print(result.stdout.read())
@@ -147,13 +144,12 @@ class RunCommandTestCase(UnitTestBase):
 
     def test_file_not_found(self):
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='./not_a_file')
+            command = ag_models.Command(cmd='./not_a_file')
             result = tasks.run_command_from_args(
-                ag_command.cmd, sandbox,
-                max_num_processes=ag_command.process_spawn_limit,
-                max_stack_size=ag_command.stack_size_limit,
-                max_virtual_memory=ag_command.virtual_memory_limit,
-                timeout=ag_command.time_limit,
+                command.cmd, sandbox,
+                block_process_spawn=False,
+                max_virtual_memory=command.virtual_memory_limit,
+                timeout=command.time_limit,
             )
             self.assertNotEqual(0, result.return_code)
             print(result.stdout.read())
@@ -163,58 +159,50 @@ class RunCommandTestCase(UnitTestBase):
         with AutograderSandbox() as sandbox:
             sandbox.run_command(['touch', 'not_executable'], check=True)
             sandbox.run_command(['chmod', '666', 'not_executable'], check=True)
-            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='./not_executable')
+            command = ag_models.Command(cmd='./not_executable')
             result = tasks.run_command_from_args(
-                ag_command.cmd, sandbox,
-                max_num_processes=ag_command.process_spawn_limit,
-                max_stack_size=ag_command.stack_size_limit,
-                max_virtual_memory=ag_command.virtual_memory_limit,
-                timeout=ag_command.time_limit,
+                command.cmd, sandbox,
+                block_process_spawn=False,
+                max_virtual_memory=command.virtual_memory_limit,
+                timeout=command.time_limit,
             )
             self.assertNotEqual(0, result.return_code)
             print(result.stdout.read())
             print(result.stderr.read())
 
-    def test_process_spawn_limit(self):
-        # Make sure that wrapping commands in bash -c doesn't affect
-        # the needed process spawn limit.
+    def test_block_process_spawn(self):
+        # Make sure that wrapping commands in bash -c doesn't spawn a process.
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(
-                cmd='echo hello', process_spawn_limit=0)
-            result = tasks.run_command_from_args(
-                ag_command.cmd, sandbox,
-                max_num_processes=ag_command.process_spawn_limit,
-                max_stack_size=ag_command.stack_size_limit,
-                max_virtual_memory=ag_command.virtual_memory_limit,
-                timeout=ag_command.time_limit,
-            )
+            command = ag_models.Command(cmd='echo hello', block_process_spawn=True)
+            result = tasks.run_ag_command(command, sandbox)
             self.assertEqual(0, result.return_code)
             print(result.stdout.read())
             print(result.stderr.read())
 
-            extra_bash_dash_c = ag_models.AGCommand.objects.validate_and_create(
-                cmd='bash -c "echo hello"', process_spawn_limit=0)
-            result = tasks.run_command_from_args(
-                extra_bash_dash_c.cmd, sandbox,
-                max_num_processes=ag_command.process_spawn_limit,
-                max_stack_size=ag_command.stack_size_limit,
-                max_virtual_memory=ag_command.virtual_memory_limit,
-                timeout=ag_command.time_limit,
-            )
+            extra_bash_dash_c = ag_models.Command(
+                cmd='bash -c "echo hello"', block_process_spawn=True)
+            result = tasks.run_ag_command(extra_bash_dash_c, sandbox)
             self.assertEqual(0, result.return_code)
             print(result.stdout.read())
             print(result.stderr.read())
+
+            spawns_extra = ag_models.Command(
+                cmd='echo "echo hello" | bash', block_process_spawn=True, time_limit=1)
+            result = tasks.run_ag_command(spawns_extra, sandbox)
+            self.assertTrue(result.timed_out)
+            print(result.stdout.read())
+            stderr = result.stderr.read()
+            print(stderr)
+            self.assertIn('No child processes', stderr.decode())
 
     def test_shell_output_redirection(self):
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(
-                cmd='printf "spam" > file', process_spawn_limit=0)
+            command = ag_models.Command(cmd='printf "spam" > file', process_spawn_limit=0)
             tasks.run_command_from_args(
-                ag_command.cmd, sandbox,
-                max_num_processes=ag_command.process_spawn_limit,
-                max_stack_size=ag_command.stack_size_limit,
-                max_virtual_memory=ag_command.virtual_memory_limit,
-                timeout=ag_command.time_limit,
+                command.cmd, sandbox,
+                block_process_spawn=False,
+                max_virtual_memory=command.virtual_memory_limit,
+                timeout=command.time_limit,
             )
             result = sandbox.run_command(['cat', 'file'], check=True)
             self.assertEqual(0, result.return_code)
@@ -231,8 +219,7 @@ class RunCommandTestCase(UnitTestBase):
             result = tasks.run_command_from_args(
                 cmd,
                 sandbox,
-                max_num_processes=10,
-                max_stack_size=10000000,
+                block_process_spawn=False,
                 max_virtual_memory=500000000,
                 timeout=2
             )
@@ -242,10 +229,10 @@ class RunCommandTestCase(UnitTestBase):
 
         # Run ag command
         with AutograderSandbox() as sandbox:
-            ag_command = ag_models.AGCommand.objects.validate_and_create(
+            ag_command = ag_models.Command(
                 cmd=cmd,
-                process_spawn_limit=10,
-                time_limit=2)
+                time_limit=2
+            )
             result = tasks.run_ag_command(ag_command, sandbox)
             self.assertFalse(result.timed_out)
             self.assertEqual(0, result.return_code)
@@ -264,7 +251,6 @@ class RunCommandTestCase(UnitTestBase):
                 cmd=cmd,
                 stdin_source=ag_models.StdinSource.none,
                 time_limit=2,
-                process_spawn_limit=10
             )
             result = tasks.run_ag_test_command(ag_test_command, sandbox, ag_test_suite)
             self.assertFalse(result.timed_out)

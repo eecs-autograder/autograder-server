@@ -3,8 +3,9 @@ import copy
 from django.core import exceptions
 
 import autograder.core.models as ag_models
-from autograder.core import constants
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core import constants
+from autograder.core.models.ag_test.ag_test_command import MAX_EXPECTED_OUTPUT_TEXT_LENGTH
 from autograder.utils.testing import UnitTestBase
 
 
@@ -69,7 +70,9 @@ class AGTestCommandMiscTestCase(UnitTestBase):
 
         self.assertEqual(constants.DEFAULT_SUBPROCESS_TIMEOUT, ag_cmd.time_limit)
         self.assertEqual(constants.DEFAULT_STACK_SIZE_LIMIT, ag_cmd.stack_size_limit)
+        self.assertTrue(ag_cmd.use_virtual_memory_limit)
         self.assertEqual(constants.DEFAULT_VIRTUAL_MEM_LIMIT, ag_cmd.virtual_memory_limit)
+        self.assertFalse(ag_cmd.block_process_spawn)
         self.assertEqual(constants.DEFAULT_PROCESS_LIMIT, ag_cmd.process_spawn_limit)
 
     def test_normal_fdbk_default(self):
@@ -399,7 +402,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertIn('expected_stderr_source', cm.exception.message_dict)
 
     def test_error_expected_output_text_too_large(self):
-        too_much_text = 'A' * (constants.MAX_OUTPUT_LENGTH + 1)
+        too_much_text = 'A' * (MAX_EXPECTED_OUTPUT_TEXT_LENGTH + 1)
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AGTestCommand.objects.validate_and_create(
                 name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
@@ -479,12 +482,10 @@ class AGTestCommandMiscTestCase(UnitTestBase):
                 name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
                 time_limit=constants.MAX_SUBPROCESS_TIMEOUT + 1,
                 stack_size_limit=constants.MAX_STACK_SIZE_LIMIT + 1,
-                virtual_memory_limit=constants.MAX_VIRTUAL_MEM_LIMIT + 1,
                 process_spawn_limit=constants.MAX_PROCESS_LIMIT + 1)
 
         self.assertIn('time_limit', cm.exception.message_dict)
         self.assertIn('stack_size_limit', cm.exception.message_dict)
-        self.assertIn('virtual_memory_limit', cm.exception.message_dict)
         self.assertIn('process_spawn_limit', cm.exception.message_dict)
 
     def test_serialize(self):
@@ -528,9 +529,9 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             'staff_viewer_fdbk_config',
 
             'time_limit',
-            'stack_size_limit',
+            'use_virtual_memory_limit',
             'virtual_memory_limit',
-            'process_spawn_limit',
+            'block_process_spawn',
         ]
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,

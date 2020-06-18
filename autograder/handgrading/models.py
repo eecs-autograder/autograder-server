@@ -324,6 +324,14 @@ class CriterionResult(AutograderModel):
         HandgradingResult, related_name='criterion_results', on_delete=models.CASCADE,
         help_text='''The HandgradingResult this CriterionResult belongs to.''')
 
+    def clean(self) -> None:
+        super().clean()
+        if self.criterion.handgrading_rubric != self.handgrading_result.handgrading_rubric:
+            raise ValidationError({
+                'criterion': 'The selected criterion does not belong to the '
+                             'same handgrading rubric as the requested handgrading result.'
+            })
+
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
 
@@ -336,7 +344,7 @@ class CriterionResult(AutograderModel):
     SERIALIZE_RELATED = ('criterion',)
 
 
-class NewLocation(DictSerializableMixin):
+class Location(DictSerializableMixin):
     """
     A region of source code in a specific file with a starting and ending line.
     """
@@ -375,19 +383,23 @@ class AppliedAnnotation(AutograderModel):
         help_text='''The HandgradingResult the applied annotation belongs to.''')
 
     location = ag_fields.ValidatedJSONField(
-        NewLocation, help_text='The source code location where the Annotation was applied.')
-    old_location = models.OneToOneField(
-        'Location', related_name='+', on_delete=models.PROTECT,
-        blank=True, null=True, default=None,
-        help_text='''The source code location where the Annotation was applied.''')
+        Location, help_text='The source code location where the Annotation was applied.')
 
-    def clean(self):
+    def clean(self) -> None:
         """
         Checks that the filename specified in the location is actually one of
         the files in the submission.
         """
+        super().clean()
+
         if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')
+
+        if self.annotation.handgrading_rubric != self.handgrading_result.handgrading_rubric:
+            raise ValidationError({
+                'annotation': 'The selected annotation does not belong to the '
+                              'same handgrading rubric as the requested handgrading result.'
+            })
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
@@ -408,14 +420,10 @@ class Comment(AutograderModel):
         ordering = ('pk',)
 
     location = ag_fields.ValidatedJSONField(
-        NewLocation, null=True, blank=True, default=None,
+        Location, null=True, blank=True, default=None,
         help_text='''When not None, specifies the source code location this comment
                      applies to.'''
     )
-    old_location = models.OneToOneField(
-        'Location', related_name='+', null=True, blank=True, on_delete=models.PROTECT,
-        help_text='''When not None, specifies the source code location this comment
-                     applies to.''')
 
     text = models.TextField(help_text='''Text to be shown to students.''')
 
@@ -446,35 +454,3 @@ class Comment(AutograderModel):
                            'handgrading_result',)
 
     EDITABLE_FIELDS = ('text',)
-
-
-class Location(AutograderModel):
-    """
-    A region of source code in a specific file with a starting and ending line.
-    """
-    filename = models.TextField(help_text='''The file that contains the source code region.''')
-
-    first_line = models.IntegerField(
-        validators=[validators.MinValueValidator(0)],
-        help_text='''The first line in the source code region. Must be non-negative.''')
-
-    last_line = models.IntegerField(
-        validators=[validators.MinValueValidator(0)],
-        help_text='''The last line in the source code region (inclusive). Must be non-negative.''')
-
-    def clean(self):
-        """
-        Checks that first_line <= last_line.
-        """
-        if self.last_line is not None and (self.last_line < self.first_line):
-            raise ValidationError('first line should be before last line')
-
-    SERIALIZABLE_FIELDS = ('pk',
-                           'last_modified',
-
-                           'first_line',
-                           'last_line',
-                           'filename',)
-
-    EDITABLE_FIELDS = ('first_line',
-                       'last_line',)

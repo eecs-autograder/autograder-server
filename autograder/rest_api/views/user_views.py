@@ -1,21 +1,24 @@
+from abc import abstractclassmethod
+from typing import List, Mapping, Sequence
+
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-from drf_yasg.openapi import Schema, Parameter
-from drf_yasg.utils import swagger_auto_schema
-
-from rest_framework import mixins, permissions, decorators, response
+from rest_framework import decorators, mixins, permissions, response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet, require_query_params, \
-    require_body_params, AGModelAPIView, AlwaysIsAuthenticatedMixin
-from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder, \
-    AGModelViewAutoSchema
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator, APIClassType, APITags,
+                                        ContentObj, ContentTypeVal, CustomViewSchema,
+                                        MediaTypeObject, RequestParam, as_array_content_obj)
+from autograder.rest_api.serialize_user import serialize_user
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      AlwaysIsAuthenticatedMixin, NestedModelView,
+                                                      require_body_params, require_query_params)
 
 
 class _Permissions(permissions.BasePermission):
@@ -23,128 +26,194 @@ class _Permissions(permissions.BasePermission):
         return True
 
     def has_object_permission(self, request, view, ag_test):
-        return view.kwargs['pk'] == str(request.user.pk)
+        return view.kwargs['pk'] == request.user.pk
 
 
-_course_list_schema = Schema(
-    type='array', items=AGModelSchemaBuilder.get().get_schema(ag_models.Course))
+class CurrentUserView(AGModelAPIView):
+    schema = AGDetailViewSchemaGenerator(tags=[APITags.users], api_class=User)
+
+    def get(self, *args, **kwargs):
+        return response.Response(serialize_user(self.request.user))
 
 
-class UserViewSet(mixins.RetrieveModelMixin,
-                  AGModelGenericViewSet):
-    serializer_class = ag_serializers.UserSerializer
-    permission_classes = (_Permissions,)
-
+class UserDetailView(AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator(tags=[APITags.users])
+    permission_classes = [_Permissions]
     model_manager = User.objects
 
-    api_tags = [APITags.permissions]
+    def get(self, *args, **kwargs):
+        return self.do_get()
 
-    @decorators.list_route()
-    @swagger_auto_schema(responses={'200': ag_serializers.UserSerializer})
-    def current(self, request, *args, **kwargs):
-        return response.Response(
-            ag_serializers.UserSerializer(request.user).data)
+    def serialize_object(self, obj):
+        return serialize_user(obj)
 
-    @swagger_auto_schema(responses={'200': _course_list_schema},
-                         api_tags=[APITags.permissions])
-    @decorators.detail_route()
-    def courses_is_admin_for(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.CourseSerializer(user.courses_is_admin_for.all(),
-                                            many=True).data)
 
-    @swagger_auto_schema(responses={'200': _course_list_schema},
-                         api_tags=[APITags.permissions])
-    @decorators.detail_route()
-    def courses_is_staff_for(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.CourseSerializer(user.courses_is_staff_for.all(),
-                                            many=True).data)
+# For objects related to the user,
+# e.g. Courses is student in, Groups is member of.
+class _UserEntityListViewSchema(CustomViewSchema):
+    def __init__(self, tags: List[APITags], operation_id: str, api_class: APIClassType):
+        super().__init__(tags, {
+            'GET': {
+                'operation_id': operation_id,
+                'responses': {
+                    '200': {
+                        'content': as_array_content_obj(api_class)
+                    }
+                }
+            }
+        })
 
-    @swagger_auto_schema(responses={'200': _course_list_schema},
-                         api_tags=[APITags.permissions])
-    @decorators.detail_route()
-    def courses_is_handgrader_for(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.CourseSerializer(user.courses_is_handgrader_for.all(),
-                                            many=True).data)
 
-    @swagger_auto_schema(responses={'200': _course_list_schema},
-                         api_tags=[APITags.permissions])
-    @decorators.detail_route()
-    def courses_is_enrolled_in(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.CourseSerializer(user.courses_is_enrolled_in.all(),
-                                            many=True).data)
+class _UserCoursesViewSchema(_UserEntityListViewSchema):
+    def __init__(self, operation_id):
+        super().__init__([APITags.users, APITags.courses], operation_id, ag_models.Course)
 
-    @swagger_auto_schema(
-        responses={'200': Schema(type='array',
-                                 items=AGModelSchemaBuilder.get().get_schema(ag_models.Group))})
-    @decorators.detail_route()
-    def groups_is_member_of(self, request, *args, **kwargs):
-        user = self.get_object()
-        queryset = user.groups_is_member_of.select_related(
-            'project').prefetch_related('members').all()
-        return response.Response(
-            ag_serializers.SubmissionGroupSerializer(queryset, many=True).data)
 
-    @swagger_auto_schema(
-        responses={
-            '200': Schema(type='array',
-                          items=AGModelSchemaBuilder.get().get_schema(ag_models.GroupInvitation))})
-    @decorators.detail_route()
-    def group_invitations_received(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.SubmissionGroupInvitationSerializer(
-                user.group_invitations_received.all(), many=True).data)
+class _UserCoursesViewBase(NestedModelView):
+    model_manager = User.objects
 
-    @swagger_auto_schema(
-        responses={
-            '200': Schema(type='array',
-                          items=AGModelSchemaBuilder.get().get_schema(ag_models.GroupInvitation))})
-    @decorators.detail_route()
-    def group_invitations_sent(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.SubmissionGroupInvitationSerializer(
-                user.group_invitations_sent.all(), many=True).data)
+    permission_classes = [_Permissions]
+
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+
+class CoursesIsAdminForView(_UserCoursesViewBase):
+    schema = _UserCoursesViewSchema('coursesIsAdminFor')
+    nested_field_name = 'courses_is_admin_for'
+
+
+class CoursesIsStaffForView(_UserCoursesViewBase):
+    schema = _UserCoursesViewSchema('coursesIsStaffFor')
+    nested_field_name = 'courses_is_staff_for'
+
+
+class CoursesIsEnrolledInView(_UserCoursesViewBase):
+    schema = _UserCoursesViewSchema('coursesIsEnrolledIn')
+    nested_field_name = 'courses_is_enrolled_in'
+
+
+class CoursesIsHandgraderForView(_UserCoursesViewBase):
+    schema = _UserCoursesViewSchema('coursesIsHandgraderFor')
+    nested_field_name = 'courses_is_handgrader_for'
+
+
+class GroupsIsMemberOfView(NestedModelView):
+    schema = _UserEntityListViewSchema(
+        [APITags.users, APITags.groups], 'groupsIsMemberOf', ag_models.Group
+    )
+
+    model_manager = User.objects
+    nested_field_name = 'groups_is_member_of'
+
+    permission_classes = [_Permissions]
+
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+
+class _InvitationViewBase(NestedModelView):
+    model_manager = User.objects
+
+    permission_classes = [_Permissions]
+
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+
+class GroupInvitationsSentView(_InvitationViewBase):
+    schema = _UserEntityListViewSchema(
+        [APITags.users, APITags.groups], 'groupInvitationsSent', ag_models.GroupInvitation
+    )
+
+    nested_field_name = 'group_invitations_sent'
+
+
+class GroupInvitationsReceivedView(_InvitationViewBase):
+    schema = _UserEntityListViewSchema(
+        [APITags.users, APITags.groups], 'groupInvitationsReceived', ag_models.GroupInvitation
+    )
+
+    nested_field_name = 'group_invitations_received'
 
 
 class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
-    swagger_schema = AGModelViewAutoSchema
-
-    api_tags = [APITags.permissions]
-
-    @swagger_auto_schema(
-        responses={
-            '200': Schema(
-                type='boolean',
-                description='Whether or not the current user can create empty courses.'
-            )
+    schema = CustomViewSchema([APITags.users], {
+        'GET': {
+            'operation_id': 'currentUserCanCreateCourses',
+            'responses': {
+                '200': {
+                    'content': {
+                        'application/json': {
+                            'schema': {'type': 'boolean'}
+                        }
+                    }
+                }
+            }
         }
-    )
+    })
+
     def get(self, request: Request, *args, **kwargs):
+        """
+        Indicates whether the current user can create empty courses.
+        """
         return response.Response(request.user.has_perm('core.create_course'))
 
 
 class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
-    swagger_schema = AGModelViewAutoSchema
-
-    api_tags = [APITags.courses]
-
-    @swagger_auto_schema(
-        manual_parameters=[Parameter('course_pk', in_='query', type='integer', required=True)],
-        responses={
-            '200': Schema(
-                type='object',
-                properties=[Parameter('late_days_remaining', in_='body', type='integer')])
+    _LATE_DAYS_REMAINING_BODY: ContentObj = {
+        'application/json': {
+            'schema': {
+                'type': 'object',
+                'required': ['late_days_remaining'],
+                'properties': {
+                    'late_days_remaining': {'type': 'integer'}
+                }
+            }
         }
-    )
+    }
+
+    _PARAMS: Sequence[RequestParam] = [
+        {
+            'name': 'username_or_pk',
+            'in': 'path',
+            'required': True,
+            'description': 'The ID or username of the user.',
+            'schema': {
+                # Note: swagger-ui doesn't seem to be able to render
+                # oneOf for params.
+                'oneOf': [
+                    {'type': 'string', 'format': 'username'},
+                    {'type': 'integer', 'format': 'id'},
+                ]
+            }
+        },
+        {
+            'name': 'course_pk',
+            'in': 'query',
+            'required': True,
+            'schema': {'type': 'integer', 'format': 'id'}
+        }
+    ]
+
+    schema = CustomViewSchema([APITags.courses, APITags.users], {
+        'GET': {
+            'operation_id': 'getUserLateDaysRemaining',
+            'parameters': _PARAMS,
+            'responses': {
+                '200': {'content': _LATE_DAYS_REMAINING_BODY}
+            }
+        },
+        'PUT': {
+            'operation_id': 'setUserLateDaysRemaining',
+            'parameters': _PARAMS,
+            'request': {'content': _LATE_DAYS_REMAINING_BODY},
+            'responses': {
+                '200': {'content': _LATE_DAYS_REMAINING_BODY}
+            }
+        }
+    })
+
     @method_decorator(require_query_params('course_pk'))
     def get(self, request: Request, *args, **kwargs):
         try:
@@ -159,16 +228,6 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
 
         return response.Response({'late_days_remaining': remaining.late_days_remaining})
 
-    @swagger_auto_schema(
-        manual_parameters=[Parameter('course_pk', in_='query', type='integer', required=True)],
-        request_body_parameters=[
-            Parameter('late_days_remaining', in_='body', type='integer', required=True)],
-        responses={
-            '200': Schema(
-                type='object',
-                properties=[Parameter('late_days_remaining', in_='body', type='integer')])
-        }
-    )
     @method_decorator(require_body_params('late_days_remaining'))
     def put(self, request: Request, *args, **kwargs):
         try:
