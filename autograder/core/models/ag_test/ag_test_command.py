@@ -287,7 +287,7 @@ class AGTestCommand(AutograderModel):
             NOTE: Setting this value too low may cause the command to crash prematurely.""")
 
     use_virtual_memory_limit = models.BooleanField(
-        default=True, blank=True,
+        default=False, blank=True,
         help_text="""When set to false, the virtual memory limit will not
             be applied to the command. Note that the sandbox will still apply
             a physical memory limit to all commands run in the sandbox."""

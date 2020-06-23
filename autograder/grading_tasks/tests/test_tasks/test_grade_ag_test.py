@@ -476,6 +476,7 @@ sys.stderr.flush()
             self.ag_test_case, cmd='printf spam',
             time_limit=time_limit,
             block_process_spawn=True,
+            use_virtual_memory_limit=True,
             virtual_memory_limit=virtual_memory_limit,
         )
 
@@ -518,8 +519,6 @@ sys.stderr.flush()
         self.ag_test_suite.validate_and_update(setup_suite_cmd='')
 
         time_limit = 5
-        virtual_memory_limit = random.randint(
-            constants.DEFAULT_VIRTUAL_MEM_LIMIT, constants.DEFAULT_VIRTUAL_MEM_LIMIT * 100)
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case, cmd='printf spam',
             use_virtual_memory_limit=False,
