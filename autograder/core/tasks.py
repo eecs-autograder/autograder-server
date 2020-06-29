@@ -1,6 +1,7 @@
 import json
 import os
 import signal
+import socket
 import subprocess
 import threading
 import time
@@ -36,7 +37,8 @@ def build_sandbox_docker_image(build_task_pk: int):
 
         _save_task_status(task, ag_models.BuildImageStatus.in_progress)
 
-        tag = (f'localhost:{settings.SANDBOX_IMAGE_REGISTRY_PORT}'
+        ip_address = socket.gethostbyname(settings.SANDBOX_IMAGE_REGISTRY_HOST)
+        tag = (f'{ip_address}:{settings.SANDBOX_IMAGE_REGISTRY_PORT}'
                f'/build{task.pk}_result{uuid.uuid4().hex}')
         builder = _ImageBuilder(
             build_dir=task.build_dir, output_filename=task.output_filename, tag=tag

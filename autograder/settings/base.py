@@ -218,6 +218,8 @@ LOGGING = {
     }
 }
 
+SANDBOX_IMAGE_REGISTRY_HOST = os.environ.get(
+    'SANDBOX_IMAGE_REGISTRY_HOST', 'localhost')
 SANDBOX_IMAGE_REGISTRY_PORT = os.environ.get('SANDBOX_IMAGE_REGISTRY_PORT', '5001')
 
 from autograder.settings.celery_settings import *  # noqa
