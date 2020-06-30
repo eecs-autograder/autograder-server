@@ -70,7 +70,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
 
         self.assertEqual(constants.DEFAULT_SUBPROCESS_TIMEOUT, ag_cmd.time_limit)
         self.assertEqual(constants.DEFAULT_STACK_SIZE_LIMIT, ag_cmd.stack_size_limit)
-        self.assertTrue(ag_cmd.use_virtual_memory_limit)
+        self.assertFalse(ag_cmd.use_virtual_memory_limit)
         self.assertEqual(constants.DEFAULT_VIRTUAL_MEM_LIMIT, ag_cmd.virtual_memory_limit)
         self.assertFalse(ag_cmd.block_process_spawn)
         self.assertEqual(constants.DEFAULT_PROCESS_LIMIT, ag_cmd.process_spawn_limit)
