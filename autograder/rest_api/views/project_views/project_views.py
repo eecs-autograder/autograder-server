@@ -87,6 +87,19 @@ class ProjectDetailView(SerializeProjectMixin, AGModelDetailView):
     def patch(self, *args, **kwargs):
         return self.do_patch()
 
+    @transaction.atomic
+    def delete(self, *args, **kwargs):
+        project = self.get_object()
+        if project.ag_test_suites.count() != 0 or project.mutation_test_suites.count() != 0:
+            return response.Response(
+                "You cannot delete a project that still has test cases. "
+                "Please delete all of this project's test cases and try again",
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        project.delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class CopyProjectView(AGModelAPIView):
     schema = CustomViewSchema([APITags.projects], {
