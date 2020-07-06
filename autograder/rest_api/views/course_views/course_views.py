@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -11,8 +13,9 @@ import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.copy_project_and_course import copy_course
 from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator, AGRetrieveViewSchemaMixin,
-                                        APITags, CustomViewSchema, as_content_obj, as_schema_ref)
+                                        AGListCreateViewSchemaGenerator, AGPatchViewSchemaMixin,
+                                        AGRetrieveViewSchemaMixin, APITags, CustomViewSchema,
+                                        as_content_obj, as_schema_ref)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       AlwaysIsAuthenticatedMixin, NestedModelView,
                                                       convert_django_validation_error,
@@ -63,8 +66,14 @@ class ListCreateCourseView(APIView):
         return response.Response(data=new_course.to_dict(), status=status.HTTP_201_CREATED)
 
 
+class _CourseDetailSchema(AGRetrieveViewSchemaMixin, AGPatchViewSchemaMixin, CustomViewSchema):
+    pass
+
+
 class CourseDetailView(AGModelDetailView):
-    schema = AGDetailViewSchemaGenerator([APITags.courses], ag_models.Course)
+    schema = _CourseDetailSchema(
+        [APITags.courses],
+        {'DELETE': {'operation_id': 'pseudoDeleteCourse'}})
 
     model_manager = ag_models.Course.objects
     permission_classes = [P(ag_permissions.is_admin()) | P(ag_permissions.IsReadOnly)]
@@ -74,6 +83,21 @@ class CourseDetailView(AGModelDetailView):
 
     def patch(self, *args, **kwargs):
         return self.do_patch()
+
+    @transaction.atomic
+    def delete(self, *args, **kwargs):
+        """
+        Pseudo-delete this course by clearing its user rosters  and renaming it.
+        """
+        course = self.get_object()
+        course.name = f'~DELETED_{course.pk}_{course.name}_{uuid.uuid4().hex}'
+        course.save()
+        course.admins.clear()
+        course.staff.clear()
+        course.students.clear()
+        course.handgraders.clear()
+
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CourseUserRolesView(AGModelAPIView):
