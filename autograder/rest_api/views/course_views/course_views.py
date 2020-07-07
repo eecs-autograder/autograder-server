@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.copy_project_and_course import copy_course
+from autograder.core.models.course import clear_cached_user_roles
 from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGPatchViewSchemaMixin,
                                         AGRetrieveViewSchemaMixin, APITags, CustomViewSchema,
@@ -96,6 +97,7 @@ class CourseDetailView(AGModelDetailView):
         course.staff.clear()
         course.students.clear()
         course.handgraders.clear()
+        clear_cached_user_roles(course.pk)
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 

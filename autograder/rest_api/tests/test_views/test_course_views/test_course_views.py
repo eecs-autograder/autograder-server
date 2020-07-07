@@ -331,7 +331,8 @@ class PseudoDeleteCourseTestCase(AGViewTestBase):
         self.assertNotEqual(0, self.course.students.count())
         self.assertNotEqual(0, self.course.handgraders.count())
 
-    def test_admin_delete_course(self) -> None:
+    @mock.patch('autograder.rest_api.views.course_views.course_views.clear_cached_user_roles')
+    def test_admin_delete_course(self, mock_clear_cached_user_roles: mock.Mock) -> None:
         original_name = self.course.name
 
         self.client.force_authenticate(self.admin)
@@ -347,6 +348,8 @@ class PseudoDeleteCourseTestCase(AGViewTestBase):
         self.assertEqual(0, self.course.staff.count())
         self.assertEqual(0, self.course.students.count())
         self.assertEqual(0, self.course.handgraders.count())
+
+        mock_clear_cached_user_roles.assert_called_once_with(self.course.pk)
 
     def test_non_admin_delete_course_permission_denied(self) -> None:
         original_name = self.course.name
