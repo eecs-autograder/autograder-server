@@ -82,7 +82,8 @@ class BuildSandboxDockerImageTestCase(UnitTestBase):
                 course=image.course,
             )
         self.assertIn(
-            f'localhost:{settings.SANDBOX_IMAGE_REGISTRY_PORT}/build{task.pk}_result',
+            f'{settings.SANDBOX_IMAGE_REGISTRY_HOST}:{settings.SANDBOX_IMAGE_REGISTRY_PORT}'
+            f'/build{task.pk}_result',
             image.tag
         )
 

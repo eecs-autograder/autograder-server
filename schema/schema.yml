@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: Autograder.io API
-  version: 3.5.3
+  version: 4.0.0
 paths:
   /api/users/current/:
     get:
@@ -440,6 +440,21 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
+      tags: *id007
+    delete:
+      operationId: pseudoDeleteCourse
+      description: Pseudo-delete this course by clearing its user rosters  and renaming
+        it.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
       tags: *id007
   /api/courses/{id}/my_roles/:
     get:
@@ -1274,6 +1289,20 @@ paths:
                   description: Whether this project has a handgrading rubric.
                   readOnly: true
                   type: boolean
+      tags: *id013
+    delete:
+      operationId: deleteProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
       tags: *id013
   /api/projects/{id}/num_queued_submissions/:
     get:

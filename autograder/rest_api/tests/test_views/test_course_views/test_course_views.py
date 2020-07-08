@@ -313,6 +313,55 @@ class UpdateCourseTestCase(AGViewTestBase):
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
 
+class PseudoDeleteCourseTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.course = obj_build.make_course()
+        self.url = reverse('course-detail', kwargs={'pk': self.course.pk})
+        self.project = obj_build.make_project(self.course)
+
+        self.admin = obj_build.make_admin_user(self.course)
+        obj_build.make_staff_user(self.course)
+        obj_build.make_student_user(self.course)
+        obj_build.make_handgrader_user(self.course)
+
+        self.assertNotEqual(0, self.course.admins.count())
+        self.assertNotEqual(0, self.course.staff.count())
+        self.assertNotEqual(0, self.course.students.count())
+        self.assertNotEqual(0, self.course.handgraders.count())
+
+    @mock.patch('autograder.rest_api.views.course_views.course_views.clear_cached_user_roles')
+    def test_admin_delete_course(self, mock_clear_cached_user_roles: mock.Mock) -> None:
+        original_name = self.course.name
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.delete(self.url)
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        self.course.refresh_from_db()
+        self.assertIn(original_name, self.course.name)
+        self.assertIn(str(self.course.pk), self.course.name)
+        self.assertNotEqual(original_name, self.course.name)
+
+        self.assertEqual(0, self.course.admins.count())
+        self.assertEqual(0, self.course.staff.count())
+        self.assertEqual(0, self.course.students.count())
+        self.assertEqual(0, self.course.handgraders.count())
+
+        mock_clear_cached_user_roles.assert_called_once_with(self.course.pk)
+
+    def test_non_admin_delete_course_permission_denied(self) -> None:
+        original_name = self.course.name
+
+        self.client.force_authenticate(obj_build.make_user(superuser=True))
+        response = self.client.delete(self.url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        self.course.refresh_from_db()
+        self.assertEqual(original_name, self.course.name)
+
+
 class UserRolesForCourseTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()

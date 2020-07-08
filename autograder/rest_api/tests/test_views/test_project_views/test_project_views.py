@@ -3,6 +3,7 @@ from typing import Optional
 from unittest import mock
 
 from django.core import exceptions
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_save
 from django.urls import reverse
 from rest_framework import status
@@ -12,8 +13,7 @@ import autograder.core.models as ag_models
 import autograder.handgrading.models as hg_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.rest_api.signals import on_project_created
-from autograder.rest_api.tests.test_views.ag_view_test_base import \
-    AGViewTestBase
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 from autograder.utils import exclude_dict
 from autograder.utils.testing import UnitTestBase
 
@@ -244,6 +244,42 @@ class UpdateProjectTestCase(AGViewTestBase):
         staff = obj_build.make_staff_user(self.course)
         self.do_patch_object_permission_denied_test(
             self.project, self.client, staff, self.url, {'name': 'waaaaaaaaluigi'})
+
+
+class DeleteProjectTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.project = obj_build.make_project()
+        self.course = self.project.course
+        self.url = reverse('project-detail', kwargs={'pk': self.project.pk})
+        self.client = APIClient()
+        self.admin = obj_build.make_admin_user(self.course)
+
+    def test_error_project_still_has_ag_test_suites(self) -> None:
+        ag_models.AGTestSuite.objects.validate_and_create(project=self.project, name='noreastnor')
+        self.client.force_authenticate(self.admin)
+        response = self.client.delete(self.url)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.project.refresh_from_db()
+
+    def test_error_project_still_has_mutation_test_suites(self) -> None:
+        ag_models.MutationTestSuite.objects.validate_and_create(project=self.project, name='oiea')
+        self.client.force_authenticate(self.admin)
+        response = self.client.delete(self.url)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.project.refresh_from_db()
+
+    def test_delete_project(self) -> None:
+        self.client.force_authenticate(self.admin)
+        response = self.client.delete(self.url)
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        with self.assertRaises(ObjectDoesNotExist):
+            self.project.refresh_from_db()
+
+    def test_non_admin_delete_project_permission_denied(self) -> None:
+        self.do_delete_object_permission_denied_test(
+            self.project, self.client, obj_build.make_staff_user(self.course), self.url)
 
 
 class CopyProjectViewTestCase(UnitTestBase):
