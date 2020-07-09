@@ -221,15 +221,18 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
 
     def test_get_output_suite_hidden(self):
         self.maxDiff = None
-        max_fdbk_settings = self.mutation_suite_result.get_fdbk(
+        expected_fdbk_settings = self.mutation_suite_result.get_fdbk(
             ag_models.FeedbackCategory.max,
             MutationTestSuitePreLoader(self.project)
         ).fdbk_settings
+        expected_fdbk_settings['bugs_exposed_fdbk_level'] = (
+            ag_models.BugsExposedFeedbackLevel.exposed_bug_names.value)
+
         staff_viewer_fdbk_settings = self.mutation_suite_result.get_fdbk(
             ag_models.FeedbackCategory.staff_viewer,
             MutationTestSuitePreLoader(self.project)
         ).fdbk_settings
-        self.assertEqual(max_fdbk_settings, staff_viewer_fdbk_settings)
+        self.assertEqual(expected_fdbk_settings, staff_viewer_fdbk_settings)
 
         self.mutation_suite.validate_and_update(staff_viewer_fdbk_config={
             'visible': False
