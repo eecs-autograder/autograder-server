@@ -544,6 +544,7 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             MutationTestSuitePreLoader(self.project))
         self.assertIsNone(fdbk.num_bugs_exposed)
         self.assertIsNone(fdbk.bugs_exposed)
+        self.assertIsNone(fdbk.all_bug_names)
         self.assertEqual(0, fdbk.total_points)
         self.assertEqual(0, fdbk.total_points_possible)
 
@@ -560,6 +561,7 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             MutationTestSuitePreLoader(self.project))
         self.assertEqual(len(self.bugs_exposed), fdbk.num_bugs_exposed)
         self.assertIsNone(fdbk.bugs_exposed)
+        self.assertIsNone(fdbk.all_bug_names)
         self.assertEqual(self.points_awarded, fdbk.total_points)
         self.assertEqual(self.points_possible, fdbk.total_points_possible)
 
@@ -576,6 +578,25 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             MutationTestSuitePreLoader(self.project))
         self.assertEqual(len(self.bugs_exposed), fdbk.num_bugs_exposed)
         self.assertSequenceEqual(self.bugs_exposed, fdbk.bugs_exposed)
+        self.assertIsNone(fdbk.all_bug_names)
+        self.assertEqual(self.points_awarded, fdbk.total_points)
+        self.assertEqual(self.points_possible, fdbk.total_points_possible)
+
+    def test_show_all_bug_names(self) -> None:
+        self.mutation_suite.validate_and_update(
+            normal_fdbk_config={
+                'show_points': True,
+                'bugs_exposed_fdbk_level': ag_models.BugsExposedFeedbackLevel.all_bug_names
+            }
+        )
+
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.normal,
+            MutationTestSuitePreLoader(self.project))
+        self.assertEqual(len(self.bugs_exposed), fdbk.num_bugs_exposed)
+        self.assertSequenceEqual(self.bugs_exposed, fdbk.bugs_exposed)
+        self.assertSequenceEqual(self.bug_names, fdbk.all_bug_names)
+
         self.assertEqual(self.points_awarded, fdbk.total_points)
         self.assertEqual(self.points_possible, fdbk.total_points_possible)
 
@@ -631,6 +652,7 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             'timed_out_tests',
             'num_bugs_exposed',
             'bugs_exposed',
+            'all_bug_names',
             'total_points',
             'total_points_possible',
         ]

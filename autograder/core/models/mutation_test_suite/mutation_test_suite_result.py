@@ -288,10 +288,17 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def bugs_exposed(self) -> Optional[List[str]]:
-            if self._fdbk.bugs_exposed_fdbk_level != BugsExposedFeedbackLevel.exposed_bug_names:
+            if self._fdbk.bugs_exposed_fdbk_level < BugsExposedFeedbackLevel.exposed_bug_names:
                 return None
 
             return self._mutation_test_suite_result.bugs_exposed
+
+        @property
+        def all_bug_names(self) -> Optional[List[str]]:
+            if self._fdbk.bugs_exposed_fdbk_level < BugsExposedFeedbackLevel.all_bug_names:
+                return None
+
+            return self._mutation_test_suite.buggy_impl_names
 
         @property
         def validity_check_stdout(self) -> Optional[BinaryIO]:
@@ -384,6 +391,7 @@ class MutationTestSuiteResult(AutograderModel):
             'timed_out_tests',
             'num_bugs_exposed',
             'bugs_exposed',
+            'all_bug_names',
             'total_points',
             'total_points_possible',
         )
