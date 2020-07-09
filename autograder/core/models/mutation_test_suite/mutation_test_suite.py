@@ -87,6 +87,27 @@ class MutationTestSuiteFeedbackConfig(DictSerializableMixin):
         )
 
     @classmethod
+    def default_staff_viewer_fdbk_config(cls) -> 'MutationTestSuiteFeedbackConfig':
+        # Similar to max feedback, but uses BugsExposedFeedbackLevel.exposed_bug_names
+        # for bugs_exposed_fdbk_level
+        return MutationTestSuiteFeedbackConfig(
+            visible=True,
+            show_setup_return_code=True,
+            show_setup_stdout=True,
+            show_setup_stderr=True,
+            show_get_test_names_return_code=True,
+            show_get_test_names_stdout=True,
+            show_get_test_names_stderr=True,
+            show_validity_check_stdout=True,
+            show_validity_check_stderr=True,
+            show_grade_buggy_impls_stdout=True,
+            show_grade_buggy_impls_stderr=True,
+            show_invalid_test_names=True,
+            show_points=True,
+            bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.exposed_bug_names
+        )
+
+    @classmethod
     def max_fdbk_config(cls) -> 'MutationTestSuiteFeedbackConfig':
         return MutationTestSuiteFeedbackConfig(
             visible=True,
@@ -286,7 +307,7 @@ class MutationTestSuite(AutograderModel):
     )
     staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
         MutationTestSuiteFeedbackConfig,
-        default=MutationTestSuiteFeedbackConfig.max_fdbk_config,
+        default=MutationTestSuiteFeedbackConfig.default_staff_viewer_fdbk_config,
         help_text='Feedback settings for a staff member viewing a Submission from another group.'
     )
 
