@@ -8096,6 +8096,7 @@ components:
       - no_feedback
       - num_bugs_exposed
       - exposed_bug_names
+      - all_bug_names
     MutationTestSuiteResultFeedback:
       type: object
       properties:
@@ -8155,6 +8156,11 @@ components:
           nullable: true
           type: integer
         bugs_exposed:
+          description: ''
+          nullable: true
+          type: array
+          items: *id062
+        all_bug_names:
           description: ''
           nullable: true
           type: array
