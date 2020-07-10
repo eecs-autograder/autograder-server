@@ -593,16 +593,15 @@ class MutationTestSuiteOutputSizeView(SubmissionResultsViewBase):
         if result is None:
             return response.Response(None)
 
-        fdbk = result.get_fdbk(fdbk_category, submission_fdbk.mutation_test_suite_preloader)
         return response.Response({
-            'setup_stdout_size': fdbk.get_setup_stdout_size(),
-            'setup_stderr_size': fdbk.get_setup_stderr_size(),
-            'get_student_test_names_stdout_size': fdbk.get_student_test_names_stdout_size(),
-            'get_student_test_names_stderr_size': fdbk.get_student_test_names_stderr_size(),
-            'validity_check_stdout_size': fdbk.get_validity_check_stdout_size(),
-            'validity_check_stderr_size': fdbk.get_validity_check_stderr_size(),
-            'grade_buggy_impls_stdout_size': fdbk.get_grade_buggy_impls_stdout_size(),
-            'grade_buggy_impls_stderr_size': fdbk.get_grade_buggy_impls_stderr_size(),
+            'setup_stdout_size': result.get_setup_stdout_size(),
+            'setup_stderr_size': result.get_setup_stderr_size(),
+            'get_student_test_names_stdout_size': result.get_student_test_names_stdout_size(),
+            'get_student_test_names_stderr_size': result.get_student_test_names_stderr_size(),
+            'validity_check_stdout_size': result.get_validity_check_stdout_size(),
+            'validity_check_stderr_size': result.get_validity_check_stderr_size(),
+            'grade_buggy_impls_stdout_size': result.get_grade_buggy_impls_stdout_size(),
+            'grade_buggy_impls_stderr_size': result.get_grade_buggy_impls_stderr_size(),
         })
 
 
@@ -619,16 +618,17 @@ def _get_mutation_suite_result_output_field(
     if result is None:
         return response.Response(None)
 
-    output_stream = get_output_fn(
-        result.get_fdbk(fdbk_category, submission_fdbk.mutation_test_suite_preloader))
+    output_stream = get_output_fn(result)
     if output_stream is None:
         return response.Response(None)
 
     return FileResponse(output_stream)
 
 
-def _find_mutation_suite_result(submission_fdbk: SubmissionResultFeedback,
-                                mutation_suite_result_pk: int):
+def _find_mutation_suite_result(
+    submission_fdbk: SubmissionResultFeedback,
+    mutation_suite_result_pk: int
+) -> Optional[ag_models.MutationTestSuiteResult.FeedbackCalculator]:
     """
     :raises: Http404 exception if a mutation suite result with the given primary
              key doesn't exist in the database.

@@ -117,8 +117,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertSequenceEqual([self.ag_suite_result1.pk, self.ag_suite_result2.pk],
                                  [res.pk for res in fdbk.ag_test_suite_results])
 
-        self.assertSequenceEqual([self.mutation_suite_result1, self.mutation_suite_result2],
-                                 fdbk.mutation_test_suite_results)
+        self.assertSequenceEqual([self.mutation_suite_result1.pk, self.mutation_suite_result2.pk],
+                                 [res.pk for res in fdbk.mutation_test_suite_results])
 
     def test_ag_suite_result_ordering(self):
         for i in range(2):
@@ -137,14 +137,14 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             self.project.set_mutationtestsuite_order(
                 [self.mutation_suite2.pk, self.mutation_suite1.pk])
             fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
-            self.assertSequenceEqual([self.mutation_suite_result2, self.mutation_suite_result1],
-                                     fdbk.mutation_test_suite_results)
+            self.assertSequenceEqual([self.mutation_suite_result2.pk, self.mutation_suite_result1.pk],
+                                     [res.pk for res in fdbk.mutation_test_suite_results])
 
             self.project.set_mutationtestsuite_order(
                 [self.mutation_suite1.pk, self.mutation_suite2.pk])
             fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
-            self.assertSequenceEqual([self.mutation_suite_result1, self.mutation_suite_result2],
-                                     fdbk.mutation_test_suite_results)
+            self.assertSequenceEqual([self.mutation_suite_result1.pk, self.mutation_suite_result2.pk],
+                                     [res.pk for res in fdbk.mutation_test_suite_results])
 
     def test_max_fdbk_some_incorrect(self):
         # Make something incorrect, re-check total points and total points
@@ -214,8 +214,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             'ag_test_suite_results'][0]['ag_test_case_results'][0]['ag_test_command_results']
         self.assertSequenceEqual([], actual_cmd_results)
 
-        self.assertSequenceEqual([self.mutation_suite_result1, self.mutation_suite_result2],
-                                 fdbk.mutation_test_suite_results)
+        self.assertSequenceEqual([self.mutation_suite_result1.pk, self.mutation_suite_result2.pk],
+                                 [res.pk for res in fdbk.mutation_test_suite_results])
 
     def test_past_limit_fdbk(self):
         self.ag_test_cmd2.validate_and_update(
@@ -264,7 +264,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             'ag_test_suite_results'][1]['ag_test_case_results'][0]['ag_test_command_results']
         self.assertSequenceEqual([], actual_cmd_results)
 
-        self.assertSequenceEqual([self.mutation_suite_result1], fdbk.mutation_test_suite_results)
+        self.assertSequenceEqual([self.mutation_suite_result1.pk],
+                                 [res.pk for res in fdbk.mutation_test_suite_results])
 
     def test_ultimate_fdbk(self):
         self.ag_test_cmd1.validate_and_update(ultimate_submission_fdbk_config={'visible': False})
@@ -282,7 +283,10 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             'ag_test_suite_results'][0]['ag_test_case_results'][0]['ag_test_command_results']
         self.assertSequenceEqual([], actual_cmd_results)
 
-        self.assertSequenceEqual([self.mutation_suite_result2], fdbk.mutation_test_suite_results)
+        self.assertSequenceEqual(
+            [self.mutation_suite_result2.pk],
+            [res.pk for res in fdbk.mutation_test_suite_results]
+        )
 
     def test_individual_suite_result_order(self):
         self.project.set_agtestsuite_order([self.ag_test_suite2.pk, self.ag_test_suite1.pk])
@@ -299,16 +303,17 @@ class SubmissionFeedbackTestCase(UnitTestBase):
              get_suite_fdbk(self.ag_suite_result1, ag_models.FeedbackCategory.max).to_dict()],
             fdbk.to_dict()['ag_test_suite_results'])
 
-        self.assertSequenceEqual([self.mutation_suite_result2, self.mutation_suite_result1],
-                                 fdbk.mutation_test_suite_results)
-        self.assertSequenceEqual(
-            [self.mutation_suite_result2.get_fdbk(
+        expected = [
+            self.mutation_suite_result2.get_fdbk(
                 ag_models.FeedbackCategory.max,
-                MutationTestSuitePreLoader(self.project)).to_dict(),
-             self.mutation_suite_result1.get_fdbk(
-                 ag_models.FeedbackCategory.max,
-                 MutationTestSuitePreLoader(self.project)).to_dict()],
-            fdbk.to_dict()['mutation_test_suite_results'])
+                MutationTestSuitePreLoader(self.project)
+            ).to_dict(),
+            self.mutation_suite_result1.get_fdbk(
+                ag_models.FeedbackCategory.max,
+                MutationTestSuitePreLoader(self.project)
+            ).to_dict()
+        ]
+        self.assertSequenceEqual(expected, fdbk.to_dict()['mutation_test_suite_results'])
 
     def test_some_ag_and_mutation_test_suites_not_visible(self):
         self.ag_test_suite2.validate_and_update(
@@ -329,12 +334,13 @@ class SubmissionFeedbackTestCase(UnitTestBase):
                             ag_models.FeedbackCategory.ultimate_submission).to_dict()],
             fdbk.to_dict()['ag_test_suite_results'])
 
-        self.assertSequenceEqual([self.mutation_suite_result1], fdbk.mutation_test_suite_results)
-        self.assertSequenceEqual(
-            [self.mutation_suite_result1.get_fdbk(
+        expected = [
+            self.mutation_suite_result1.get_fdbk(
                 ag_models.FeedbackCategory.ultimate_submission,
-                MutationTestSuitePreLoader(self.project)).to_dict()],
-            fdbk.to_dict()['mutation_test_suite_results'])
+                MutationTestSuitePreLoader(self.project)
+            ).to_dict()
+        ]
+        self.assertSequenceEqual(expected, fdbk.to_dict()['mutation_test_suite_results'])
 
     def test_fdbk_to_dict(self):
         expected = {
