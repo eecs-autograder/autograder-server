@@ -976,9 +976,7 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
                 for case_fdbk in suite_fdbk.ag_test_case_results:
                     values.append(str(case_fdbk.total_points))
 
-            for suite_result in fdbk.mutation_test_suite_results:
-                suite_fdbk = suite_result.get_fdbk(
-                    ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+            for suite_fdbk in fdbk.mutation_test_suite_results:
                 values += [str(suite_fdbk.total_points), str(suite_fdbk.total_points_possible)]
 
             self.assertEqual(len(expected_headers), len(values))

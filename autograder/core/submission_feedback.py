@@ -344,9 +344,7 @@ class SubmissionResultFeedback(ToDictMixin):
         ))
 
         mutation_suite_points = sum((
-            mutation_test_suite_result.get_fdbk(
-                self._fdbk_category, self._mutation_test_suite_preloader).total_points
-            for mutation_test_suite_result in self._visible_mutation_test_suite_results
+            fdbk.total_points for fdbk in self.mutation_test_suite_results
         ))
 
         return ag_suite_points + mutation_suite_points
@@ -359,9 +357,7 @@ class SubmissionResultFeedback(ToDictMixin):
         ))
 
         mutation_suite_points = sum((
-            mutation_test_suite_result.get_fdbk(
-                self._fdbk_category, self._mutation_test_suite_preloader).total_points_possible
-            for mutation_test_suite_result in self._visible_mutation_test_suite_results
+            fdbk.total_points_possible for fdbk in self.mutation_test_suite_results
         ))
 
         return ag_suite_points + mutation_suite_points
@@ -387,18 +383,14 @@ class SubmissionResultFeedback(ToDictMixin):
         return visible
 
     @cached_property
-    def mutation_test_suite_results(self) -> List[MutationTestSuiteResult]:
-        return list(self._visible_mutation_test_suite_results)
+    def mutation_test_suite_results(self) -> List[MutationTestSuiteResult.FeedbackCalculator]:
+        visible = []
+        for result in self._submission.mutation_test_suite_results.all():
+            fdbk = result.get_fdbk(self._fdbk_category, self._mutation_test_suite_preloader)
+            if fdbk.fdbk_conf.visible:
+                visible.append(fdbk)
 
-    @property
-    def _visible_mutation_test_suite_results(self) -> Sequence['MutationTestSuiteResult']:
-        return list(
-            filter(
-                lambda result: result.get_fdbk(
-                    self._fdbk_category, self._mutation_test_suite_preloader).fdbk_conf.visible,
-                self._submission.mutation_test_suite_results.all()
-            )
-        )
+        return visible
 
     def to_dict(self):
         result = super().to_dict()
@@ -408,9 +400,8 @@ class SubmissionResultFeedback(ToDictMixin):
         ]
 
         result['mutation_test_suite_results'] = [
-            result.get_fdbk(
-                self._fdbk_category, self._mutation_test_suite_preloader).to_dict()
-            for result in result['mutation_test_suite_results']]
+            result.to_dict() for result in result['mutation_test_suite_results']
+        ]
 
         return result
 
