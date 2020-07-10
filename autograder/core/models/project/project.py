@@ -207,6 +207,11 @@ class Project(AutograderModel):
                 {'max_group_size': ('Maximum group size must be greater than '
                                     'or equal to minimum group size')})
 
+        if self.closing_time is not None:
+            self.closing_time = self.closing_time.replace(second=0, microsecond=0)
+        if self.soft_closing_time is not None:
+            self.soft_closing_time = self.soft_closing_time.replace(second=0, microsecond=0)
+
         if self.closing_time is not None and self.soft_closing_time is not None:
             if self.closing_time < self.soft_closing_time:
                 raise exceptions.ValidationError(

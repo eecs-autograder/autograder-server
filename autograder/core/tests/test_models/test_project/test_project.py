@@ -98,6 +98,8 @@ class ProjectMiscTestCase(UnitTestBase):
             **kwargs
         )
 
+        kwargs['closing_time'] = kwargs['closing_time'].replace(second=0, microsecond=0)
+        kwargs['soft_closing_time'] = kwargs['soft_closing_time'].replace(second=0, microsecond=0)
         new_project.refresh_from_db()
 
         for field_name, value in kwargs.items():
@@ -201,7 +203,7 @@ class HardAndSoftClosingTimeTestCase(UnitTestBase):
             soft_closing_time=None)
 
         proj.refresh_from_db()
-        self.assertEqual(closing_time, proj.closing_time)
+        self.assertEqual(closing_time.replace(second=0, microsecond=0), proj.closing_time)
         self.assertIsNone(proj.soft_closing_time)
 
     def test_error_soft_closing_time_after_closing_time(self):
