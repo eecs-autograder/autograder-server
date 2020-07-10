@@ -137,14 +137,18 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             self.project.set_mutationtestsuite_order(
                 [self.mutation_suite2.pk, self.mutation_suite1.pk])
             fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
-            self.assertSequenceEqual([self.mutation_suite_result2.pk, self.mutation_suite_result1.pk],
-                                     [res.pk for res in fdbk.mutation_test_suite_results])
+            self.assertSequenceEqual(
+                [self.mutation_suite_result2.pk, self.mutation_suite_result1.pk],
+                [res.pk for res in fdbk.mutation_test_suite_results]
+            )
 
             self.project.set_mutationtestsuite_order(
                 [self.mutation_suite1.pk, self.mutation_suite2.pk])
             fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
-            self.assertSequenceEqual([self.mutation_suite_result1.pk, self.mutation_suite_result2.pk],
-                                     [res.pk for res in fdbk.mutation_test_suite_results])
+            self.assertSequenceEqual(
+                [self.mutation_suite_result1.pk, self.mutation_suite_result2.pk],
+                [res.pk for res in fdbk.mutation_test_suite_results]
+            )
 
     def test_max_fdbk_some_incorrect(self):
         # Make something incorrect, re-check total points and total points
