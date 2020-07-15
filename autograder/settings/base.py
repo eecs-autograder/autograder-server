@@ -4,7 +4,9 @@ Django settings for autograder project.
 
 import os
 import json
+import sys
 
+from cryptography.fernet import Fernet
 from django.utils.crypto import get_random_string
 
 VERSION = '4.0.0'
@@ -29,40 +31,31 @@ OAUTH2_SECRETS_PATH = os.path.join(SETTINGS_DIR, OAUTH2_SECRETS_FILENAME)
 
 PREFERRED_DOMAIN = '@umich.edu'
 
+SECRETS_FILENAME = os.path.join(SETTINGS_DIR, 'secrets.json')
+SECRET_KEY = 'this value will be overwritten'
 
-def generate_secrets(overwrite_prompt=True):
-    """
-    Generates an app secret key and a database password and writes
-    them to a json file.
-    """
-    secrets_file = os.path.join(SETTINGS_DIR, 'secrets.json')
-    if os.path.exists(secrets_file) and overwrite_prompt:
-        choice = input(
-            'Secrets file already exists. Overwrite? [y/N]'
-        ).strip().lower()
-        if choice != "y":
-            print('Exiting')
-            raise SystemExit()
+# HACK: Don't try to load the secrets if we're trying to generate them.
+if len(sys.argv) == 1 or sys.argv[1] != 'generate_secrets':
+    if not os.path.exists(SECRETS_FILENAME):
+        error_msg = """autograder-server/autograder/settings/secrets.json.
+Please run ./manage.py generate_secrets to generate this file."""
+        print(error_msg, file=sys.stderr)
+        exit(1)
 
-    chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-    secrets = {
-        'secret_key': get_random_string(50, chars),
-        # 'db_password': get_random_string(50, chars)
-    }
+    with open(SECRETS_FILENAME) as f:
+        _secrets = json.load(f)
 
-    with open(secrets_file, 'w') as f:
-        json.dump(secrets, f)
+    if 'secret_key' not in _secrets or 'submission_email_verification_key' not in _secrets:
+        error_msg = """Data missing from secrets.json.
+Please run ./manage.py generate_secrets to update this file"""
+        print(error_msg, file=sys.stderr)
+        exit(1)
 
+    SECRET_KEY = _secrets['secret_key']
+    SUBMISSION_EMAIL_VERIFICATION_KEY = bytearray.fromhex(
+        _secrets['submission_email_verification_key']
+    )
 
-# SECURITY WARNING: keep the secret key used in production secret!
-_secrets_filename = os.path.join(SETTINGS_DIR, 'secrets.json')
-if not os.path.exists(_secrets_filename):
-    generate_secrets(overwrite_prompt=False)
-
-SECRET_KEY = ''
-with open(_secrets_filename) as f:
-    secrets = json.load(f)
-    SECRET_KEY = secrets.pop('secret_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -156,6 +149,14 @@ CACHES = {
     },
 }
 
+# See https://docs.djangoproject.com/en/2.2/ref/settings/#std:setting-EMAIL_HOST
+# for Django docs on these settings
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 25))
+
+EMAIL_FROM_ADDR = os.environ.get('EMAIL_FROM_ADDR', 'admin@autograder.io')
 
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,

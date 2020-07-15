@@ -19,6 +19,7 @@ from django.conf import settings
 from django.conf.urls import include, url
 
 urlpatterns = [
+    url(r'^api/', include('autograder.core.urls')),
     url(r'^api/', include('autograder.rest_api.urls')),
     url(r'^api/', include('autograder.handgrading.urls')),
 ]
