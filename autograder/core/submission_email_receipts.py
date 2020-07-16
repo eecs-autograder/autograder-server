@@ -24,6 +24,7 @@ def send_submission_received_email(
     try:
         content = f"""We've received a submission from {submission.submitter}
 at {submission.timestamp} UTC for {group.project.course.name} {group.project.name}.
+The submission's database ID is {submission.pk}.
 
 Please visit {settings.SITE_DOMAIN}/web/project/{group.project.pk}?current_tab=my_submissions
 to view your results as they become available.
@@ -53,6 +54,7 @@ def send_submission_score_summary_email(
         content = f"""This email contains a summary of your score for
 all non-deferred test cases on the submission from {submission.submitter}
 at {submission.timestamp} UTC for {group.project.course.name} {group.project.name}.
+The submission's database ID is {submission.pk}.
 
 Please visit {settings.SITE_DOMAIN}/web/project/{group.project.pk}?current_tab=my_submissions
 to view all available details on these results.\n
