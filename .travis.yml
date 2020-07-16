@@ -31,5 +31,6 @@ script:
     pycodestyle autograder &&
     pydocstyle augograder &&
     sh run_mypy.sh &&
+    python3 manage.py generate_secrets &&
     python3 manage.py makemigrations --check &&
     python3 manage.py test -v 2 autograder
