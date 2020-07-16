@@ -70,7 +70,7 @@ to view all available details on these results.\n
         content += '\n'
 
         for suite_result in fdbk.ag_test_suite_results:
-            if suite_result._ag_test_suite.deferred:
+            if suite_result.ag_test_suite.deferred:
                 continue
 
             content += f'{suite_result.ag_test_suite_name}:\n'

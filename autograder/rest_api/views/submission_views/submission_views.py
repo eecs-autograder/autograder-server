@@ -247,6 +247,7 @@ class ListCreateSubmissionView(NestedModelView):
 
         return submission
 
+
 class ListSubmissionsWithResults(AGModelAPIView):
     schema = CustomViewSchema([APITags.submissions], {
         'GET': {
