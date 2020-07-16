@@ -278,6 +278,9 @@ class Project(AutograderModel):
         'expected_student_files',
 
         'has_handgrading_rubric',
+
+        'send_email_on_submission_received',
+        'send_email_on_non_deferred_tests_finished',
     )
 
     SERIALIZE_RELATED = (
@@ -310,4 +313,7 @@ class Project(AutograderModel):
 
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',
+
+        'send_email_on_submission_received',
+        'send_email_on_non_deferred_tests_finished',
     )

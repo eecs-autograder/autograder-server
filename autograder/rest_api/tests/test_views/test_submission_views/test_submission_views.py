@@ -527,6 +527,21 @@ class CreateSubmissionTestCase(AGViewTestBase):
         self.assertIn('invalid_fields', response.data)
         self.assertIn('count_towards_total_limit', response.data['invalid_fields'])
 
+    def test_submission_received_email_receipt(self) -> None:
+        path = ('autograder.rest_api.views.submission_views'
+                '.submission_views.send_submission_received_email')
+        with mock.patch(path) as mock_send_email:
+            admin_group = obj_build.make_group(
+                project=self.project, members_role=obj_build.UserRole.admin)
+            self.do_normal_submit_test(admin_group, admin_group.members.last())
+
+            mock_send_email.assert_not_called()
+
+            self.project.validate_and_update(send_email_on_submission_received=True)
+            submission = self.do_normal_submit_test(admin_group, admin_group.members.last())
+
+            mock_send_email.assert_called_once_with(admin_group, submission)
+
     def do_normal_submit_test(self, group, user) -> ag_models.Submission:
         self.add_expected_patterns(group.project)
         response = self.do_create_object_test(

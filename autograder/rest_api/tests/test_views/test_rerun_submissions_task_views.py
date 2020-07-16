@@ -145,8 +145,8 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
                                       + self.ag_test_suite2_points_possible
                                       + self.mutation_suite_total_points_possible)
 
-        tasks.grade_submission(self.submission1.pk)
-        tasks.grade_submission(self.submission2.pk)
+        tasks.grade_submission_task(self.submission1.pk)
+        tasks.grade_submission_task(self.submission2.pk)
         self.submission1.refresh_from_db()
         self.submission2.refresh_from_db()
 
@@ -192,7 +192,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
             points_for_correct_return_code=1
         )  # type: ag_models.AGTestCommand
 
-        tasks.grade_submission(self.other_submission.pk)
+        tasks.grade_submission_task(self.other_submission.pk)
         self.other_submission.refresh_from_db()
 
         other_fdbk = get_submission_fdbk(self.other_submission, ag_models.FeedbackCategory.max)

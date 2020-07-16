@@ -163,6 +163,9 @@ class ProjectMiscTestCase(UnitTestBase):
             'expected_student_files',
 
             'has_handgrading_rubric',
+
+            'send_email_on_submission_received',
+            'send_email_on_non_deferred_tests_finished',
         ]
         self.assertCountEqual(expected_keys, project_dict.keys())
         self.assertEqual('UTC', project_dict['submission_limit_reset_timezone'])

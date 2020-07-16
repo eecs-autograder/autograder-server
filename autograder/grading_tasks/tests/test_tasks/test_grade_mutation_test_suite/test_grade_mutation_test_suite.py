@@ -76,7 +76,7 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
         self.all_tests = set(self.valid_tests + self.invalid_tests + self.timeout_tests)
 
     def test_grade_non_deferred(self, *args):
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         result = ag_models.MutationTestSuiteResult.objects.get(
             mutation_test_suite=self.mutation_suite)
@@ -129,7 +129,7 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
 
     def test_grade_deferred(self, *args):
         self.mutation_suite.validate_and_update(deferred=True)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         result = ag_models.MutationTestSuiteResult.objects.get(
             mutation_test_suite=self.mutation_suite)
@@ -146,7 +146,7 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
     def test_setup_command_fails_no_tests_discovered(self, *args):
         self.mutation_suite.validate_and_update(setup_command={'cmd': 'false'})
 
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         result = ag_models.MutationTestSuiteResult.objects.get(
             mutation_test_suite=self.mutation_suite)
 
@@ -175,7 +175,7 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
     def test_setup_command_times_out_no_tests_discovered(self, *args):
         self.mutation_suite.validate_and_update(setup_command={'cmd': 'sleep 10'})
         with mock.patch('autograder.core.constants.MAX_SUBPROCESS_TIMEOUT', new=1):
-            tasks.grade_submission(self.submission.pk)
+            tasks.grade_submission_task(self.submission.pk)
 
             result = ag_models.MutationTestSuiteResult.objects.get(
                 mutation_test_suite=self.mutation_suite)
@@ -226,7 +226,7 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
                 'cmd': 'cat {}'.format(instructor_file.name)
             }
         )
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
@@ -249,7 +249,7 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
             },
             max_num_student_tests=1
         )
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
@@ -269,7 +269,7 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
                 'cmd': 'echo {}'.format(test_names)
             }
         )
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
@@ -293,7 +293,7 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
                 'cmd': 'bash -c "printf \'{}\'; printf \'{}\' >&2"'.format(test_names, stderr)
             }
         )
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         result = ag_models.MutationTestSuiteResult.objects.get(
             mutation_test_suite=mutation_suite)
@@ -318,7 +318,7 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
                     test_names, stderr)
             }
         )
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         result = ag_models.MutationTestSuiteResult.objects.get(
             mutation_test_suite=mutation_suite)
@@ -429,7 +429,7 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
             'autograder.grading_tasks.tasks.grade_mutation_test_suite.AutograderSandbox',
             return_value=sandbox
         ):
-            tasks.grade_submission(self.submission.pk)
+            tasks.grade_submission_task(self.submission.pk)
 
         expected_cmds = ['true', 'echo test1', 'echo test1', 'echo bug1 test1']
         expected_calls = [
@@ -477,7 +477,7 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
             'autograder.grading_tasks.tasks.grade_mutation_test_suite.AutograderSandbox',
             return_value=sandbox
         ):
-            tasks.grade_submission(self.submission.pk)
+            tasks.grade_submission_task(self.submission.pk)
 
         expected_cmd_args = {
             'timeout': time_limit,

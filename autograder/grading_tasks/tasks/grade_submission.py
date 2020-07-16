@@ -41,8 +41,11 @@ def grade_submission(submission_pk):
             ).update(status=ag_models.Submission.GradingStatus.waiting_for_deferred)
 
         mark_as_waiting_for_deferred()
+
         if project.send_email_on_non_deferred_tests_finished:
             try:
+                # Refresh the submission to load the denormalized
+                # test case results
                 submission.refresh_from_db()
                 send_submission_score_summary_email(submission)
             except Exception:
