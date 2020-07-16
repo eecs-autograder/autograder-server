@@ -62,6 +62,12 @@ pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
+## Generate Secrets
+Run the following command to generate the file autograder/settings/secrets.json:
+```
+python3.8 manage.py generate_secrets
+```
+
 ## Running the Unit Tests
 To run the tests (takes about 15 minutes on my machine):
 ```
