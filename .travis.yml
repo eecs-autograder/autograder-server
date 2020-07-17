@@ -23,6 +23,7 @@ env:
 install:
     - pip install -r requirements.txt
     - pip install -r requirements-dev.txt
+    - python3 manage.py generate_secrets
 
 before_script:
     - echo $AG_DB_PASSWORD
@@ -31,6 +32,5 @@ script:
     pycodestyle autograder &&
     pydocstyle augograder &&
     sh run_mypy.sh &&
-    python3 manage.py generate_secrets &&
     python3 manage.py makemigrations --check &&
     python3 manage.py test -v 2 autograder

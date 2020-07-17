@@ -37,7 +37,8 @@ SECRET_KEY = 'this value will be overwritten'
 # HACK: Don't try to load the secrets if we're trying to generate them.
 if len(sys.argv) == 1 or sys.argv[1] != 'generate_secrets':
     if not os.path.exists(SECRETS_FILENAME):
-        error_msg = """autograder-server/autograder/settings/secrets.json.
+        error_msg = """
+The file autograder-server/autograder/settings/secrets.json does not exist.
 Please run ./manage.py generate_secrets to generate this file."""
         print(error_msg, file=sys.stderr)
         exit(1)
