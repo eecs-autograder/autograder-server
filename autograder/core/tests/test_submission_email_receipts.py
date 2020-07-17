@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.core import mail
 from django.test import Client
 
@@ -5,7 +7,8 @@ import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.submission_email_receipts import (send_submission_received_email,
                                                        send_submission_score_summary_email)
-from autograder.core.submission_feedback import update_denormalized_ag_test_results
+from autograder.core.submission_feedback import (
+    SubmissionResultFeedback, update_denormalized_ag_test_results)
 from autograder.utils.testing.unit_test_base import UnitTestBase
 
 
@@ -36,6 +39,10 @@ class SendSubmissionReceivedEmailTestCase(UnitTestBase):
 
 
 class SendNonDeferredTestsFinishedEmailTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.mock_submission_result_feedback = mock.Mock(wraps=SubmissionResultFeedback)
+
     def test_email_content(self) -> None:
         group = obj_build.make_group(num_members=2)
         submission = obj_build.make_submission(group=group)
@@ -92,7 +99,12 @@ class SendNonDeferredTestsFinishedEmailTestCase(UnitTestBase):
             )
         )
         submission = update_denormalized_ag_test_results(submission.pk)
-        send_submission_score_summary_email(submission)
+        with mock.patch('autograder.core.submission_email_receipts.SubmissionResultFeedback',
+                        new=self.mock_submission_result_feedback):
+            send_submission_score_summary_email(submission)
+            self.mock_submission_result_feedback.assert_called_once_with(
+                submission, ag_models.FeedbackCategory.normal, mock.ANY
+            )
         self.assertEqual(1, len(mail.outbox))
 
         email = mail.outbox[0]
@@ -127,3 +139,16 @@ class SendNonDeferredTestsFinishedEmailTestCase(UnitTestBase):
         client = Client()
         decrypted = client.get(decryption_url).content.decode()
         self.assertEqual(email.body.strip().split('\n')[:-4], decrypted.strip().split('\n'))
+
+    def test_email_content_for_past_limit_submission(self) -> None:
+        group = obj_build.make_group(num_members=2)
+        submission = obj_build.make_submission(group=group, is_past_daily_limit=True)
+
+        submission = update_denormalized_ag_test_results(submission.pk)
+        with mock.patch('autograder.core.submission_email_receipts.SubmissionResultFeedback',
+                        new=self.mock_submission_result_feedback):
+            send_submission_score_summary_email(submission)
+            self.assertEqual(1, len(mail.outbox))
+            self.mock_submission_result_feedback.assert_called_once_with(
+                submission, ag_models.FeedbackCategory.past_limit_submission, mock.ANY
+            )
