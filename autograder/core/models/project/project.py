@@ -194,6 +194,18 @@ class Project(AutograderModel):
             finished grading."""
     )
 
+    use_honor_pledge = models.BooleanField(
+        default=False, blank=True,
+        help_text="""If True, then the frontend website should require
+            students to acknowledge an honor pledge. The text of the
+            honor pledge is stored in honor_pledge_text."""
+    )
+
+    honor_pledge_text = models.TextField(
+        blank=True,
+        help_text="""The text of the honor pledge to display."""
+    )
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
@@ -281,6 +293,9 @@ class Project(AutograderModel):
 
         'send_email_on_submission_received',
         'send_email_on_non_deferred_tests_finished',
+
+        'use_honor_pledge',
+        'honor_pledge_text',
     )
 
     SERIALIZE_RELATED = (
@@ -316,4 +331,7 @@ class Project(AutograderModel):
 
         'send_email_on_submission_received',
         'send_email_on_non_deferred_tests_finished',
+
+        'use_honor_pledge',
+        'honor_pledge_text',
     )
