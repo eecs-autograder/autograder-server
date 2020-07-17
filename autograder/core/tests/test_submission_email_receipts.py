@@ -29,9 +29,9 @@ class SendSubmissionReceivedEmailTestCase(UnitTestBase):
         self.assertIn(group.project.name, email.body)
         self.assertIn(str(submission.timestamp), email.body)
 
-        verification_url = email.body.strip().split('\n')[-2]
+        decryption_url = email.body.strip().split('\n')[-1]
         client = Client()
-        decrypted = client.get(verification_url).content.decode()
+        decrypted = client.get(decryption_url).content.decode()
         self.assertEqual(email.body.strip().split('\n')[:-4], decrypted.strip().split('\n'))
 
 
@@ -123,7 +123,7 @@ class SendNonDeferredTestsFinishedEmailTestCase(UnitTestBase):
 
         self.assertNotIn(deferred_test_suite.name, email.body)
 
-        verification_url = email.body.strip().split('\n')[-2]
+        decryption_url = email.body.strip().split('\n')[-1]
         client = Client()
-        decrypted = client.get(verification_url).content.decode()
+        decrypted = client.get(decryption_url).content.decode()
         self.assertEqual(email.body.strip().split('\n')[:-4], decrypted.strip().split('\n'))

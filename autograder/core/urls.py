@@ -21,7 +21,7 @@ def decrypt_email_receipt_view(request, *args, encrypted_msg):
 
 
 urlpatterns = [
-    path('validate_submission_receipt_email/<str:encrypted_msg>/',
+    path('decrypt_submission_receipt_email/<str:encrypted_msg>/',
          decrypt_email_receipt_view,
-         name='validate-submission-receipt-email')
+         name='decrypt-submission-receipt-email')
 ]

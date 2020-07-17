@@ -122,11 +122,11 @@ def add_validation_url(content: str) -> str:
     ).decode()
     url = (
         settings.SITE_DOMAIN
-        + reverse('validate-submission-receipt-email', kwargs={'encrypted_msg': encrypted})
+        + reverse('decrypt-submission-receipt-email', kwargs={'encrypted_msg': encrypted})
     )
-    content += f"""\nTo validate this email receipt, please visit:
-{url}
+    content += f"""\nTo see if this message is authentic, visit the link below.
 The contents of that page should match the above message body and receipt ID.
+{url}
 """
 
     return content
