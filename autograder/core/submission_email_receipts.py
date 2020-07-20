@@ -2,7 +2,6 @@ import base64
 import logging
 import traceback
 from typing import Tuple
-import uuid
 
 from django.conf import settings
 from django.core.mail import send_mail
