@@ -1,14 +1,17 @@
+import base64
 from unittest import mock
 
 from django.core import mail
 from django.test import Client
+from django.urls import reverse
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.submission_email_receipts import (send_submission_received_email,
+from autograder.core.submission_email_receipts import (check_signature,
+                                                       send_submission_received_email,
                                                        send_submission_score_summary_email)
-from autograder.core.submission_feedback import (
-    SubmissionResultFeedback, update_denormalized_ag_test_results)
+from autograder.core.submission_feedback import (SubmissionResultFeedback,
+                                                 update_denormalized_ag_test_results)
 from autograder.utils.testing.unit_test_base import UnitTestBase
 
 
@@ -32,10 +35,11 @@ class SendSubmissionReceivedEmailTestCase(UnitTestBase):
         self.assertIn(group.project.name, email.body)
         self.assertIn(str(submission.timestamp), email.body)
 
-        decryption_url = email.body.strip().split('\n')[-1]
+        verification_url = email.body.strip().split('\n')[-4]
         client = Client()
-        decrypted = client.get(decryption_url).content.decode()
-        self.assertEqual(email.body.strip().split('\n')[:-4], decrypted.strip().split('\n'))
+        verified = client.get(verification_url).content.decode()
+        self.assertIn('Signature verification SUCCESS.', verified)
+        self.assertIn('BEGIN PGP SIGNATURE', verified)
 
 
 class SendNonDeferredTestsFinishedEmailTestCase(UnitTestBase):
@@ -135,10 +139,11 @@ class SendNonDeferredTestsFinishedEmailTestCase(UnitTestBase):
 
         self.assertNotIn(deferred_test_suite.name, email.body)
 
-        decryption_url = email.body.strip().split('\n')[-1]
+        verification_url = email.body.strip().split('\n')[-4]
         client = Client()
-        decrypted = client.get(decryption_url).content.decode()
-        self.assertEqual(email.body.strip().split('\n')[:-4], decrypted.strip().split('\n'))
+        verified = client.get(verification_url).content.decode()
+        self.assertIn('Signature verification SUCCESS.', verified)
+        self.assertIn('BEGIN PGP SIGNATURE', verified)
 
     def test_email_content_for_past_limit_submission(self) -> None:
         group = obj_build.make_group(num_members=2)
@@ -152,3 +157,35 @@ class SendNonDeferredTestsFinishedEmailTestCase(UnitTestBase):
             self.mock_submission_result_feedback.assert_called_once_with(
                 submission, ag_models.FeedbackCategory.past_limit_submission, mock.ANY
             )
+
+
+class SignatureVerificationFailureTest(UnitTestBase):
+    def test_invalid_signature(self) -> None:
+        modified_msg = """-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+WAAAAAAAAA I modified this
+-----BEGIN PGP SIGNATURE-----
+
+iQEzBAEBCgAdFiEEmeYf8s7aXw/z5x5QxcGsohCi7WUFAl8Vq0UACgkQxcGsohCi
+7WW0IAgAjV0rfZd0HIDq5uZbrmG2MlwbKHRXpMNpF98XDNoZV2MKfWvFdRDRWe1b
+O5dmVcC6KlL0LgimvaI2kpTzwLw2rFVzskg0Clg+a2KAKqYkNoGfZHbQTjbjd5N5
+WMI1tcwC0dXrg/rq0xW7RC6OsNurvGLRA85cHD7mP+vODLcxPvnbQ23uaUfheIVA
+PapIwG+C+J+rACQWT9syo0ztniFQBJ668Sco8mGjSEUvOkJUM+L72A5FDFMKPO0r
+SsOmJQioxMyfU9VuOWeRndk0ksmc9t4n16rQtZma26PVxaMwiN4s/fDTJ/OXG3NZ
+RT7C5fR2QiosmGCDXGUNDQ8HMnwrpg==
+=i+Z+
+-----END PGP SIGNATURE-----
+        """
+
+        encoded = base64.urlsafe_b64encode(modified_msg.encode()).decode()
+        verified, _ = check_signature(encoded)
+        self.assertFalse(verified)
+
+        url = reverse(
+            'verify-submission-receipt-email',
+            kwargs={'encoded_signed_msg': encoded}
+        )
+        client = Client()
+        decrypted = client.get(url).content.decode()
+        self.assertIn('Signature verification FAILED.', decrypted)

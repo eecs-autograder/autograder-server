@@ -6,7 +6,6 @@ import os
 import json
 import sys
 
-from cryptography.fernet import Fernet
 from django.utils.crypto import get_random_string
 
 VERSION = '4.0.0'
@@ -31,31 +30,34 @@ OAUTH2_SECRETS_PATH = os.path.join(SETTINGS_DIR, OAUTH2_SECRETS_FILENAME)
 
 PREFERRED_DOMAIN = '@umich.edu'
 
-SECRETS_FILENAME = os.path.join(SETTINGS_DIR, 'secrets.json')
+SECRETS_DIR = os.path.join(SETTINGS_DIR, 'secrets')
+SECRET_KEY_FILENAME = os.path.join(SECRETS_DIR, 'secret_key')
 SECRET_KEY = 'this value will be overwritten'
 
-# HACK: Don't try to load the secrets if we're trying to generate them.
+GPG_KEY_PASSWORD_FILENAME = os.path.join(SECRETS_DIR, 'gpg_key_password')
+GPG_KEY_PASSWORD = 'this value will be overwritten'
+
+# HACK: Don't try to load the secrets if we're generating them.
 if len(sys.argv) == 1 or sys.argv[1] != 'generate_secrets':
-    if not os.path.exists(SECRETS_FILENAME):
-        error_msg = """
-The file autograder-server/autograder/settings/secrets.json does not exist.
+    if not os.path.exists(SECRET_KEY_FILENAME):
+        error_msg = f"""
+The file {SECRET_KEY_FILENAME} does not exist.
 Please run ./manage.py generate_secrets to generate this file."""
         print(error_msg, file=sys.stderr)
         exit(1)
 
-    with open(SECRETS_FILENAME) as f:
-        _secrets = json.load(f)
+    with open(SECRET_KEY_FILENAME) as f:
+        SECRET_KEY = f.read()
 
-    if 'secret_key' not in _secrets or 'submission_email_verification_key' not in _secrets:
-        error_msg = """Data missing from secrets.json.
-Please run ./manage.py generate_secrets to update this file"""
+    if not os.path.exists(GPG_KEY_PASSWORD_FILENAME):
+        error_msg = f"""
+The file {GPG_KEY_PASSWORD_FILENAME} does not exist.
+Please run ./manage.py generate_secrets to generate this file."""
         print(error_msg, file=sys.stderr)
         exit(1)
 
-    SECRET_KEY = _secrets['secret_key']
-    SUBMISSION_EMAIL_VERIFICATION_KEY = bytearray.fromhex(
-        _secrets['submission_email_verification_key']
-    )
+    with open(GPG_KEY_PASSWORD_FILENAME) as f:
+        GPG_KEY_PASSWORD = f.read()
 
 
 # SECURITY WARNING: don't run with debug turned on in production!

@@ -6,22 +6,17 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.core.management.utils import get_random_secret_key
 
-from cryptography.fernet import Fernet
+import gnupg
 
 
 class Command(BaseCommand):
-    help = """Creates the file autograder/settings/secrets.json and
-populates it with secrets under the following keys:
-- secret_key: A random string of characters used to set the
-    SECRET_KEY Django setting.
-- submission_email_verification_key: A hex-encoded Fernet key
-    used to verify submission receipt emails. Used to set the
-    SUBMISSION_EMAIL_VERIFICATION_KEY custom setting.
+    help = f"""Creates the directory {settings.SECRETS_DIR} and
+populates it with secrets files. This includes the Django secret key,
+a GPG key pair, and a password for the GPG key pair.
 
-    If either of these secrets are already present in secrets.json,
-    the existing value will be KEPT and will NOT be replaced. This is
-    most important for submission_email_verification_key, as changing
-    this value will invalidate all existing email receipts.
+    If any of the secrets already exist, the existing value will be KEPT
+    and will NOT be replaced. This is most important for the GPG key,
+    as changing it will invalidate all existing email receipts.
     """
 
     def create_parser(self, *args, **kwargs):
@@ -30,19 +25,20 @@ populates it with secrets under the following keys:
         return parser
 
     def handle(self, *args, **options):
-        secrets = {}
-        if os.path.exists(settings.SECRETS_FILENAME):
-            with open(settings.SECRETS_FILENAME) as f:
-                secrets = json.load(f)
+        os.makedirs(settings.SECRETS_DIR, exist_ok=True)
 
-        new_secrets = False
-        if 'secret_key' not in secrets:
-            secrets['secret_key'] = get_random_secret_key()
-            new_secrets = True
-        if 'submission_email_verification_key' not in secrets:
-            secrets['submission_email_verification_key'] = Fernet.generate_key().hex()
-            new_secrets = True
+        if not os.path.exists(settings.SECRET_KEY_FILENAME):
+            with open(settings.SECRET_KEY_FILENAME, 'w') as f:
+                f.write(get_random_secret_key())
 
-        if new_secrets:
-            with open(settings.SECRETS_FILENAME, 'w') as f:
-                json.dump(secrets, f)
+        if not os.path.exists(settings.GPG_KEY_PASSWORD_FILENAME):
+            gpg_key_password = get_random_secret_key()
+            gpg = gnupg.GPG(gnupghome=settings.SECRETS_DIR)
+            input_data = gpg.gen_key_input(
+                name_email='admin@autograder.io',
+                passphrase=gpg_key_password
+            )
+            gpg.gen_key(input_data)
+
+            with open(settings.GPG_KEY_PASSWORD_FILENAME, 'w') as f:
+                f.write(gpg_key_password)

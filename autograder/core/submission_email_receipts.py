@@ -1,12 +1,13 @@
 import base64
 import logging
 import traceback
+from typing import Tuple
 import uuid
 
-from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.mail import send_mail
 from django.urls import reverse
+import gnupg
 
 import autograder.core.models as ag_models
 from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResultFeedback
@@ -31,7 +32,7 @@ to view your results as they become available.
 """
         send_mail(
             f'Submission Received: {group.project.course.name} {group.project.name}',
-            add_validation_url(content),
+            sign_email(content),
             settings.EMAIL_FROM_ADDR,
             group.member_names,
             fail_silently=True
@@ -91,7 +92,7 @@ to view all available details on these results.\n
 
         send_mail(
             f'Submission Summary: {group.project.course.name} {group.project.name}',
-            add_validation_url(content),
+            sign_email(content),
             settings.EMAIL_FROM_ADDR,
             group.member_names,
             fail_silently=True
@@ -110,30 +111,35 @@ def _get_points_str(has_points):
 
 
 # Makes the following modifications to content and returns the result:
-# 1. Appends a UUID to content.
-# 2. Generates a URL that, when visited, will return the decrypted
-#    email receipt. That URL is appended to content.
-def add_validation_url(content: str) -> str:
-    content += f'\nReceipt ID: {uuid.uuid4().hex}\n'
+# 1. Signs content with GPG
+# 2. Generates a URL that, when visited, will verify the GPG signature.
+#    That URL is appended to content.
+def sign_email(content: str) -> str:
+    gpg = gnupg.GPG(gnupghome=settings.SECRETS_DIR)
+    signed = str(gpg.sign(content, passphrase=settings.GPG_KEY_PASSWORD))
 
-    fernet = Fernet(settings.SUBMISSION_EMAIL_VERIFICATION_KEY)
-    encrypted = base64.urlsafe_b64encode(
-        fernet.encrypt(content.encode(errors='surrogateescape'))
-    ).decode()
+    url_encoded_signed = base64.urlsafe_b64encode(signed.encode()).decode()
     url = (
         settings.SITE_DOMAIN
-        + reverse('decrypt-submission-receipt-email', kwargs={'encrypted_msg': encrypted})
+        + reverse('verify-submission-receipt-email',
+                  kwargs={'encoded_signed_msg': url_encoded_signed})
     )
-    content += f"""\nTo see if this message is authentic, visit the link below.
+    signed += f"""\nTo see if this message is authentic, visit the link below.
 The contents of that page should match the above message body and receipt ID.
 {url}
+
+Alternatively, you can verify this message using GPG.
+Visit <this link (replace once docs are updated)> for instructions.
 """
 
-    return content
+    return signed
 
 
-def decrypt_message(encrypted_msg: bytes) -> str:
-    fernet = Fernet(settings.SUBMISSION_EMAIL_VERIFICATION_KEY)
-    return fernet.decrypt(
-        base64.urlsafe_b64decode(encrypted_msg)
-    )
+# Decodes the given data and returns a tuple of:
+# (<verification succeeded>, <original message>)
+def check_signature(encoded_signed_msg: bytes) -> Tuple[bool, str]:
+    gpg = gnupg.GPG(gnupghome=settings.SECRETS_DIR)
+    signed = base64.urlsafe_b64decode(encoded_signed_msg)
+
+    verified = gpg.verify(signed)
+    return bool(verified), signed.decode()

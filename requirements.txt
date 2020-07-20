@@ -1,12 +1,12 @@
 autograder-sandbox==5.0.0
 celery==4.4.2
-cryptography==2.9.2
 Django==2.2.13
 django-extensions==1.9.8
 django-redis==4.11.0
 django-timezone-field==4.0
 djangorestframework==3.11.0
 openapi==1.1.0
+python-gnupg==0.4.6
 pyyaml==5.3.1
 uritemplate==3.0.1
 drf-composable-permissions==0.1.1
