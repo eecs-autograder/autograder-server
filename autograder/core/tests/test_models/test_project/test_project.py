@@ -56,6 +56,9 @@ class ProjectMiscTestCase(UnitTestBase):
             ag_models.UltimateSubmissionPolicy.most_recent,
             new_project.ultimate_submission_policy)
 
+        self.assertFalse(new_project.use_honor_pledge)
+        self.assertEqual('', new_project.honor_pledge_text)
+
     def test_valid_create_non_defaults(self):
         tomorrow_date = timezone.now() + datetime.timedelta(days=1)
         soft_closing_time = tomorrow_date - timezone.timedelta(minutes=3)
@@ -90,6 +93,9 @@ class ProjectMiscTestCase(UnitTestBase):
 
             'hide_ultimate_submission_fdbk': False,
             'ultimate_submission_policy': selection_method,
+
+            'use_honor_pledge': True,
+            'honor_pledge_text': 'Some honorable text',
         }
 
         reset_timezone = 'America/Chicago'
@@ -166,6 +172,9 @@ class ProjectMiscTestCase(UnitTestBase):
 
             'send_email_on_submission_received',
             'send_email_on_non_deferred_tests_finished',
+
+            'use_honor_pledge',
+            'honor_pledge_text',
         ]
         self.assertCountEqual(expected_keys, project_dict.keys())
         self.assertEqual('UTC', project_dict['submission_limit_reset_timezone'])
