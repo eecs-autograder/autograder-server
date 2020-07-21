@@ -1,5 +1,0 @@
-pycodestyle==2.4.0
-pydocstyle==2.1.1
-mypy==0.770
-django-stubs==1.5.0
-djangorestframework-stubs==1.1.0
