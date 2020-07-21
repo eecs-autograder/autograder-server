@@ -180,6 +180,20 @@ class Project(AutograderModel):
             submission feedback should not be shown, even if the
             appropriate criteria are met.""")
 
+    send_email_on_submission_received = models.BooleanField(
+        default=False, blank=True,
+        help_text="""If True, users will receive a confirmation email
+            every time a submission of theirs is recorded in the
+            database."""
+    )
+
+    send_email_on_non_deferred_tests_finished = models.BooleanField(
+        default=False, blank=True,
+        help_text="""If True, users will receive a confirmation email
+            once all non-deferred test cases for their submission are
+            finished grading."""
+    )
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
@@ -264,6 +278,9 @@ class Project(AutograderModel):
         'expected_student_files',
 
         'has_handgrading_rubric',
+
+        'send_email_on_submission_received',
+        'send_email_on_non_deferred_tests_finished',
     )
 
     SERIALIZE_RELATED = (
@@ -296,4 +313,7 @@ class Project(AutograderModel):
 
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',
+
+        'send_email_on_submission_received',
+        'send_email_on_non_deferred_tests_finished',
     )

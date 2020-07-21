@@ -4,6 +4,7 @@ Django settings for autograder project.
 
 import os
 import json
+import sys
 
 from django.utils.crypto import get_random_string
 
@@ -29,40 +30,35 @@ OAUTH2_SECRETS_PATH = os.path.join(SETTINGS_DIR, OAUTH2_SECRETS_FILENAME)
 
 PREFERRED_DOMAIN = '@umich.edu'
 
+SECRETS_DIR = os.path.join(SETTINGS_DIR, 'secrets')
+SECRET_KEY_FILENAME = os.path.join(SECRETS_DIR, 'secret_key')
+SECRET_KEY = 'this value will be overwritten'
 
-def generate_secrets(overwrite_prompt=True):
-    """
-    Generates an app secret key and a database password and writes
-    them to a json file.
-    """
-    secrets_file = os.path.join(SETTINGS_DIR, 'secrets.json')
-    if os.path.exists(secrets_file) and overwrite_prompt:
-        choice = input(
-            'Secrets file already exists. Overwrite? [y/N]'
-        ).strip().lower()
-        if choice != "y":
-            print('Exiting')
-            raise SystemExit()
+GPG_KEY_PASSWORD_FILENAME = os.path.join(SECRETS_DIR, 'gpg_key_password')
+GPG_KEY_PASSWORD = 'this value will be overwritten'
 
-    chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-    secrets = {
-        'secret_key': get_random_string(50, chars),
-        # 'db_password': get_random_string(50, chars)
-    }
+# HACK: Don't try to load the secrets if we're generating them.
+if len(sys.argv) == 1 or sys.argv[1] != 'generate_secrets':
+    if not os.path.exists(SECRET_KEY_FILENAME):
+        error_msg = f"""
+The file {SECRET_KEY_FILENAME} does not exist.
+Please run ./manage.py generate_secrets to generate this file."""
+        print(error_msg, file=sys.stderr)
+        exit(1)
 
-    with open(secrets_file, 'w') as f:
-        json.dump(secrets, f)
+    with open(SECRET_KEY_FILENAME) as f:
+        SECRET_KEY = f.read()
 
+    if not os.path.exists(GPG_KEY_PASSWORD_FILENAME):
+        error_msg = f"""
+The file {GPG_KEY_PASSWORD_FILENAME} does not exist.
+Please run ./manage.py generate_secrets to generate this file."""
+        print(error_msg, file=sys.stderr)
+        exit(1)
 
-# SECURITY WARNING: keep the secret key used in production secret!
-_secrets_filename = os.path.join(SETTINGS_DIR, 'secrets.json')
-if not os.path.exists(_secrets_filename):
-    generate_secrets(overwrite_prompt=False)
+    with open(GPG_KEY_PASSWORD_FILENAME) as f:
+        GPG_KEY_PASSWORD = f.read()
 
-SECRET_KEY = ''
-with open(_secrets_filename) as f:
-    secrets = json.load(f)
-    SECRET_KEY = secrets.pop('secret_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -156,6 +152,14 @@ CACHES = {
     },
 }
 
+# See https://docs.djangoproject.com/en/2.2/ref/settings/#std:setting-EMAIL_HOST
+# for Django docs on these settings
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 25))
+
+EMAIL_FROM_ADDR = os.environ.get('EMAIL_FROM_ADDR', 'admin@autograder.io')
 
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,

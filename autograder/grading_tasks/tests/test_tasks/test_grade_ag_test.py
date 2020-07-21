@@ -37,7 +37,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             expected_stdout_text='hello',
             deduction_for_wrong_return_code=-1,
             points_for_correct_stdout=3)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         self.submission.refresh_from_db()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
@@ -66,7 +66,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             ignore_case=True,
             ignore_whitespace_changes=True,
             ignore_blank_lines=True)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         self.submission.refresh_from_db()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
@@ -89,7 +89,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             expected_stderr_text='lol   wut',
             points_for_correct_stdout=2,
             ignore_whitespace=True)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         self.submission.refresh_from_db()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
@@ -104,7 +104,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             self.ag_test_case,
             cmd='bash -c "exit 0"',
             expected_return_code=ag_models.ExpectedReturnCode.zero)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.return_code_correct)
@@ -114,7 +114,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             self.ag_test_case,
             cmd='bash -c "exit 1"',
             expected_return_code=ag_models.ExpectedReturnCode.zero)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertFalse(res.return_code_correct)
@@ -124,7 +124,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             self.ag_test_case,
             cmd='bash -c "exit 1"',
             expected_return_code=ag_models.ExpectedReturnCode.nonzero)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.return_code_correct)
@@ -134,7 +134,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             self.ag_test_case,
             cmd='bash -c "exit 0"',
             expected_return_code=ag_models.ExpectedReturnCode.nonzero)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertFalse(res.return_code_correct)
@@ -145,7 +145,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             cmd='printf "hello"',
             expected_stdout_source=ag_models.ExpectedOutputSource.text,
             expected_stdout_text='hello')
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.stdout_correct)
@@ -156,7 +156,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             cmd='printf "nope"',
             expected_stdout_source=ag_models.ExpectedOutputSource.text,
             expected_stdout_text='hello')
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertFalse(res.stdout_correct)
@@ -169,7 +169,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             cmd='printf "waluigi"',
             expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stdout_instructor_file=instructor_file)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.stdout_correct)
@@ -182,7 +182,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             cmd='printf "nope"',
             expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stdout_instructor_file=instructor_file)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertFalse(res.stdout_correct)
@@ -193,7 +193,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             cmd='bash -c "printf hello >&2"',
             expected_stderr_source=ag_models.ExpectedOutputSource.text,
             expected_stderr_text='hello')
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.stderr_correct)
@@ -204,7 +204,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             cmd='bash -c "printf nopers >&2"',
             expected_stderr_source=ag_models.ExpectedOutputSource.text,
             expected_stderr_text='hello')
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertFalse(res.stderr_correct)
@@ -217,7 +217,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             cmd='bash -c "printf waluigi >&2"',
             expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stderr_instructor_file=instructor_file)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.stderr_correct)
@@ -230,7 +230,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             cmd='bash -c "printf norp >&2"',
             expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stderr_instructor_file=instructor_file)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertFalse(res.stderr_correct)
@@ -257,7 +257,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
             cmd='cat',
             stdin_source=ag_models.StdinSource.text,
             stdin_text=text)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(text, open(res.stdout_filename).read())
@@ -272,7 +272,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
             cmd='cat',
             stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=instructor_file)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(text, open(res.stdout_filename).read())
@@ -282,7 +282,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
             self.ag_test_case,
             cmd='cat',
             stdin_source=ag_models.StdinSource.setup_stdout)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(self.setup_stdout, open(res.stdout_filename).read())
@@ -292,7 +292,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
             self.ag_test_case,
             cmd='cat',
             stdin_source=ag_models.StdinSource.setup_stderr)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(self.setup_stderr, open(res.stdout_filename).read())
@@ -320,7 +320,7 @@ class InstructorFilePermissionsTestCase(UnitTestBase):
 
     def test_instructor_files_read_only(self, *args):
         self.assertTrue(self.ag_suite.read_only_instructor_files)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         self.submission.refresh_from_db()
         self.assertEqual(
             0,
@@ -332,7 +332,7 @@ class InstructorFilePermissionsTestCase(UnitTestBase):
 
     def test_instructor_files_not_read_only(self, *args):
         self.ag_suite.validate_and_update(read_only_instructor_files=False)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         self.submission.refresh_from_db()
         self.assertEqual(
             self.retcode_points,
@@ -391,7 +391,7 @@ sys.stderr.flush()
             set_arbitrary_expected_vals=False,
             cmd=self.timeout_cmd,
             time_limit=1)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.timed_out)
@@ -403,7 +403,7 @@ sys.stderr.flush()
             set_arbitrary_expected_vals=False,
             cmd='python3 ' + self.too_much_output_file.name,
             time_limit=30)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(0, res.return_code)
@@ -421,7 +421,7 @@ sys.stderr.flush()
             set_arbitrary_points=False,
             set_arbitrary_expected_vals=False,
             cmd='python3 ' + self.non_utf_file.name)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(0, res.return_code)
@@ -430,14 +430,14 @@ sys.stderr.flush()
 
     def test_suite_setup_return_code_set(self, *args):
         self.ag_test_suite.validate_and_update(setup_suite_cmd='bash -c "exit 2"')
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
         self.assertEqual(2, res.setup_return_code)
 
     def test_setup_time_out(self, *args):
         self.ag_test_suite.validate_and_update(setup_suite_cmd=self.timeout_cmd)
         with mock.patch('autograder.core.constants.MAX_SUBPROCESS_TIMEOUT', new=1):
-            tasks.grade_submission(self.submission.pk)
+            tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
         self.assertTrue(res.setup_timed_out)
@@ -445,7 +445,7 @@ sys.stderr.flush()
     def test_setup_print_a_lot_of_output(self, *args):
         self.ag_test_suite.validate_and_update(
             setup_suite_cmd='python3 ' + self.too_much_output_file.name)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
 
         self.assertTrue(res.setup_stdout_truncated)
@@ -459,7 +459,7 @@ sys.stderr.flush()
     def test_setup_print_non_unicode_chars(self, *args):
         self.ag_test_suite.validate_and_update(
             setup_suite_cmd='python3 ' + self.non_utf_file.name)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
 
         self.assertEqual(self.non_utf_bytes, res.open_setup_stdout().read())
@@ -492,7 +492,7 @@ sys.stderr.flush()
         sandbox.run_command = run_command_mock
         with mock.patch('autograder.grading_tasks.tasks.grade_ag_test.AutograderSandbox',
                         return_value=sandbox):
-            tasks.grade_submission(self.submission.pk)
+            tasks.grade_submission_task(self.submission.pk)
 
         expected_setup_resource_kwargs = {
             'timeout': constants.MAX_SUBPROCESS_TIMEOUT,
@@ -537,7 +537,7 @@ sys.stderr.flush()
         sandbox.run_command = run_command_mock
         with mock.patch('autograder.grading_tasks.tasks.grade_ag_test.AutograderSandbox',
                         return_value=sandbox):
-            tasks.grade_submission(self.submission.pk)
+            tasks.grade_submission_task(self.submission.pk)
 
         expected_cmd_args = {
             'timeout': time_limit,

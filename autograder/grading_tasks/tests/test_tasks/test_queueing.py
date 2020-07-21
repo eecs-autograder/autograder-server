@@ -24,7 +24,7 @@ class RaceConditionTestCase(TransactionUnitTestBase):
             new_callable=mock.PropertyMock,
             return_value=(ag_models.Submission.GradingStatus.removed_from_queue))
         def do_request_and_wait():
-            tasks.grade_submission(submission.pk)
+            tasks.grade_submission_task(submission.pk)
 
         subtest = do_request_and_wait()
 

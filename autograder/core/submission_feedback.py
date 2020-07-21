@@ -451,6 +451,10 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return self._ag_test_suite.name
 
     @property
+    def ag_test_suite(self) -> AGTestSuite:
+        return self._ag_test_suite
+
+    @property
     def ag_test_suite_pk(self) -> int:
         return self._ag_test_suite.pk
 

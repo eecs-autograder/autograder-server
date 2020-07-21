@@ -14,6 +14,7 @@ from rest_framework import decorators, exceptions, mixins, response, status
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.utils.testing as test_ut
+from autograder.core.submission_email_receipts import send_submission_received_email
 from autograder.core.submission_feedback import (AGTestPreLoader, MutationTestSuitePreLoader,
                                                  SubmissionResultFeedback)
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
@@ -89,29 +90,33 @@ class ListCreateSubmissionView(NestedModelView):
         return self.do_list()
 
     @convert_django_validation_error
-    @transaction.atomic()
     def post(self, request, *args, **kwargs):
-        # NOTE: The way that submitted_files gets encoded in requests,
-        # sending no files (which is valid) will cause the key 'submitted_files'
-        # to not show up in the request body. Therefore, we will NOT require
-        # the presence of a 'submitted_files' key in the request.
-        invalid_fields = []
-        for key in request.data:
-            if key != 'submitted_files':
-                invalid_fields.append(key)
+        with transaction.atomic():
+            # NOTE: The way that submitted_files gets encoded in requests,
+            # sending no files (which is valid) will cause the key 'submitted_files'
+            # to not show up in the request body. Therefore, we will NOT require
+            # the presence of a 'submitted_files' key in the request.
+            invalid_fields = []
+            for key in request.data:
+                if key != 'submitted_files':
+                    invalid_fields.append(key)
 
-        if invalid_fields:
-            raise exceptions.ValidationError({'invalid_fields': invalid_fields})
+            if invalid_fields:
+                raise exceptions.ValidationError({'invalid_fields': invalid_fields})
 
-        timestamp = timezone.now()
-        group: ag_models.Group = self.get_object()
-        # Keep this mocking hook just after we call get_object()
-        test_ut.mocking_hook()
+            timestamp = timezone.now()
+            group: ag_models.Group = self.get_object()
+            # Keep this mocking hook just after we call get_object()
+            test_ut.mocking_hook()
 
-        return self._create_submission_if_allowed(request, group, timestamp)
+            submission = self._create_submission_if_allowed(request, group, timestamp)
+
+        if group.project.send_email_on_submission_received:
+            send_submission_received_email(group, submission)
+        return response.Response(data=submission.to_dict(), status=status.HTTP_201_CREATED)
 
     def _create_submission_if_allowed(self, request, group: ag_models.Group,
-                                      timestamp: datetime.datetime):
+                                      timestamp: datetime.datetime) -> ag_models.Submission:
         has_active_submission = group.submissions.filter(
             status__in=ag_models.Submission.GradingStatus.active_statuses
         ).exists()
@@ -225,7 +230,7 @@ class ListCreateSubmissionView(NestedModelView):
                            timestamp: datetime.datetime,
                            *, is_past_daily_limit: bool,
                            is_bonus_submission: bool,
-                           does_not_count_for: List[str]):
+                           does_not_count_for: List[str]) -> ag_models.Submission:
         submission: ag_models.Submission = ag_models.Submission.objects.validate_and_create(
             self.request.data.getlist('submitted_files'),
             group,
@@ -240,7 +245,7 @@ class ListCreateSubmissionView(NestedModelView):
         submission.does_not_count_for = does_not_count_for
         submission.save()
 
-        return response.Response(data=submission.to_dict(), status=status.HTTP_201_CREATED)
+        return submission
 
 
 class ListSubmissionsWithResults(AGModelAPIView):

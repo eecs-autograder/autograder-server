@@ -55,7 +55,7 @@ class GradeSubmissionTestCase(UnitTestBase):
             expected_stdout_text="hello",
             expected_stderr_source=ag_models.ExpectedOutputSource.text,
             expected_stderr_text="whoops")
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         self.submission.refresh_from_db()
 
         cmd_result = ag_models.AGTestCommandResult.objects.get(
@@ -95,7 +95,7 @@ class GradeSubmissionTestCase(UnitTestBase):
             project=self.project,
             deferred=True)
 
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         cmd_result = ag_models.AGTestCommandResult.objects.get(
             ag_test_command=ag_cmd,
             ag_test_case_result__ag_test_suite_result__submission=self.submission)
@@ -121,7 +121,7 @@ class GradeSubmissionTestCase(UnitTestBase):
             set_arbitrary_expected_vals=False,
             points_for_correct_return_code=3,
             expected_return_code=ag_models.ExpectedReturnCode.zero)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         self.submission.refresh_from_db()
 
         cmd_result = ag_models.AGTestCommandResult.objects.get(
@@ -165,7 +165,7 @@ class GradeSubmissionTestCase(UnitTestBase):
                     expected_stderr_source=ag_models.ExpectedOutputSource.text,
                     expected_stderr_text="whoops")
 
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         self.submission.refresh_from_db()
 
         cmd_results = ag_models.AGTestCommandResult.objects.filter(
@@ -258,7 +258,7 @@ void file2() {
              SimpleUploadedFile('file2.h', file2_h.encode()),
              SimpleUploadedFile('file2.cpp', file2_cpp.encode())],
             group=self.submission.group)
-        tasks.grade_submission(submission.pk)
+        tasks.grade_submission_task(submission.pk)
 
         cmd_res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         suite_res = cmd_res.ag_test_case_result.ag_test_suite_result
@@ -271,13 +271,13 @@ void file2() {
         case = obj_build.make_ag_test_case(suite)
         cmd = obj_build.make_full_ag_test_command(case, cmd='printf hello')
 
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual('hello', open(res.stdout_filename).read())
 
         cmd.cmd = 'printf weee'
         cmd.save()
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual('weee', open(res.stdout_filename).read())
 
@@ -287,7 +287,7 @@ void file2() {
         cmd = obj_build.make_full_ag_test_command(
             case1, cmd='ping -c 2 www.google.com',
             expected_return_code=ag_models.ExpectedReturnCode.zero)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.return_code_correct)
@@ -296,7 +296,7 @@ void file2() {
         suite = obj_build.make_ag_test_suite(self.project)
         case = obj_build.make_ag_test_case(suite)
         cmd = obj_build.make_full_ag_test_command(case, cmd='bash -c "printf $usernames"')
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(' '.join(self.submission.group.member_names),
@@ -325,7 +325,7 @@ void file2() {
             project=self.project,
             deferred=True)
 
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(
@@ -355,7 +355,7 @@ void file2() {
             set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=2)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(
@@ -370,7 +370,7 @@ void file2() {
         cmd = obj_build.make_full_ag_test_command(case)
         self.submission.status = ag_models.Submission.GradingStatus.removed_from_queue
         self.submission.save()
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.removed_from_queue,
@@ -387,7 +387,7 @@ void file2() {
             set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=3)
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
@@ -410,7 +410,7 @@ void file2() {
             points_for_correct_return_code=3)
 
         with self.assertRaises(MaxRetriesExceeded):
-            tasks.grade_submission(self.submission.pk)
+            tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.error,
@@ -430,7 +430,7 @@ void file2() {
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=3)
 
-        tasks.grade_submission(self.submission.pk)
+        tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
@@ -459,9 +459,23 @@ void file2() {
             points_for_correct_return_code=3)
 
         with self.assertRaises(MaxRetriesExceeded):
-            tasks.grade_submission(self.submission.pk)
+            tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.error,
                          self.submission.status)
         self.assertTrue(self.submission.error_msg.find('MaxRetriesExceeded') != -1)
+
+    def test_non_deferred_tests_finished_email_receipt(self, *args) -> None:
+        path = ('autograder.grading_tasks.tasks'
+                '.grade_submission.send_submission_score_summary_email')
+        with mock.patch(path) as mock_send_email:
+            suite = obj_build.make_ag_test_suite(self.project)
+            tasks.grade_submission_task(self.submission.pk)
+
+            mock_send_email.assert_not_called()
+
+            self.project.validate_and_update(send_email_on_non_deferred_tests_finished=True)
+            tasks.grade_submission_task(self.submission.pk)
+
+            mock_send_email.assert_called_once_with(self.submission)

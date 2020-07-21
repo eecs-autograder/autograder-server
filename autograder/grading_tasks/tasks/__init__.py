@@ -1,4 +1,6 @@
-from .grade_submission import grade_submission, mark_submission_as_finished, on_chord_error
+from .grade_submission import (
+    grade_submission as grade_submission_task, mark_submission_as_finished, on_chord_error
+)
 from .grade_ag_test import (
     grade_ag_test_suite_impl,
     grade_deferred_ag_test_suite,

@@ -86,3 +86,4 @@ celerybeat-schedule
 venv-*
 .mypy_cache
 .pytest_cache
+autograder/settings/secrets

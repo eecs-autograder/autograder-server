@@ -13,6 +13,7 @@ INSTALLED_APPS += [
     'autograder.core.tests.test_models',
 ]
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # !!! IMPORTANT !!!
 # As of 22 April, 2020, django-debug-toolbar 2.2 (required when using Django 3)
