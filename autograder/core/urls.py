@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from django.urls import path
-from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.decorators import (
+    api_view, permission_classes, schema, throttle_classes)
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 
@@ -12,6 +13,7 @@ class DecryptEmailReceiptThrottle(UserRateThrottle):
 
 
 @api_view(['GET'])
+@schema(None)
 @permission_classes([])
 @throttle_classes([DecryptEmailReceiptThrottle])
 def check_email_receipt_signature_view(request, *args, encoded_signed_msg):
