@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: Autograder.io API
-  version: 4.0.0
+  version: 4.1.0
 paths:
   /api/users/current/:
     get:
@@ -1067,6 +1067,32 @@ paths:
                   description: Whether this project has a handgrading rubric.
                   readOnly: true
                   type: boolean
+                send_email_on_submission_received:
+                  description: "If True, users will receive a confirmation email\n\
+                    \            every time a submission of theirs is recorded in\
+                    \ the\n            database."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                send_email_on_non_deferred_tests_finished:
+                  description: "If True, users will receive a confirmation email\n\
+                    \            once all non-deferred test cases for their submission\
+                    \ are\n            finished grading."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                use_honor_pledge:
+                  description: "If True, then the frontend website should require\n\
+                    \            students to acknowledge an honor pledge. The text\
+                    \ of the\n            honor pledge is stored in honor_pledge_text."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                honor_pledge_text:
+                  description: The text of the honor pledge to display.
+                  nullable: false
+                  readOnly: false
+                  type: string
               required:
               - name
               - course
@@ -1289,6 +1315,32 @@ paths:
                   description: Whether this project has a handgrading rubric.
                   readOnly: true
                   type: boolean
+                send_email_on_submission_received:
+                  description: "If True, users will receive a confirmation email\n\
+                    \            every time a submission of theirs is recorded in\
+                    \ the\n            database."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                send_email_on_non_deferred_tests_finished:
+                  description: "If True, users will receive a confirmation email\n\
+                    \            once all non-deferred test cases for their submission\
+                    \ are\n            finished grading."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                use_honor_pledge:
+                  description: "If True, then the frontend website should require\n\
+                    \            students to acknowledge an honor pledge. The text\
+                    \ of the\n            honor pledge is stored in honor_pledge_text."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                honor_pledge_text:
+                  description: The text of the honor pledge to display.
+                  nullable: false
+                  readOnly: false
+                  type: string
       tags: *id013
     delete:
       operationId: deleteProject
@@ -6904,6 +6956,28 @@ components:
         has_handgrading_rubric:
           description: Whether this project has a handgrading rubric.
           type: boolean
+        send_email_on_submission_received:
+          description: "If True, users will receive a confirmation email\n       \
+            \     every time a submission of theirs is recorded in the\n         \
+            \   database."
+          nullable: false
+          type: boolean
+        send_email_on_non_deferred_tests_finished:
+          description: "If True, users will receive a confirmation email\n       \
+            \     once all non-deferred test cases for their submission are\n    \
+            \        finished grading."
+          nullable: false
+          type: boolean
+        use_honor_pledge:
+          description: "If True, then the frontend website should require\n      \
+            \      students to acknowledge an honor pledge. The text of the\n    \
+            \        honor pledge is stored in honor_pledge_text."
+          nullable: false
+          type: boolean
+        honor_pledge_text:
+          description: The text of the honor pledge to display.
+          nullable: false
+          type: string
     UltimateSubmissionPolicy:
       type: string
       enum:
