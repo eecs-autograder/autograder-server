@@ -38,7 +38,7 @@ GPG_KEY_PASSWORD_FILENAME = os.path.join(SECRETS_DIR, 'gpg_key_password')
 GPG_KEY_PASSWORD = 'this value will be overwritten'
 
 # HACK: Don't try to load the secrets if we're generating them.
-if len(sys.argv) == 1 or sys.argv[1] != 'generate_secrets':
+if sys.argv[0] != 'generate_secrets.py':
     if not os.path.exists(SECRET_KEY_FILENAME):
         error_msg = f"""
 The file {SECRET_KEY_FILENAME} does not exist.
