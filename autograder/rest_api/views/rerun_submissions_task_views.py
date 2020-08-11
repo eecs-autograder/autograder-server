@@ -1,4 +1,5 @@
 import traceback
+from typing import List
 
 import celery
 from django.conf import settings
@@ -52,11 +53,14 @@ class RerunSubmissionsTaskListCreateView(NestedModelView):
 
             ag_test_suites = project.ag_test_suites.all()
             ag_suites_data = request.data.get('ag_test_suite_data', {})
-            if not request.data.get('rerun_all_ag_test_suites', True):
+            rerun_all_ag_test_suites = request.data.get('rerun_all_ag_test_suites', True)
+            if not rerun_all_ag_test_suites:
                 ag_test_suites = ag_test_suites.filter(pk__in=ag_suites_data.keys())
 
             mutation_suites = project.mutation_test_suites.all()
-            if not request.data.get('rerun_all_mutation_test_suites', True):
+            rerun_all_mutation_test_suites = (
+                request.data.get('rerun_all_mutation_test_suites', True))
+            if not rerun_all_mutation_test_suites:
                 mutation_suites = mutation_suites.filter(
                     pk__in=request.data.get('mutation_suite_pks', []))
 
@@ -82,8 +86,13 @@ class RerunSubmissionsTaskListCreateView(NestedModelView):
 
         from autograder.celery import app
         if signatures:
-            clear_cache_sig = clear_cached_submission_results.s(project.pk)
-            celery.chord(signatures, body=clear_cache_sig, app=app).apply_async()
+            on_finished_sig = on_submission_rerun_finished.s(
+                project_pk=project.pk,
+                mark_submissions_as_finished=(rerun_all_ag_test_suites
+                                              and rerun_all_mutation_test_suites),
+                submission_pks=[submission.pk for submission in submissions]
+            )
+            celery.chord(signatures, body=on_finished_sig, app=app).apply_async()
 
         return response.Response(rerun_task.to_dict(), status=status.HTTP_201_CREATED)
 
@@ -205,9 +214,26 @@ def _update_rerun_error_msg(rerun_task_pk: int, error_msg: str):
 
 
 @celery.shared_task(queue='small_tasks', max_retries=1, acks_late=True)
-def clear_cached_submission_results(result, project_pk: int):
-    @retry_should_recover
-    def _clear_cached_submission_results_impl():
-        clear_submission_results_cache(project_pk)
+def on_submission_rerun_finished(
+    *args, project_pk: int, mark_submissions_as_finished: bool, submission_pks: List[int]
+):
+    if mark_submissions_as_finished:
+        _mark_submissions_as_finished_after_rerun(submission_pks)
 
-    _clear_cached_submission_results_impl()
+    _clear_cached_submission_results_impl(project_pk)
+
+
+@retry_should_recover
+def _mark_submissions_as_finished_after_rerun(submission_pks: List[int]):
+    print(submission_pks)
+    with transaction.atomic():
+        ag_models.Submission.objects.select_for_update().exclude(
+            status=ag_models.Submission.GradingStatus.finished_grading
+        ).filter(
+            pk__in=submission_pks
+        ).update(status=ag_models.Submission.GradingStatus.finished_grading)
+
+
+@retry_should_recover
+def _clear_cached_submission_results_impl(project_pk: int):
+    clear_submission_results_cache(project_pk)
