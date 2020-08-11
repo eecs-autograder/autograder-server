@@ -213,6 +213,72 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
         self.do_rerun_submissions_test_case(
             request_body, (self.submission1, self.total_points_possible), (self.submission2, 0))
 
+    def test_submissions_marked_as_finished_when_all_tests_rerun(self, *args) -> None:
+        self.submission1.status = ag_models.Submission.GradingStatus.error
+        self.submission1.save()
+        self.submission2.status = ag_models.Submission.GradingStatus.waiting_for_deferred
+        self.submission2.save()
+
+        self.do_rerun_submissions_test_case({
+            'rerun_all_submissions': False,
+            'submission_pks': [self.submission1.pk]
+        })
+
+        self.submission1.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.finished_grading,
+            self.submission1.status)
+        self.submission2.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.waiting_for_deferred,
+            self.submission2.status)
+
+        self.submission1.status = ag_models.Submission.GradingStatus.error
+        self.submission1.save()
+
+        self.do_rerun_submissions_test_case({
+            'rerun_all_submissions': False,
+            'submission_pks': [self.submission1.pk, self.submission2.pk]
+        })
+
+        self.submission1.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.finished_grading,
+            self.submission1.status)
+        self.submission2.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.finished_grading,
+            self.submission2.status)
+
+    def test_submission_status_unchanged_when_not_all_tests_rerun(self, *args) -> None:
+        self.submission1.status = ag_models.Submission.GradingStatus.error
+        self.submission1.save()
+
+        self.do_rerun_submissions_test_case({
+            'rerun_all_submissions': False,
+            'submission_pks': [self.submission1.pk],
+            'rerun_all_ag_test_suites': False,
+            'ag_test_suite_data': {str(self.ag_test_suite1.pk): []},
+        })
+
+        self.submission1.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.error,
+            self.submission1.status)
+
+        self.do_rerun_submissions_test_case({
+            'rerun_all_submissions': False,
+            'submission_pks': [self.submission1.pk],
+            'rerun_all_ag_test_suites': True,
+            'rerun_all_mutation_test_suites': False,
+            'mutation_suite_pks': [self.mutation_suite1.pk]
+        })
+
+        self.submission1.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.error,
+            self.submission1.status)
+
     def test_admin_rerun_specific_ag_suites(self, *args):
         request_body = {
             'rerun_all_ag_test_suites': False,
