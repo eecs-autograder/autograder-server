@@ -35,7 +35,7 @@ class SendSubmissionReceivedEmailTestCase(UnitTestBase):
         self.assertIn(group.project.name, email.body)
         self.assertIn(str(submission.timestamp), email.body)
 
-        verification_url = email.body.strip().split('\n')[-4]
+        verification_url = email.body.strip().split('\n')[-5]
         client = Client()
         verified = client.get(verification_url).content.decode()
         self.assertIn('Signature verification SUCCESS.', verified)
@@ -139,7 +139,8 @@ class SendNonDeferredTestsFinishedEmailTestCase(UnitTestBase):
 
         self.assertNotIn(deferred_test_suite.name, email.body)
 
-        verification_url = email.body.strip().split('\n')[-4]
+        verification_url = email.body.strip().split('\n')[-5]
+        print(verification_url)
         client = Client()
         verified = client.get(verification_url).content.decode()
         self.assertIn('Signature verification SUCCESS.', verified)
