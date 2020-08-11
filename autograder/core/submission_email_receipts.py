@@ -34,7 +34,7 @@ to view your results as they become available.
             sign_email(content),
             settings.EMAIL_FROM_ADDR,
             group.member_names,
-            fail_silently=True
+            # fail_silently=True
         )
     except Exception as e:
         logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ to view all available details on these results.\n
             sign_email(content),
             settings.EMAIL_FROM_ADDR,
             group.member_names,
-            fail_silently=True
+            # fail_silently=True
         )
     except Exception as e:
         logger = logging.getLogger(__name__)

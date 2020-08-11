@@ -2,6 +2,7 @@ from .base import *  # noqa
 
 DEBUG = False
 
+EMAIL_USE_SSL = True
 
 # ---- Retry settings ----
 AG_TEST_MAX_RETRIES = 5
