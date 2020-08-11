@@ -128,7 +128,8 @@ The contents of that page should match the above message body and receipt ID.
 {url}
 
 Alternatively, you can verify this message using GPG.
-Visit <this link (replace once docs are updated)> for instructions.
+Visit https://eecs-autograder.github.io/autograder.io/topics/verifying_email_receipts.html
+for instructions.
 """
 
     return signed

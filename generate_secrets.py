@@ -18,14 +18,19 @@ def main():
         with open(settings.SECRET_KEY_FILENAME, 'w') as f:
             f.write(get_random_secret_key())
 
+    # We create the file settings.GPG_KEY_PASSWORD_FILENAME last.
+    # If it doesn't exist, then we need to generate gpg secrets.
     if not os.path.exists(settings.GPG_KEY_PASSWORD_FILENAME):
         gpg_key_password = get_random_secret_key()
         gpg = gnupg.GPG(gnupghome=settings.SECRETS_DIR)
         input_data = gpg.gen_key_input(
-            name_email='admin@autograder.io',
+            name_email=settings.EMAIL_FROM_ADDR,
             passphrase=gpg_key_password
         )
-        gpg.gen_key(input_data)
+        gpg_key_id = gpg.gen_key(input_data)
+
+        with open(settings.GPG_KEY_ID_FILENAME, 'w') as f:
+            f.write(str(gpg_key_id.fingerprint))
 
         with open(settings.GPG_KEY_PASSWORD_FILENAME, 'w') as f:
             f.write(gpg_key_password)
