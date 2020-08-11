@@ -34,6 +34,8 @@ SECRETS_DIR = os.path.join(SETTINGS_DIR, 'secrets')
 SECRET_KEY_FILENAME = os.path.join(SECRETS_DIR, 'secret_key')
 SECRET_KEY = 'this value will be overwritten'
 
+GPG_KEY_ID_FILENAME = os.path.join(SECRETS_DIR, 'gpg_key_id_file')
+GPG_KEY_ID = 'this value will be overwritten'
 GPG_KEY_PASSWORD_FILENAME = os.path.join(SECRETS_DIR, 'gpg_key_password')
 GPG_KEY_PASSWORD = 'this value will be overwritten'
 
@@ -42,7 +44,7 @@ if sys.argv[0] != 'generate_secrets.py':
     if not os.path.exists(SECRET_KEY_FILENAME):
         error_msg = f"""
 The file {SECRET_KEY_FILENAME} does not exist.
-Please run ./manage.py generate_secrets to generate this file."""
+Please run "python3 generate_secrets.py" to generate this file."""
         print(error_msg, file=sys.stderr)
         exit(1)
 
@@ -52,12 +54,22 @@ Please run ./manage.py generate_secrets to generate this file."""
     if not os.path.exists(GPG_KEY_PASSWORD_FILENAME):
         error_msg = f"""
 The file {GPG_KEY_PASSWORD_FILENAME} does not exist.
-Please run ./manage.py generate_secrets to generate this file."""
+Please run "python3 generate_secrets.py" to generate this file."""
         print(error_msg, file=sys.stderr)
         exit(1)
 
     with open(GPG_KEY_PASSWORD_FILENAME) as f:
         GPG_KEY_PASSWORD = f.read()
+
+    if not os.path.exists(GPG_KEY_ID_FILENAME):
+        error_msg = f"""
+The file {GPG_KEY_ID_FILENAME} does not exist.
+Please run "python3 generate_secrets.py" to generate this file."""
+        print(error_msg, file=sys.stderr)
+        exit(1)
+
+    with open(GPG_KEY_ID_FILENAME) as f:
+        GPG_KEY_ID = f.read()
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
