@@ -115,7 +115,10 @@ def _get_points_str(has_points):
 #    That URL is appended to content.
 def sign_email(content: str) -> str:
     gpg = gnupg.GPG(gnupghome=settings.SECRETS_DIR)
-    signed = str(gpg.sign(content, passphrase=settings.GPG_KEY_PASSWORD))
+    signed = str(
+        gpg.sign(content,
+                 keyid=settings.GPG_KEY_ID,
+                 passphrase=settings.GPG_KEY_PASSWORD))
 
     url_encoded_signed = base64.urlsafe_b64encode(signed.encode()).decode()
     url = (
@@ -131,7 +134,6 @@ Alternatively, you can verify this message using GPG.
 Visit https://eecs-autograder.github.io/autograder.io/topics/verifying_email_receipts.html
 for instructions.
 """
-
     return signed
 
 
