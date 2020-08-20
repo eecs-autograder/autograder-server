@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import enum
 import sys
-from abc import abstractmethod
 from decimal import Decimal
 from enum import Enum
 from functools import singledispatch
@@ -16,8 +15,8 @@ from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Field, Model, fields
 from django.db.models.fields.reverse_related import ForeignObjectRel
 from django.utils.functional import cached_property
-from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator  # type: ignore
-from timezone_field.fields import TimeZoneField  # type: ignore
+from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator
+from timezone_field.fields import TimeZoneField
 
 import autograder.core.fields as ag_fields
 import autograder.core.models as ag_models
@@ -32,7 +31,7 @@ from autograder.core.submission_feedback import (AGTestCaseResultFeedback,
 from django.db.models.fields.related import RelatedField
 
 
-def stderr(*args, **kwargs):
+def stderr(*args, **kwargs) -> None:
     """
     Thin wrapper for print() that sends output to stderr.
     Use for debugging schema generation.

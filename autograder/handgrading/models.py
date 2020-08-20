@@ -11,7 +11,7 @@ from enum import Enum
 
 from autograder.core.models import AutograderModel, Project, Submission, Group
 from autograder.core.models.ag_model_base import (
-    DictSerializableMixin, non_empty_str_validator, make_min_value_validator)
+    AutograderModelManager, DictSerializableMixin, non_empty_str_validator, make_min_value_validator)
 
 
 class PointsStyle(Enum):
@@ -35,6 +35,8 @@ class HandgradingRubric(AutograderModel):
     """
     Contains general settings for handgrading.
     """
+    objects = AutograderModelManager['HandgradingRubric']()
+
     project = models.OneToOneField(
         Project, related_name='handgrading_rubric', on_delete=models.CASCADE,
         help_text="The Project this HandgradingRubric belongs to.")
@@ -106,6 +108,8 @@ class Criterion(AutograderModel):
     """
     A "checkbox" rubric item.
     """
+    objects = AutograderModelManager['Criterion']()
+
     class Meta:
         order_with_respect_to = 'handgrading_rubric'
 
@@ -146,6 +150,8 @@ class Annotation(AutograderModel):
     A pre-defined comment that can be applied to specific lines of code, with
     an optional deduction attached.
     """
+    objects = AutograderModelManager['Annotation']()
+
     class Meta:
         order_with_respect_to = 'handgrading_rubric'
 
@@ -199,6 +205,8 @@ class HandgradingResult(AutograderModel):
     Contains general information about a group's handgrading result.
     Represents the handgrading result of a group's best submission.
     """
+    objects = AutograderModelManager['HandgradingResult']()
+
     group = models.OneToOneField(
         Group, related_name='handgrading_result', on_delete=models.CASCADE,
         help_text='''The SubmissionGroup that this HandgradingResult is for.''')
@@ -309,6 +317,8 @@ class CriterionResult(AutograderModel):
     """
     Specifies whether a handgrading criterion was selected (i.e. the checkbox was checked).
     """
+    objects = AutograderModelManager['CriterionResult']()
+
     class Meta:
         ordering = ('criterion___order',)
 
@@ -374,6 +384,8 @@ class AppliedAnnotation(AutograderModel):
     """
     Represents a single instance of adding an annotation to student source code.
     """
+    objects = AutograderModelManager['AppliedAnnotation']()
+
     annotation = models.ForeignKey(
         Annotation, on_delete=models.CASCADE,
         help_text='''The Annotation that was applied to the source code.''')
@@ -416,6 +428,8 @@ class Comment(AutograderModel):
     A custom comment that can either apply to the whole submission or a specific
     location in the source code.
     """
+    objects = AutograderModelManager['Comment']()
+
     class Meta:
         ordering = ('pk',)
 

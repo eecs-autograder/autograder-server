@@ -8,7 +8,7 @@ from timezone_field import TimeZoneField
 
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, AutograderModelManager
 from ..course import Course
 
 
@@ -49,6 +49,8 @@ class Project(AutograderModel):
         group_invitations -- The pending submission group
             invitations belonging to this Project.
     """
+    objects = AutograderModelManager['Project']()
+
     class Meta:
         unique_together = ('name', 'course')
 

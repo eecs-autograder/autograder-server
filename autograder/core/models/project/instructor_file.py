@@ -22,7 +22,7 @@ def _validate_filename(file_obj):
     core_ut.check_filename(file_obj.name)
 
 
-class InstructorFileManager(AutograderModelManager):
+class InstructorFileManager(AutograderModelManager['InstructorFile']):
     def validate_and_create(self, **kwargs):
         # Custom validation that we want to run only when the file
         # is created.

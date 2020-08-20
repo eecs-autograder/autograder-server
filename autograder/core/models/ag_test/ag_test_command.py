@@ -9,7 +9,7 @@ import autograder.core.fields as ag_fields
 from autograder.core import constants
 import autograder.core.utils as core_ut
 from .ag_test_case import AGTestCase
-from ..ag_model_base import AutograderModel, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializableMixin
 from ..project import InstructorFile
 
 
@@ -119,6 +119,7 @@ class AGTestCommand(AutograderModel):
     """
     An AGTestCommand represents a single command to evaluate student code.
     """
+    objects = AutograderModelManager['AGTestCommand']()
 
     class Meta:
         unique_together = ('name', 'ag_test_case')

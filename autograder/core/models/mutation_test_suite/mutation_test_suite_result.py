@@ -8,7 +8,7 @@ import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 
 from ..ag_command import AGCommandResult
-from ..ag_model_base import AutograderModel, ToDictMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, ToDictMixin
 from ..ag_test.feedback_category import FeedbackCategory
 from .mutation_test_suite import (BugsExposedFeedbackLevel, MutationTestSuite,
                                   MutationTestSuiteFeedbackConfig)
@@ -19,6 +19,7 @@ def _make_get_test_names_result_default() -> int:
 
 
 class MutationTestSuiteResult(AutograderModel):
+    objects = AutograderModelManager['MutationTestSuiteResult']()
 
     class Meta:
         unique_together = ('mutation_test_suite', 'submission')

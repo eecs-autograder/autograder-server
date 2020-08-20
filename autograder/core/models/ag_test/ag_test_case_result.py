@@ -1,10 +1,12 @@
 from django.db import models
 
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, AutograderModelManager
 from .ag_test_case import AGTestCase
 
 
 class AGTestCaseResult(AutograderModel):
+    objects = AutograderModelManager['AGTestCaseResult']()
+
     class Meta:
         unique_together = ('ag_test_case', 'ag_test_suite_result')
         ordering = ('ag_test_case___order',)

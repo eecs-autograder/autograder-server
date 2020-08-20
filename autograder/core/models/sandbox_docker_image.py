@@ -22,6 +22,7 @@ class SandboxDockerImage(AutograderModel):
     Contains the information required to identify and load sandbox
     Docker images when running test suites.
     """
+    objects = AutograderModelManager['SandboxDockerImage']()
 
     class Meta:
         ordering = ('display_name',)
@@ -73,7 +74,7 @@ class SandboxDockerImage(AutograderModel):
     ]
 
 
-class _BuildSandboxDockerImageManager(AutograderModelManager):
+class _BuildSandboxDockerImageManager(AutograderModelManager['BuildSandboxDockerImageTask']):
     @transaction.atomic
     def validate_and_create(
         self, files, course, image=None

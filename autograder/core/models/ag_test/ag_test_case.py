@@ -5,7 +5,7 @@ from django.db import models, transaction, connection
 
 import autograder.core.fields as ag_fields
 from .ag_test_suite import AGTestSuite
-from ..ag_model_base import AutograderModel, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializableMixin
 
 
 class AGTestCaseFeedbackConfig(DictSerializableMixin):
@@ -24,6 +24,7 @@ class AGTestCase(AutograderModel):
     An AGTestCase consists of a series of commands to be run together.
     An AGTestCase must belong to exactly one AGTestSuite.
     """
+    objects = AutograderModelManager['AGTestCase']()
 
     class Meta:
         unique_together = ('name', 'ag_test_suite')

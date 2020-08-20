@@ -4,7 +4,7 @@ from django.db import models
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from .project import Project
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, AutograderModelManager
 
 
 class ExpectedStudentFile(AutograderModel):
@@ -12,6 +12,8 @@ class ExpectedStudentFile(AutograderModel):
     These objects describe Unix-style shell patterns that files
     submitted by students can or should match.
     """
+    objects = AutograderModelManager['ExpectedStudentFile']()
+
     class Meta:
         ordering = ('pattern',)
         unique_together = ('pattern', 'project')

@@ -6,7 +6,7 @@ import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from ..ag_command import Command
-from ..ag_model_base import AutograderModel, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializableMixin
 from ..project import Project, InstructorFile, ExpectedStudentFile
 from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
@@ -157,6 +157,7 @@ class MutationTestSuite(AutograderModel):
     test cases against a set of intentionally buggy implementations
     of instructor code.
     """
+    objects = AutograderModelManager['MutationTestSuite']()
 
     class Meta:
         unique_together = ('name', 'project')

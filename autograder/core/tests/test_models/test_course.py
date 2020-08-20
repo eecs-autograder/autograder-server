@@ -12,7 +12,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class CourseTestCase(UnitTestBase):
-    def test_valid_create_with_defaults(self):
+    def test_valid_create_with_defaults(self) -> None:
         name = "eecs280"
         course = Course.objects.validate_and_create(name=name)
 
@@ -24,7 +24,7 @@ class CourseTestCase(UnitTestBase):
         self.assertEqual('', course.subtitle)
         self.assertEqual(0, course.num_late_days)
 
-    def test_create_no_defaults(self):
+    def test_create_no_defaults(self) -> None:
         name = 'Waaaaaluigi'
         semester = Semester.winter
         year = 2014
@@ -41,7 +41,7 @@ class CourseTestCase(UnitTestBase):
         self.assertEqual(subtitle, course.subtitle)
         self.assertEqual(late_days, course.num_late_days)
 
-    def test_course_ordering(self):
+    def test_course_ordering(self) -> None:
         eecs280su18 = Course.objects.validate_and_create(
             name='EECS 280', semester=Semester.summer, year=2018)
         eecs183w17 = Course.objects.validate_and_create(
@@ -90,36 +90,36 @@ class CourseTestCase(UnitTestBase):
             Course.objects.all()
         )
 
-    def test_exception_on_empty_name(self):
+    def test_exception_on_empty_name(self) -> None:
         with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name='')
         self.assertTrue('name' in cm.exception.message_dict)
 
-    def test_exception_on_null_name(self):
+    def test_exception_on_null_name(self) -> None:
         with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name=None)
         self.assertTrue('name' in cm.exception.message_dict)
 
-    def test_exception_on_non_unique_name_no_year_or_semester(self):
+    def test_exception_on_non_unique_name_no_year_or_semester(self) -> None:
         course = Course.objects.validate_and_create(name='Wuluigio')
         with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name=course.name)
 
-    def test_error_non_unique_name_year_and_semester(self):
+    def test_error_non_unique_name_year_and_semester(self) -> None:
         Course.objects.validate_and_create(name='Coursey', semester='Fall', year=2018)
         with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name='Coursey', semester='Fall', year=2018)
 
-    def test_error_invalid_year(self):
+    def test_error_invalid_year(self) -> None:
         with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name='Coursey', semester='Fall', year=1900)
 
-    def test_error_negative_late_days(self):
+    def test_error_negative_late_days(self) -> None:
         with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name='steve', num_late_days=-1)
         self.assertIn('num_late_days', cm.exception.message_dict)
 
-    def test_serialization(self):
+    def test_serialization(self) -> None:
         expected_fields = [
             'pk',
             'name',
@@ -143,7 +143,7 @@ class CourseTestCase(UnitTestBase):
 
 
 class LateDaysRemainingTestCase(UnitTestBase):
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.course = obj_build.make_course(num_late_days=4)
 
@@ -160,7 +160,7 @@ class LateDaysRemainingTestCase(UnitTestBase):
         self.all_tokens_used.late_days_used = 4
         self.all_tokens_used.save()
 
-    def test_valid_create_with_defaults(self):
+    def test_valid_create_with_defaults(self) -> None:
         user = obj_build.make_user()
         num_late_days = 2
         self.course.validate_and_update(num_late_days=num_late_days)
@@ -173,7 +173,7 @@ class LateDaysRemainingTestCase(UnitTestBase):
         self.assertEqual(user, remaining.user)
         self.assertEqual(num_late_days, remaining.late_days_remaining)
 
-    def test_error_already_exists_for_user_and_course(self):
+    def test_error_already_exists_for_user_and_course(self) -> None:
         user = obj_build.make_user()
         LateDaysRemaining.objects.validate_and_create(
             course=self.course,
@@ -186,7 +186,7 @@ class LateDaysRemainingTestCase(UnitTestBase):
                 user=user,
             )
 
-    def test_error_negative_late_days_remaining(self):
+    def test_error_negative_late_days_remaining(self) -> None:
         user = obj_build.make_user()
         late_days = LateDaysRemaining.objects.validate_and_create(
             course=self.course,
@@ -317,11 +317,11 @@ class LateDaysRemainingTestCase(UnitTestBase):
 
 
 class CourseFilesystemTestCase(UnitTestBase):
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.COURSE_NAME = 'eecs280'
 
-    def test_course_root_dir_created(self):
+    def test_course_root_dir_created(self) -> None:
         course = Course(name=self.COURSE_NAME)
 
         self.assertFalse(
@@ -334,13 +334,13 @@ class CourseFilesystemTestCase(UnitTestBase):
 
 
 class CourseRolesTestCase(UnitTestBase):
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.course = obj_build.make_course()
         self.user = obj_build.make_user()
 
-    def test_is_admin(self):
+    def test_is_admin(self) -> None:
         self.course = obj_build.make_course()
         self.user = obj_build.make_user()
 
@@ -353,7 +353,7 @@ class CourseRolesTestCase(UnitTestBase):
         self.course = Course.objects.get(pk=self.course.pk)
         self.assertTrue(self.course.is_admin(self.user))
 
-    def test_is_staff(self):
+    def test_is_staff(self) -> None:
         self.assertFalse(self.course.is_staff(self.user))
 
         self.course.staff.add(self.user)
@@ -363,7 +363,7 @@ class CourseRolesTestCase(UnitTestBase):
         self.course = Course.objects.get(pk=self.course.pk)
         self.assertTrue(self.course.is_staff(self.user))
 
-    def test_admin_counts_as_staff(self):
+    def test_admin_counts_as_staff(self) -> None:
         self.assertFalse(self.course.is_staff(self.user))
 
         self.course.admins.add(self.user)
@@ -373,7 +373,7 @@ class CourseRolesTestCase(UnitTestBase):
         self.course = Course.objects.get(pk=self.course.pk)
         self.assertTrue(self.course.is_staff(self.user))
 
-    def test_is_student(self):
+    def test_is_student(self) -> None:
         self.assertFalse(self.course.is_student(self.user))
 
         self.course.students.add(self.user)
@@ -383,7 +383,7 @@ class CourseRolesTestCase(UnitTestBase):
         self.course = Course.objects.get(pk=self.course.pk)
         self.assertTrue(self.course.is_student(self.user))
 
-    def test_is_handgrader(self):
+    def test_is_handgrader(self) -> None:
         self.assertFalse(self.course.is_handgrader(self.user))
 
         self.course.handgraders.add(self.user)
@@ -393,7 +393,7 @@ class CourseRolesTestCase(UnitTestBase):
         self.course = Course.objects.get(pk=self.course.pk)
         self.assertTrue(self.course.is_handgrader(self.user))
 
-    def test_is_allowed_guest(self):
+    def test_is_allowed_guest(self) -> None:
         self.course.validate_and_update(allowed_guest_domain='')
         self.assertTrue(self.course.is_allowed_guest(self.user))
 

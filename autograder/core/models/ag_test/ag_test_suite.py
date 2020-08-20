@@ -5,7 +5,7 @@ from django.db import models, connection, transaction
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
-from ..ag_model_base import AutograderModel, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializableMixin
 from ..project import ExpectedStudentFile, Project, InstructorFile
 from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
@@ -52,6 +52,7 @@ class AGTestSuite(AutograderModel):
     """
     A group of autograder test cases to be run inside the same sandbox.
     """
+    objects = AutograderModelManager['AGTestSuite']()
 
     class Meta:
         unique_together = ('name', 'project')

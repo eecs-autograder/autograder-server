@@ -8,9 +8,9 @@ from django.db import models
 from django.core import validators
 from django.contrib.auth.models import User
 from django.db.models import Case, When, Value
-from typing import Dict
+from typing import Optional, Sequence, TypedDict, Union, cast
 
-from .ag_model_base import AutograderModel
+from .ag_model_base import AutograderModel, AutograderModelManager
 
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
@@ -23,6 +23,13 @@ class Semester(enum.Enum):
     summer = 'Summer'
 
 
+class UserRolesDict(TypedDict):
+    is_admin: bool
+    is_staff: bool
+    is_student: bool
+    is_handgrader: bool
+
+
 class Course(AutograderModel):
     """
     Represents a programming course for which students will be submitting
@@ -31,6 +38,7 @@ class Course(AutograderModel):
     Related object fields:
         projects -- The group of Projects that belong to this Course.
     """
+    objects = AutograderModelManager['Course']()
 
     class Meta:
         unique_together = ('name', 'semester', 'year')
@@ -127,15 +135,15 @@ class Course(AutograderModel):
         """
         return self.get_user_roles(user)['is_student']
 
-    def get_user_roles(self, user: User) -> Dict:
+    def get_user_roles(self, user: User) -> UserRolesDict:
         # To prevent different permissions checks from causing redundant
         # cache hits, we'll store the user roles in self.
         user_roles_attr = f'_user_roles_{user.pk}'
         if hasattr(self, user_roles_attr):
-            return getattr(self, user_roles_attr)
+            return cast(UserRolesDict, getattr(self, user_roles_attr))
 
         cache_key = f'course_{self.pk}_user_{user.pk}'
-        user_roles = cache.get(cache_key)
+        user_roles = cast(Optional[UserRolesDict], cache.get(cache_key))
 
         if user_roles is None:
             is_admin = self.admins.filter(pk=user.pk).exists()
@@ -162,7 +170,7 @@ class Course(AutograderModel):
 
         return user.username.endswith(self.allowed_guest_domain)
 
-    def clean(self):
+    def clean(self) -> None:
         super().clean()
 
         duplicate_exists = Course.objects.exclude(
@@ -173,12 +181,18 @@ class Course(AutograderModel):
         if duplicate_exists:
             raise ValidationError('A course with this name, semester, and year already exists.')
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
+    def save(
+        self,
+        force_insert: bool,
+        force_update: bool,
+        using: Optional[str],
+        update_fields: Optional[Union[Sequence[str], str]]
+    ) -> None:
+        super().save(force_insert, force_update, using, update_fields)
 
         course_root_dir = core_ut.get_course_root_dir(self)
         if not os.path.isdir(course_root_dir):
-            # Since the database is in charge or validating the uniqueness
+            # Since the database is in charge of validating the uniqueness
             # of this course, we can assume at this point that creating
             # the course directory will succeed. If for some reason it fails,
             # this will be considered a more severe error, and the OSError
@@ -207,6 +221,8 @@ class Course(AutograderModel):
 
 
 class LateDaysRemaining(AutograderModel):
+    objects = AutograderModelManager['LateDaysRemaining']()
+
     class Meta:
         unique_together = ('course', 'user')
 

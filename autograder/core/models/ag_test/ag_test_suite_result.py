@@ -3,11 +3,13 @@ import os
 from django.db import models
 
 import autograder.core.utils as core_ut
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, AutograderModelManager
 from .ag_test_suite import AGTestSuite
 
 
 class AGTestSuiteResult(AutograderModel):
+    objects = AutograderModelManager['AGTestSuiteResult']()
+
     class Meta:
         unique_together = ('ag_test_suite', 'submission')
         ordering = ('ag_test_suite___order',)
