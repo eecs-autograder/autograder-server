@@ -4,7 +4,7 @@ import copy
 import decimal
 import enum
 import inspect
-from typing import (Callable, Dict, Generic, List, Mapping, Sequence, Type, TypedDict, TypeVar,
+from typing import (Callable, Dict, Generic, List, Mapping, Protocol, Sequence, Type, TypedDict, TypeVar,
                     Union, cast)
 
 from django.contrib.auth.models import User
@@ -131,6 +131,23 @@ def _load_related_to_many_objs(
                                                            type(objs[0])))
 
 
+# class ToDictProtocol(Protocol):
+#     @classmethod
+#     def get_serializable_fields(cls) -> Sequence[str]:
+#         ...
+
+#     SERIALIZABLE_FIELDS: Sequence[str]
+
+#     @classmethod
+#     def get_serialize_related_fields(cls) -> Sequence[str]:
+#         ...
+
+#     SERIALIZE_RELATED: Sequence[str]
+
+#     def to_dict(self) -> Dict[str, object]:
+#         ...
+
+
 class ToDictMixin:
     @classmethod
     def get_serializable_fields(cls) -> Sequence[str]:
@@ -249,10 +266,7 @@ def _serialize_model_obj(obj: Union[ToDictMixin, User]) -> Dict[str, object]:
     return obj.to_dict()
 
 
-_DictSerializableHostClass = TypeVar('_DictSerializableHostClass')
-
-
-class DictSerializableMixin(ToDictMixin, Generic[_DictSerializableHostClass]):
+class DictSerializable(ToDictMixin):
     """
     In addition to the functionality provided by ToDictMixin,
     provides a way to validate data and construct or update
@@ -265,18 +279,18 @@ class DictSerializableMixin(ToDictMixin, Generic[_DictSerializableHostClass]):
 
     Note: This mixin should NOT be used with Django model classes.
     """
-    _MixedType = TypeVar('_MixedType', bound='DictSerializableMixin[_DictSerializableHostClass]')
+    _DerivedType = TypeVar('_DerivedType', bound='DictSerializable')
 
     def __init__(self, **kwargs: object) -> None:
         raise NotImplementedError('Derived classes must provide their own constructor.')
 
     @classmethod
-    def from_dict(cls: Type[_MixedType], input_: Dict[str, object]) -> _MixedType:
+    def from_dict(cls: Type[_DerivedType], input_: Dict[str, object]) -> _DerivedType:
         """
         Validates input_ and constructs an object from it.
         To add custom validation, override the validate() method.
 
-        Note that calling DictSerializableMixin.from_dict(obj.to_dict())
+        Note that calling DictSerializable.from_dict(obj.to_dict())
         should return an equivalent object.
         """
         cls._check_for_missing_fields(input_)
@@ -291,7 +305,7 @@ class DictSerializableMixin(ToDictMixin, Generic[_DictSerializableHostClass]):
         by taking their names from the constructor arguments.
         Override this method if you want to manually specify
         serializable fields. When doing so, make sure that
-        DictSerializableMixin.from_dict(obj.to_dict()) still produces a
+        DictSerializable.from_dict(obj.to_dict()) still produces a
         valid result.
         """
         return tuple(cls._allowed_fields())
@@ -323,7 +337,7 @@ class DictSerializableMixin(ToDictMixin, Generic[_DictSerializableHostClass]):
         Raises django.core.exceptions.ValidationError constructed with
         a string if any invalid data is detected.
 
-        This method is called in DictSerializableMixin.from_dict()
+        This method is called in DictSerializable.from_dict()
         before the new object is returned and in self.update() after
         updated fields are assigned. Note that this is done in a way
         that the updates will be undone if an exception is thrown.

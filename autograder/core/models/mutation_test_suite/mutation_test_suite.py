@@ -6,7 +6,7 @@ import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from ..ag_command import Command
-from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
 from ..project import Project, InstructorFile, ExpectedStudentFile
 from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
@@ -18,7 +18,7 @@ class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
     all_bug_names = 'all_bug_names'
 
 
-class MutationTestSuiteFeedbackConfig(DictSerializableMixin):
+class MutationTestSuiteFeedbackConfig(DictSerializable):
     """
     Contains feedback options for a MutationTestSuite
     """

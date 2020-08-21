@@ -11,7 +11,7 @@ from enum import Enum
 
 from autograder.core.models import AutograderModel, Project, Submission, Group
 from autograder.core.models.ag_model_base import (
-    AutograderModelManager, DictSerializableMixin, non_empty_str_validator, make_min_value_validator)
+    AutograderModelManager, DictSerializable, non_empty_str_validator, make_min_value_validator)
 
 
 class PointsStyle(Enum):
@@ -354,7 +354,7 @@ class CriterionResult(AutograderModel):
     SERIALIZE_RELATED = ('criterion',)
 
 
-class Location(DictSerializableMixin):
+class Location(DictSerializable):
     """
     A region of source code in a specific file with a starting and ending line.
     """

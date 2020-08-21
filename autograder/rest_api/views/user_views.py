@@ -1,5 +1,6 @@
 from abc import abstractclassmethod
-from typing import List, Mapping, Sequence
+from autograder.rest_api.schema.openapi_types import SchemaObject
+from typing import Dict, List, Mapping, Sequence
 
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -13,7 +14,7 @@ from rest_framework.views import APIView
 import autograder.core.models as ag_models
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APIClassType, APITags,
-                                        ContentObj, ContentTypeVal, CustomViewSchema,
+                                        ContentType, CustomViewSchema,
                                         MediaTypeObject, RequestParam, as_array_content_obj)
 from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
@@ -161,7 +162,7 @@ class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
 
 
 class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
-    _LATE_DAYS_REMAINING_BODY: ContentObj = {
+    _LATE_DAYS_REMAINING_BODY: Dict[ContentType, SchemaObject] = {
         'application/json': {
             'schema': {
                 'type': 'object',

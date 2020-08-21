@@ -5,12 +5,12 @@ from django.db import models, connection, transaction
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
-from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
 from ..project import ExpectedStudentFile, Project, InstructorFile
 from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
 
-class AGTestSuiteFeedbackConfig(DictSerializableMixin):
+class AGTestSuiteFeedbackConfig(DictSerializable):
     """
     Contains feedback options for an AGTestSuite.
     """

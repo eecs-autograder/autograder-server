@@ -5,10 +5,10 @@ from django.db import models, transaction, connection
 
 import autograder.core.fields as ag_fields
 from .ag_test_suite import AGTestSuite
-from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
 
 
-class AGTestCaseFeedbackConfig(DictSerializableMixin):
+class AGTestCaseFeedbackConfig(DictSerializable):
     """
     Contains feedback options for an AGTestCase.
     """

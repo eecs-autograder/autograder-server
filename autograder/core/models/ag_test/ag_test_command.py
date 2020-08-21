@@ -9,7 +9,7 @@ import autograder.core.fields as ag_fields
 from autograder.core import constants
 import autograder.core.utils as core_ut
 from .ag_test_case import AGTestCase
-from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
 from ..project import InstructorFile
 
 
@@ -19,7 +19,7 @@ class ValueFeedbackLevel(core_ut.OrderedEnum):
     expected_and_actual = 'expected_and_actual'
 
 
-class AGTestCommandFeedbackConfig(DictSerializableMixin):
+class AGTestCommandFeedbackConfig(DictSerializable):
     """
     Contains feedback options for an AGTestCommand
     """

@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 
 from autograder.core.models import AutograderModel
 import autograder.core.fields as ag_fields
-from autograder.core.models.ag_model_base import AutograderModelManager, DictSerializableMixin
+from autograder.core.models.ag_model_base import AutograderModelManager, DictSerializable
 
 # -----------------------------------------------------------------------------
 # DUMMY MODELS FOR TESTING AutograderModel BASE CLASS
@@ -123,7 +123,7 @@ class DummyAutograderModel(AutograderModel):
     )
 
 
-class DictSerializableClass(DictSerializableMixin):
+class DictSerializableClass(DictSerializable):
     has_default_default_val = 8769
 
     def __init__(self, num: int, string: str, an_enum: AnEnum,

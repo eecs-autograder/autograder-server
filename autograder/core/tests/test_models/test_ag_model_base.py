@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core import exceptions
 from django.test import SimpleTestCase
 
-from autograder.core.models.ag_model_base import AutograderModel, DictSerializableMixin
+from autograder.core.models.ag_model_base import AutograderModel, DictSerializable
 from autograder.utils.testing import UnitTestBase
 
 from .models import (
@@ -736,7 +736,7 @@ def _make_max_value_validator(max_value: int):
     return validator
 
 
-class _SerializableClass(DictSerializableMixin):
+class _SerializableClass(DictSerializable):
     def __init__(self, required_int: int,
                  optional_bool: bool=True,
                  my_enum: _MyEnum=_MyEnum.one,

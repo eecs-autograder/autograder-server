@@ -8,7 +8,7 @@ from django.db import models
 from . import constants as const
 
 if typing.TYPE_CHECKING:
-    from .models.ag_model_base import DictSerializableMixin
+    from .models.ag_model_base import DictSerializable
 
 
 class ValidatedArrayField(pg_fields.ArrayField):
@@ -183,7 +183,7 @@ class ValidatedJSONField(pg_fields.JSONField):
     in the database.
     """
 
-    def __init__(self, serializable_class: typing.Type['DictSerializableMixin'], **kwargs):
+    def __init__(self, serializable_class: typing.Type['DictSerializable'], **kwargs):
         self.serializable_class = serializable_class
         super().__init__(**kwargs)
 
