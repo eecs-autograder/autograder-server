@@ -4,8 +4,7 @@ import copy
 import decimal
 import enum
 import inspect
-from typing import (Callable, Dict, Generic, List, Mapping, Protocol, Sequence, Type, TypedDict, TypeVar,
-                    Union, cast)
+from typing import Callable, Dict, List, Mapping, Sequence, Type, TypedDict, TypeVar, Union, cast
 
 from django.contrib.auth.models import User
 from django.core import exceptions

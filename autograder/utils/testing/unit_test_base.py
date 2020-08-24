@@ -129,7 +129,7 @@ class UnitTestBase(_CustomAssertsMixin, _SetUpTearDownCommon, TestCase):
         super().tearDownClass()
         logging.disable(logging.NOTSET)
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         # Here we wrap django's Atomic class and QuerySet's

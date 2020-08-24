@@ -183,10 +183,10 @@ class Course(AutograderModel):
 
     def save(
         self,
-        force_insert: bool,
-        force_update: bool,
-        using: Optional[str],
-        update_fields: Optional[Union[Sequence[str], str]]
+        force_insert: bool = False,
+        force_update: bool = False,
+        using: Optional[str] = None,
+        update_fields: Optional[Union[Sequence[str], str]] = None
     ) -> None:
         super().save(force_insert, force_update, using, update_fields)
 

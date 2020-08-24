@@ -1,3 +1,5 @@
+from typing import Sequence
+from typing import cast
 import os
 
 from django.core.exceptions import ValidationError
@@ -87,7 +89,7 @@ class CourseTestCase(UnitTestBase):
                 eecs280su18,
                 eecs280f18,
             ],
-            Course.objects.all()
+            cast(Sequence[Course], Course.objects.all())
         )
 
     def test_exception_on_empty_name(self) -> None:
