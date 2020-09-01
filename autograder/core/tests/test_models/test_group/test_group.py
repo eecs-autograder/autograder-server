@@ -43,6 +43,7 @@ class GroupTestCase(_SetUp):
         group.refresh_from_db()
 
         self.assertIsNone(group.extended_due_date)
+        self.assertIsNone(group.soft_extended_due_date)
         self.assertCountEqual(self.student_users, group.members.all())
         self.assertSequenceEqual([user.username for user in sorted_users(self.student_users)],
                                  group.member_names)
@@ -53,15 +54,18 @@ class GroupTestCase(_SetUp):
 
     def test_valid_initialization_no_defaults(self):
         extended_due_date = timezone.now() + datetime.timedelta(days=1)
+        soft_extended_due_date = extended_due_date - datetime.timedelta(hours=1)
         group = ag_models.Group.objects.validate_and_create(
             members=self.student_users,
             project=self.project,
             extended_due_date=extended_due_date,
+            soft_extended_due_date=soft_extended_due_date,
         )
 
         group.refresh_from_db()
 
         self.assertEqual(group.extended_due_date, extended_due_date)
+        self.assertEqual(group.soft_extended_due_date, soft_extended_due_date)
         self.assertCountEqual(self.student_users, group.members.all())
         self.assertEqual(self.project, group.project)
 
@@ -151,6 +155,19 @@ class GroupTestCase(_SetUp):
             group=group, is_past_daily_limit=True)
 
         self.assertEqual(3, group.num_submits_towards_limit)
+
+    def test_error_soft_extension_after_hard_extension(self):
+        extended_due_date = timezone.now() + datetime.timedelta(days=1)
+        soft_extended_due_date = extended_due_date + datetime.timedelta(minutes=1)
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Group.objects.validate_and_create(
+                members=self.student_users,
+                project=self.project,
+                extended_due_date=extended_due_date,
+                soft_extended_due_date=soft_extended_due_date,
+            )
+
+        self.assertIn('soft_extended_due_date', cm.exception.message_dict)
 
     def test_serializable_fields(self):
         expected_fields = [

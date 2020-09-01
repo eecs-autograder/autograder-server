@@ -83,10 +83,25 @@ class Group(ag_model_base.AutograderModel):
 
     extended_due_date = models.DateTimeField(
         null=True, default=None, blank=True,
-        help_text="""When this field is set, it indicates that members
+        help_text="""When this field is not null, it indicates that members
             of this submission group can submit until this specified
             date, overriding the project closing time.
             Default value: None""")
+
+    soft_extended_due_date = models.DateTimeField(
+        null=True, default=None, blank=True,
+        help_text="""Analogous to Project.soft_closing time, but for
+            extensions. This value will be shown to group members as
+            their new due date, but group members will not be prevented
+            from submitting past this time.
+
+            This field has a few primary use cases:
+                1. Providing a grace period for extension deadlines.
+                2. Granting extensions when a late submission penalty
+                   is also enabled (students have to be able to submit
+                   "after the deadline" for the penalty to be appied.)
+                3. Granting extensions when an early submission bonus
+                   applied in relation to the soft deadline is enabled.""")
 
     # Remove in version 5.0.0
     old_bonus_submissions_remaining = models.IntegerField(
@@ -207,6 +222,16 @@ class Group(ag_model_base.AutograderModel):
                 user.username for user in sorted(members, key=lambda user: user.username)]
             self.full_clean()
             self.save()
+
+    def clean(self):
+        super().clean()
+        if (self.extended_due_date is not None
+                and self.soft_extended_due_date is not None
+                and self.soft_extended_due_date > self.extended_due_date):
+            raise ValidationError({
+                'soft_extended_due_date':
+                    'Soft extended due date must be before hard extended due date.'
+            })
 
     SERIALIZABLE_FIELDS = (
         'pk',

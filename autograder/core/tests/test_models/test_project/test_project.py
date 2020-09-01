@@ -33,6 +33,18 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertFalse(new_project.visible_to_students)
         self.assertIsNone(new_project.closing_time)
         self.assertIsNone(new_project.soft_closing_time)
+
+        self.assertFalse(new_project.use_early_submission_bonus)
+        self.assertEqual(24, new_project.early_submission_bonus.per_num_hours)
+        self.assertEqual(0, new_project.early_submission_bonus.percent_bonus)
+        self.assertEqual(10, new_project.early_submission_bonus.max_percent_bonus)
+        self.assertFalse(new_project.early_submission_bonus.use_hard_deadline)
+
+        self.assertFalse(new_project.use_late_submission_penalty)
+        self.assertEqual(24, new_project.late_submission_penalty.per_num_hours)
+        self.assertEqual(0, new_project.late_submission_penalty.percent_penalty)
+        self.assertEqual(100, new_project.late_submission_penalty.max_percent_penalty)
+
         self.assertFalse(new_project.disallow_student_submissions)
         self.assertFalse(new_project.disallow_group_registration)
         self.assertFalse(new_project.guests_can_submit)
@@ -272,6 +284,79 @@ class ProjectMiscErrorTestCase(UnitTestBase):
                 name='merp', course=self.course, num_bonus_submissions=-1)
 
         self.assertIn('num_bonus_submissions', cm.exception.message_dict)
+
+    def test_error_hard_closing_time_null_and_early_submission_bonus_uses_hard_deadline(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='stove', course=self.course,
+                closing_time=None,
+                soft_closing_time=timezone.now(),
+                use_early_submission_bonus=True,
+                early_submission_bonus={'use_hard_deadline': True})
+
+        self.assertIn('closing_time', cm.exception.message_dict)
+
+        # This check doesn't apply if use_early_submission_bonus is False
+        ag_models.Project.objects.validate_and_create(
+            name='stove', course=self.course,
+            closing_time=None,
+            use_early_submission_bonus=False,
+            early_submission_bonus={'use_hard_deadline': True})
+
+    def test_error_use_early_submission_bonus_ultimate_submission_policy_not_most_recent(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='stove', course=self.course,
+                ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best,
+                use_early_submission_bonus=True)
+
+        self.assertIn('ultimate_submission_policy', cm.exception.message_dict)
+
+    def test_error_use_late_submission_penalty_ultimate_submission_policy_not_most_recent(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='stove', course=self.course,
+                ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best,
+                use_late_submission_penalty=True)
+
+        self.assertIn('ultimate_submission_policy', cm.exception.message_dict)
+
+
+class EarlySubmissionBonusAndLateSubmissionPenaltyTestCase(UnitTestBase):
+    def test_error_bonus_or_penalty_percent_out_of_range(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.EarlySubmissionBonus.from_dict({'percent_bonus': -1})
+        self.assertIn('percent_bonus', cm.exception.message)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.EarlySubmissionBonus.from_dict({'percent_bonus': 101})
+        self.assertIn('percent_bonus', cm.exception.message)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.LateSubmissionPenalty.from_dict({'percent_penalty': -1})
+        self.assertIn('percent_penalty', cm.exception.message)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.LateSubmissionPenalty.from_dict({'percent_penalty': 101})
+        self.assertIn('percent_penalty', cm.exception.message)
+
+    def test_error_early_bonus_or_late_penalty_per_num_hours_less_than_one(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.EarlySubmissionBonus.from_dict({'per_num_hours': 0})
+        self.assertIn('per_num_hours', cm.exception.message)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.LateSubmissionPenalty.from_dict({'per_num_hours': 0})
+        self.assertIn('per_num_hours', cm.exception.message)
+
+    def test_error_max_early_bonus_or_late_penalty_is_negative(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.EarlySubmissionBonus.from_dict({'max_percent_bonus': -1})
+        self.assertIn('max_percent_bonus', cm.exception.message)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.LateSubmissionPenalty.from_dict({'max_percent_penalty': -1})
+        self.assertIn('max_percent_penalty', cm.exception.message)
 
 
 class ProjectNameExceptionTestCase(UnitTestBase):

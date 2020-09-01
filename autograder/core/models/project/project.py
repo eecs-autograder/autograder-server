@@ -8,7 +8,10 @@ from timezone_field import TimeZoneField
 
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
-from ..ag_model_base import AutograderModel
+
+from ..ag_model_base import (AutograderModel, DictSerializableMixin,
+                             make_max_value_validator,
+                             make_min_value_validator)
 from ..course import Course
 
 
@@ -29,6 +32,106 @@ class UltimateSubmissionPolicy(enum.Enum):
     # for comparison is computed using maximum feedback
     # settings.
     best = 'best'
+
+
+class EarlySubmissionBonus(DictSerializableMixin):
+    """
+    Contains options for applying an early submission bonus.
+    """
+    def __init__(self,
+                 per_num_hours: int = 24,
+                 percent_bonus: int = 0,
+                 max_percent_bonus: int = 10,
+                 use_hard_deadline: bool = False):
+        self.per_num_hours = per_num_hours
+        self.percent_bonus = percent_bonus
+        self.max_percent_bonus = max_percent_bonus
+        self.use_hard_deadline = use_hard_deadline
+
+    SERIALIZABLE_FIELDS = [
+        'per_num_hours',
+        'percent_bonus',
+        'max_percent_bonus',
+        'use_hard_deadline',
+    ]
+
+    FIELD_DESCRIPTIONS = {
+        'per_num_hours': (
+            'The number of hours early a final graded submission must '
+            'have been made in order to receive the bonus.\n'
+            'For example, if this value is 6 hours and percent_bonus '
+            'is 5%, then students will receive a 5% bonus for submitting '
+            '6 hours early, a 10% bonus for submitting 12 hours early, etc.\n'
+            'This value must be >= 1.'
+        ),
+        'percent_bonus': (
+            'An integer between 0 and 100 representing the percentage '
+            'of the total points awarded that should be added as a bonus.'
+        ),
+        'max_percent_bonus': 'The maximum bonus percentage to award. Must be >= 0.',
+        'use_hard_deadline': (
+            'By default, bonuses are calculated relative to the '
+            'soft deadline. When this field is true, the calculations will'
+            'use the hard deadline instead.\n'
+            "If this value is true, the project's (hard) closing time must not be null."
+        ),
+    }
+
+    FIELD_VALIDATORS = {
+        'per_num_hours': [make_min_value_validator(1)],
+        'percent_bonus': [
+            make_min_value_validator(0),
+            make_max_value_validator(100),
+        ],
+        'max_percent_bonus': [make_min_value_validator(0)],
+    }
+
+
+class LateSubmissionPenalty(DictSerializableMixin):
+    """
+    Contains options for applying a late submission penalty.
+    """
+    def __init__(self,
+                 per_num_hours: int = 24,
+                 percent_penalty: int = 0,
+                 max_percent_penalty: int = 100):
+        self.per_num_hours = per_num_hours
+        self.percent_penalty = percent_penalty
+        self.max_percent_penalty = max_percent_penalty
+
+    SERIALIZABLE_FIELDS = [
+        'per_num_hours',
+        'percent_penalty',
+        'max_percent_penalty',
+    ]
+
+    FIELD_DESCRIPTIONS = {
+        'per_num_hours': (
+            'Unlike early submission bonuses, late submission penalties '
+            'start being applied as soon as the soft deadline passes.\n'
+            'This value is the frequency with which to increase the '
+            'percentage deducted.\n'
+            'For example, if this value is 6 and percent_penalty is 2%, '
+            'then a submission that is 5h59m late or less will receive a '
+            '2% deduction, a submission that between 6h and 11h59m late will '
+            'receive a 4% deduction, etc.\n'
+            'This value must be >= 1.'
+        ),
+        'percent_penalty': (
+            'An integer between 0 and 100 representing the percentage '
+            'of the total points awarded that should be deducted.'
+        ),
+        'max_percent_penalty': 'The maximum percentage to deduct. Must be >= 0.'
+    }
+
+    FIELD_VALIDATORS = {
+        'per_num_hours': [make_min_value_validator(1)],
+        'percent_penalty': [
+            make_min_value_validator(0),
+            make_max_value_validator(100),
+        ],
+        'max_percent_penalty': [make_min_value_validator(0)],
+    }
 
 
 class Project(AutograderModel):
@@ -86,6 +189,27 @@ class Project(AutograderModel):
             actually accepted.
             If not None and closing_time is not None, this value must be
             less than (before) closing_time.""")
+
+    use_early_submission_bonus = models.BooleanField(
+        default=False,
+        help_text="""Whether to apply an early submission bonus to students'
+            final graded submissions. If this value is true, then
+            ultimate_submission_policy must be "most_recent".
+        """)
+
+    early_submission_bonus = ag_fields.ValidatedJSONField(
+        EarlySubmissionBonus, default=EarlySubmissionBonus)
+
+    use_late_submission_penalty = models.BooleanField(
+        default=False,
+        help_text="""Whether to apply a late submission penalty to students'
+            final graded submissions. If this value is true, then
+            ultimate_submission_policy must be "most_recent" and
+            "allow_late_days" must be false.
+        """)
+
+    late_submission_penalty = ag_fields.ValidatedJSONField(
+        LateSubmissionPenalty, default=LateSubmissionPenalty)
 
     disallow_student_submissions = models.BooleanField(
         default=False,
@@ -243,6 +367,25 @@ class Project(AutograderModel):
                 raise exceptions.ValidationError(
                     {'soft_closing_time': (
                         'Soft closing time must be before hard closing time')})
+
+        if self.use_early_submission_bonus:
+            if (self.early_submission_bonus.use_hard_deadline
+                    and self.closing_time is None):
+                raise exceptions.ValidationError({
+                    'closing_time': (
+                        'Hard closing time must not be null when '
+                        'an early submission bonus uses the hard closing time.'
+                    )
+                })
+
+        if ((self.use_early_submission_bonus or self.use_late_submission_penalty)
+                and self.ultimate_submission_policy != UltimateSubmissionPolicy.most_recent):
+            raise exceptions.ValidationError({
+                'ultimate_submission_policy': (
+                    'Final graded submission policy must be "most recent" when using '
+                    'an early submission bonus or late submission penalty.'
+                )
+            })
 
     @property
     def has_handgrading_rubric(self) -> bool:

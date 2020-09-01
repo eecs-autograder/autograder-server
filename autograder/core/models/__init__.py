@@ -15,7 +15,7 @@ from .course import Course, LateDaysRemaining, Semester
 from .group import Group, GroupInvitation
 from .mutation_test_suite import (BugsExposedFeedbackLevel, MutationTestSuite,
                                   MutationTestSuiteFeedbackConfig, MutationTestSuiteResult)
-from .project import Project, UltimateSubmissionPolicy
+from .project import Project, UltimateSubmissionPolicy, EarlySubmissionBonus, LateSubmissionPenalty
 from .project.download_task import DownloadTask, DownloadType
 from .project.expected_student_file import ExpectedStudentFile
 from .project.instructor_file import InstructorFile
