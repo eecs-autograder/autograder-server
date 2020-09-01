@@ -395,6 +395,15 @@ class Project(AutograderModel):
                 )
             })
 
+        if (self.use_late_submission_penalty
+                and self.use_early_submission_bonus
+                and self.early_submission_bonus.use_hard_deadline):
+            raise exceptions.ValidationError({
+                'early_submission_bonus':
+                    'Early submission bonuses cannot be calculated using the hard deadline '
+                    'when a late submission penalty is also in use.'
+            })
+
     @property
     def has_handgrading_rubric(self) -> bool:
         """
