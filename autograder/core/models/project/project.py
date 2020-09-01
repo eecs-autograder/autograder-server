@@ -404,6 +404,20 @@ class Project(AutograderModel):
                     'when a late submission penalty is also in use.'
             })
 
+        if self.soft_closing_time is None:
+            if self.use_early_submission_bonus:
+                raise exceptions.ValidationError({
+                    'soft_closing_time':
+                        'Soft closing time must not be null when an '
+                        'early submission bonus is used.'
+                })
+            if self.use_late_submission_penalty:
+                raise exceptions.ValidationError({
+                    'soft_closing_time':
+                        'Soft closing time must not be null when a '
+                        'late submission penalty is used.'
+                })
+
     @property
     def has_handgrading_rubric(self) -> bool:
         """

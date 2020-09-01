@@ -285,6 +285,25 @@ class ProjectMiscErrorTestCase(UnitTestBase):
 
         self.assertIn('num_bonus_submissions', cm.exception.message_dict)
 
+    def test_error_soft_closing_time_null_and_early_submission_bonus_uses_soft_deadline(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='stove', course=self.course,
+                soft_closing_time=None,
+                closing_time=timezone.now(),
+                use_early_submission_bonus=True,
+                early_submission_bonus={'use_hard_deadline': False})
+
+        self.assertIn('soft_closing_time', cm.exception.message_dict)
+        self.assertIn('early', cm.exception.message_dict['soft_closing_time'][0])
+
+        # This check doesn't apply if use_early_submission_bonus is False
+        ag_models.Project.objects.validate_and_create(
+            name='stove', course=self.course,
+            soft_closing_time=None,
+            use_early_submission_bonus=False,
+            early_submission_bonus={'use_hard_deadline': False})
+
     def test_error_hard_closing_time_null_and_early_submission_bonus_uses_hard_deadline(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
@@ -302,6 +321,23 @@ class ProjectMiscErrorTestCase(UnitTestBase):
             closing_time=None,
             use_early_submission_bonus=False,
             early_submission_bonus={'use_hard_deadline': True})
+
+    def test_error_soft_closing_time_null_use_late_submission_penalty_true(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='stove', course=self.course,
+                soft_closing_time=None,
+                closing_time=timezone.now(),
+                use_late_submission_penalty=True)
+
+        self.assertIn('soft_closing_time', cm.exception.message_dict)
+        self.assertIn('late', cm.exception.message_dict['soft_closing_time'][0])
+
+        # This check doesn't apply if use_late_submission_penalty is False
+        ag_models.Project.objects.validate_and_create(
+            name='stove', course=self.course,
+            soft_closing_time=None,
+            use_late_submission_penalty=False)
 
     def test_error_use_early_submission_bonus_ultimate_submission_policy_not_most_recent(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
