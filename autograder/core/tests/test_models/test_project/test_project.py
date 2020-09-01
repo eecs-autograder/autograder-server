@@ -321,6 +321,15 @@ class ProjectMiscErrorTestCase(UnitTestBase):
 
         self.assertIn('ultimate_submission_policy', cm.exception.message_dict)
 
+    def test_error_use_late_submission_penalty_together_with_allow_late_days(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='stove', course=self.course,
+                use_late_submission_penalty=True,
+                allow_late_days=True)
+
+        self.assertIn('allow_late_days', cm.exception.message_dict)
+
 
 class EarlySubmissionBonusAndLateSubmissionPenaltyTestCase(UnitTestBase):
     def test_error_bonus_or_penalty_percent_out_of_range(self):

@@ -378,6 +378,14 @@ class Project(AutograderModel):
                     )
                 })
 
+        if self.use_late_submission_penalty and self.allow_late_days:
+            raise exceptions.ValidationError({
+                'allow_late_days': (
+                    'Late day tokens cannot be used in projects that apply a '
+                    'late submission penalty.'
+                )
+            })
+
         if ((self.use_early_submission_bonus or self.use_late_submission_penalty)
                 and self.ultimate_submission_policy != UltimateSubmissionPolicy.most_recent):
             raise exceptions.ValidationError({
