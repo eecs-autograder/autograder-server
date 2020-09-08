@@ -1,4 +1,6 @@
+from typing import List
 from django.core import exceptions
+from django.core.exceptions import ValidationError
 from django.db import models, connection, transaction
 
 import autograder.core.fields as ag_fields
@@ -55,6 +57,19 @@ class AGTestSuite(AutograderModel):
         unique_together = ('name', 'project')
         order_with_respect_to = 'project'
 
+    @staticmethod
+    def set_order(project: Project, order: List[int]) -> None:
+        if len(order) == 0:
+            return
+
+        rejector_suite = project.ag_test_suites.filter(reject_submission_if_setup_fails=True)
+        if rejector_suite.count() == 1 and rejector_suite.first().pk != order[0]:
+            raise ValidationError(
+                'Only the first test suite can be used to reject submissions on setup failure.'
+            )
+
+        project.set_agtestsuite_order(order)
+
     name = ag_fields.ShortStringField(
         help_text='''The name used to identify this suite.
                      Must be non-empty and non-null.
@@ -86,10 +101,20 @@ class AGTestSuite(AutograderModel):
         help_text="""A command to be run before this suite's tests are run.
                      This command is only run once at the beginning of the suite.
                      This command will be run after the student and project files
-                     have been added to the sandbox.""")
+                     have been added to the sandbox.
+                     If this field is empty, then no setup command will be run.""")
 
     setup_suite_cmd_name = ag_fields.ShortStringField(
         blank=True, help_text="""The name of this suite's setup command.""")
+
+    reject_submission_if_setup_fails = models.BooleanField(
+        default=False,
+        help_text="""When this field is True and the suite has a setup command,
+            the submission will be rejected if that setup command fails.
+            This field is only allowed to be True for the first AGTestSuite
+            (order specified by Project.get_agtestsuite_order()) of the Project.
+        """
+    )
 
     sandbox_docker_image = models.ForeignKey(
         SandboxDockerImage,
@@ -154,6 +179,33 @@ class AGTestSuite(AutograderModel):
                 )
             )
 
+        if self.reject_submission_if_setup_fails:
+            if self.deferred:
+                raise exceptions.ValidationError({
+                    'reject_submission_if_setup_fails': (
+                        'Deferred suites cannot be used to reject submissions.'
+                    )
+                })
+
+            other_reject_suites = self.project.ag_test_suites.exclude(
+                pk=self.pk
+            ).filter(reject_submission_if_setup_fails=True)
+            if other_reject_suites.exists():
+                raise exceptions.ValidationError({
+                    'reject_submission_if_setup_fails': (
+                        'Only one suite per project can reject a submission if its setup fails.'
+                    )
+                })
+
+            order = self.project.get_agtestsuite_order()
+            if len(order) != 0 and order[0] != self.pk:
+                raise exceptions.ValidationError({
+                    'reject_submission_if_setup_fails': (
+                        'Only the first suite of a project can '
+                        'reject a submissions if its setup fails.'
+                    )
+                })
+
         if errors:
             raise exceptions.ValidationError(errors)
 
@@ -184,6 +236,7 @@ class AGTestSuite(AutograderModel):
 
         'setup_suite_cmd',
         'setup_suite_cmd_name',
+        'reject_submission_if_setup_fails',
 
         'sandbox_docker_image',
         'allow_network_access',
@@ -213,6 +266,7 @@ class AGTestSuite(AutograderModel):
 
         'setup_suite_cmd',
         'setup_suite_cmd_name',
+        'reject_submission_if_setup_fails',
 
         'allow_network_access',
         'deferred',

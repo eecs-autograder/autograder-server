@@ -8,7 +8,7 @@ from autograder.core.caching import clear_submission_results_cache
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APITags, OrderViewSchema)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      NestedModelView)
+                                                      NestedModelView, convert_django_validation_error)
 
 
 class AGTestSuiteListCreateView(NestedModelView):
@@ -66,10 +66,11 @@ class AGTestSuiteOrderView(AGModelAPIView):
         project = self.get_object()
         return response.Response(list(project.get_agtestsuite_order()))
 
+    @convert_django_validation_error
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             project = self.get_object()
-            project.set_agtestsuite_order(request.data)
+            ag_models.AGTestSuite.set_order(project, request.data)
             clear_submission_results_cache(project.pk)
             return response.Response(list(project.get_agtestsuite_order()))
 

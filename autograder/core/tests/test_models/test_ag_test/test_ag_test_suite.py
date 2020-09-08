@@ -1,4 +1,5 @@
 import copy
+from django import test
 
 from django.core import exceptions
 from django.db import IntegrityError
@@ -213,6 +214,7 @@ class AGTestSuiteTestCase(UnitTestBase):
 
             'setup_suite_cmd',
             'setup_suite_cmd_name',
+            'reject_submission_if_setup_fails',
 
             'sandbox_docker_image',
             'allow_network_access',
@@ -257,3 +259,86 @@ class AGTestSuiteSandboxImageOnDeleteTestCase(TransactionUnitTestBase):
         suite.refresh_from_db()
         self.assertEqual(ag_models.SandboxDockerImage.objects.get(display_name='Default'),
                          suite.sandbox_docker_image)
+
+
+class RejectSubmissionIfSetupFailsRulesTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.project = obj_build.build_project()
+
+    def test_first_ag_test_suite_created_has_reject_true(self) -> None:
+        suite = ag_models.AGTestSuite.objects.validate_and_create(
+            name='Rejector', project=self.project,
+            reject_submission_if_setup_fails=True
+        )
+        suite.refresh_from_db()
+        self.assertTrue(suite.reject_submission_if_setup_fails)
+
+    def test_first_ag_test_suite_edit_reject_to_be_true(self) -> None:
+        suite1 = ag_models.AGTestSuite.objects.validate_and_create(
+            name='Rejector', project=self.project)
+        suite2 = ag_models.AGTestSuite.objects.validate_and_create(
+            name='An suite', project=self.project)
+        suite3 = ag_models.AGTestSuite.objects.validate_and_create(
+            name='An other suite', project=self.project)
+
+        suite1.validate_and_update(reject_submission_if_setup_fails=True)
+        suite1.refresh_from_db()
+        self.assertTrue(suite1.reject_submission_if_setup_fails)
+
+        # Make sure we can edit the "reject" suite.
+        suite1.validate_and_update(name='New name')
+        suite1.refresh_from_db()
+        self.assertEqual('New name', suite1.name)
+
+    def test_error_create_non_first_suite_with_reject_true(self) -> None:
+        ag_models.AGTestSuite.objects.validate_and_create(
+            name='Suite 1', project=self.project)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AGTestSuite.objects.validate_and_create(
+                name='Suite 2', project=self.project,
+                reject_submission_if_setup_fails=True
+            )
+        self.assertIn('reject_submission_if_setup_fails', cm.exception.message_dict)
+
+    def test_error_edit_non_first_suite_reject_to_be_true(self) -> None:
+        suite1 = ag_models.AGTestSuite.objects.validate_and_create(
+            name='Rejector', project=self.project)
+        suite2 = ag_models.AGTestSuite.objects.validate_and_create(
+            name='An suite', project=self.project)
+        suite3 = ag_models.AGTestSuite.objects.validate_and_create(
+            name='An other suite', project=self.project)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            suite3.validate_and_update(reject_submission_if_setup_fails=True)
+        self.assertIn('reject_submission_if_setup_fails', cm.exception.message_dict)
+
+    def test_error_update_ordering_to_put_suite_with_reject_non_first(self) -> None:
+        suite1 = ag_models.AGTestSuite.objects.validate_and_create(
+            name='Rejector', project=self.project,
+            reject_submission_if_setup_fails=True)
+        suite2 = ag_models.AGTestSuite.objects.validate_and_create(
+            name='An suite', project=self.project)
+        suite3 = ag_models.AGTestSuite.objects.validate_and_create(
+            name='An other suite', project=self.project)
+
+        with self.assertRaises(exceptions.ValidationError):
+            ag_models.AGTestSuite.set_order(self.project, [suite2.pk, suite1.pk, suite3.pk])
+
+    def test_error_suite_with_reject_true_is_deferred(self) -> None:
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AGTestSuite.objects.validate_and_create(
+                name='Rejector', project=self.project,
+                reject_submission_if_setup_fails=True,
+                deferred=True
+            )
+        self.assertIn('reject_submission_if_setup_fails', cm.exception.message_dict)
+
+        suite = ag_models.AGTestSuite.objects.validate_and_create(
+            name='Rejector', project=self.project,
+            reject_submission_if_setup_fails=True
+        )
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            suite.validate_and_update(deferred=True)
+        self.assertIn('reject_submission_if_setup_fails', cm.exception.message_dict)
