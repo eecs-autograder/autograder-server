@@ -1,3 +1,4 @@
+from autograder.grading_tasks.tasks.exceptions import StopGrading
 import traceback
 import time
 
@@ -103,6 +104,7 @@ def retry(max_num_retries,
 
 RERAISE_IMMEDIATELY = (
     db.IntegrityError,
+    StopGrading
 )
 
 

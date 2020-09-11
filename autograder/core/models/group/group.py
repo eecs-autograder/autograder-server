@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
+from django.db.models.expressions import F
 from django.utils import timezone
 
 import autograder.core.utils as core_ut

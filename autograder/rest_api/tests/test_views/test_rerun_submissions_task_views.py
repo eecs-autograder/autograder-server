@@ -573,3 +573,17 @@ class RerunCancelledTestCase(TransactionUnitTestBase):
         rerun_mutation_test_suite(rerun_task.pk, self.submission.pk, mutation_suite.pk)
         rerun_task.refresh_from_db()
         self.assertEqual(0, rerun_task.progress)
+
+
+class RejectSubmissionTestCase(TransactionUnitTestBase):
+    def test_submission_reject_in_rerun_does_not_refund_bonus_submission(self) -> None:
+        self.fail()
+
+    def test_non_finished_submissions_not_rerun_even_with_rerun_all_submissions(self) -> None:
+        self.fail()
+
+# - rerun_all_submissions only reruns finished submissions
+# - when submission pks are specified, grading status doesn't matter
+# - what if a "reject if fails" setup command fails during rerun?
+#   - we might have to restructure the order reruns happen, make it more similar to
+#     grade_submission (but without the same status updates)

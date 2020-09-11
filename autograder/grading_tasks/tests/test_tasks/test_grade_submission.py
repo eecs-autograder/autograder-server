@@ -358,6 +358,7 @@ void file2() {
         tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
+        print(self.submission.denormalized_ag_test_results)
         self.assertEqual(
             3,
             get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).total_points)
@@ -479,3 +480,62 @@ void file2() {
             tasks.grade_submission_task(self.submission.pk)
 
             mock_send_email.assert_called_once_with(self.submission)
+
+    def test_submission_rejected(self, *args) -> None:
+        suite1 = obj_build.make_ag_test_suite(
+            self.project,
+            reject_submission_if_setup_fails=True,
+            setup_suite_cmd='false'
+        )
+        suite2 = obj_build.make_ag_test_suite(self.project)
+
+        tasks.grade_submission_task(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.rejected, self.submission.status)
+        self.assertEqual(1, self.submission.ag_test_suite_results.count())
+
+    def test_submission_rejected_bonus_submission_refunded(self, *args) -> None:
+        self.submission.group.bonus_submissions_used = 1
+        self.submission.group.save()
+        self.submission.is_bonus_submission = True
+        self.submission.save()
+
+        suite1 = obj_build.make_ag_test_suite(
+            self.project,
+            reject_submission_if_setup_fails=True,
+            setup_suite_cmd='false'
+        )
+        suite2 = obj_build.make_ag_test_suite(self.project)
+
+        tasks.grade_submission_task(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.rejected, self.submission.status)
+        self.assertFalse(self.submission.is_bonus_submission)
+        self.assertEqual(0, self.submission.group.bonus_submissions_used)
+        self.assertEqual(1, self.submission.ag_test_suite_results.count())
+
+    def test_reject_submission_true_but_no_setup_command(self, *args) -> None:
+        suite1 = obj_build.make_ag_test_suite(
+            self.project,
+            reject_submission_if_setup_fails=True,
+            setup_suite_cmd=''
+        )
+        suite2 = obj_build.make_ag_test_suite(self.project)
+
+        tasks.grade_submission_task(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.finished_grading, self.submission.status)
+        self.assertEqual(2, self.submission.ag_test_suite_results.count())
+
+    def test_denormalized_results_updated_after_suite_setup(self, *args) -> None:
+        self.fail()
+
+    def test_denormalized_results_updated_after_suite_setup_even_if_no_setup(self, *args) -> None:
+        self.fail()
+
+    def test_denormalized_results_updated_after_each_test_case(self, *args) -> None:
+        self.fail()

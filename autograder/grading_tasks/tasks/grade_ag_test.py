@@ -19,6 +19,7 @@ from autograder.utils.retry import retry_ag_test_cmd, retry_should_recover
 
 from .utils import (FileCloser, add_files_to_sandbox, mark_submission_as_error,
                     run_ag_test_command, run_command_from_args)
+from .exceptions import SubmissionRejected
 
 
 @celery.shared_task(bind=True, max_retries=1, acks_late=True)
@@ -32,8 +33,13 @@ def grade_deferred_ag_test_suite(self, ag_test_suite_pk, submission_pk):
             # This means that the suite was deleted, so we skip it.
             pass
 
+    @retry_should_recover
+    def _update_denormalized_results():
+        update_denormalized_ag_test_results(submission_pk)
+
     try:
         _grade_deferred_ag_test_suite_impl()
+        _update_denormalized_results()
     except Exception:
         print('Error grading deferred test')
         traceback.print_exc()
@@ -43,7 +49,9 @@ def grade_deferred_ag_test_suite(self, ag_test_suite_pk, submission_pk):
 
 def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
                              submission: ag_models.Submission,
-                             *ag_test_cases_to_run: ag_models.AGTestCase):
+                             *ag_test_cases_to_run: ag_models.AGTestCase,
+                             on_suite_setup_finished=lambda _: None,
+                             on_test_case_finished=lambda _: None):
     @retry_should_recover
     def get_or_create_suite_result():
         try:
@@ -70,22 +78,31 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
         add_files_to_sandbox(sandbox, ag_test_suite, submission)
 
         print('Running setup for', ag_test_suite.name)
-        _run_suite_setup(sandbox, ag_test_suite, suite_result)
+        _run_suite_setup(
+            sandbox,
+            ag_test_suite,
+            suite_result,
+            on_suite_setup_finished=on_suite_setup_finished
+        )
 
         if not ag_test_cases_to_run:
             ag_test_cases_to_run = ag_test_suite.ag_test_cases.all()
 
         for ag_test_case in ag_test_cases_to_run:
             print('Grading test case', ag_test_case.name)
-            grade_ag_test_case_impl(sandbox, ag_test_case, suite_result)
+            case_result = grade_ag_test_case_impl(sandbox, ag_test_case, suite_result)
+            on_test_case_finished(case_result)
 
-        update_denormalized_ag_test_results(submission.pk)
+        # TODO: use this as the callback in tests
+        # update_denormalized_ag_test_results(submission.pk)
 
 
 @retry_ag_test_cmd
 def _run_suite_setup(sandbox: AutograderSandbox,
                      ag_test_suite: ag_models.AGTestSuite,
-                     suite_result: ag_models.AGTestSuiteResult):
+                     suite_result: ag_models.AGTestSuiteResult,
+                     *,
+                     on_suite_setup_finished):
     @retry_should_recover
     def _save_suite_result():
         suite_result.save()
@@ -101,6 +118,7 @@ def _run_suite_setup(sandbox: AutograderSandbox,
         with open(suite_result.setup_stderr_filename, 'wb') as f:
             pass
 
+        on_suite_setup_finished(suite_result)
         return
 
     setup_result = run_command_from_args(
@@ -120,6 +138,12 @@ def _run_suite_setup(sandbox: AutograderSandbox,
         shutil.copyfileobj(setup_result.stderr, f)
 
     _save_suite_result()
+    on_suite_setup_finished(suite_result)
+
+    setup_failed = suite_result.setup_return_code != 0 or suite_result.setup_timed_out
+    if ag_test_suite.reject_submission_if_setup_fails and setup_failed:
+        update_denormalized_ag_test_results(suite_result.submission.pk)
+        raise SubmissionRejected
 
 
 def grade_ag_test_case_impl(sandbox: AutograderSandbox,
@@ -145,6 +169,8 @@ def grade_ag_test_case_impl(sandbox: AutograderSandbox,
     for ag_test_cmd in ag_test_case.ag_test_commands.all():
         print('Running command', ag_test_cmd.name)
         _grade_ag_test_cmd_with_retry(ag_test_cmd, case_result)
+
+    return case_result
 
 
 def grade_ag_test_command_impl(sandbox: AutograderSandbox,

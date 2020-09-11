@@ -125,6 +125,10 @@ class Submission(ag_model_base.AutograderModel):
         # started being graded.
         removed_from_queue = 'removed_from_queue'
 
+        # The setup command failed for an AGTestSuite marked as
+        # "reject_submission_if_setup_fails".
+        rejected = 'rejected'
+
         # Something unexpected occurred during the grading process.
         error = 'error'
 

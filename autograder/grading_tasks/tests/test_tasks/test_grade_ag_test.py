@@ -727,3 +727,18 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
             tasks.grade_ag_test_command_impl(sandbox, ag_test_command, test_result)
 
         sleep_mock.assert_not_called()
+
+
+@mock.patch('autograder.utils.retry.sleep')
+class GradeAGTestSuiteCallbacksTestCase(TransactionUnitTestBase):
+    def test_setup_finished_callback(self, *args) -> None:
+        self.fail()
+
+    def test_setup_finished_callback_submission_rejected(self, *args) -> None:
+        self.fail()
+
+    def test_setup_finished_callback_no_setup_command(self, *args) -> None:
+        self.fail()
+
+    def test_ag_test_case_finished_callback(self, *args) -> None:
+        self.fail()
