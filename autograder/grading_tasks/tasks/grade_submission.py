@@ -24,7 +24,7 @@ from .exceptions import SubmissionRejected, SubmissionRemovedFromQueue
 
 
 class SubmissionGrader:
-    def __init__(self, submission_pk) -> None:
+    def __init__(self, submission_pk: int):
         self.submission_pk = submission_pk
         # Note: Avoid aliasing the object this refers to, as the object
         # is replaced at certain points in the grading process.
@@ -122,7 +122,8 @@ class SubmissionGrader:
 
     @retry_should_recover
     def save_denormalized_ag_test_case_result(
-        self, ag_test_case_result: ag_models.AGTestCaseResult
+        self,
+        ag_test_case_result: ag_models.AGTestCaseResult
     ) -> None:
         with transaction.atomic():
             submission = Submission.objects.select_for_update().get(pk=self.submission.pk)
