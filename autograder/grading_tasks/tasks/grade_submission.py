@@ -31,7 +31,6 @@ class SubmissionGrader:
         self.submission = None
         self.project = None
 
-    # In rerun version of this func, catch "RerunCancelled"
     def grade_submission(self) -> None:
         try:
             self.grade_submission_impl()
@@ -41,6 +40,7 @@ class SubmissionGrader:
             mark_submission_as_error(self.submission_pk, traceback.format_exc())
             raise
 
+    # In rerun version of this func, catch "RerunCancelled"
     def grade_submission_impl(self) -> None:
         try:
             self.load_submission()

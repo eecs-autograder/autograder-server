@@ -93,9 +93,6 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
             case_result = grade_ag_test_case_impl(sandbox, ag_test_case, suite_result)
             on_test_case_finished(case_result)
 
-        # TODO: use this as the callback in tests
-        # update_denormalized_ag_test_results(submission.pk)
-
 
 @retry_ag_test_cmd
 def _run_suite_setup(sandbox: AutograderSandbox,
