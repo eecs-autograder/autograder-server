@@ -8,3 +8,11 @@ class SubmissionRejected(StopGrading):
 
 class SubmissionRemovedFromQueue(StopGrading):
     pass
+
+
+class RerunCancelled(StopGrading):
+    pass
+
+
+class TestDeleted(Exception):
+    pass

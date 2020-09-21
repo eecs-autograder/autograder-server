@@ -9,14 +9,19 @@ from rest_framework.test import APIClient
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.caching import get_cached_submission_feedback, submission_fdbk_cache_key
-from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
-from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
-    get_submission_fdbk)
+from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResultFeedback
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
+    get_submission_fdbk
 from autograder.grading_tasks import tasks
-from autograder.rest_api.views.rerun_submissions_task_views import (
-    rerun_ag_test_suite, rerun_mutation_test_suite)
-from autograder.utils.testing import TransactionUnitTestBase
+from autograder.grading_tasks.tasks.rerun_submission import (SubmissionRerunner,
+                                                             rerun_deferred_ag_test_suite,
+                                                             rerun_deferred_mutation_test_suite, rerun_submission)
 from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
+from autograder.utils.testing import TransactionUnitTestBase
+
+
+class _MockException(Exception):
+    pass
 
 
 class ListRerunSubmissionsTasksTestCase(AGViewTestBase):
@@ -213,6 +218,27 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
         self.do_rerun_submissions_test_case(
             request_body, (self.submission1, self.total_points_possible), (self.submission2, 0))
 
+    def test_non_finished_submissions_not_rerun_with_rerun_all_submissions_true(self) -> None:
+        # These are the statuses we care most about not being rerun as part
+        # of an "all submissions" rerun.
+        self.submission1.status = ag_models.Submission.GradingStatus.error
+        self.submission1.save()
+        self.submission2.status = ag_models.Submission.GradingStatus.removed_from_queue
+        self.submission2.save()
+
+        self.do_rerun_submissions_test_case({
+            'rerun_all_submissions': True,
+        })
+
+        self.submission1.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.error,
+            self.submission1.status)
+        self.submission2.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.removed_from_queue,
+            self.submission2.status)
+
     def test_submissions_marked_as_finished_when_all_tests_rerun(self, *args) -> None:
         self.submission1.status = ag_models.Submission.GradingStatus.error
         self.submission1.save()
@@ -310,11 +336,23 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
             (self.submission2, self.mutation_suite1_points_possible))
 
     def test_admin_rerun_fatal_error_in_ag_test_suite(self, *args):
-        class _MockException(Exception):
-            pass
+        target = 'autograder.grading_tasks.tasks.rerun_submission.grade_ag_test_suite_impl'
+        with mock.patch(target, new=mock.Mock(side_effect=_MockException)):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(self.url, {})
 
-        target = ('autograder.rest_api.views.rerun_submissions_task_views.'
-                  'tasks.grade_ag_test_suite_impl')
+            rerun_task = ag_models.RerunSubmissionsTask.objects.get(pk=response.data['pk'])
+            print(rerun_task.error_msg)
+            self.assertNotEqual('', rerun_task.error_msg)
+            self.assertIn('Error rerunning submission', rerun_task.error_msg)
+
+    def test_admin_rerun_fatal_error_in_deferred_ag_test_suite(self, *args):
+        self.ag_test_suite1.validate_and_update(deferred=True)
+        self.ag_test_suite2.delete()
+        self.mutation_suite1.delete()
+        self.mutation_suite2.delete()
+
+        target = 'autograder.grading_tasks.tasks.rerun_submission.grade_ag_test_suite_impl'
         with mock.patch(target, new=mock.Mock(side_effect=_MockException)):
             self.client.force_authenticate(self.admin)
 
@@ -325,11 +363,23 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
             self.assertIn('Error rerunning ag test suite', rerun_task.error_msg)
 
     def test_admin_rerun_fatal_error_in_mutation_test_suite(self, *args):
-        class _MockException(Exception):
-            pass
+        target = 'autograder.grading_tasks.tasks.rerun_submission.grade_mutation_test_suite_impl'
+        with mock.patch(target, new=mock.Mock(side_effect=_MockException)):
+            self.client.force_authenticate(self.admin)
 
-        target = ('autograder.rest_api.views.rerun_submissions_task_views.'
-                  'tasks.grade_mutation_test_suite_impl')
+            response = self.client.post(self.url, {})
+            rerun_task = ag_models.RerunSubmissionsTask.objects.get(pk=response.data['pk'])
+            print(rerun_task.error_msg)
+            self.assertNotEqual('', rerun_task.error_msg)
+            self.assertIn('Error rerunning submission', rerun_task.error_msg)
+
+    def test_admin_rerun_fatal_error_in_deferred_mutation_test_suite(self, *args):
+        self.mutation_suite1.validate_and_update(deferred=True)
+        self.mutation_suite2.delete()
+        self.ag_test_suite1.delete()
+        self.ag_test_suite2.delete()
+
+        target = 'autograder.grading_tasks.tasks.rerun_submission.grade_mutation_test_suite_impl'
         with mock.patch(target, new=mock.Mock(side_effect=_MockException)):
             self.client.force_authenticate(self.admin)
 
@@ -490,7 +540,7 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
 
         ag_models.AGTestSuite.objects.get(pk=ag_test_suite.pk).delete()
 
-        rerun_ag_test_suite(self.rerun_task.pk, self.submission.pk, ag_test_suite.pk)
+        rerun_deferred_ag_test_suite(self.rerun_task.pk, self.submission.pk, ag_test_suite.pk)
         sleep_mock.assert_not_called()
 
     @mock.patch(
@@ -500,7 +550,7 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
         ag_test_suite = obj_build.make_ag_test_suite(self.project)
         ag_test_case = obj_build.make_ag_test_case(ag_test_suite)
         ag_models.AGTestCase.objects.get(pk=ag_test_case.pk).delete()
-        rerun_ag_test_suite(
+        rerun_deferred_ag_test_suite(
             self.rerun_task.pk, self.submission.pk, ag_test_suite.pk, ag_test_case.pk)
 
         grade_suite_mock.assert_not_called()
@@ -526,7 +576,8 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
         )
 
         ag_models.AGTestCommand.objects.get(pk=ag_test_command.pk).delete()
-        rerun_ag_test_suite(self.rerun_task.pk, self.submission.pk, ag_test_case.ag_test_suite.pk)
+        rerun_deferred_ag_test_suite(
+            self.rerun_task.pk, self.submission.pk, ag_test_case.ag_test_suite.pk)
 
         sleep_mock.assert_not_called()
 
@@ -535,7 +586,7 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
 
         ag_models.MutationTestSuite.objects.get(pk=mutation_suite.pk).delete()
 
-        rerun_mutation_test_suite(self.rerun_task.pk, self.submission.pk, mutation_suite.pk)
+        rerun_deferred_mutation_test_suite(self.rerun_task.pk, self.submission.pk, mutation_suite.pk)
         sleep_mock.assert_not_called()
 
 
@@ -547,7 +598,7 @@ class RerunCancelledTestCase(TransactionUnitTestBase):
         self.group = self.submission.group
         self.project = self.group.project
 
-    def test_ag_test_suite_skipped(self) -> None:
+    def test_ag_test_suite_skipped(self, *args) -> None:
         ag_test_suite = obj_build.make_ag_test_suite(self.project)
 
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
@@ -556,11 +607,11 @@ class RerunCancelledTestCase(TransactionUnitTestBase):
             is_cancelled=True,
         )
 
-        rerun_ag_test_suite(rerun_task.pk, self.submission.pk, ag_test_suite.pk)
+        rerun_deferred_ag_test_suite(rerun_task.pk, self.submission.pk, ag_test_suite.pk)
         rerun_task.refresh_from_db()
         self.assertEqual(0, rerun_task.progress)
 
-    def test_mutation_test_suite_not_found_no_retry(self) -> None:
+    def test_mutation_test_suite_not_found_no_retry(self, *args) -> None:
         mutation_suite = obj_build.make_mutation_test_suite(self.project)
 
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
@@ -570,20 +621,46 @@ class RerunCancelledTestCase(TransactionUnitTestBase):
             total_num_subtasks=1,
         )
 
-        rerun_mutation_test_suite(rerun_task.pk, self.submission.pk, mutation_suite.pk)
+        rerun_deferred_mutation_test_suite(rerun_task.pk, self.submission.pk, mutation_suite.pk)
         rerun_task.refresh_from_db()
         self.assertEqual(0, rerun_task.progress)
 
 
+@mock.patch('autograder.utils.retry.sleep')
 class RejectSubmissionTestCase(TransactionUnitTestBase):
-    def test_submission_reject_in_rerun_does_not_refund_bonus_submission(self) -> None:
-        self.fail()
+    def test_submission_reject_in_rerun_does_not_refund_bonus_submission(self, *args) -> None:
+        submission = obj_build.make_finished_submission()
+        suite = obj_build.make_ag_test_suite(
+            submission.project,
+            reject_submission_if_setup_fails=True,
+            setup_suite_cmd='false'
+        )
+        test_case = obj_build.make_ag_test_case(suite)
 
-    def test_non_finished_submissions_not_rerun_even_with_rerun_all_submissions(self) -> None:
-        self.fail()
+        submission.group.bonus_submissions_used = 1
+        submission.group.save()
+        submission.is_bonus_submission = True
+        submission.save()
 
-# - rerun_all_submissions only reruns finished submissions
-# - when submission pks are specified, grading status doesn't matter
-# - what if a "reject if fails" setup command fails during rerun?
-#   - we might have to restructure the order reruns happen, make it more similar to
-#     grade_submission (but without the same status updates)
+        rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
+            project=submission.project,
+            creator=obj_build.make_user(),
+            total_num_subtasks=1,
+            # rerun_all_ag_test_suites=False,
+            # ag_test_suite_data={suite.pk: [test_case.pk]}
+        )
+
+        rerun_submission(submission.pk, rerun_task.pk)
+
+        submission.refresh_from_db()
+        # Grading status should NOT change to "rejected" in rerun.
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading, submission.status)
+        # Bonus submission should NOT be refunded.
+        self.assertEqual(1, submission.group.bonus_submissions_used)
+
+        self.assertEqual(
+            0,
+            ag_models.AGTestCaseResult.objects.filter(
+                ag_test_suite_result__submission=submission
+            ).count()
+        )

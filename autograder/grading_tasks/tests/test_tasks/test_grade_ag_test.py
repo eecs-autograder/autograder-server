@@ -659,6 +659,38 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
         tasks.grade_ag_test_suite_impl(ag_test_suite, submission)
         sleep_mock.assert_not_called()
 
+    def test_ag_test_suite_deleted_while_setup_is_running(self, sleep_mock) -> None:
+        def _delete_suite():
+            ag_models.AGTestSuite.objects.get(pk=ag_test_suite.pk).delete()
+
+        submission = obj_build.make_submission()
+        ag_test_suite = obj_build.make_ag_test_suite(setup_suite_cmd='true')
+
+        with mock.patch(
+            'autograder.grading_tasks.tasks.grade_ag_test'
+            '.mocking_hook_delete_suite_during_setup',
+            new=mock.Mock(side_effect=_delete_suite)
+        ):
+            tasks.grade_ag_test_suite_impl(ag_test_suite, submission)
+
+        sleep_mock.assert_not_called()
+
+    def test_deferred_ag_test_suite_deleted_while_setup_is_running(self, sleep_mock) -> None:
+        def _delete_suite():
+            ag_models.AGTestSuite.objects.get(pk=ag_test_suite.pk).delete()
+
+        submission = obj_build.make_submission()
+        ag_test_suite = obj_build.make_ag_test_suite(setup_suite_cmd='true')
+
+        with mock.patch(
+            'autograder.grading_tasks.tasks.grade_ag_test'
+            '.mocking_hook_delete_suite_during_setup',
+            new=mock.Mock(side_effect=_delete_suite)
+        ):
+            tasks.grade_deferred_ag_test_suite(ag_test_suite.pk, submission.pk)
+
+        sleep_mock.assert_not_called()
+
     def test_ag_test_case_not_found_no_retry(self, sleep_mock) -> None:
         submission = obj_build.make_submission()
         ag_test_case = obj_build.make_ag_test_case()

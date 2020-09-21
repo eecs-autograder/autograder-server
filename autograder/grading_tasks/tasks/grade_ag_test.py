@@ -19,7 +19,7 @@ from autograder.utils.retry import retry_ag_test_cmd, retry_should_recover
 
 from .utils import (FileCloser, add_files_to_sandbox, mark_submission_as_error,
                     run_ag_test_command, run_command_from_args)
-from .exceptions import SubmissionRejected
+from .exceptions import SubmissionRejected, TestDeleted
 
 
 @celery.shared_task(bind=True, max_retries=1, acks_late=True)
@@ -77,13 +77,16 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
     with sandbox:
         add_files_to_sandbox(sandbox, ag_test_suite, submission)
 
-        print('Running setup for', ag_test_suite.name)
-        _run_suite_setup(
-            sandbox,
-            ag_test_suite,
-            suite_result,
-            on_suite_setup_finished=on_suite_setup_finished
-        )
+        try:
+            print('Running setup for', ag_test_suite.name)
+            _run_suite_setup(
+                sandbox,
+                ag_test_suite,
+                suite_result,
+                on_suite_setup_finished=on_suite_setup_finished
+            )
+        except TestDeleted:
+            return
 
         if not ag_test_cases_to_run:
             ag_test_cases_to_run = ag_test_suite.ag_test_cases.all()
@@ -94,6 +97,11 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
             on_test_case_finished(case_result)
 
 
+# This is patched in test cases
+def mocking_hook_delete_suite_during_setup():
+    pass
+
+
 @retry_ag_test_cmd
 def _run_suite_setup(sandbox: AutograderSandbox,
                      ag_test_suite: ag_models.AGTestSuite,
@@ -102,7 +110,12 @@ def _run_suite_setup(sandbox: AutograderSandbox,
                      on_suite_setup_finished):
     @retry_should_recover
     def _save_suite_result():
-        suite_result.save()
+        try:
+            suite_result.save()
+        except IntegrityError:
+            # The suite was likely deleted, so we want to skip grading
+            # this suite.
+            raise TestDeleted
 
     if not ag_test_suite.setup_suite_cmd:
         suite_result.setup_return_code = None
@@ -134,12 +147,12 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     with open(suite_result.setup_stderr_filename, 'wb') as f:
         shutil.copyfileobj(setup_result.stderr, f)
 
+    mocking_hook_delete_suite_during_setup()  # FOR TESTING. LEAVE THIS HERE
     _save_suite_result()
     on_suite_setup_finished(suite_result)
 
     setup_failed = suite_result.setup_return_code != 0 or suite_result.setup_timed_out
     if ag_test_suite.reject_submission_if_setup_fails and setup_failed:
-        update_denormalized_ag_test_results(suite_result.submission.pk)
         raise SubmissionRejected
 
 

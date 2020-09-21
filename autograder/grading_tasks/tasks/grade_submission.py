@@ -6,6 +6,7 @@ import celery
 from django.conf import settings
 from django.db import transaction
 from django.db.models.expressions import F
+from django.utils import timezone
 
 import autograder.core.models as ag_models
 from autograder.core.caching import delete_cached_submission_result
@@ -28,8 +29,20 @@ class SubmissionGrader:
         self.submission_pk = submission_pk
         # Note: Avoid aliasing the object this refers to, as the object
         # is replaced at certain points in the grading process.
-        self.submission = None
-        self.project = None
+        self._submission = None
+        self._project = None
+
+        self._reraise_fatal_error = True
+
+    @property
+    def submission(self) -> ag_models.Submission:
+        assert self._submission is not None
+        return self._submission
+
+    @property
+    def project(self) -> ag_models.Project:
+        assert self._project is not None
+        return self._project
 
     def grade_submission(self) -> None:
         try:
@@ -37,10 +50,10 @@ class SubmissionGrader:
         except Exception as e:
             print('Error grading submission')
             traceback.print_exc()
-            mark_submission_as_error(self.submission_pk, traceback.format_exc())
-            raise
+            self.record_submission_grading_error(traceback.format_exc())
+            if self._reraise_fatal_error:
+                raise
 
-    # In rerun version of this func, catch "RerunCancelled"
     def grade_submission_impl(self) -> None:
         try:
             self.load_submission()
@@ -50,14 +63,12 @@ class SubmissionGrader:
         try:
             self.grade_non_deferred_suites()
         except SubmissionRejected:
-            _mark_submission_as_rejected(self.submission)
+            self.mark_submission_as_rejected()
             return
 
         self.send_non_deferred_tests_finished_email()
         self.grade_deferred_suites()
 
-    # Override in rerun derived class: just load the submission and project without
-    # checking for removed from queue, don't mark as being graded
     @retry_should_recover
     def load_submission(self):
         """
@@ -66,16 +77,17 @@ class SubmissionGrader:
         the project it belongs to.
         """
         with transaction.atomic():
-            self.submission = ag_models.Submission.objects.select_for_update().select_related(
+            self._submission = ag_models.Submission.objects.select_for_update().select_related(
                 'project'
             ).get(pk=self.submission_pk)
-            self.project = self.submission.project
+            self._project = self.submission.project
             if self.submission.status == ag_models.Submission.GradingStatus.removed_from_queue:
                 print('submission {} has been removed '
                       'from the queue'.format(self.submission.pk))
                 raise SubmissionRemovedFromQueue
 
             self.submission.status = ag_models.Submission.GradingStatus.being_graded
+            self.submission.grading_start_time = timezone.now()
             self.submission.save()
 
     def grade_non_deferred_suites(self):
@@ -92,7 +104,7 @@ class SubmissionGrader:
     # In rerun override:
     # - check if rerun is cancelled before running suite
     #   and then raise RerunCancelled
-    # - if suite is not one of the suites to rerun, do nothing
+    # - if suite is not one of the suites to rerun (and not rerun all), do nothing
     def grade_ag_test_suite(self, suite: ag_models.AGTestSuite) -> None:
         grade_ag_test_suite_impl(
             suite,
@@ -101,10 +113,22 @@ class SubmissionGrader:
             on_test_case_finished=self.save_denormalized_ag_test_case_result,
         )
 
+    @retry_should_recover
+    def mark_submission_as_rejected(self):
+        with transaction.atomic():
+            if self.submission.is_bonus_submission:
+                ag_models.Group.objects.select_for_update().filter(
+                    pk=self.submission.group_id
+                ).update(bonus_submissions_used=F('bonus_submissions_used') - 1)
+
+            self.submission.is_bonus_submission = False
+            self.submission.status = ag_models.Submission.GradingStatus.rejected
+            self.submission.save()
+
     # In rerun override:
     # - check if rerun is cancelled before running suite
     #   and then raise RerunCancelled
-    # - if suite is not one of the suites to rerun, do nothing
+    # - if suite is not one of the suites to rerun (and not rerun all), do nothing
     def grade_mutation_test_suite(self, suite: ag_models.MutationTestSuite) -> None:
         grade_mutation_test_suite_impl(suite, self.submission)
 
@@ -118,7 +142,7 @@ class SubmissionGrader:
             key = str(ag_test_suite_result.ag_test_suite_id)
             submission.denormalized_ag_test_results[key] = ag_test_suite_result.to_dict()
             submission.save()
-            self.submission = submission
+            self._submission = submission
 
     @retry_should_recover
     def save_denormalized_ag_test_case_result(
@@ -134,10 +158,9 @@ class SubmissionGrader:
             ]['ag_test_case_results'][str(ag_test_case.pk)] = ag_test_case_result.to_dict()
 
             submission.save()
-            self.submission = submission
+            self._submission = submission
 
-    # Rerun: override with empty method
-    def send_non_deferred_tests_finished_email(self):
+    def send_non_deferred_tests_finished_email(self) -> None:
         if self.project.send_email_on_non_deferred_tests_finished:
             try:
                 # # Refresh the submission to load the denormalized
@@ -151,7 +174,7 @@ class SubmissionGrader:
     # Full override for rerun (can still call get_deferred_suite_task_signatures)
     # - DON'T mark as waiting for deferred
     # - only mark as finished if full submission rerun
-    def grade_deferred_suites(self):
+    def grade_deferred_suites(self) -> None:
         self.mark_as_waiting_for_deferred()
         deferred_task_signatures = self.get_deferred_suite_task_signatures()
         if not deferred_task_signatures:
@@ -165,7 +188,10 @@ class SubmissionGrader:
     def mark_as_waiting_for_deferred(self):
         ag_models.Submission.objects.filter(
             pk=self.submission.pk
-        ).update(status=ag_models.Submission.GradingStatus.waiting_for_deferred)
+        ).update(
+            status=ag_models.Submission.GradingStatus.waiting_for_deferred,
+            non_deferred_grading_end_time=timezone.now()
+        )
 
     def get_deferred_suite_task_signatures(self):
         deferred_ag_test_suites = load_queryset_with_retry(
@@ -203,6 +229,9 @@ class SubmissionGrader:
     # @property
     # def deferred_ag_test_suite_task(self):   # Override me for rerun
     #     return grade_deferred_ag_test_suite
+
+    def record_submission_grading_error(self, error_msg: str) -> None:
+        mark_submission_as_error(self.submission_pk, traceback.format_exc())
 
 
 @celery.shared_task(acks_late=True)
@@ -281,32 +310,32 @@ def grade_submission(submission_pk):
         raise
 
 
-@retry_should_recover
-def _mark_submission_as_rejected(submission: ag_models.Submission):
-    with transaction.atomic():
-        if submission.is_bonus_submission:
-            ag_models.Group.objects.select_for_update().filter(
-                pk=submission.group_id
-            ).update(bonus_submissions_used=F('bonus_submissions_used') - 1)
+# @retry_should_recover
+# def _mark_submission_as_rejected(submission: ag_models.Submission):
+#     with transaction.atomic():
+#         if submission.is_bonus_submission:
+#             ag_models.Group.objects.select_for_update().filter(
+#                 pk=submission.group_id
+#             ).update(bonus_submissions_used=F('bonus_submissions_used') - 1)
 
-        submission.is_bonus_submission = False
-        submission.status = ag_models.Submission.GradingStatus.rejected
-        submission.save()
+#         submission.is_bonus_submission = False
+#         submission.status = ag_models.Submission.GradingStatus.rejected
+#         submission.save()
 
 
-@retry_should_recover
-def _mark_submission_as_being_graded(submission_pk):
-    with transaction.atomic():
-        submission = ag_models.Submission.objects.select_for_update().select_related(
-            'group__project').get(pk=submission_pk)
-        if submission.status == ag_models.Submission.GradingStatus.removed_from_queue:
-            print('submission {} has been removed '
-                  'from the queue'.format(submission.pk))
-            return None
+# @retry_should_recover
+# def _mark_submission_as_being_graded(submission_pk):
+#     with transaction.atomic():
+#         submission = ag_models.Submission.objects.select_for_update().select_related(
+#             'group__project').get(pk=submission_pk)
+#         if submission.status == ag_models.Submission.GradingStatus.removed_from_queue:
+#             print('submission {} has been removed '
+#                   'from the queue'.format(submission.pk))
+#             return None
 
-        submission.status = ag_models.Submission.GradingStatus.being_graded
-        submission.save()
-        return submission
+#         submission.status = ag_models.Submission.GradingStatus.being_graded
+#         submission.save()
+#         return submission
 
 
 @celery.shared_task(queue='small_tasks', acks_late=True)

@@ -1,10 +1,11 @@
-from autograder.grading_tasks.tasks.exceptions import StopGrading
-import traceback
 import time
+import traceback
 
-from django.conf import settings
 from django import db
+from django.conf import settings
 from django.db import transaction
+
+from autograder.grading_tasks.tasks.exceptions import StopGrading, TestDeleted
 
 
 class MaxRetriesExceeded(Exception):
@@ -104,12 +105,14 @@ def retry(max_num_retries,
 
 RERAISE_IMMEDIATELY = (
     db.IntegrityError,
-    StopGrading
+    StopGrading,
+    TestDeleted,
+    MaxRetriesExceeded,  # We don't want nested retry loops
 )
 
 
-# Specialization of the "retry" decorator to be used for synchronous
-# tasks that should always succeed unless there is a database issue.
+# Specialization of the "retry" decorator to be used for operations
+# that should always succeed unless there is a database issue.
 retry_should_recover = retry(max_num_retries=60,
                              retry_delay_start=1,
                              retry_delay_end=60,
