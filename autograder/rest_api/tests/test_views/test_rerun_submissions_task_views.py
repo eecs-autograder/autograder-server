@@ -13,9 +13,9 @@ from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResul
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
     get_submission_fdbk
 from autograder.grading_tasks import tasks
-from autograder.grading_tasks.tasks.rerun_submission import (SubmissionRerunner,
-                                                             rerun_deferred_ag_test_suite,
-                                                             rerun_deferred_mutation_test_suite, rerun_submission)
+from autograder.grading_tasks.tasks.rerun_submission import (rerun_deferred_ag_test_suite,
+                                                             rerun_deferred_mutation_test_suite,
+                                                             rerun_submission)
 from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 from autograder.utils.testing import TransactionUnitTestBase
 
@@ -586,7 +586,8 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
 
         ag_models.MutationTestSuite.objects.get(pk=mutation_suite.pk).delete()
 
-        rerun_deferred_mutation_test_suite(self.rerun_task.pk, self.submission.pk, mutation_suite.pk)
+        rerun_deferred_mutation_test_suite(
+            self.rerun_task.pk, self.submission.pk, mutation_suite.pk)
         sleep_mock.assert_not_called()
 
 

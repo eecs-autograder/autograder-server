@@ -8,7 +8,8 @@ from autograder.core.caching import clear_submission_results_cache
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APITags, OrderViewSchema)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      NestedModelView, convert_django_validation_error)
+                                                      NestedModelView,
+                                                      convert_django_validation_error)
 
 
 class AGTestSuiteListCreateView(NestedModelView):

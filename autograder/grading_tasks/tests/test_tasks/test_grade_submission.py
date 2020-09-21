@@ -1,6 +1,3 @@
-from autograder.core.models.ag_test.feedback_category import FeedbackCategory
-from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResultFeedback, update_denormalized_ag_test_results
-from autograder.grading_tasks.tasks.grade_submission import SubmissionGrader
 from unittest import mock
 
 from django.conf import settings
@@ -9,9 +6,13 @@ from django.test import tag
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core.models.ag_test.feedback_category import FeedbackCategory
+from autograder.core.submission_feedback import (AGTestPreLoader, SubmissionResultFeedback,
+                                                 update_denormalized_ag_test_results)
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
     get_submission_fdbk
 from autograder.grading_tasks import tasks
+from autograder.grading_tasks.tasks.grade_submission import SubmissionGrader
 from autograder.utils.retry import MaxRetriesExceeded, retry
 from autograder.utils.testing import UnitTestBase
 

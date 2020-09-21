@@ -101,10 +101,6 @@ class SubmissionGrader:
         for suite in non_deferred_mutation_suites:
             self.grade_mutation_test_suite(suite)
 
-    # In rerun override:
-    # - check if rerun is cancelled before running suite
-    #   and then raise RerunCancelled
-    # - if suite is not one of the suites to rerun (and not rerun all), do nothing
     def grade_ag_test_suite(self, suite: ag_models.AGTestSuite) -> None:
         grade_ag_test_suite_impl(
             suite,
@@ -125,10 +121,6 @@ class SubmissionGrader:
             self.submission.status = ag_models.Submission.GradingStatus.rejected
             self.submission.save()
 
-    # In rerun override:
-    # - check if rerun is cancelled before running suite
-    #   and then raise RerunCancelled
-    # - if suite is not one of the suites to rerun (and not rerun all), do nothing
     def grade_mutation_test_suite(self, suite: ag_models.MutationTestSuite) -> None:
         grade_mutation_test_suite_impl(suite, self.submission)
 
@@ -163,17 +155,11 @@ class SubmissionGrader:
     def send_non_deferred_tests_finished_email(self) -> None:
         if self.project.send_email_on_non_deferred_tests_finished:
             try:
-                # # Refresh the submission to load the denormalized
-                # # test case results
-                # submission.refresh_from_db()
                 send_submission_score_summary_email(self.submission)
             except Exception:
                 print('Error sending email receipt:')
                 traceback.print_exc()
 
-    # Full override for rerun (can still call get_deferred_suite_task_signatures)
-    # - DON'T mark as waiting for deferred
-    # - only mark as finished if full submission rerun
     def grade_deferred_suites(self) -> None:
         self.mark_as_waiting_for_deferred()
         deferred_task_signatures = self.get_deferred_suite_task_signatures()
@@ -210,25 +196,15 @@ class SubmissionGrader:
 
         return ag_suite_signatures + mutation_suite_signatures
 
-    # Override for rerun, use only specified suites/tests, and use the rerun queue
     def get_deferred_ag_test_suite_task_signature(self, suite: ag_models.AGTestSuite):
         return grade_deferred_ag_test_suite.s(
             suite.pk, self.submission_pk
         ).set(queue=settings.DEFERRED_QUEUE_TMPL.format(suite.project_id))
 
-    # Override for rerun, use only specified suites/tests, and use the rerun queue
     def get_deferred_mutation_suite_task_signature(self, suite: ag_models.MutationTestSuite):
         return grade_deferred_mutation_test_suite.s(
             suite.pk, self.submission.pk
         ).set(queue=settings.DEFERRED_QUEUE_TMPL.format(suite.project_id))
-
-    # @property
-    # def deferred_suite_queue_name_template(self):  # Override me for rerun
-    #     return settings.DEFERRED_QUEUE_TMPL
-
-    # @property
-    # def deferred_ag_test_suite_task(self):   # Override me for rerun
-    #     return grade_deferred_ag_test_suite
 
     def record_submission_grading_error(self, error_msg: str) -> None:
         mark_submission_as_error(self.submission_pk, traceback.format_exc())
@@ -238,104 +214,6 @@ class SubmissionGrader:
 def grade_submission(submission_pk):
     grader = SubmissionGrader(submission_pk)
     return grader.grade_submission()
-
-    try:
-        submission = _mark_submission_as_being_graded(submission_pk)
-        if submission is None:
-            return
-
-        # _mark_submission_as_being_graded pre-selects group and
-        # project, so this doesn't need retry logic.
-        project = submission.group.project  # type: ag_models.Project
-
-        for suite in load_queryset_with_retry(project.ag_test_suites.filter(deferred=False)):
-            try:
-                grade_ag_test_suite_impl(suite, submission)
-            except SubmissionRejected:
-                _mark_submission_as_rejected(submission)
-
-        for suite in load_queryset_with_retry(project.mutation_test_suites.filter(deferred=False)):
-            grade_mutation_test_suite_impl(suite, submission)
-
-        @retry_should_recover
-        def mark_as_waiting_for_deferred():
-            # Make sure to not overwrite denormalized ag test results
-            ag_models.Submission.objects.filter(
-                pk=submission.pk
-            ).update(status=ag_models.Submission.GradingStatus.waiting_for_deferred)
-
-        mark_as_waiting_for_deferred()
-
-        if project.send_email_on_non_deferred_tests_finished:
-            try:
-                # Refresh the submission to load the denormalized
-                # test case results
-                submission.refresh_from_db()
-                send_submission_score_summary_email(submission)
-            except Exception:
-                print('Error sending email receipt:')
-                traceback.print_exc()
-
-        deferred_ag_test_suites = load_queryset_with_retry(
-            project.ag_test_suites.filter(deferred=True))
-
-        ag_suite_signatures = [
-            grade_deferred_ag_test_suite.s(
-                ag_test_suite.pk, submission_pk
-            ).set(queue=settings.DEFERRED_QUEUE_TMPL.format(ag_test_suite.project_id))
-            for ag_test_suite in deferred_ag_test_suites
-        ]
-
-        deferred_mutation_test_suites = load_queryset_with_retry(
-            project.mutation_test_suites.filter(deferred=True))
-
-        mutation_suite_signatures = [
-            grade_deferred_mutation_test_suite.s(
-                suite.pk, submission.pk
-            ).set(queue=settings.DEFERRED_QUEUE_TMPL.format(suite.project_id))
-            for suite in deferred_mutation_test_suites
-        ]
-
-        signatures = ag_suite_signatures + mutation_suite_signatures
-        if not signatures:
-            _mark_submission_as_finished_impl(submission_pk)
-            return
-
-        callback = mark_submission_as_finished.s(submission_pk).on_error(on_chord_error.s())
-        celery.chord(signatures)(callback)
-    except Exception:
-        print('Error grading submission')
-        traceback.print_exc()
-        mark_submission_as_error(submission_pk, traceback.format_exc())
-        raise
-
-
-# @retry_should_recover
-# def _mark_submission_as_rejected(submission: ag_models.Submission):
-#     with transaction.atomic():
-#         if submission.is_bonus_submission:
-#             ag_models.Group.objects.select_for_update().filter(
-#                 pk=submission.group_id
-#             ).update(bonus_submissions_used=F('bonus_submissions_used') - 1)
-
-#         submission.is_bonus_submission = False
-#         submission.status = ag_models.Submission.GradingStatus.rejected
-#         submission.save()
-
-
-# @retry_should_recover
-# def _mark_submission_as_being_graded(submission_pk):
-#     with transaction.atomic():
-#         submission = ag_models.Submission.objects.select_for_update().select_related(
-#             'group__project').get(pk=submission_pk)
-#         if submission.status == ag_models.Submission.GradingStatus.removed_from_queue:
-#             print('submission {} has been removed '
-#                   'from the queue'.format(submission.pk))
-#             return None
-
-#         submission.status = ag_models.Submission.GradingStatus.being_graded
-#         submission.save()
-#         return submission
 
 
 @celery.shared_task(queue='small_tasks', acks_late=True)
