@@ -40,6 +40,7 @@ class RerunSubmissionsTaskListCreateView(NestedModelView):
             task_args = dict(request.data)
             task_args.update({'project': project, 'creator': request.user})
             rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(**task_args)
+            print(f'{rerun_task.total_num_subtasks=}')
 
             submissions = ag_models.Submission.objects.filter(group__project=project)
             if not request.data.get('rerun_all_submissions', True):

@@ -2,8 +2,7 @@ import shutil
 import tempfile
 import traceback
 import uuid
-from io import FileIO
-from typing import Tuple
+from typing import IO, Optional, Tuple
 
 import celery
 from autograder_sandbox import AutograderSandbox
@@ -13,13 +12,12 @@ from django.db import IntegrityError, transaction
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 from autograder.core import constants
-from autograder.core.submission_feedback import \
-    update_denormalized_ag_test_results
+from autograder.core.submission_feedback import update_denormalized_ag_test_results
 from autograder.utils.retry import retry_ag_test_cmd, retry_should_recover
 
-from .utils import (FileCloser, add_files_to_sandbox, mark_submission_as_error,
-                    run_ag_test_command, run_command_from_args)
 from .exceptions import SubmissionRejected, TestDeleted
+from .utils import (FileCloser, add_files_to_sandbox, load_queryset_with_retry,
+                    mark_submission_as_error, run_ag_test_command, run_command_from_args)
 
 
 @celery.shared_task(bind=True, max_retries=1, acks_late=True)
@@ -27,8 +25,12 @@ def grade_deferred_ag_test_suite(self, ag_test_suite_pk, submission_pk):
     @retry_should_recover
     def _grade_deferred_ag_test_suite_impl():
         try:
-            grade_ag_test_suite_impl(ag_models.AGTestSuite.objects.get(pk=ag_test_suite_pk),
-                                     ag_models.Submission.objects.get(pk=submission_pk))
+            submission = ag_models.Submission.objects.get(pk=submission_pk)
+            grade_ag_test_suite_impl(
+                ag_models.AGTestSuite.objects.get(pk=ag_test_suite_pk),
+                submission,
+                submission.group
+            )
         except ObjectDoesNotExist:
             # This means that the suite was deleted, so we skip it.
             pass
@@ -49,7 +51,8 @@ def grade_deferred_ag_test_suite(self, ag_test_suite_pk, submission_pk):
 
 def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
                              submission: ag_models.Submission,
-                             *ag_test_cases_to_run: ag_models.AGTestCase,
+                             group: ag_models.Group,
+                             *ag_test_cases_to_run: int,
                              on_suite_setup_finished=lambda _: None,
                              on_test_case_finished=lambda _: None):
     @retry_should_recover
@@ -68,7 +71,7 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
     sandbox = AutograderSandbox(
         name='submission{}-suite{}-{}'.format(submission.pk, ag_test_suite.pk, uuid.uuid4().hex),
         environment_variables={
-            'usernames': ' '.join(submission.group.member_names)
+            'usernames': ' '.join(group.member_names)
         },
         allow_network_access=ag_test_suite.allow_network_access,
         docker_image=ag_test_suite.sandbox_docker_image.tag)
@@ -88,10 +91,11 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
         except TestDeleted:
             return
 
-        if not ag_test_cases_to_run:
-            ag_test_cases_to_run = ag_test_suite.ag_test_cases.all()
+        ag_test_case_queryset = ag_test_suite.ag_test_cases.all()
+        if len(ag_test_cases_to_run) != 0:
+            ag_test_case_queryset = ag_test_case_queryset.filter(pk__in=ag_test_cases_to_run)
 
-        for ag_test_case in ag_test_cases_to_run:
+        for ag_test_case in load_queryset_with_retry(ag_test_case_queryset):
             print('Grading test case', ag_test_case.name)
             case_result = grade_ag_test_case_impl(sandbox, ag_test_case, suite_result)
             on_test_case_finished(case_result)
@@ -248,7 +252,7 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
 
 
 def _get_expected_stdout_file_and_name(
-        ag_test_cmd: ag_models.AGTestCommand) -> Tuple[FileIO, str]:
+        ag_test_cmd: ag_models.AGTestCommand) -> Tuple[Optional[IO[bytes]], Optional[str]]:
     expected_stdout = None
     expected_stdout_filename = None
     if ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.text:
@@ -257,13 +261,14 @@ def _get_expected_stdout_file_and_name(
         expected_stdout.flush()
         expected_stdout_filename = expected_stdout.name
     elif ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.instructor_file:
+        assert ag_test_cmd.expected_stdout_instructor_file is not None
         expected_stdout_filename = ag_test_cmd.expected_stdout_instructor_file.abspath
 
     return expected_stdout, expected_stdout_filename
 
 
 def _get_expected_stderr_file_and_name(
-        ag_test_cmd: ag_models.AGTestCommand) -> Tuple[FileIO, str]:
+        ag_test_cmd: ag_models.AGTestCommand) -> Tuple[Optional[IO[bytes]], Optional[str]]:
     expected_stderr = None
     expected_stderr_filename = None
     if ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.text:
@@ -272,6 +277,7 @@ def _get_expected_stderr_file_and_name(
         expected_stderr.flush()
         expected_stderr_filename = expected_stderr.name
     elif ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.instructor_file:
+        assert ag_test_cmd.expected_stderr_instructor_file is not None
         expected_stderr_filename = ag_test_cmd.expected_stderr_instructor_file.abspath
 
     return expected_stderr, expected_stderr_filename

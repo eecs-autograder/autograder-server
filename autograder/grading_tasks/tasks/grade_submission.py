@@ -27,17 +27,21 @@ from .exceptions import SubmissionRejected, SubmissionRemovedFromQueue
 class SubmissionGrader:
     def __init__(self, submission_pk: int):
         self.submission_pk = submission_pk
-        # Note: Avoid aliasing the object this refers to, as the object
-        # is replaced at certain points in the grading process.
         self._submission = None
         self._project = None
+        self._group = None
 
-        self._reraise_fatal_error = True
-
+    # Note: Avoid aliasing the object this returns, as the object
+    # is replaced at certain points in the grading process.
     @property
     def submission(self) -> ag_models.Submission:
         assert self._submission is not None
         return self._submission
+
+    @property
+    def group(self) -> ag_models.Group:
+        assert self._group is not None
+        return self._group
 
     @property
     def project(self) -> ag_models.Project:
@@ -46,28 +50,39 @@ class SubmissionGrader:
 
     def grade_submission(self) -> None:
         try:
-            self.grade_submission_impl()
+            try:
+                self.load_submission()
+            except SubmissionRemovedFromQueue:
+                return
+
+            try:
+                self.grade_non_deferred_suites()
+            except SubmissionRejected:
+                self.mark_submission_as_rejected()
+                return
+
+            self.send_non_deferred_tests_finished_email()
+            self.grade_deferred_suites()
         except Exception as e:
             print('Error grading submission')
             traceback.print_exc()
             self.record_submission_grading_error(traceback.format_exc())
-            if self._reraise_fatal_error:
-                raise
+            raise
 
-    def grade_submission_impl(self) -> None:
-        try:
-            self.load_submission()
-        except SubmissionRemovedFromQueue:
-            return
+    # def grade_submission_impl(self) -> None:
+    #     try:
+    #         self.load_submission()
+    #     except SubmissionRemovedFromQueue:
+    #         return
 
-        try:
-            self.grade_non_deferred_suites()
-        except SubmissionRejected:
-            self.mark_submission_as_rejected()
-            return
+    #     try:
+    #         self.grade_non_deferred_suites()
+    #     except SubmissionRejected:
+    #         self.mark_submission_as_rejected()
+    #         return
 
-        self.send_non_deferred_tests_finished_email()
-        self.grade_deferred_suites()
+    #     self.send_non_deferred_tests_finished_email()
+    #     self.grade_deferred_suites()
 
     @retry_should_recover
     def load_submission(self):
@@ -78,8 +93,9 @@ class SubmissionGrader:
         """
         with transaction.atomic():
             self._submission = ag_models.Submission.objects.select_for_update().select_related(
-                'project'
+                'project', 'group'
             ).get(pk=self.submission_pk)
+            self._group = self._submission.group
             self._project = self.submission.project
             if self.submission.status == ag_models.Submission.GradingStatus.removed_from_queue:
                 print('submission {} has been removed '
@@ -105,6 +121,7 @@ class SubmissionGrader:
         grade_ag_test_suite_impl(
             suite,
             self.submission,
+            self.group,
             on_suite_setup_finished=self.save_denormalized_ag_test_suite_result,
             on_test_case_finished=self.save_denormalized_ag_test_case_result,
         )

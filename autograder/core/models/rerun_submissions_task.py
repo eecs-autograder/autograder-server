@@ -79,7 +79,12 @@ class RerunSubmissionsTask(Task):
         if self.pk is None:
             if self.rerun_all_submissions:
                 num_submissions = Submission.objects.filter(
-                    group__project=self.project).count()
+                    group__project=self.project,
+                    status__in=[
+                        Submission.GradingStatus.waiting_for_deferred,
+                        Submission.GradingStatus.finished_grading
+                    ]
+                ).count()
             else:
                 num_submissions = len(self.submission_pks)
 

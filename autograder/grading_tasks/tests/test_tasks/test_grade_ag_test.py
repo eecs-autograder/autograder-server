@@ -586,7 +586,7 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         # and test case results don't have the same pk's
         self.ag_test_suite.set_agtestcase_order(self.ag_test_suite.get_agtestcase_order()[::-1])
 
-        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission)
+        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.submission.group)
 
         results = ag_models.AGTestCommandResult.objects.all()
         self.assertEqual(2, results.count())
@@ -597,7 +597,7 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         self.ag_test_cmd_2.validate_and_update(cmd='true')
 
     def test_rerun_all_tests_in_suite_no_star_args_passed(self, *args):
-        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission)
+        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.submission.group)
 
         results = ag_models.AGTestCommandResult.objects.all()
         self.assertEqual(2, results.count())
@@ -606,7 +606,8 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
 
     def test_rerun_all_tests_in_suite_with_star_args_passed(self, *args):
         tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission,
-                                       self.ag_test_case_1, self.ag_test_case_2)
+                                       self.submission.group,
+                                       self.ag_test_case_1.pk, self.ag_test_case_2.pk)
 
         results = ag_models.AGTestCommandResult.objects.all()
         self.assertEqual(2, results.count())
@@ -614,7 +615,10 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
             self.assertTrue(res.return_code_correct)
 
     def test_rerun_some_tests_in_suite(self, *args):
-        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.ag_test_case_1)
+        tasks.grade_ag_test_suite_impl(
+            self.ag_test_suite, self.submission, self.submission.group,
+            self.ag_test_case_1.pk
+        )
 
         rerun_result = self.ag_test_cmd_1.agtestcommandresult_set.first()
         self.assertTrue(rerun_result.return_code_correct)
@@ -635,7 +639,10 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         self.assertTrue(suite_result.setup_timed_out)
 
         self.ag_test_suite.validate_and_update(setup_suite_cmd='')
-        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.ag_test_case_1)
+        tasks.grade_ag_test_suite_impl(
+            self.ag_test_suite, self.submission, self.submission.group,
+            self.ag_test_case_1.pk
+        )
 
         suite_result.refresh_from_db()
         with open(suite_result.setup_stdout_filename, 'r') as f:
@@ -656,7 +663,7 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
         ag_models.AGTestSuite.objects.get(pk=ag_test_suite.pk).delete()
 
         tasks.grade_deferred_ag_test_suite(ag_test_suite.pk, submission.pk)
-        tasks.grade_ag_test_suite_impl(ag_test_suite, submission)
+        tasks.grade_ag_test_suite_impl(ag_test_suite, submission, submission.group)
         sleep_mock.assert_not_called()
 
     def test_ag_test_suite_deleted_while_setup_is_running(self, sleep_mock) -> None:
@@ -671,7 +678,7 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
             '.mocking_hook_delete_suite_during_setup',
             new=mock.Mock(side_effect=_delete_suite)
         ):
-            tasks.grade_ag_test_suite_impl(ag_test_suite, submission)
+            tasks.grade_ag_test_suite_impl(ag_test_suite, submission, submission.group)
 
         sleep_mock.assert_not_called()
 
@@ -778,6 +785,7 @@ class GradeAGTestSuiteCallbacksTestCase(TransactionUnitTestBase):
         tasks.grade_ag_test_suite_impl(
             self.ag_test_suite,
             self.submission,
+            self.submission.group,
             on_suite_setup_finished=self.setup_finished_callback,
             on_test_case_finished=self.test_case_finished_callback
         )
@@ -790,6 +798,7 @@ class GradeAGTestSuiteCallbacksTestCase(TransactionUnitTestBase):
             tasks.grade_ag_test_suite_impl(
                 self.ag_test_suite,
                 self.submission,
+                self.submission.group,
                 on_suite_setup_finished=self.setup_finished_callback,
                 on_test_case_finished=self.test_case_finished_callback
             )
@@ -801,6 +810,7 @@ class GradeAGTestSuiteCallbacksTestCase(TransactionUnitTestBase):
         tasks.grade_ag_test_suite_impl(
             self.ag_test_suite,
             self.submission,
+            self.submission.group,
             on_suite_setup_finished=self.setup_finished_callback,
             on_test_case_finished=self.test_case_finished_callback
         )
@@ -823,6 +833,7 @@ class GradeAGTestSuiteCallbacksTestCase(TransactionUnitTestBase):
         tasks.grade_ag_test_suite_impl(
             self.ag_test_suite,
             self.submission,
+            self.submission.group,
             on_suite_setup_finished=self.setup_finished_callback,
             on_test_case_finished=self.test_case_finished_callback
         )
