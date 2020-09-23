@@ -1,3 +1,4 @@
+from autograder.core.models import submission
 from unittest import mock
 
 from django.conf import settings
@@ -83,6 +84,9 @@ class GradeSubmissionTestCase(UnitTestBase):
             get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
+
+        self.assertIsNotNone(self.submission.grading_start_time)
+        self.assertIsNotNone(self.submission.non_deferred_grading_end_time)
 
     def test_one_ag_suite_one_non_deferred_mutation_suite_one_deferred_mutation_suite(self, *args):
         ag_suite = obj_build.make_ag_test_suite(self.project)
