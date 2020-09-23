@@ -442,10 +442,17 @@ class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
         self.assertEqual(expected_response, response.data)
 
         for submission, expected_total_points in expected_submission_points:
+            original_grading_start_time = submission.grading_start_time
+            original_non_deferred_grading_end_time = submission.non_deferred_grading_end_time
+
             submission.refresh_from_db()
             fdbk = get_submission_fdbk(submission, ag_models.FeedbackCategory.max)
             self.assertEqual(expected_total_points, fdbk.total_points)
             self.assertEqual(self.total_points_possible, fdbk.total_points_possible)
+
+            self.assertEqual(original_grading_start_time, submission.grading_start_time)
+            self.assertEqual(
+                original_non_deferred_grading_end_time, submission.non_deferred_grading_end_time)
 
         # Make sure this submission is never rerun.
         self.other_submission.refresh_from_db()
