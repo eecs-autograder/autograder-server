@@ -17,7 +17,7 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
         self.ag_test_case = obj_build.make_ag_test_case(self.ag_test_suite)
         self.mutation_test_suite = obj_build.make_mutation_test_suite(self.project)
 
-        self.submission = obj_build.make_submission(
+        self.submission = obj_build.make_finished_submission(
             group=obj_build.make_group(project=self.project))
 
     def test_default_create(self):

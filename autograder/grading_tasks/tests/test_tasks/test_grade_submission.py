@@ -1,3 +1,4 @@
+from autograder.core.models import submission
 from unittest import mock
 
 from django.conf import settings
@@ -6,9 +7,13 @@ from django.test import tag
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core.models.ag_test.feedback_category import FeedbackCategory
+from autograder.core.submission_feedback import (AGTestPreLoader, SubmissionResultFeedback,
+                                                 update_denormalized_ag_test_results)
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
     get_submission_fdbk
 from autograder.grading_tasks import tasks
+from autograder.grading_tasks.tasks.grade_submission import SubmissionGrader
 from autograder.utils.retry import MaxRetriesExceeded, retry
 from autograder.utils.testing import UnitTestBase
 
@@ -79,6 +84,9 @@ class GradeSubmissionTestCase(UnitTestBase):
             get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
+
+        self.assertIsNotNone(self.submission.grading_start_time)
+        self.assertIsNotNone(self.submission.non_deferred_grading_end_time)
 
     def test_one_ag_suite_one_non_deferred_mutation_suite_one_deferred_mutation_suite(self, *args):
         ag_suite = obj_build.make_ag_test_suite(self.project)
@@ -358,6 +366,7 @@ void file2() {
         tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
+        print(self.submission.denormalized_ag_test_results)
         self.assertEqual(
             3,
             get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).total_points)
@@ -479,3 +488,156 @@ void file2() {
             tasks.grade_submission_task(self.submission.pk)
 
             mock_send_email.assert_called_once_with(self.submission)
+
+    def test_submission_rejected(self, *args) -> None:
+        suite1 = obj_build.make_ag_test_suite(
+            self.project,
+            reject_submission_if_setup_fails=True,
+            setup_suite_cmd='false'
+        )
+        suite2 = obj_build.make_ag_test_suite(self.project)
+
+        tasks.grade_submission_task(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.rejected, self.submission.status)
+        self.assertEqual(1, self.submission.ag_test_suite_results.count())
+
+    def test_submission_rejected_bonus_submission_refunded(self, *args) -> None:
+        self.submission.group.bonus_submissions_used = 1
+        self.submission.group.save()
+        self.submission.is_bonus_submission = True
+        self.submission.save()
+
+        suite1 = obj_build.make_ag_test_suite(
+            self.project,
+            reject_submission_if_setup_fails=True,
+            setup_suite_cmd='false'
+        )
+        suite2 = obj_build.make_ag_test_suite(self.project)
+
+        tasks.grade_submission_task(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.rejected, self.submission.status)
+        self.assertFalse(self.submission.is_bonus_submission)
+        self.assertEqual(0, self.submission.group.bonus_submissions_used)
+        self.assertEqual(1, self.submission.ag_test_suite_results.count())
+
+    def test_reject_submission_true_but_no_setup_command(self, *args) -> None:
+        suite1 = obj_build.make_ag_test_suite(
+            self.project,
+            reject_submission_if_setup_fails=True,
+            setup_suite_cmd=''
+        )
+        suite2 = obj_build.make_ag_test_suite(self.project)
+
+        tasks.grade_submission_task(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.finished_grading, self.submission.status)
+        self.assertEqual(2, self.submission.ag_test_suite_results.count())
+
+
+@mock.patch('autograder.utils.retry.sleep')
+@mock.patch('autograder.core.submission_feedback.update_denormalized_ag_test_results', wrap=True)
+class DenormalizedResultsUpdateTestCase(UnitTestBase):
+    class _MockSubmissionGrader(SubmissionGrader):
+        """
+        Preserves original behavior of SubmissionGrader, but records
+        intermediate values of self.submission for later inspection.
+        """
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.denormalized_result_snapshots = []
+
+        def save_denormalized_ag_test_suite_result(self, *args) -> None:
+            super().save_denormalized_ag_test_suite_result(*args)
+            self.denormalized_result_snapshots.append(self.submission)
+
+        def save_denormalized_ag_test_case_result(self, *args) -> None:
+            super().save_denormalized_ag_test_case_result(*args)
+            self.denormalized_result_snapshots.append(self.submission)
+
+    def setUp(self):
+        super().setUp()
+        self.submission = obj_build.make_submission()
+        self.project = self.submission.group.project
+        self.submission_grader = self._MockSubmissionGrader(self.submission.pk)
+
+        self.maxDiff = None
+
+    def test_denormalized_results_updated_after_suite_setup_and_test_case(
+        self,
+        mock_update_denormed: mock.Mock,
+        *args
+    ) -> None:
+        suite = obj_build.make_ag_test_suite(self.project, setup_suite_cmd='true')
+        test1 = obj_build.make_ag_test_case(suite)
+        test2 = obj_build.make_ag_test_case(suite)
+
+        self.submission_grader.grade_submission()
+        self.assertEqual(3, len(self.submission_grader.denormalized_result_snapshots))
+
+        snapshot1_fdbk = SubmissionResultFeedback(
+            self.submission_grader.denormalized_result_snapshots[0],
+            FeedbackCategory.max,
+            AGTestPreLoader(self.project)
+        )
+        self.assertEqual(1, len(snapshot1_fdbk.ag_test_suite_results))
+        self.assertEqual(0, len(snapshot1_fdbk.ag_test_suite_results[0].ag_test_case_results))
+
+        snapshot2_fdbk = SubmissionResultFeedback(
+            self.submission_grader.denormalized_result_snapshots[1],
+            FeedbackCategory.max,
+            AGTestPreLoader(self.project)
+        )
+        self.assertEqual(1, len(snapshot2_fdbk.ag_test_suite_results))
+        self.assertEqual(1, len(snapshot2_fdbk.ag_test_suite_results[0].ag_test_case_results))
+
+        snapshot3_fdbk = SubmissionResultFeedback(
+            self.submission_grader.denormalized_result_snapshots[2],
+            FeedbackCategory.max,
+            AGTestPreLoader(self.project)
+        )
+        self.assertEqual(1, len(snapshot3_fdbk.ag_test_suite_results))
+        self.assertEqual(2, len(snapshot3_fdbk.ag_test_suite_results[0].ag_test_case_results))
+
+        mock_update_denormed.assert_not_called()
+        update_denormalized_ag_test_results(self.submission.pk)
+        self.submission.refresh_from_db()
+        final_fdbk = SubmissionResultFeedback(
+            self.submission,
+            FeedbackCategory.max,
+            AGTestPreLoader(self.project)
+        )
+        self.assertEqual(final_fdbk.to_dict(), snapshot3_fdbk.to_dict())
+
+    def test_denormalized_results_updated_after_suite_setup_even_if_no_setup(
+        self,
+        mock_update_denormed: mock.Mock,
+        *args
+    ) -> None:
+        suite = obj_build.make_ag_test_suite(self.project, setup_suite_cmd='')
+
+        self.submission_grader.grade_submission()
+        self.assertEqual(1, len(self.submission_grader.denormalized_result_snapshots))
+
+        snapshot_fdbk = SubmissionResultFeedback(
+            self.submission_grader.denormalized_result_snapshots[0],
+            FeedbackCategory.max,
+            AGTestPreLoader(self.project)
+        )
+        self.assertEqual(1, len(snapshot_fdbk.ag_test_suite_results))
+        self.assertEqual(0, len(snapshot_fdbk.ag_test_suite_results[0].ag_test_case_results))
+
+        mock_update_denormed.assert_not_called()
+        update_denormalized_ag_test_results(self.submission.pk)
+        self.submission.refresh_from_db()
+        final_fdbk = SubmissionResultFeedback(
+            self.submission_grader.denormalized_result_snapshots[0],
+            FeedbackCategory.max,
+            AGTestPreLoader(self.project)
+        )
+        self.assertEqual(final_fdbk.to_dict(), snapshot_fdbk.to_dict())

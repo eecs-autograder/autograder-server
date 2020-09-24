@@ -416,9 +416,8 @@ class RemoveSubmissionFromQueueView(AGModelAPIView):
                 pk=submission.group_id
             ).update(bonus_submissions_used=F('bonus_submissions_used') - 1)
 
-        submission.status = (
-            ag_models.Submission.GradingStatus.removed_from_queue)
         submission.is_bonus_submission = False
+        submission.status = ag_models.Submission.GradingStatus.removed_from_queue
         submission.save()
 
         return response.Response(submission.to_dict(), status.HTTP_200_OK)

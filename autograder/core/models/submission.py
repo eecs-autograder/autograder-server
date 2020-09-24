@@ -1,3 +1,5 @@
+from typing import Optional
+from datetime import timedelta
 import fnmatch
 import os
 
@@ -125,6 +127,10 @@ class Submission(ag_model_base.AutograderModel):
         # started being graded.
         removed_from_queue = 'removed_from_queue'
 
+        # The setup command failed for an AGTestSuite marked as
+        # "reject_submission_if_setup_fails".
+        rejected = 'rejected'
+
         # Something unexpected occurred during the grading process.
         error = 'error'
 
@@ -234,6 +240,22 @@ class Submission(ag_model_base.AutograderModel):
         blank=True,
         help_text="""If status is "error", an error message will be stored here.""")
 
+    grading_start_time = models.DateTimeField(
+        blank=True, null=True, default=None,
+        help_text=(
+            "The time that the submission was marked as being_graded."
+            "Can be used to calculate time spent in queue."
+        )
+    )
+
+    non_deferred_grading_end_time = models.DateTimeField(
+        blank=True, null=True, default=None,
+        help_text=(
+            "The time that the submission was marked as waiting_for_deferred."
+            "Can be used to calculate time spent grading non-deferred tests."
+        )
+    )
+
     denormalized_ag_test_results = pg_fields.JSONField(
         default=dict, blank=True,
         help_text="""Stores denormalized AG test results in order to avoid
@@ -270,6 +292,20 @@ class Submission(ag_model_base.AutograderModel):
             group__project=self.group.project,
             pk__lte=self.pk
         ).count()
+
+    @property
+    def _time_spent_in_queue(self) -> Optional[timedelta]:
+        if self.grading_start_time is None:
+            return None
+
+        return self.grading_start_time - self.timestamp
+
+    @property
+    def _time_spent_grading_non_deferred(self) -> Optional[timedelta]:
+        if self.non_deferred_grading_end_time is None or self.grading_start_time is None:
+            return None
+
+        return self.non_deferred_grading_end_time - self.grading_start_time
 
     # -------------------------------------------------------------------------
 

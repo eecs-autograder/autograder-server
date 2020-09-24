@@ -3,11 +3,12 @@ import random
 import tempfile
 from unittest import mock
 
-from autograder_sandbox import AutograderSandbox
-from autograder_sandbox.autograder_sandbox import CompletedCommand
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import tag
 
+from autograder_sandbox import AutograderSandbox
+from autograder_sandbox.autograder_sandbox import CompletedCommand
+from autograder.grading_tasks.tasks.exceptions import SubmissionRejected
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core import constants
@@ -585,7 +586,7 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         # and test case results don't have the same pk's
         self.ag_test_suite.set_agtestcase_order(self.ag_test_suite.get_agtestcase_order()[::-1])
 
-        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission)
+        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.submission.group)
 
         results = ag_models.AGTestCommandResult.objects.all()
         self.assertEqual(2, results.count())
@@ -596,7 +597,7 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         self.ag_test_cmd_2.validate_and_update(cmd='true')
 
     def test_rerun_all_tests_in_suite_no_star_args_passed(self, *args):
-        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission)
+        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.submission.group)
 
         results = ag_models.AGTestCommandResult.objects.all()
         self.assertEqual(2, results.count())
@@ -605,7 +606,8 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
 
     def test_rerun_all_tests_in_suite_with_star_args_passed(self, *args):
         tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission,
-                                       self.ag_test_case_1, self.ag_test_case_2)
+                                       self.submission.group,
+                                       self.ag_test_case_1.pk, self.ag_test_case_2.pk)
 
         results = ag_models.AGTestCommandResult.objects.all()
         self.assertEqual(2, results.count())
@@ -613,7 +615,10 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
             self.assertTrue(res.return_code_correct)
 
     def test_rerun_some_tests_in_suite(self, *args):
-        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.ag_test_case_1)
+        tasks.grade_ag_test_suite_impl(
+            self.ag_test_suite, self.submission, self.submission.group,
+            self.ag_test_case_1.pk
+        )
 
         rerun_result = self.ag_test_cmd_1.agtestcommandresult_set.first()
         self.assertTrue(rerun_result.return_code_correct)
@@ -634,7 +639,10 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         self.assertTrue(suite_result.setup_timed_out)
 
         self.ag_test_suite.validate_and_update(setup_suite_cmd='')
-        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.ag_test_case_1)
+        tasks.grade_ag_test_suite_impl(
+            self.ag_test_suite, self.submission, self.submission.group,
+            self.ag_test_case_1.pk
+        )
 
         suite_result.refresh_from_db()
         with open(suite_result.setup_stdout_filename, 'r') as f:
@@ -655,7 +663,39 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
         ag_models.AGTestSuite.objects.get(pk=ag_test_suite.pk).delete()
 
         tasks.grade_deferred_ag_test_suite(ag_test_suite.pk, submission.pk)
-        tasks.grade_ag_test_suite_impl(ag_test_suite, submission)
+        tasks.grade_ag_test_suite_impl(ag_test_suite, submission, submission.group)
+        sleep_mock.assert_not_called()
+
+    def test_ag_test_suite_deleted_while_setup_is_running(self, sleep_mock) -> None:
+        def _delete_suite():
+            ag_models.AGTestSuite.objects.get(pk=ag_test_suite.pk).delete()
+
+        submission = obj_build.make_submission()
+        ag_test_suite = obj_build.make_ag_test_suite(setup_suite_cmd='true')
+
+        with mock.patch(
+            'autograder.grading_tasks.tasks.grade_ag_test'
+            '.mocking_hook_delete_suite_during_setup',
+            new=mock.Mock(side_effect=_delete_suite)
+        ):
+            tasks.grade_ag_test_suite_impl(ag_test_suite, submission, submission.group)
+
+        sleep_mock.assert_not_called()
+
+    def test_deferred_ag_test_suite_deleted_while_setup_is_running(self, sleep_mock) -> None:
+        def _delete_suite():
+            ag_models.AGTestSuite.objects.get(pk=ag_test_suite.pk).delete()
+
+        submission = obj_build.make_submission()
+        ag_test_suite = obj_build.make_ag_test_suite(setup_suite_cmd='true')
+
+        with mock.patch(
+            'autograder.grading_tasks.tasks.grade_ag_test'
+            '.mocking_hook_delete_suite_during_setup',
+            new=mock.Mock(side_effect=_delete_suite)
+        ):
+            tasks.grade_deferred_ag_test_suite(ag_test_suite.pk, submission.pk)
+
         sleep_mock.assert_not_called()
 
     def test_ag_test_case_not_found_no_retry(self, sleep_mock) -> None:
@@ -727,3 +767,87 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
             tasks.grade_ag_test_command_impl(sandbox, ag_test_command, test_result)
 
         sleep_mock.assert_not_called()
+
+
+@mock.patch('autograder.utils.retry.sleep')
+class GradeAGTestSuiteCallbacksTestCase(TransactionUnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.submission = obj_build.make_submission()
+        self.project = self.submission.group.project
+        self.ag_test_suite = obj_build.make_ag_test_suite(
+            self.project, setup_suite_cmd='false'  # "false" command exits nonzero
+        )
+        self.setup_finished_callback = mock.Mock()
+        self.test_case_finished_callback = mock.Mock()
+
+    def test_setup_finished_callback(self, *args) -> None:
+        tasks.grade_ag_test_suite_impl(
+            self.ag_test_suite,
+            self.submission,
+            self.submission.group,
+            on_suite_setup_finished=self.setup_finished_callback,
+            on_test_case_finished=self.test_case_finished_callback
+        )
+        self._check_suite_setup_callback_args()
+
+    def test_setup_finished_callback_submission_rejected(self, *args) -> None:
+        self.ag_test_suite.validate_and_update(reject_submission_if_setup_fails=True)
+
+        with self.assertRaises(SubmissionRejected):
+            tasks.grade_ag_test_suite_impl(
+                self.ag_test_suite,
+                self.submission,
+                self.submission.group,
+                on_suite_setup_finished=self.setup_finished_callback,
+                on_test_case_finished=self.test_case_finished_callback
+            )
+        self._check_suite_setup_callback_args()
+
+    def test_setup_finished_callback_no_setup_command(self, *args) -> None:
+        self.ag_test_suite.validate_and_update(setup_suite_cmd='')
+
+        tasks.grade_ag_test_suite_impl(
+            self.ag_test_suite,
+            self.submission,
+            self.submission.group,
+            on_suite_setup_finished=self.setup_finished_callback,
+            on_test_case_finished=self.test_case_finished_callback
+        )
+        self._check_suite_setup_callback_args()
+
+    def _check_suite_setup_callback_args(self) -> None:
+        self.assertEqual(1, self.setup_finished_callback.call_count)
+        callback_args = self.setup_finished_callback.call_args.args
+        self.assertEqual(1, len(callback_args))
+        suite_result = callback_args[0]
+        self.assertEqual(self.ag_test_suite, suite_result.ag_test_suite)
+        self.assertEqual(self.submission, suite_result.submission)
+
+        self.test_case_finished_callback.assert_not_called()
+
+    def test_ag_test_case_finished_callback(self, *args) -> None:
+        ag_test_case1 = obj_build.make_ag_test_case(self.ag_test_suite)
+        ag_test_case2 = obj_build.make_ag_test_case(self.ag_test_suite)
+
+        tasks.grade_ag_test_suite_impl(
+            self.ag_test_suite,
+            self.submission,
+            self.submission.group,
+            on_suite_setup_finished=self.setup_finished_callback,
+            on_test_case_finished=self.test_case_finished_callback
+        )
+        self.assertEqual(1, self.setup_finished_callback.call_count)
+
+        self.assertEqual(2, self.test_case_finished_callback.call_count)
+        call1 = self.test_case_finished_callback.call_args_list[0]
+        self.assertEqual(1, len(call1.args))
+        case_result = call1.args[0]
+        self.assertEqual(ag_test_case1, case_result.ag_test_case)
+        self.assertEqual(self.submission, case_result.ag_test_suite_result.submission)
+
+        call2 = self.test_case_finished_callback.call_args_list[1]
+        self.assertEqual(1, len(call2.args))
+        case_result = call2.args[0]
+        self.assertEqual(ag_test_case2, case_result.ag_test_case)
+        self.assertEqual(self.submission, case_result.ag_test_suite_result.submission)
