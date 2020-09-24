@@ -69,21 +69,6 @@ class SubmissionGrader:
             self.record_submission_grading_error(traceback.format_exc())
             raise
 
-    # def grade_submission_impl(self) -> None:
-    #     try:
-    #         self.load_submission()
-    #     except SubmissionRemovedFromQueue:
-    #         return
-
-    #     try:
-    #         self.grade_non_deferred_suites()
-    #     except SubmissionRejected:
-    #         self.mark_submission_as_rejected()
-    #         return
-
-    #     self.send_non_deferred_tests_finished_email()
-    #     self.grade_deferred_suites()
-
     @retry_should_recover
     def load_submission(self):
         """

@@ -649,8 +649,6 @@ class RejectSubmissionTestCase(TransactionUnitTestBase):
             project=submission.project,
             creator=obj_build.make_user(),
             total_num_subtasks=1,
-            # rerun_all_ag_test_suites=False,
-            # ag_test_suite_data={suite.pk: [test_case.pk]}
         )
 
         rerun_submission(submission.pk, rerun_task.pk)

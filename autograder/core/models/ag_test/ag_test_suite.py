@@ -111,7 +111,7 @@ class AGTestSuite(AutograderModel):
         default=False,
         help_text="""When this field is True and the suite has a setup command,
             the submission will be rejected if that setup command fails.
-            This field is only allowed to be True for the first AGTestSuite
+            This field is only allowed to be True for the first non-deferred AGTestSuite
             (order specified by Project.get_agtestsuite_order()) of the Project.
         """
     )

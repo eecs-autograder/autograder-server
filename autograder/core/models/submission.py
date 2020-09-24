@@ -294,14 +294,14 @@ class Submission(ag_model_base.AutograderModel):
         ).count()
 
     @property
-    def time_spent_in_queue(self) -> Optional[timedelta]:
+    def _time_spent_in_queue(self) -> Optional[timedelta]:
         if self.grading_start_time is None:
             return None
 
         return self.grading_start_time - self.timestamp
 
     @property
-    def time_spent_grading_non_deferred(self) -> Optional[timedelta]:
+    def _time_spent_grading_non_deferred(self) -> Optional[timedelta]:
         if self.non_deferred_grading_end_time is None or self.grading_start_time is None:
             return None
 
