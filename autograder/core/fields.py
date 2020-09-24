@@ -1,17 +1,26 @@
-import typing
+from typing import Callable, List, Union, Sequence, Any, TYPE_CHECKING, Type, Optional, Generic, TypeVar, Dict
 from enum import Enum
 
 from django.contrib.postgres import fields as pg_fields
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.expressions import Combinable
 
 from . import constants as const
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from .models.ag_model_base import DictSerializable
 
 
-class ValidatedArrayField(pg_fields.ArrayField):
+# HACK: This should get rid of "call to untyped function" errors when
+# we use our custom fields.
+if TYPE_CHECKING:
+    class ValidatedArrayField(pg_fields.ArrayField[List[Any], Union[Sequence[Any], Combinable]]):
+        ...
+
+
+# TODO: Remove in 5.0.0
+class ValidatedArrayField(pg_fields.ArrayField):  # type: ignore
     """
     This field provides the same functionality as the postgres
     ArrayField but with a more convenient validation process. When
@@ -26,11 +35,11 @@ class ValidatedArrayField(pg_fields.ArrayField):
     ValidationError.
     """
 
-    def clean(self, value, model_instance):
+    def clean(self, value: Any, model_instance: Optional[models.Model]) -> Any:
         value = super().clean(value, model_instance)
 
         cleaned_value = []
-        errors = []
+        errors: List[Union[str, List[str]]] = []
         error_found = False
         for item in value:
             try:
@@ -47,17 +56,20 @@ class ValidatedArrayField(pg_fields.ArrayField):
 
         return value
 
-    def validate(self, value, model_instance):
+    def validate(self, value: Any, model_instance: models.Model) -> None:
         # The validate() function defined in ArrayField has the
         # behavior we want to get rid of, so we instead call
         # validate() on ArrayField's base class.
         super(pg_fields.ArrayField, self).validate(value, model_instance)
 
-    def run_validators(self, value):
+    def run_validators(self, value: Any) -> None:
         # The run_validators() function defined in ArrayField has the
         # behavior we want to get rid of, so we instead call
         # run_validators() on ArrayField's base class.
         super(pg_fields.ArrayField, self).run_validators(value)
+
+
+_ValidatorCallable = Callable[..., None]
 
 
 class StringArrayField(ValidatedArrayField):
@@ -80,24 +92,31 @@ class StringArrayField(ValidatedArrayField):
                                 global_constants.MAX_CHAR_FIELD_LEN)
     """
 
-    def __init__(self, strip_strings=False, allow_empty_strings=False,
-                 string_validators=None,
-                 max_string_length=const.MAX_CHAR_FIELD_LEN,
-                 **kwargs):
+    def __init__(
+        self,
+        strip_strings: bool = False,
+        allow_empty_strings: bool = False,
+        string_validators: Optional[List[_ValidatorCallable]] = None,
+        max_string_length: int = const.MAX_CHAR_FIELD_LEN,
+        **kwargs: Any
+    ):
         if string_validators is None:
             string_validators = []
 
-        self.base_string_field = models.CharField(
-            max_length=max_string_length, blank=allow_empty_strings,
-            validators=string_validators)
         self.strip_strings = strip_strings
         self.allow_empty_strings = allow_empty_strings
         self.max_string_length = max_string_length
         self.string_validators = string_validators
 
-        super().__init__(self.base_string_field, **kwargs)
+        super().__init__(
+            models.CharField(
+                max_length=max_string_length, blank=allow_empty_strings,
+                validators=string_validators
+            ),
+            **kwargs
+        )
 
-    def deconstruct(self):
+    def deconstruct(self) -> Any:
         name, path, args, kwargs = super().deconstruct()
         del kwargs['base_field']
         kwargs.update({
@@ -108,7 +127,7 @@ class StringArrayField(ValidatedArrayField):
         })
         return name, path, args, kwargs
 
-    def to_python(self, value):
+    def to_python(self, value: Any) -> Any:
         value = super().to_python(value)
         if value is None:
             return value
@@ -121,33 +140,47 @@ class StringArrayField(ValidatedArrayField):
 
         return stripped
 
-    def from_db_value(self, value, *args, **kwargs):
+    def from_db_value(self, value: Any, *args: Any, **kwargs: Any) -> Any:
         return self.to_python(value)
 
 
-class ShortStringField(models.CharField):
-    def __init__(self, max_length=const.MAX_CHAR_FIELD_LEN, strip=False,
-                 **kwargs):
+if TYPE_CHECKING:
+    class ShortStringField(models.CharField[str, str]):
+        ...
+
+
+class ShortStringField(models.CharField):  # type: ignore
+    def __init__(
+        self,
+        max_length: int = const.MAX_CHAR_FIELD_LEN,
+        strip: bool = False,
+        **kwargs: Any
+    ):
         self.strip = strip
         super().__init__(max_length=max_length, **kwargs)
 
-    def deconstruct(self):
+    def deconstruct(self) -> Any:
         name, path, args, kwargs = super().deconstruct()
         kwargs['strip'] = self.strip
         return name, path, args, kwargs
 
-    def to_python(self, value):
+    def to_python(self, value: Any) -> Any:
         if value is not None:
             value = value.strip()
 
         return super().to_python(value)
 
-    def from_db_value(self, value, *args, **kwargs):
+    def from_db_value(self, value: Any, *args: Any, **kwargs: Any) -> Any:
         return self.to_python(value)
 
 
+if TYPE_CHECKING:
+    class EnumField(models.TextField['str', 'str']):
+        ...
+
+
 class EnumField(models.TextField):
-    def __init__(self, enum_type: typing.Type[Enum], **kwargs):
+    def __init__(self, enum_type: Type[Enum], **kwargs):
         self.enum_type = enum_type
         super().__init__(**kwargs)
 
@@ -176,14 +209,24 @@ class EnumField(models.TextField):
         return value.value
 
 
-class ValidatedJSONField(pg_fields.JSONField):
+_JSONObjType = TypeVar('_JSONObjType', bound='DictSerializable')
+
+
+class ValidatedJSONField(
+    Generic[_JSONObjType],
+    pg_fields.JSONField
+):
+    _pyi_private_set_type: Union[_JSONObjType, Dict[str, object]]
+    _pyi_private_get_type: _JSONObjType
+    _pyi_lookup_exact_type: Union[_JSONObjType, Dict[str, object]]
+
     """
     This field uses the Postgres JSON field, ToDictMixin, and
     FromDictMixin to validate and store serializable Python objects
     in the database.
     """
 
-    def __init__(self, serializable_class: typing.Type['DictSerializable'], **kwargs):
+    def __init__(self, serializable_class: Type['DictSerializable'], **kwargs: object):
         self.serializable_class = serializable_class
         super().__init__(**kwargs)
 
