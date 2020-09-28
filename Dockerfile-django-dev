@@ -4,3 +4,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /usr/src/app
+
+COPY dockerfile_django_dev_entrypoint.sh /dockerfile_django_dev_entrypoint.sh
+RUN chmod 755 /dockerfile_django_dev_entrypoint.sh
+ENTRYPOINT ["/dockerfile_django_dev_entrypoint.sh"]
