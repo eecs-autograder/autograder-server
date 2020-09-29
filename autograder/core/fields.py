@@ -208,7 +208,7 @@ class ValidatedJSONField(pg_fields.JSONField):
             super().validate(value.to_dict(), model_instance)
 
     def from_db_value(self, value, *args, **kwargs):
-        return self.to_python(value)
+        return self.to_python(super().from_db_value(value, *args, **kwargs))
 
     def get_prep_value(self, value):
         if value is None:
