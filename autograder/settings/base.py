@@ -69,7 +69,7 @@ Please run "python3 generate_secrets.py" to generate this file."""
         GPG_KEY_ID = f.read()
 
 
-OAUTH2_PROVIDER = 'google'
+OAUTH2_PROVIDER = os.environ.get('OAUTH2_PROVIDER', 'google')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
