@@ -141,7 +141,8 @@ class AzureOAuth2CallbackHandler(OAuth2CallbackHandler):
 
             http = credentials.authorize(httplib2.Http())
 
-            # Based upon https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
+            # Based upon:
+            # https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
 
             url = 'https://graph.microsoft.com/v1.0/me'
             response, content = http.request(url, 'GET')
