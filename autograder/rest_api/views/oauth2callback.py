@@ -130,6 +130,50 @@ class GoogleOAuth2CallbackHandler(OAuth2CallbackHandler):
             raise
 
 
+class AzureOAuth2CallbackHandler(OAuth2CallbackHandler):
+    def load_user_info(self, request):
+        response = None
+        content = None
+        try:
+            credentials = client.credentials_from_clientsecrets_and_code(
+                settings.OAUTH2_SECRETS_PATH, GOOGLE_API_SCOPES, request.GET,
+                redirect_uri=self._state['redirect_uri'])
+
+            http = credentials.authorize(httplib2.Http())
+
+            # Based upon https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
+
+            url = 'https://graph.microsoft.com/v1.0/me'
+            response, content = http.request(url, 'GET')
+            azure_user_info = json.loads(content)
+
+            email = azure_user_info['userPrincipalName']
+
+            if email is None:
+                raise RuntimeError('Primary email not found in user info')
+
+            first_name = azure_user_info['givenName']
+            if first_name is None:
+                first_name = ''
+
+            last_name = azure_user_info['surname']
+            if last_name is None:
+                last_name = ''
+
+            return {
+                'email': email,
+                'first_name': first_name[:_DJANGO_FIRST_NAME_MAX_LEN],
+                'last_name': last_name[:_DJANGO_LAST_NAME_MAX_LEN],
+            }
+        except Exception as e:
+            print('Unexpected auth error', file=sys.stderr, flush=True)
+            print(e, file=sys.stderr, flush=True)
+            traceback.print_exc()
+            print(response, content)
+            raise
+
+
 OAUTH2_CALLBACK_CLASSES: Mapping[str, OAuth2CallbackHandler] = {
-    'google': GoogleOAuth2CallbackHandler
+    'google': GoogleOAuth2CallbackHandler,
+    'azure': AzureOAuth2CallbackHandler
 }
