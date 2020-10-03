@@ -95,7 +95,7 @@ class GoogleOAuth2CallbackHandler(OAuth2CallbackHandler):
                 email = email['value']
             except KeyError:
                 print('WARNING: emailAddress not found. Using alternate API')
-                em_url = ('https://www.googleapis.com/userinfo/v2/me?fields=email')
+                em_url = 'https://www.googleapis.com/userinfo/v2/me?fields=email'
                 em_response, em_content = http.request(em_url, 'GET')
                 em_user_info = json.loads(em_content)
                 email = em_user_info['email']
