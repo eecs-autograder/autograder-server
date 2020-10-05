@@ -15,9 +15,19 @@ GOOGLE_API_SCOPES = [
     'profile',
 ]
 
+AZURE_API_SCOPES = [
+    'openid',
+    'email',
+    'profile',
+]
 
-class GoogleOAuth2(TokenAuthentication):
+
+class OAuth2RedirectTokenAuth(TokenAuthentication):
+    scopes = None
+
     def authenticate_header(self, request):
+        assert self.scopes is not None, 'Derived classes must set the "scopes" attr.'
+
         redirect_uri = request.build_absolute_uri(reverse('oauth2callback'))
         flow = client.flow_from_clientsecrets(
             settings.OAUTH2_SECRETS_PATH,
@@ -33,6 +43,14 @@ class GoogleOAuth2(TokenAuthentication):
         }
 
         return 'Redirect_to: ' + flow.step1_get_authorize_url(state=json.dumps(state))
+
+
+class GoogleOAuth2(OAuth2RedirectTokenAuth):
+    scopes = GOOGLE_API_SCOPES
+
+
+class AzureOAuth2(OAuth2RedirectTokenAuth):
+    scopes = AZURE_API_SCOPES
 
 
 # DO NOT USE IN PRODUCTION
