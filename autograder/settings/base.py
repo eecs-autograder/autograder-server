@@ -103,12 +103,17 @@ MIDDLEWARE = (
 
 APPEND_SLASH = False
 
+OAUTH2_AUTH_CLASSES = {
+    'google': 'autograder.rest_api.auth.GoogleOAuth2',
+    'azure': 'autograder.rest_api.auth.AzureOAuth2',
+}
+
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'autograder.rest_api.auth.GoogleOAuth2',
+        OAUTH2_AUTH_CLASSES[OAUTH2_PROVIDER],
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
