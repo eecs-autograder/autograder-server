@@ -31,7 +31,7 @@ class OAuth2RedirectTokenAuth(TokenAuthentication):
         redirect_uri = request.build_absolute_uri(reverse('oauth2callback'))
         flow = client.flow_from_clientsecrets(
             settings.OAUTH2_SECRETS_PATH,
-            scope=GOOGLE_API_SCOPES,
+            scope=self.scopes,
             redirect_uri=redirect_uri,
             prompt='select_account'
         )
