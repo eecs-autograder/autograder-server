@@ -1,5 +1,3 @@
-from contextlib import contextmanager
-
 from django.core.cache import cache
 from django.urls import reverse
 
@@ -114,6 +112,19 @@ class AGTestSuitesOrderTestCase(UnitTestBase):
 
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.assertSequenceEqual(original_order, self.project.get_agtestsuite_order())
+
+    def test_bad_request_suite_that_rejects_submission_not_first(self) -> None:
+        admin = obj_build.make_admin_user(self.project.course)
+        self.client.force_authenticate(admin)
+
+        self.suite1.validate_and_update(reject_submission_if_setup_fails=True)
+        response = self.client.put(self.url, [self.suite2.pk, self.suite1.pk])
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(
+            [self.suite1.pk, self.suite2.pk],
+            list(self.project.get_agtestsuite_order())
+        )
 
 
 class GetUpdateDeleteAGTestSuiteTestCase(test_impls.GetObjectTest,
