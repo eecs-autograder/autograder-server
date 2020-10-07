@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from functools import wraps
-from typing import List, Optional, Protocol
+from typing import Any, Callable, Dict, List, Optional, Protocol, TypeVar, Union, cast
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -8,26 +8,38 @@ from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import mixins, permissions, response, status, viewsets
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
-def convert_django_validation_error(func):
+# See https://github.com/python/mypy/issues/3157
+_DecoratedFunc = TypeVar('_DecoratedFunc', bound=Callable[..., Any])
+
+
+def convert_django_validation_error(func: _DecoratedFunc) -> _DecoratedFunc:
     """
     If the decorated function raises django.core.exceptions.ValidationError,
     catches the error and raises rest_framework.exceptions.ValidationError
     with the same content.
     """
     @wraps(func)
-    def decorated_func(*args, **kwargs):
+    def decorated_func(*args, **kwargs):  # type: ignore  ## Wait for PEP 612
         try:
             return func(*args, **kwargs)
         except DjangoValidationError as e:
-            raise ValidationError(e.message_dict)
+            detail: Union[str, List[Any], Dict[str, Any]] = ''
+            if hasattr(e, 'message_dict'):
+                detail = e.message_dict
+            elif hasattr(e, 'message'):
+                detail = e.message
+            elif hasattr(e, 'messages'):
+                detail = e.messages
 
-    return decorated_func
+            raise DRFValidationError(detail)
+
+    return cast(_DecoratedFunc, decorated_func)
 
 
 class GetObjectLockOnUnsafeMixin:
