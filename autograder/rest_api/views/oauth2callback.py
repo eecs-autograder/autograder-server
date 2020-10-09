@@ -12,6 +12,7 @@ from oauth2client import client
 import httplib2
 from rest_framework.authtoken.models import Token
 
+from autograder.rest_api.auth import AZURE_API_SCOPES
 from autograder.rest_api.auth import GOOGLE_API_SCOPES
 
 from autograder import utils
@@ -136,7 +137,7 @@ class AzureOAuth2CallbackHandler(OAuth2CallbackHandler):
         content = None
         try:
             credentials = client.credentials_from_clientsecrets_and_code(
-                settings.OAUTH2_SECRETS_PATH, GOOGLE_API_SCOPES, request.GET,
+                settings.OAUTH2_SECRETS_PATH, AZURE_API_SCOPES, request.GET,
                 redirect_uri=self._state['redirect_uri'])
 
             http = credentials.authorize(httplib2.Http())
