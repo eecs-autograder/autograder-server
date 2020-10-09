@@ -15,10 +15,13 @@ GOOGLE_API_SCOPES = [
     'profile',
 ]
 
+# For details about the Microsoft Identity Platform and OpenID see
+# https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
 AZURE_API_SCOPES = [
     'openid',
     'email',
     'profile',
+    'offline_access',  # required for refresh token
 ]
 
 
