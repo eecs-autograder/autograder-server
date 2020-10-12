@@ -89,6 +89,9 @@ class ListCreateSubmissionView(NestedModelView):
     def get(self, *args, **kwargs):
         return self.do_list()
 
+    def get_nested_manager(self):
+        return super().get_nested_manager().defer('denormalized_ag_test_results')
+
     @convert_django_validation_error
     def post(self, request, *args, **kwargs):
         with transaction.atomic():
