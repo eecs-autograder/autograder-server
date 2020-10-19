@@ -1,6 +1,4 @@
-import copy
 import itertools
-from collections import OrderedDict
 
 from django.utils import timezone
 from drf_composable_permissions.p import P
@@ -10,8 +8,9 @@ from rest_framework.permissions import BasePermission
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
-from autograder.core.submission_feedback import AGTestPreLoader
-from autograder.rest_api.schema import APITags, CustomViewSchema, as_paginated_content_obj
+from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResultFeedback
+from autograder.rest_api.schema import (
+    APITags, CustomViewSchema, as_paginated_content_obj, as_schema_ref)
 from autograder.rest_api.serialize_ultimate_submission_results import \
     serialize_ultimate_submission_results
 from autograder.rest_api.views.ag_model_views import AGModelAPIView
@@ -38,8 +37,10 @@ class AllUltimateSubmissionResults(AGModelAPIView):
                 {
                     'name': 'groups_per_page',
                     'in': 'query',
-                    'description': 'The page size. Maximum value is {}'.format(
-                        UltimateSubmissionPaginator.max_page_size),
+                    'description': 'The number of groups per page. '
+                        'Note that this is NOT the same as the length of the "results" '
+                        'array, as that array has one entry per student. '
+                        'Maximum value is {}'.format(UltimateSubmissionPaginator.max_page_size),
                     'schema': {
                         'type': 'integer',
                         'default': UltimateSubmissionPaginator.page_size,
@@ -65,7 +66,29 @@ class AllUltimateSubmissionResults(AGModelAPIView):
             'responses': {
                 '200': {
                     'content': as_paginated_content_obj({
-                        '$ref': '#/components/schemas/SubmissionWithResults'
+                        'properties': {
+                            'username': {
+                                'type': 'string',
+                                'description': (
+                                    'The username of the student this entry applies to. '
+                                    'Note that in some (rare) cases involving late day tokens, '
+                                    'users in the same group can have different '
+                                    'ultimate submissions.'
+                                )
+                            },
+                            'group': as_schema_ref(ag_models.Group),
+                            'ultimate_submission': {
+                                'allOf': [
+                                    as_schema_ref(ag_models.Submission),
+                                    {
+                                        'type': 'object',
+                                        'properties': {
+                                            'results': as_schema_ref(SubmissionResultFeedback)
+                                        }
+                                    }
+                                ]
+                            }
+                        }
                     })
                 }
             }
