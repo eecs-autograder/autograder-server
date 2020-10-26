@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: Autograder.io API
-  version: 4.1.0
+  version: 4.1.1
 paths:
   /api/users/current/:
     get:
@@ -2527,7 +2527,8 @@ paths:
                     \ run.\n                     This command is only run once at\
                     \ the beginning of the suite.\n                     This command\
                     \ will be run after the student and project files\n          \
-                    \           have been added to the sandbox."
+                    \           have been added to the sandbox.\n                \
+                    \     If this field is empty, then no setup command will be run."
                   nullable: false
                   readOnly: false
                   type: string
@@ -2536,6 +2537,16 @@ paths:
                   nullable: false
                   readOnly: false
                   type: string
+                reject_submission_if_setup_fails:
+                  description: "When this field is True and the suite has a setup\
+                    \ command,\n            the submission will be rejected if that\
+                    \ setup command fails.\n            This field is only allowed\
+                    \ to be True for the first non-deferred AGTestSuite\n        \
+                    \    (order specified by Project.get_agtestsuite_order()) of the\
+                    \ Project."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
                 sandbox_docker_image:
                   description: The sandbox docker image to use for running this suite.
                   nullable: false
@@ -2737,7 +2748,8 @@ paths:
                     \ run.\n                     This command is only run once at\
                     \ the beginning of the suite.\n                     This command\
                     \ will be run after the student and project files\n          \
-                    \           have been added to the sandbox."
+                    \           have been added to the sandbox.\n                \
+                    \     If this field is empty, then no setup command will be run."
                   nullable: false
                   readOnly: false
                   type: string
@@ -2746,6 +2758,16 @@ paths:
                   nullable: false
                   readOnly: false
                   type: string
+                reject_submission_if_setup_fails:
+                  description: "When this field is True and the suite has a setup\
+                    \ command,\n            the submission will be rejected if that\
+                    \ setup command fails.\n            This field is only allowed\
+                    \ to be True for the first non-deferred AGTestSuite\n        \
+                    \    (order specified by Project.get_agtestsuite_order()) of the\
+                    \ Project."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
                 sandbox_docker_image:
                   description: The sandbox docker image to use for running this suite.
                   nullable: false
@@ -4460,7 +4482,9 @@ paths:
       - $ref: '#/components/parameters/page'
       - name: groups_per_page
         in: query
-        description: The page size. Maximum value is 200
+        description: The number of groups per page. Note that this is NOT the same
+          as the length of the "results" array, as that array has one entry per student.
+          Maximum value is 200
         schema:
           type: integer
           default: 100
@@ -4496,7 +4520,22 @@ paths:
                   results:
                     type: array
                     items:
-                      $ref: '#/components/schemas/SubmissionWithResults'
+                      properties:
+                        username:
+                          type: string
+                          description: The username of the student this entry applies
+                            to. Note that in some (rare) cases involving late day
+                            tokens, users in the same group can have different ultimate
+                            submissions.
+                        group:
+                          $ref: '#/components/schemas/Group'
+                        ultimate_submission:
+                          allOf:
+                          - $ref: '#/components/schemas/Submission'
+                          - type: object
+                            properties:
+                              results:
+                                $ref: '#/components/schemas/SubmissionResultFeedback'
       tags:
       - submissions
   /api/submissions/{id}/ag_test_suite_results/{result_pk}/stdout/:
@@ -7433,13 +7472,22 @@ components:
             \                    This command is only run once at the beginning of\
             \ the suite.\n                     This command will be run after the\
             \ student and project files\n                     have been added to the\
-            \ sandbox."
+            \ sandbox.\n                     If this field is empty, then no setup\
+            \ command will be run."
           nullable: false
           type: string
         setup_suite_cmd_name:
           description: The name of this suite's setup command.
           nullable: false
           type: string
+        reject_submission_if_setup_fails:
+          description: "When this field is True and the suite has a setup command,\n\
+            \            the submission will be rejected if that setup command fails.\n\
+            \            This field is only allowed to be True for the first non-deferred\
+            \ AGTestSuite\n            (order specified by Project.get_agtestsuite_order())\
+            \ of the Project."
+          nullable: false
+          type: boolean
         sandbox_docker_image:
           description: The sandbox docker image to use for running this suite.
           nullable: false
@@ -8617,13 +8665,6 @@ components:
           type: boolean
         is_handgrader:
           type: boolean
-    SubmissionWithResults:
-      allOf:
-      - $ref: '#/components/schemas/Submission'
-      - type: object
-        properties:
-          results:
-            $ref: '#/components/schemas/SubmissionResultFeedback'
   parameters:
     feedbackCategory: &id065
       name: feedback_category
