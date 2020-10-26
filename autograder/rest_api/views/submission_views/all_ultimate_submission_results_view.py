@@ -37,10 +37,12 @@ class AllUltimateSubmissionResults(AGModelAPIView):
                 {
                     'name': 'groups_per_page',
                     'in': 'query',
-                    'description': 'The number of groups per page. '
+                    'description': (
+                        'The number of groups per page. '
                         'Note that this is NOT the same as the length of the "results" '
                         'array, as that array has one entry per student. '
-                        'Maximum value is {}'.format(UltimateSubmissionPaginator.max_page_size),
+                        'Maximum value is {}'.format(UltimateSubmissionPaginator.max_page_size)
+                    ),
                     'schema': {
                         'type': 'integer',
                         'default': UltimateSubmissionPaginator.page_size,
