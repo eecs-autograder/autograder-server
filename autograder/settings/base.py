@@ -3,10 +3,7 @@ Django settings for autograder project.
 """
 
 import os
-import json
 import sys
-
-from django.utils.crypto import get_random_string
 
 VERSION = '4.1.2'
 
@@ -72,6 +69,8 @@ Please run "python3 generate_secrets.py" to generate this file."""
         GPG_KEY_ID = f.read()
 
 
+OAUTH2_PROVIDER = os.environ.get('OAUTH2_PROVIDER', 'google')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
@@ -104,12 +103,17 @@ MIDDLEWARE = (
 
 APPEND_SLASH = False
 
+OAUTH2_AUTH_CLASSES = {
+    'google': 'autograder.rest_api.auth.GoogleOAuth2',
+    'azure': 'autograder.rest_api.auth.AzureOAuth2',
+}
+
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'autograder.rest_api.auth.GoogleOAuth2',
+        OAUTH2_AUTH_CLASSES[OAUTH2_PROVIDER],
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
