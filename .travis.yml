@@ -21,16 +21,16 @@ env:
     AG_DB_PASSWORD: ""
 
 install:
-    - pip install -r requirements.txt
-    - pip install -r requirements-dev.txt
-    - python3 generate_secrets.py
+    - pip install pipenv
+    - pipenv sync --dev
+    - pipenv run python3 generate_secrets.py
 
 before_script:
     - echo $AG_DB_PASSWORD
 
 script:
-    pycodestyle autograder &&
-    pydocstyle augograder &&
-    sh run_mypy.sh &&
-    python3 manage.py makemigrations --check &&
-    python3 manage.py test -v 2 autograder
+    pipenv run pycodestyle autograder &&
+    pipenv run pydocstyle augograder &&
+    pipenv run sh run_mypy.sh &&
+    pipenv run python3 manage.py makemigrations --check &&
+    pipenv run python3 manage.py test -v 2 autograder

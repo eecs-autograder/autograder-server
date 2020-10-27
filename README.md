@@ -51,27 +51,26 @@ sudo apt-get install redis-server
 ```
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt-get update
-sudo apt-get install python3.8 python3.8-venv python3.8-dev
+sudo apt-get install python3.8 python3.8-distutils
 curl https://bootstrap.pypa.io/get-pip.py | sudo python3.8
 
-python3.8 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install wheel
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+pip install pipenv
+pipenv sync --dev
 ```
 
+You can then run `pipenv shell` to start a shell in the virtual environment,
+or if you prefer you can prefix the python commands below with `pipenv run`.
+
 ## Generate Secrets
-Run the following command to generate the file autograder/settings/secrets.json:
+Run the following command to generate Django and GPG secrets.
 ```
-python3.8 manage.py generate_secrets
+python3.8 generate_secrets.py
 ```
 
 ## Running the Unit Tests
 To run the tests (takes about 15 minutes on my machine):
 ```
-python3.8 manage.py -v 2 test
+./manage.py -v 2 test
 ```
 
 ## Updating schema.yml and Rendering the Schema
