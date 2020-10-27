@@ -64,7 +64,7 @@ or if you prefer you can prefix the python commands below with `pipenv run`.
 ## Generate Secrets
 Run the following command to generate Django and GPG secrets.
 ```
-./manage.py generate_secrets
+python3.8 generate_secrets.py
 ```
 
 ## Running the Unit Tests
