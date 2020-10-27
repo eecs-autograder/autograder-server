@@ -72,16 +72,16 @@ class ListCreateGroupsView(NestedModelView):
     nested_field_name = 'groups'
     parent_obj_field_name = 'project'
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
+    def get_nested_manager(self):
+        manager = super().get_nested_manager()
         if self.request.method.lower() == 'get':
-            queryset = queryset.prefetch_related(
+            manager = manager.prefetch_related(
                 'members',
                 Prefetch('submissions',
                          ag_models.Submission.objects.defer('denormalized_ag_test_results'))
             )
 
-        return queryset
+        return manager
 
     def get(self, *args, **kwargs):
         return self.do_list()

@@ -19,8 +19,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # As of 22 April, 2020, django-debug-toolbar 2.2 (required when using Django 3)
 # causes a memory leak, which in turn causes MemoryError in tests that create
 # subprocesses. If you need to profile something, install the library manually
-# and then uncomment the settings below to enable it.
-# Once you are finished profiling, UNINSTALL the librare an RE-COMMENT
+# and then uncomment the settings below to enable it. Also uncomment the
+# "__debug__" url pattern in urls.py.
+# Once you are finished profiling, UNINSTALL the library an RE-COMMENT
 # the settings.
 #
 # INSTALLED_APPS += [
