@@ -1,4 +1,5 @@
 from __future__ import annotations
+from autograder.rest_api.schema.utils import stderr
 
 import enum
 from typing import Dict, List, Optional, TypedDict, Union, cast
@@ -55,14 +56,25 @@ class APITags(enum.Enum):
 
 # Drf stubs doesn't have stubs for rest_framework.schemas.openapi yet.
 class AGViewSchemaGenerator(AutoSchema):  # type: ignore
-    def __init__(self, tags: List[APITags], api_class: Optional[APIClassType] = None):
+    def __init__(
+        self,
+        tags: List[APITags],
+        api_class: Optional[APIClassType] = None,
+        operation_id_override: Optional[str] = None
+    ):
         super().__init__()
         self._tags = [tag.value for tag in tags]
         self._api_class = api_class
+        self._operation_id_override = operation_id_override
 
     def get_operation(self, path: str, method: HTTPMethodName) -> OperationObject:
         result = self.get_operation_impl(path, method)
         result['tags'] = self._tags
+        if self._operation_id_override is not None:
+            result['operationId'] = self._operation_id_override
+        else:
+            result['operationId'] = self._get_operation_id(path, method)
+
         return result
 
     # Derived classes will typically override this.
@@ -89,7 +101,11 @@ class AGViewSchemaGenerator(AutoSchema):  # type: ignore
         return base_result
 
     def generate_create_op_schema(self, base_result: OperationObject) -> OperationObject:
-        response_schema = assert_not_ref(base_result['responses'].pop('200'))
+        if '200' in base_result['responses']:
+            response_schema = assert_not_ref(base_result['responses'].pop('200'))
+        else:
+            response_schema = assert_not_ref(base_result['responses'].pop('201'))
+
         response_schema['content']['application/json']['schema'] = (
             as_schema_ref(self.get_api_class())
         )
@@ -152,10 +168,10 @@ class AGViewSchemaGenerator(AutoSchema):  # type: ignore
         }
 
 
-# UNSAFE ----------------------------------------------------------------------------------------
+# TYPES UNSAFE ------------------------------------------------------------------------------------
 # mypy has some shortcomings with mixins. Note that while adding a
 # protocol for "self" in these mixins helps with most errors, there
-# are (as of Aug 2020) still errors that show up when calling super().
+# are (as of Aug 2020) still mypy errors that show up when calling super().
 #
 # We are deciding to supress the mixin-related type errors for now and
 # will revisit this in the future.
@@ -237,7 +253,7 @@ class AGDetailViewSchemaGenerator(
         return super()._get_operation_id_impl(path, method)
 
 
-# END UNSAFE -------------------------------------------------------------------------------------
+# END TYPE UNSAFE ---------------------------------------------------------------------------------
 
 
 class CustomViewDict(TypedDict, total=False):
@@ -264,7 +280,7 @@ class CustomViewMethodData(TypedDict, total=False):
 def as_content_obj(type_: APIClassType) -> Dict[ContentType, MediaTypeObject]:
     """
     Returns a value suitable for use under the "content" key of a
-    RequestBody or ResponseObject, but that uses a $ref to the given APIClassType
+    RequestBodyObject or ResponseObject, but that uses a $ref to the given APIClassType
     as its "schema" value.
     """
     return {
@@ -360,6 +376,8 @@ class CustomViewSchema(AGViewSchemaGenerator):
 
         responses: Dict[str, OrRef[ResponseObject]] = {}
         for status, response_data in method_data.get('responses', {}).items():
+            if response_data is None:
+                stderr('WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa', path, method)
             responses[status] = {'description': ''} if response_data is None else response_data
 
         if responses:

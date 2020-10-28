@@ -239,6 +239,7 @@ class CancelBuildTaskView(ag_views.AGModelAPIView):
     schema = CustomViewSchema([APITags.sandbox_docker_images], {
         'POST': {
             'operation_id': 'cancelBuildSandboxDockerImageTask',
+            'request': {'content': {}},
             'responses': {
                 '200': {
                     'content': as_content_obj(ag_models.BuildSandboxDockerImageTask)

@@ -105,7 +105,6 @@ class _ResponseObjectRequired(TypedDict):
     description: str
 
 
-# Was "ResponseBody"
 class ResponseObject(_ResponseObjectRequired, total=False):
     headers: Dict[str, OrRef[FIXME_TYPE]]
     content: Dict[ContentType, MediaTypeObject]

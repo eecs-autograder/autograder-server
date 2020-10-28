@@ -6,11 +6,10 @@ from django.conf import settings
 from django.http import HttpRequest
 from rest_framework.schemas.openapi import SchemaGenerator  # type: ignore
 
-from autograder.rest_api.schema.model_schema_generators import (generate_model_schemas,
-                                                                generate_parameter_schemas)
-from autograder.rest_api.schema.openapi_types import OpenAPIObject
-from autograder.rest_api.schema.utils import stderr
-from autograder.rest_api.schema.view_schema_generators import APITags
+from .model_schema_generators import generate_model_schemas, generate_parameter_schemas
+from .openapi_types import OpenAPIObject
+from .utils import stderr
+from .view_schema_generators import APITags
 
 
 # Drf stubs doesn't have stubs for rest_framework.schemas.openapi yet.

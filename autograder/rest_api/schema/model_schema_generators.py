@@ -281,7 +281,7 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
             return (
                 # Remove this cast once django-stubs fixes:
                 # https://github.com/typeddjango/django-stubs/issues/447
-                not cast(RelatedField[object, object], field).many_to_many
+                not cast('RelatedField[object, object]', field).many_to_many
                 and not field.blank
                 and field.default == fields.NOT_PROVIDED
             )
@@ -420,7 +420,7 @@ def _django_field(
         return result
 
     if field.is_relation:
-        related_field = cast(RelatedField[object, object], field)
+        related_field = cast('RelatedField[object, object]', field)
         if related_field.many_to_many or related_field.one_to_many:
             if isinstance(field, ForeignObjectRel):
                 result['nullable'] = False
@@ -495,9 +495,9 @@ def _property(
     return result
 
 
-@_get_field_schema.register
+@_get_field_schema.register(cached_property)
 def _cached_property(
-    prop: cached_property[object],
+    prop: 'cached_property[object]',
     api_class: APIClassType,
     name: str,
     include_readonly: bool = False
@@ -565,8 +565,10 @@ def _get_py_type_schema(type_: type) -> OrRef[SchemaObject]:
             union_args.remove(type(None))
 
         if len(union_args) == 1:
-            result.update(assert_not_ref(_get_py_type_schema(union_args[0])))
-            return result
+            py_type_schema = _get_py_type_schema(union_args[0])
+            if '$ref' not in py_type_schema:
+                result.update(cast(SchemaObject, py_type_schema))
+                return result
 
         result['anyOf'] = [_get_py_type_schema(arg) for arg in union_args]
         return result
@@ -609,5 +611,5 @@ _NonRefType = TypeVar('_NonRefType', bound=Mapping[str, object])
 
 
 def assert_not_ref(obj: OrRef[_NonRefType]) -> _NonRefType:
-    assert '$ref' not in obj
+    assert '$ref' not in obj, obj
     return cast(_NonRefType, obj)

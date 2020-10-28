@@ -1,4 +1,5 @@
 from abc import abstractclassmethod
+from autograder.rest_api.schema.utils import stderr
 from autograder.rest_api.schema.openapi_types import SchemaObject
 from typing import Dict, List, Mapping, Sequence
 
@@ -15,7 +16,7 @@ import autograder.core.models as ag_models
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APIClassType, APITags,
                                         ContentType, CustomViewSchema,
-                                        MediaTypeObject, RequestParam, as_array_content_obj)
+                                        MediaTypeObject, ParameterObject, as_array_content_obj)
 from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       AlwaysIsAuthenticatedMixin, NestedModelView,
@@ -31,7 +32,9 @@ class _Permissions(permissions.BasePermission):
 
 
 class CurrentUserView(AGModelAPIView):
-    schema = AGDetailViewSchemaGenerator(tags=[APITags.users], api_class=User)
+    schema = AGDetailViewSchemaGenerator(
+        tags=[APITags.users], api_class=User, operation_id_override='getCurrentUser'
+    )
 
     def get(self, *args, **kwargs):
         return response.Response(serialize_user(self.request.user))
@@ -174,7 +177,7 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
         }
     }
 
-    _PARAMS: Sequence[RequestParam] = [
+    _PARAMS: Sequence[ParameterObject] = [
         {
             'name': 'username_or_pk',
             'in': 'path',

@@ -1,11 +1,11 @@
 openapi: 3.0.2
 info:
   title: Autograder.io API
-  version: 4.1.1
+  version: 4.1.2
 paths:
   /api/users/current/:
     get:
-      operationId: getUser
+      operationId: getCurrentUser
       description: ''
       parameters: []
       responses:
@@ -61,8 +61,7 @@ paths:
         description: ''
         schema:
           type: string
-      - &id001
-        name: username_or_pk
+      - name: username_or_pk
         in: path
         required: true
         description: The ID or username of the user.
@@ -72,8 +71,7 @@ paths:
             format: username
           - type: integer
             format: id
-      - &id002
-        name: course_pk
+      - name: course_pk
         in: query
         required: true
         schema:
@@ -81,7 +79,7 @@ paths:
           format: id
       responses:
         '200':
-          content: &id003
+          content:
             application/json:
               schema:
                 type: object
@@ -90,7 +88,7 @@ paths:
                 properties:
                   late_days_remaining:
                     type: integer
-      tags: &id004
+      tags:
       - courses
       - users
     put:
@@ -103,15 +101,47 @@ paths:
         description: ''
         schema:
           type: string
-      - *id001
-      - *id002
+      - name: username_or_pk
+        in: path
+        required: true
+        description: The ID or username of the user.
+        schema:
+          oneOf:
+          - type: string
+            format: username
+          - type: integer
+            format: id
+      - name: course_pk
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - late_days_remaining
+              properties:
+                late_days_remaining:
+                  type: integer
+        required: true
       responses:
         '200':
-          content: *id003
-      requestBody:
-        required: true
-        content: *id003
-      tags: *id004
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - late_days_remaining
+                properties:
+                  late_days_remaining:
+                    type: integer
+      tags:
+      - courses
+      - users
   /api/users/{id}/courses_is_admin_for/:
     get:
       operationId: coursesIsAdminFor
@@ -280,19 +310,12 @@ paths:
                 items:
                   $ref: '#/components/schemas/Course'
           description: ''
-      tags: &id005
+      tags:
       - courses
     post:
       operationId: createCourse
       description: ''
       parameters: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Course'
-          description: ''
       requestBody:
         required: true
         content:
@@ -300,7 +323,7 @@ paths:
             schema:
               type: object
               properties:
-                pk: &id006
+                pk:
                   type: integer
                   format: id
                   readOnly: true
@@ -350,7 +373,15 @@ paths:
                   format: date-time
               required:
               - name
-      tags: *id005
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+      tags:
+      - courses
   /api/courses/{id}/:
     get:
       operationId: getCourse
@@ -369,7 +400,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Course'
           description: ''
-      tags: &id007
+      tags:
       - courses
     patch:
       operationId: updateCourse
@@ -381,13 +412,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Course'
-          description: ''
       requestBody:
         required: true
         content:
@@ -395,7 +419,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: The name of this course. Must be unique, non-empty
                     and non-null.
@@ -440,7 +467,15 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
-      tags: *id007
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+      tags:
+      - courses
     delete:
       operationId: pseudoDeleteCourse
       description: Pseudo-delete this course by clearing its user rosters  and renaming
@@ -455,7 +490,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id007
+      tags:
+      - courses
   /api/courses/{id}/my_roles/:
     get:
       operationId: getUserRoles
@@ -527,7 +563,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
-      tags: &id008
+      tags:
       - rosters
     post:
       operationId: addCourseAdmins
@@ -539,10 +575,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '204': {}
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -556,7 +589,12 @@ paths:
                     type: string
                     format: username
                   description: Usernames to be granted admin privileges for the course.
-      tags: *id008
+        required: true
+      responses:
+        '204':
+          description: ''
+      tags:
+      - rosters
     patch:
       operationId: removeCourseAdmins
       description: ''
@@ -567,10 +605,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '204': {}
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -583,7 +618,12 @@ paths:
                   items:
                     $ref: '#/components/schemas/User'
                   description: Users to revoke admin privileges from for the course.
-      tags: *id008
+        required: true
+      responses:
+        '204':
+          description: ''
+      tags:
+      - rosters
   /api/courses/{id}/staff/:
     get:
       operationId: listCourseStaff
@@ -603,7 +643,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
-      tags: &id009
+      tags:
       - rosters
     post:
       operationId: addCourseStaff
@@ -615,10 +655,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '204': {}
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -632,7 +669,12 @@ paths:
                     type: string
                     format: username
                   description: Usernames to be granted staff privileges for the course.
-      tags: *id009
+        required: true
+      responses:
+        '204':
+          description: ''
+      tags:
+      - rosters
     patch:
       operationId: removeCourseStaff
       description: ''
@@ -643,10 +685,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '204': {}
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -660,7 +699,12 @@ paths:
                     $ref: '#/components/schemas/User'
                   description: Users whose staff privileges should be revoked for
                     the course.
-      tags: *id009
+        required: true
+      responses:
+        '204':
+          description: ''
+      tags:
+      - rosters
   /api/courses/{id}/students/:
     get:
       operationId: listCourseStudents
@@ -680,7 +724,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
-      tags: &id010
+      tags:
       - rosters
     post:
       operationId: addCourseStudents
@@ -692,10 +736,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '204': {}
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -710,7 +751,12 @@ paths:
                     format: username
                   description: Usernames to be granted student privileges for the
                     course.
-      tags: *id010
+        required: true
+      responses:
+        '204':
+          description: ''
+      tags:
+      - rosters
     put:
       operationId: setCourseStudents
       description: 'Completely REPLACES the student roster with the usernames
@@ -723,10 +769,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '204': {}
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -741,7 +784,12 @@ paths:
                     format: username
                   description: Usernames to be granted student privileges for the
                     course.
-      tags: *id010
+        required: true
+      responses:
+        '204':
+          description: ''
+      tags:
+      - rosters
     patch:
       operationId: removeCourseStudents
       description: ''
@@ -752,10 +800,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '204': {}
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -769,7 +814,12 @@ paths:
                     $ref: '#/components/schemas/User'
                   description: Users whose student privileges should be revoked for
                     the course.
-      tags: *id010
+        required: true
+      responses:
+        '204':
+          description: ''
+      tags:
+      - rosters
   /api/courses/{id}/handgraders/:
     get:
       operationId: listCourseHandgraders
@@ -789,7 +839,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
-      tags: &id011
+      tags:
       - rosters
     post:
       operationId: addCourseHandgraders
@@ -801,10 +851,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '204': {}
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -819,7 +866,12 @@ paths:
                     format: username
                   description: Usernames to be granted handgrading privileges for
                     the course.
-      tags: *id011
+        required: true
+      responses:
+        '204':
+          description: ''
+      tags:
+      - rosters
     patch:
       operationId: removeCourseHandgraders
       description: ''
@@ -830,10 +882,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '204': {}
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -846,7 +895,12 @@ paths:
                   items:
                     $ref: '#/components/schemas/User'
                   description: Users to revoke handgrading privileges from.
-      tags: *id011
+        required: true
+      responses:
+        '204':
+          description: ''
+      tags:
+      - rosters
   /api/courses/{id}/projects/:
     get:
       operationId: listProjects
@@ -867,7 +921,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Project'
           description: ''
-      tags: &id012
+      tags:
       - projects
     post:
       operationId: createProject
@@ -879,13 +933,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Project'
-          description: ''
       requestBody:
         required: true
         content:
@@ -893,7 +940,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: "The name used to identify this project.\n        \
                     \    Must be non-empty and non-null.\n            Must be unique\
@@ -1096,7 +1146,15 @@ paths:
               required:
               - name
               - course
-      tags: *id012
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+      tags:
+      - projects
   /api/projects/{id}/:
     get:
       operationId: getProject
@@ -1115,7 +1173,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Project'
           description: ''
-      tags: &id013
+      tags:
       - projects
     patch:
       operationId: updateProject
@@ -1127,13 +1185,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Project'
-          description: ''
       requestBody:
         required: true
         content:
@@ -1141,7 +1192,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: "The name used to identify this project.\n        \
                     \    Must be non-empty and non-null.\n            Must be unique\
@@ -1341,7 +1395,15 @@ paths:
                   nullable: false
                   readOnly: false
                   type: string
-      tags: *id013
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+      tags:
+      - projects
     delete:
       operationId: deleteProject
       description: ''
@@ -1355,7 +1417,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id013
+      tags:
+      - projects
   /api/projects/{id}/num_queued_submissions/:
     get:
       operationId: getNumQueuedSubmissions
@@ -1397,7 +1460,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/InstructorFile'
           description: ''
-      tags: &id014
+      tags:
       - instructor_files
     post:
       operationId: createInstructorFile
@@ -1409,15 +1472,8 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InstructorFile'
       requestBody:
-        required: true
-        content: &id016
+        content:
           multipart/form-data:
             schema:
               type: object
@@ -1426,7 +1482,15 @@ paths:
                   type: string
                   format: binary
                   description: The form-encoded file.
-      tags: *id014
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstructorFile'
+      tags:
+      - instructor_files
   /api/instructor_files/{id}/:
     get:
       operationId: getInstructorFile
@@ -1445,7 +1509,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/InstructorFile'
           description: ''
-      tags: &id015
+      tags:
       - instructor_files
     patch:
       operationId: updateInstructorFile
@@ -1457,13 +1521,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InstructorFile'
-          description: ''
       requestBody:
         required: true
         content:
@@ -1471,7 +1528,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 project:
                   description: ''
                   nullable: false
@@ -1493,7 +1553,15 @@ paths:
                   description: ''
                   readOnly: true
                   type: integer
-      tags: *id015
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstructorFile'
+          description: ''
+      tags:
+      - instructor_files
     delete:
       operationId: deleteInstructorFile
       description: ''
@@ -1507,7 +1575,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id015
+      tags:
+      - instructor_files
   /api/instructor_files/{id}/content/:
     get:
       operationId: getInstructorFileContent
@@ -1526,7 +1595,7 @@ paths:
               schema:
                 type: string
                 format: binary
-      tags: &id017
+      tags:
       - instructor_files
     put:
       operationId: setInstructorFileContent
@@ -1538,16 +1607,25 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file_obj:
+                  type: string
+                  format: binary
+                  description: The form-encoded file.
+        required: true
       responses:
         '201':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InstructorFile'
-      requestBody:
-        required: true
-        content: *id016
-      tags: *id017
+      tags:
+      - instructor_files
   /api/projects/{id}/expected_student_files/:
     get:
       operationId: listExpectedStudentFiles
@@ -1568,7 +1646,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/ExpectedStudentFile'
           description: ''
-      tags: &id018
+      tags:
       - expected_student_files
     post:
       operationId: createExpectedStudentFile
@@ -1580,13 +1658,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ExpectedStudentFile'
-          description: ''
       requestBody:
         required: true
         content:
@@ -1594,7 +1665,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 project:
                   description: ''
                   nullable: false
@@ -1633,7 +1707,15 @@ paths:
               required:
               - project
               - pattern
-      tags: *id018
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpectedStudentFile'
+          description: ''
+      tags:
+      - expected_student_files
   /api/expected_student_files/{id}/:
     get:
       operationId: getExpectedStudentFile
@@ -1652,7 +1734,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExpectedStudentFile'
           description: ''
-      tags: &id019
+      tags:
       - expected_student_files
     patch:
       operationId: updateExpectedStudentFile
@@ -1664,13 +1746,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ExpectedStudentFile'
-          description: ''
       requestBody:
         required: true
         content:
@@ -1678,7 +1753,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 project:
                   description: ''
                   nullable: false
@@ -1714,7 +1792,15 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
-      tags: *id019
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpectedStudentFile'
+          description: ''
+      tags:
+      - expected_student_files
     delete:
       operationId: deleteExpectedStudentFile
       description: ''
@@ -1728,7 +1814,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id019
+      tags:
+      - expected_student_files
   /api/projects/{id}/group_invitations/:
     get:
       operationId: listGroupInvitations
@@ -1749,7 +1836,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/GroupInvitation'
           description: ''
-      tags: &id020
+      tags:
       - group_invitations
     post:
       operationId: createGroupInvitation
@@ -1761,14 +1848,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GroupInvitation'
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -1779,7 +1859,15 @@ paths:
                   items:
                     type: string
                     format: username
-      tags: *id020
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupInvitation'
+      tags:
+      - group_invitations
   /api/group_invitations/{id}/:
     get:
       operationId: getGroupInvitation
@@ -1798,7 +1886,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/GroupInvitation'
           description: ''
-      tags: &id021
+      tags:
       - group_invitations
     delete:
       operationId: deleteGroupInvitation
@@ -1813,7 +1901,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id021
+      tags:
+      - group_invitations
   /api/projects/{project_pk}/groups/:
     get:
       operationId: listGroups
@@ -1834,7 +1923,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Group'
           description: ''
-      tags: &id022
+      tags:
       - groups
     post:
       operationId: createGroup
@@ -1850,15 +1939,8 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Group'
       requestBody:
-        required: true
-        content: &id023
+        content:
           application/json:
             schema:
               type: object
@@ -1868,7 +1950,15 @@ paths:
                   items:
                     type: string
                     format: username
-      tags: *id022
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+      tags:
+      - groups
   /api/groups/{id}/:
     get:
       operationId: getGroup
@@ -1887,7 +1977,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Group'
           description: ''
-      tags: &id024
+      tags:
       - groups
     patch:
       operationId: updateGroup
@@ -1899,16 +1989,26 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                member_names:
+                  type: array
+                  items:
+                    type: string
+                    format: username
+        required: true
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
-      requestBody:
-        required: true
-        content: *id023
-      tags: *id024
+      tags:
+      - groups
     delete:
       operationId: pseudoDeleteGroup
       description: '"Deletes" a group by removing all of its members. Each group
@@ -1928,7 +2028,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id024
+      tags:
+      - groups
   /api/groups/{id}/ultimate_submission/:
     get:
       operationId: getUltimateSubmissionForGroup
@@ -1976,7 +2077,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Submission'
           description: ''
-      tags: &id025
+      tags:
       - submissions
     post:
       operationId: createSubmission
@@ -1988,14 +2089,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Submission'
       requestBody:
-        required: true
         content:
           multipart/form-data:
             schema:
@@ -2005,8 +2099,16 @@ paths:
                   items:
                     type: string
                     format: binary
+        required: true
         description: The files being submitted, as multipart/form-data.
-      tags: *id025
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+      tags:
+      - submissions
   /api/submissions/{id}/:
     get:
       operationId: getSubmission
@@ -2025,7 +2127,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Submission'
           description: ''
-      tags: &id027
+      tags:
       - submissions
     patch:
       operationId: updateSubmission
@@ -2037,13 +2139,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Submission'
-          description: ''
       requestBody:
         required: true
         content:
@@ -2051,7 +2146,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 group:
                   description: "The SubmissionGroup that this submission belongs to.\
                     \ Note\n            that this field indirectly links this Submission\
@@ -2078,7 +2176,7 @@ paths:
                   nullable: false
                   readOnly: true
                   type: array
-                  items: &id026
+                  items:
                     type: string
                 discarded_files:
                   description: The names of files that were discarded when this Submission
@@ -2086,7 +2184,8 @@ paths:
                   nullable: false
                   readOnly: true
                   type: array
-                  items: *id026
+                  items:
+                    type: string
                 missing_files:
                   description: "Stores missing filenames and the additional number\n\
                     \            of files needed to satisfy a file pattern requirement.\n\
@@ -2146,7 +2245,15 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
-      tags: *id027
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+          description: ''
+      tags:
+      - submissions
   /api/submissions/{id}/file/:
     get:
       operationId: getSubmittedFile
@@ -2186,21 +2293,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SandboxDockerImage'
-      tags: &id028
+      tags:
       - sandbox_docker_images
     post:
       operationId: createGlobalSandboxDockerImage
       description: Build a new global sandbox image.
       parameters: []
-      responses:
-        '202': &id029
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BuildSandboxDockerImageTask'
       requestBody:
-        required: true
-        content: &id030
+        content:
           multipart/form-data:
             schema:
               type: object
@@ -2211,7 +2311,15 @@ paths:
                   items:
                     type: string
                     format: binary
-      tags: *id028
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildSandboxDockerImageTask'
+      tags:
+      - sandbox_docker_images
   /api/courses/{id}/sandbox_docker_images/:
     get:
       operationId: listSandboxDockerImagesForCourse
@@ -2231,7 +2339,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SandboxDockerImage'
-      tags: &id031
+      tags:
       - sandbox_docker_images
     post:
       operationId: createSandboxDockerImageForCourse
@@ -2243,12 +2351,27 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '202': *id029
       requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  description: The form-encoded files. One file must be named "Dockerfile"
+                  type: array
+                  items:
+                    type: string
+                    format: binary
         required: true
-        content: *id030
-      tags: *id031
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildSandboxDockerImageTask'
+      tags:
+      - sandbox_docker_images
   /api/image_build_tasks/:
     get:
       operationId: listGlobalBuildSandboxDockerImageTasks
@@ -2363,7 +2486,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SandboxDockerImage'
           description: ''
-      tags: &id032
+      tags:
       - sandbox_docker_images
     patch:
       operationId: updateSandboxDockerImage
@@ -2375,13 +2498,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SandboxDockerImage'
-          description: ''
       requestBody:
         required: true
         content:
@@ -2389,7 +2505,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 display_name:
                   description: "A human-readable name for this sandbox image.\n  \
                     \                   Must be unique among images belonging to a\
@@ -2409,7 +2528,15 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
-      tags: *id032
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxDockerImage'
+          description: ''
+      tags:
+      - sandbox_docker_images
     delete:
       operationId: deleteSandboxDockerImage
       description: ''
@@ -2423,7 +2550,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id032
+      tags:
+      - sandbox_docker_images
   /api/projects/{project_pk}/ag_test_suites/:
     get:
       operationId: listAGTestSuites
@@ -2444,7 +2572,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/AGTestSuite'
           description: ''
-      tags: &id033
+      tags:
       - ag_test_suites
     post:
       operationId: createAGTestSuite
@@ -2456,13 +2584,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AGTestSuite'
-          description: ''
       requestBody:
         required: true
         content:
@@ -2470,7 +2591,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: "The name used to identify this suite.\n          \
                     \           Must be non-empty and non-null.\n                \
@@ -2595,7 +2719,15 @@ paths:
               required:
               - name
               - project
-      tags: *id033
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AGTestSuite'
+          description: ''
+      tags:
+      - ag_test_suites
   /api/projects/{project_pk}/ag_test_suites/order/:
     get:
       operationId: getAGTestSuiteOrder
@@ -2609,6 +2741,7 @@ paths:
           type: string
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -2616,7 +2749,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id034
+      tags:
       - ag_test_suites
     put:
       operationId: setAGTestSuiteOrder
@@ -2628,17 +2761,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: integer
-                  format: id
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -2646,7 +2769,19 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id034
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  format: id
+      tags:
+      - ag_test_suites
   /api/ag_test_suites/{id}/:
     get:
       operationId: getAGTestSuite
@@ -2665,7 +2800,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AGTestSuite'
           description: ''
-      tags: &id035
+      tags:
       - ag_test_suites
     patch:
       operationId: updateAGTestSuite
@@ -2677,13 +2812,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AGTestSuite'
-          description: ''
       requestBody:
         required: true
         content:
@@ -2691,7 +2819,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: "The name used to identify this suite.\n          \
                     \           Must be non-empty and non-null.\n                \
@@ -2813,7 +2944,15 @@ paths:
                   readOnly: false
                   allOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
-      tags: *id035
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AGTestSuite'
+          description: ''
+      tags:
+      - ag_test_suites
     delete:
       operationId: deleteAGTestSuite
       description: ''
@@ -2827,7 +2966,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id035
+      tags:
+      - ag_test_suites
   /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/:
     get:
       operationId: listAGTestCases
@@ -2848,7 +2988,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/AGTestCase'
           description: ''
-      tags: &id036
+      tags:
       - ag_test_cases
     post:
       operationId: createAGTestCase
@@ -2860,13 +3000,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AGTestCase'
-          description: ''
       requestBody:
         required: true
         content:
@@ -2874,7 +3007,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: "The name used to identify this autograder test.\n\
                     \                     Must be non-empty and non-null.\n      \
@@ -2930,7 +3066,15 @@ paths:
               required:
               - name
               - ag_test_suite
-      tags: *id036
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AGTestCase'
+          description: ''
+      tags:
+      - ag_test_cases
   /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/order/:
     get:
       operationId: getAGTestCaseOrder
@@ -2944,6 +3088,7 @@ paths:
           type: string
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -2951,7 +3096,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id037
+      tags:
       - ag_test_cases
     put:
       operationId: setAGTestCaseOrder
@@ -2963,17 +3108,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: integer
-                  format: id
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -2981,7 +3116,19 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id037
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  format: id
+      tags:
+      - ag_test_cases
   /api/ag_test_cases/{id}/:
     get:
       operationId: getAGTestCase
@@ -3000,7 +3147,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AGTestCase'
           description: ''
-      tags: &id038
+      tags:
       - ag_test_cases
     patch:
       operationId: updateAGTestCase
@@ -3012,13 +3159,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AGTestCase'
-          description: ''
       requestBody:
         required: true
         content:
@@ -3026,7 +3166,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: "The name used to identify this autograder test.\n\
                     \                     Must be non-empty and non-null.\n      \
@@ -3079,7 +3222,15 @@ paths:
                   readOnly: false
                   allOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
-      tags: *id038
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AGTestCase'
+          description: ''
+      tags:
+      - ag_test_cases
     delete:
       operationId: deleteAGTestCase
       description: ''
@@ -3093,7 +3244,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id038
+      tags:
+      - ag_test_cases
   /api/ag_test_cases/{ag_test_case_pk}/ag_test_commands/:
     get:
       operationId: listAGTestCommands
@@ -3114,7 +3266,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/AGTestCommand'
           description: ''
-      tags: &id039
+      tags:
       - ag_test_commands
     post:
       operationId: createAGTestCommand
@@ -3126,13 +3278,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AGTestCommand'
-          description: ''
       requestBody:
         required: true
         content:
@@ -3140,7 +3285,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: "The name used to identify this command.\n        \
                     \                 Must be non-empty and non-null.\n          \
@@ -3393,7 +3541,15 @@ paths:
               - name
               - ag_test_case
               - cmd
-      tags: *id039
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AGTestCommand'
+          description: ''
+      tags:
+      - ag_test_commands
   /api/ag_test_cases/{ag_test_case_pk}/ag_test_commands/order/:
     get:
       operationId: getAGTestCommandOrder
@@ -3407,6 +3563,7 @@ paths:
           type: string
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -3414,7 +3571,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id040
+      tags:
       - ag_test_commands
     put:
       operationId: setAGTestCommandOrder
@@ -3426,17 +3583,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: integer
-                  format: id
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -3444,7 +3591,19 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id040
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  format: id
+      tags:
+      - ag_test_commands
   /api/ag_test_commands/{id}/:
     get:
       operationId: getAGTestCommand
@@ -3463,7 +3622,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AGTestCommand'
           description: ''
-      tags: &id041
+      tags:
       - ag_test_commands
     patch:
       operationId: updateAGTestCommand
@@ -3475,13 +3634,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AGTestCommand'
-          description: ''
       requestBody:
         required: true
         content:
@@ -3489,7 +3641,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: "The name used to identify this command.\n        \
                     \                 Must be non-empty and non-null.\n          \
@@ -3738,7 +3893,15 @@ paths:
                   nullable: false
                   readOnly: false
                   type: boolean
-      tags: *id041
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AGTestCommand'
+          description: ''
+      tags:
+      - ag_test_commands
     delete:
       operationId: deleteAGTestCommand
       description: ''
@@ -3752,7 +3915,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id041
+      tags:
+      - ag_test_commands
   /api/projects/{project_pk}/mutation_test_suites/:
     get:
       operationId: listMutationTestSuites
@@ -3773,7 +3937,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/MutationTestSuite'
           description: ''
-      tags: &id042
+      tags:
       - mutation_test_suites
     post:
       operationId: createMutationTestSuite
@@ -3785,13 +3949,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MutationTestSuite'
-          description: ''
       requestBody:
         required: true
         content:
@@ -3799,7 +3956,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: "The name used to identify this MutationTestSuite.\n\
                     \                     Must be non-empty and non-null."
@@ -3841,7 +4001,8 @@ paths:
                   nullable: false
                   readOnly: false
                   type: array
-                  items: *id026
+                  items:
+                    type: string
                 use_setup_command:
                   description: ''
                   nullable: false
@@ -3975,7 +4136,15 @@ paths:
               required:
               - name
               - project
-      tags: *id042
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MutationTestSuite'
+          description: ''
+      tags:
+      - mutation_test_suites
   /api/projects/{project_pk}/mutation_test_suites/order/:
     get:
       operationId: getMutationTestSuiteOrder
@@ -3989,6 +4158,7 @@ paths:
           type: string
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -3996,7 +4166,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id043
+      tags:
       - mutation_test_suites
     put:
       operationId: setMutationTestSuiteOrder
@@ -4008,17 +4178,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: integer
-                  format: id
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -4026,7 +4186,19 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id043
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  format: id
+      tags:
+      - mutation_test_suites
   /api/mutation_test_suites/{id}/:
     get:
       operationId: getMutationTestSuite
@@ -4045,7 +4217,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MutationTestSuite'
           description: ''
-      tags: &id044
+      tags:
       - mutation_test_suites
     patch:
       operationId: updateMutationTestSuite
@@ -4057,13 +4229,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MutationTestSuite'
-          description: ''
       requestBody:
         required: true
         content:
@@ -4071,7 +4236,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 name:
                   description: "The name used to identify this MutationTestSuite.\n\
                     \                     Must be non-empty and non-null."
@@ -4113,7 +4281,8 @@ paths:
                   nullable: false
                   readOnly: false
                   type: array
-                  items: *id026
+                  items:
+                    type: string
                 use_setup_command:
                   description: ''
                   nullable: false
@@ -4244,7 +4413,15 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
-      tags: *id044
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MutationTestSuite'
+          description: ''
+      tags:
+      - mutation_test_suites
     delete:
       operationId: deleteMutationTestSuite
       description: ''
@@ -4258,7 +4435,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id044
+      tags:
+      - mutation_test_suites
   /api/projects/{project_pk}/rerun_submissions_tasks/:
     get:
       operationId: listRerunSubmissionsTasks
@@ -4279,7 +4457,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/RerunSubmissionsTask'
           description: ''
-      tags: &id045
+      tags:
       - rerun_submissions_tasks
     post:
       operationId: createRerunSubmissionsTask
@@ -4291,13 +4469,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RerunSubmissionsTask'
-          description: ''
       requestBody:
         required: true
         content:
@@ -4305,7 +4476,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 progress:
                   description: ''
                   readOnly: true
@@ -4405,7 +4579,15 @@ paths:
               required:
               - creator
               - project
-      tags: *id045
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RerunSubmissionsTask'
+          description: ''
+      tags:
+      - rerun_submissions_tasks
   /api/rerun_submissions_tasks/{id}/:
     get:
       operationId: getRerunSubmissionsTask
@@ -5091,7 +5273,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/HandgradingRubric'
           description: ''
-      tags: &id046
+      tags:
       - handgrading_rubrics
     post:
       operationId: createHandgradingRubric
@@ -5103,13 +5285,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HandgradingRubric'
-          description: ''
       requestBody:
         required: true
         content:
@@ -5117,7 +5292,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 project:
                   description: The Project this HandgradingRubric belongs to.
                   nullable: false
@@ -5179,7 +5357,15 @@ paths:
                     $ref: '#/components/schemas/Annotation'
               required:
               - project
-      tags: *id046
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandgradingRubric'
+          description: ''
+      tags:
+      - handgrading_rubrics
   /api/handgrading_rubrics/{id}/:
     get:
       operationId: getHandgradingRubric
@@ -5198,7 +5384,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/HandgradingRubric'
           description: ''
-      tags: &id047
+      tags:
       - handgrading_rubrics
     patch:
       operationId: updateHandgradingRubric
@@ -5210,13 +5396,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HandgradingRubric'
-          description: ''
       requestBody:
         required: true
         content:
@@ -5224,7 +5403,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 project:
                   description: The Project this HandgradingRubric belongs to.
                   nullable: false
@@ -5284,7 +5466,15 @@ paths:
                   type: array
                   items:
                     $ref: '#/components/schemas/Annotation'
-      tags: *id047
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandgradingRubric'
+          description: ''
+      tags:
+      - handgrading_rubrics
     delete:
       operationId: deleteHandgradingRubric
       description: ''
@@ -5298,7 +5488,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id047
+      tags:
+      - handgrading_rubrics
   /api/handgrading_rubrics/{handgrading_rubric_pk}/annotations/:
     get:
       operationId: listAnnotations
@@ -5319,7 +5510,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Annotation'
           description: ''
-      tags: &id048
+      tags:
       - annotations
     post:
       operationId: createAnnotation
@@ -5331,13 +5522,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Annotation'
-          description: ''
       requestBody:
         required: true
         content:
@@ -5345,7 +5529,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 handgrading_rubric:
                   description: The HandgradingRubric this Annotation belongs to.
                   nullable: false
@@ -5386,7 +5573,15 @@ paths:
                   format: date-time
               required:
               - handgrading_rubric
-      tags: *id048
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Annotation'
+          description: ''
+      tags:
+      - annotations
   /api/annotations/{id}/:
     get:
       operationId: getAnnotation
@@ -5405,7 +5600,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Annotation'
           description: ''
-      tags: &id049
+      tags:
       - annotations
     patch:
       operationId: updateAnnotation
@@ -5417,13 +5612,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Annotation'
-          description: ''
       requestBody:
         required: true
         content:
@@ -5431,7 +5619,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 handgrading_rubric:
                   description: The HandgradingRubric this Annotation belongs to.
                   nullable: false
@@ -5470,7 +5661,15 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
-      tags: *id049
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Annotation'
+          description: ''
+      tags:
+      - annotations
     delete:
       operationId: deleteAnnotation
       description: ''
@@ -5484,7 +5683,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id049
+      tags:
+      - annotations
   /api/handgrading_rubrics/{handgrading_rubric_pk}/annotations/order/:
     get:
       operationId: getAnnotationOrder
@@ -5498,6 +5698,7 @@ paths:
           type: string
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -5505,7 +5706,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id050
+      tags:
       - annotations
     put:
       operationId: setAnnotationOrder
@@ -5517,17 +5718,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: integer
-                  format: id
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -5535,7 +5726,19 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id050
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  format: id
+      tags:
+      - annotations
   /api/handgrading_rubrics/{handgrading_rubric_pk}/criteria/:
     get:
       operationId: listCriterions
@@ -5556,7 +5759,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Criterion'
           description: ''
-      tags: &id051
+      tags:
       - criteria
     post:
       operationId: createCriterion
@@ -5568,13 +5771,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Criterion'
-          description: ''
       requestBody:
         required: true
         content:
@@ -5582,7 +5778,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 handgrading_rubric:
                   description: The rubric this Criterion belongs to.
                   nullable: false
@@ -5616,7 +5815,15 @@ paths:
                   type: number
               required:
               - handgrading_rubric
-      tags: *id051
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Criterion'
+          description: ''
+      tags:
+      - criteria
   /api/criteria/{id}/:
     get:
       operationId: getCriterion
@@ -5635,7 +5842,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Criterion'
           description: ''
-      tags: &id052
+      tags:
       - criteria
     patch:
       operationId: updateCriterion
@@ -5647,13 +5854,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Criterion'
-          description: ''
       requestBody:
         required: true
         content:
@@ -5661,7 +5861,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 handgrading_rubric:
                   description: The rubric this Criterion belongs to.
                   nullable: false
@@ -5693,7 +5896,15 @@ paths:
                   nullable: false
                   readOnly: false
                   type: number
-      tags: *id052
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Criterion'
+          description: ''
+      tags:
+      - criteria
     delete:
       operationId: deleteCriterion
       description: ''
@@ -5707,7 +5918,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id052
+      tags:
+      - criteria
   /api/handgrading_rubrics/{handgrading_rubric_pk}/criteria/order/:
     get:
       operationId: getCriterionOrder
@@ -5721,6 +5933,7 @@ paths:
           type: string
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -5728,7 +5941,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id053
+      tags:
       - criteria
     put:
       operationId: setCriterionOrder
@@ -5740,17 +5953,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: integer
-                  format: id
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -5758,7 +5961,19 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id053
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  format: id
+      tags:
+      - criteria
   /api/groups/{group_pk}/handgrading_result/:
     get:
       operationId: getHandgradingResult
@@ -5777,7 +5992,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/HandgradingResult'
           description: ''
-      tags: &id054
+      tags:
       - handgrading_results
     post:
       operationId: getOrCreateHandgradingResult
@@ -5791,6 +6006,14 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+          application/x-www-form-urlencoded:
+            schema: {}
+          multipart/form-data:
+            schema: {}
       responses:
         '200':
           description: A HandgradingResult already exists for the group. That HandgradingResult
@@ -5805,7 +6028,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HandgradingResult'
-      tags: *id054
+      tags:
+      - handgrading_results
     patch:
       operationId: updateHandgradingResult
       description: ''
@@ -5816,13 +6040,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HandgradingResult'
-          description: ''
       requestBody:
         required: true
         content:
@@ -5830,7 +6047,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 last_modified:
                   description: ''
                   nullable: false
@@ -5896,7 +6116,7 @@ paths:
                     \ of the Submission this result\n        belongs to."
                   readOnly: true
                   type: array
-                  items: &id062
+                  items:
                     type: string
                 total_points:
                   description: "The total number of points awarded. Note that it is\
@@ -5908,7 +6128,15 @@ paths:
                     \ the\n        handgrading rubric's points style and max points."
                   readOnly: true
                   type: number
-      tags: *id054
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandgradingResult'
+          description: ''
+      tags:
+      - handgrading_results
     delete:
       operationId: deleteHandgradingResult
       description: ''
@@ -5922,7 +6150,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id054
+      tags:
+      - handgrading_results
   /api/groups/{group_pk}/handgrading_result/file/:
     get:
       operationId: getHandgradingResultFile
@@ -5990,7 +6219,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/AppliedAnnotation'
           description: ''
-      tags: &id055
+      tags:
       - applied_annotations
     post:
       operationId: createAppliedAnnotation
@@ -6002,13 +6231,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AppliedAnnotation'
-          description: ''
       requestBody:
         required: true
         content:
@@ -6016,7 +6238,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 last_modified:
                   description: ''
                   nullable: false
@@ -6046,7 +6271,15 @@ paths:
               - location
               - annotation
               - handgrading_result
-      tags: *id055
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppliedAnnotation'
+          description: ''
+      tags:
+      - applied_annotations
   /api/applied_annotations/{id}/:
     get:
       operationId: getAppliedAnnotation
@@ -6065,7 +6298,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AppliedAnnotation'
           description: ''
-      tags: &id056
+      tags:
       - applied_annotations
     delete:
       operationId: deleteAppliedAnnotation
@@ -6080,7 +6313,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id056
+      tags:
+      - applied_annotations
   /api/handgrading_results/{handgrading_result_pk}/comments/:
     get:
       operationId: listComments
@@ -6101,7 +6335,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Comment'
           description: ''
-      tags: &id057
+      tags:
       - comments
     post:
       operationId: createComment
@@ -6113,13 +6347,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Comment'
-          description: ''
       requestBody:
         required: true
         content:
@@ -6127,7 +6354,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 last_modified:
                   description: ''
                   nullable: false
@@ -6155,7 +6385,15 @@ paths:
               required:
               - text
               - handgrading_result
-      tags: *id057
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+      tags:
+      - comments
   /api/comments/{id}/:
     get:
       operationId: getComment
@@ -6174,7 +6412,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Comment'
           description: ''
-      tags: &id058
+      tags:
       - comments
     patch:
       operationId: updateComment
@@ -6186,13 +6424,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Comment'
-          description: ''
       requestBody:
         required: true
         content:
@@ -6200,7 +6431,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 last_modified:
                   description: ''
                   nullable: false
@@ -6225,7 +6459,15 @@ paths:
                   readOnly: true
                   type: integer
                   format: id
-      tags: *id058
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+      tags:
+      - comments
     delete:
       operationId: deleteComment
       description: ''
@@ -6239,7 +6481,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id058
+      tags:
+      - comments
   /api/handgrading_results/{handgrading_result_pk}/criterion_results/:
     get:
       operationId: listCriterionResults
@@ -6260,7 +6503,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/CriterionResult'
           description: ''
-      tags: &id059
+      tags:
       - criterion_results
     post:
       operationId: createCriterionResult
@@ -6272,13 +6515,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CriterionResult'
-          description: ''
       requestBody:
         required: true
         content:
@@ -6286,7 +6522,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 last_modified:
                   description: ''
                   nullable: false
@@ -6317,7 +6556,15 @@ paths:
               - selected
               - criterion
               - handgrading_result
-      tags: *id059
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CriterionResult'
+          description: ''
+      tags:
+      - criterion_results
   /api/criterion_results/{id}/:
     get:
       operationId: getCriterionResult
@@ -6336,7 +6583,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CriterionResult'
           description: ''
-      tags: &id060
+      tags:
       - criterion_results
     patch:
       operationId: updateCriterionResult
@@ -6348,13 +6595,6 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CriterionResult'
-          description: ''
       requestBody:
         required: true
         content:
@@ -6362,7 +6602,10 @@ paths:
             schema:
               type: object
               properties:
-                pk: *id006
+                pk:
+                  type: integer
+                  format: id
+                  readOnly: true
                 last_modified:
                   description: ''
                   nullable: false
@@ -6389,7 +6632,15 @@ paths:
                   readOnly: true
                   type: integer
                   format: id
-      tags: *id060
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CriterionResult'
+          description: ''
+      tags:
+      - criterion_results
     delete:
       operationId: deleteCriterionResult
       description: ''
@@ -6403,7 +6654,8 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id060
+      tags:
+      - criterion_results
   /api/projects/{id}/handgrading_results/:
     get:
       operationId: listHandgradingResults
@@ -6486,14 +6738,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Course'
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -6509,6 +6754,13 @@ paths:
                   $ref: '#/components/schemas/Semester'
                 new_year:
                   type: integer
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
       tags:
       - courses
   /api/projects/{project_pk}/copy_to_course/{target_course_pk}/:
@@ -6536,14 +6788,7 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Project'
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -6555,6 +6800,13 @@ paths:
                     \                      Only required if the target course is the\
                     \ same as the\n                                        one the\
                     \ project belongs to.\n                                    "
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
       tags:
       - projects
   /api/projects/{project_pk}/import_handgrading_rubric_from/{import_from_project_pk}/:
@@ -6574,6 +6826,14 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+          application/x-www-form-urlencoded:
+            schema: {}
+          multipart/form-data:
+            schema: {}
       responses:
         '201':
           content:
@@ -6596,6 +6856,14 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+          application/x-www-form-urlencoded:
+            schema: {}
+          multipart/form-data:
+            schema: {}
       responses:
         '200':
           description: You have accepted the invitation.
@@ -6622,6 +6890,14 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+          application/x-www-form-urlencoded:
+            schema: {}
+          multipart/form-data:
+            schema: {}
       responses:
         '201':
           content:
@@ -6649,6 +6925,14 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+          application/x-www-form-urlencoded:
+            schema: {}
+          multipart/form-data:
+            schema: {}
       responses:
         '201':
           content:
@@ -6668,6 +6952,14 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+          application/x-www-form-urlencoded:
+            schema: {}
+          multipart/form-data:
+            schema: {}
       responses:
         '200':
           content:
@@ -6687,6 +6979,14 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+          application/x-www-form-urlencoded:
+            schema: {}
+          multipart/form-data:
+            schema: {}
       responses:
         '200':
           content:
@@ -6706,6 +7006,14 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+          application/x-www-form-urlencoded:
+            schema: {}
+          multipart/form-data:
+            schema: {}
       responses:
         '200':
           content:
@@ -6725,18 +7033,18 @@ paths:
         description: ''
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InstructorFile'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: string
       tags:
       - instructor_files
   /api/sandbox_docker_images/{id}/rebuild/:
@@ -6750,11 +7058,25 @@ paths:
         description: ''
         schema:
           type: string
-      responses:
-        '202': *id029
       requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  description: The form-encoded files. One file must be named "Dockerfile"
+                  type: array
+                  items:
+                    type: string
+                    format: binary
         required: true
-        content: *id030
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildSandboxDockerImageTask'
       tags:
       - sandbox_docker_images
   /api/projects/{id}/results_cache/:
@@ -6771,15 +7093,15 @@ paths:
       responses:
         '204':
           description: ''
-      deprecated: true
       tags:
       - projects
+      deprecated: true
 components:
   schemas:
     User:
       type: object
       properties:
-        pk: &id061
+        pk:
           type: integer
           format: id
         username:
@@ -6804,7 +7126,9 @@ components:
     Course:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         name:
           description: The name of this course. Must be unique, non-empty and non-null.
           nullable: false
@@ -6850,7 +7174,9 @@ components:
     Project:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         name:
           description: "The name used to identify this project.\n            Must\
             \ be non-empty and non-null.\n            Must be unique among Projects\
@@ -7026,7 +7352,9 @@ components:
     ExpectedStudentFile:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         project:
           description: ''
           nullable: false
@@ -7058,7 +7386,9 @@ components:
     InstructorFile:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         project:
           description: ''
           nullable: false
@@ -7079,7 +7409,9 @@ components:
     DownloadTask:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         project:
           description: ''
           nullable: false
@@ -7117,7 +7449,9 @@ components:
     Group:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         project:
           description: ''
           nullable: false
@@ -7134,7 +7468,8 @@ components:
         member_names:
           description: A list of usernames of the group members, sorted alphabetically.
           type: array
-          items: *id062
+          items:
+            type: string
           readOnly: false
         members:
           description: "The Users that belong to this submission group.\n        \
@@ -7180,7 +7515,9 @@ components:
     GroupInvitation:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         project:
           description: ''
           nullable: false
@@ -7206,16 +7543,20 @@ components:
         recipient_usernames:
           description: The usernames of the Users that will receive this invitation.
           type: array
-          items: *id062
+          items:
+            type: string
         recipients_who_accepted:
           description: "A list of usernames indicating which invitees have accepted\n\
             \        this invitation.\n        This field is READ ONLY."
           type: array
-          items: *id062
+          items:
+            type: string
     Submission:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         group:
           description: "The SubmissionGroup that this submission belongs to. Note\n\
             \            that this field indirectly links this Submission object to\
@@ -7237,13 +7578,15 @@ components:
             \     excluding those that were discarded."
           nullable: false
           type: array
-          items: *id026
+          items:
+            type: string
         discarded_files:
           description: The names of files that were discarded when this Submission
             was created.
           nullable: false
           type: array
-          items: *id026
+          items:
+            type: string
         missing_files:
           description: "Stores missing filenames and the additional number\n     \
             \       of files needed to satisfy a file pattern requirement.\n     \
@@ -7337,7 +7680,9 @@ components:
     SandboxDockerImage:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         display_name:
           description: "A human-readable name for this sandbox image.\n          \
             \           Must be unique among images belonging to a course.\n     \
@@ -7357,7 +7702,9 @@ components:
     BuildSandboxDockerImageTask:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         created_at:
           description: ''
           nullable: false
@@ -7380,7 +7727,8 @@ components:
           description: The names of the files uploaded by the user.
           nullable: false
           type: array
-          items: *id026
+          items:
+            type: string
         course_id:
           description: "The course this task is associated with.\n            Only\
             \ superusers can create or update images with no associated course."
@@ -7422,7 +7770,9 @@ components:
     AGTestSuite:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         name:
           description: "The name used to identify this suite.\n                  \
             \   Must be non-empty and non-null.\n                     Must be unique\
@@ -7549,7 +7899,9 @@ components:
     AGTestCase:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         name:
           description: "The name used to identify this autograder test.\n        \
             \             Must be non-empty and non-null.\n                     Must\
@@ -7606,7 +7958,9 @@ components:
     AGTestCommand:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         name:
           description: "The name used to identify this command.\n                \
             \         Must be non-empty and non-null.\n                         Must\
@@ -7869,20 +8223,21 @@ components:
     SubmissionResultFeedback:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         total_points:
           description: ''
           anyOf:
-          - &id063
-            type: integer
-          - &id064
-            type: string
+          - type: integer
+          - type: string
             format: float
         total_points_possible:
           description: ''
           anyOf:
-          - *id063
-          - *id064
+          - type: integer
+          - type: string
+            format: float
         ag_test_suite_results:
           description: ''
           type: array
@@ -7896,7 +8251,9 @@ components:
     AGTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         ag_test_suite_name:
           description: ''
           type: string
@@ -7932,7 +8289,9 @@ components:
     AGTestCaseResultFeedback:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         ag_test_case_name:
           description: ''
           type: string
@@ -7956,7 +8315,9 @@ components:
     AGTestCommandResultFeedback:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         ag_test_command_pk:
           description: ''
           type: integer
@@ -7977,7 +8338,8 @@ components:
         expected_return_code:
           description: ''
           nullable: true
-          $ref: '#/components/schemas/ExpectedReturnCode'
+          anyOf:
+          - $ref: '#/components/schemas/ExpectedReturnCode'
         actual_return_code:
           description: ''
           nullable: true
@@ -8025,7 +8387,9 @@ components:
     MutationTestSuite:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         name:
           description: "The name used to identify this MutationTestSuite.\n      \
             \               Must be non-empty and non-null."
@@ -8060,7 +8424,8 @@ components:
             be run against.
           nullable: false
           type: array
-          items: *id026
+          items:
+            type: string
         use_setup_command:
           description: ''
           nullable: false
@@ -8222,7 +8587,9 @@ components:
     MutationTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         mutation_test_suite_name:
           description: ''
           type: string
@@ -8258,21 +8625,25 @@ components:
         student_tests:
           description: ''
           type: array
-          items: *id062
+          items:
+            type: string
         discarded_tests:
           description: ''
           type: array
-          items: *id062
+          items:
+            type: string
         invalid_tests:
           description: ''
           nullable: true
           type: array
-          items: *id062
+          items:
+            type: string
         timed_out_tests:
           description: ''
           nullable: true
           type: array
-          items: *id062
+          items:
+            type: string
         num_bugs_exposed:
           description: ''
           nullable: true
@@ -8281,12 +8652,14 @@ components:
           description: ''
           nullable: true
           type: array
-          items: *id062
+          items:
+            type: string
         all_bug_names:
           description: ''
           nullable: true
           type: array
-          items: *id062
+          items:
+            type: string
         total_points:
           description: ''
           type: string
@@ -8298,7 +8671,9 @@ components:
     RerunSubmissionsTask:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         progress:
           description: ''
           type: integer
@@ -8382,7 +8757,9 @@ components:
     HandgradingRubric:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         project:
           description: The Project this HandgradingRubric belongs to.
           nullable: false
@@ -8441,7 +8818,9 @@ components:
     Criterion:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         handgrading_rubric:
           description: The rubric this Criterion belongs to.
           nullable: false
@@ -8470,7 +8849,9 @@ components:
     Annotation:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         handgrading_rubric:
           description: The HandgradingRubric this Annotation belongs to.
           nullable: false
@@ -8505,7 +8886,9 @@ components:
     HandgradingResult:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         last_modified:
           description: ''
           nullable: false
@@ -8559,7 +8942,8 @@ components:
           description: "Returns a list of strings containing the filenames of the\
             \ Submission this result\n        belongs to."
           type: array
-          items: *id062
+          items:
+            type: string
         total_points:
           description: "The total number of points awarded. Note that it is possible\n\
             \        for this value to be greater than total_points."
@@ -8571,7 +8955,9 @@ components:
     CriterionResult:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         last_modified:
           description: ''
           nullable: false
@@ -8596,7 +8982,9 @@ components:
     AppliedAnnotation:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         last_modified:
           description: ''
           nullable: false
@@ -8620,7 +9008,9 @@ components:
     Comment:
       type: object
       properties:
-        pk: *id061
+        pk:
+          type: integer
+          format: id
         last_modified:
           description: ''
           nullable: false
@@ -8665,8 +9055,15 @@ components:
           type: boolean
         is_handgrader:
           type: boolean
+    SubmissionWithResults:
+      allOf:
+      - $ref: '#/components/schemas/Submission'
+      - type: object
+        properties:
+          results:
+            $ref: '#/components/schemas/SubmissionResultFeedback'
   parameters:
-    feedbackCategory: &id065
+    feedbackCategory:
       name: feedback_category
       in: query
       schema:
@@ -8683,7 +9080,23 @@ components:
         \ the\n    deadline.\n- staff_viewer: Can be requested\n    by staff when\
         \ looking up another user's submission results.\n- max: Can be requested by\
         \ staff\n    on their own submissions."
-    requiredFeedbackCategory: *id065
+    requiredFeedbackCategory:
+      name: feedback_category
+      in: query
+      schema:
+        $ref: '#/components/schemas/FeedbackCategory'
+      description: "The category of feedback being requested. Must be one of the following\n\
+        values:\n\n- normal: Can be requested by\n    students before or after the\
+        \ project deadline on their\n    submissions that did not exceed the daily\
+        \ limit.\n- past_limit_submission: Can be\n    requested by students on their\
+        \ submissions that exceeded the\n    daily limit.\n- ultimate_submission:\
+        \ Can be\n    requested by students on their own ultimate (a.k.a. final\n\
+        \    graded) submission once the project deadline has passed and\n    hide_ultimate_submission_fdbk\
+        \ has been set to False on the\n    project. Can similarly be requested by\
+        \ staff when looking\n    up another user's ultimate submission results after\
+        \ the\n    deadline.\n- staff_viewer: Can be requested\n    by staff when\
+        \ looking up another user's submission results.\n- max: Can be requested by\
+        \ staff\n    on their own submissions."
     includeStaff:
       name: include_staff
       in: query

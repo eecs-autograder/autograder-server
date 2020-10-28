@@ -389,6 +389,7 @@ class RemoveSubmissionFromQueueView(AGModelAPIView):
     schema = CustomViewSchema([APITags.submissions], {
         'POST': {
             'operation_id': 'removeSubmissionFromQueue',
+            'request': {'content': {}},
             'responses': {
                 '200': {
                     'content': as_content_obj(ag_models.Submission)
