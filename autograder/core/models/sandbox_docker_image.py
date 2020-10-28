@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core import exceptions
 from django.db import models, transaction
 from django.utils import timezone
+from django.contrib.postgres import fields as pg_fields
 
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
@@ -150,7 +151,8 @@ class BuildSandboxDockerImageTask(AutograderModel):
         help_text="True if the build timed out."
     )
 
-    filenames = ag_fields.StringArrayField(
+    filenames = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         blank=True, default=list,
         help_text="The names of the files uploaded by the user."
     )

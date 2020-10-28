@@ -1,9 +1,11 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import itertools
 from typing import List
 
 from django.contrib.auth.models import User
 from django.core import exceptions
 from django.db import models, transaction
+from django.contrib.postgres import fields as pg_fields
 
 from autograder.core import fields as ag_fields
 
@@ -59,8 +61,10 @@ class GroupInvitation(ag_model_base.AutograderModel):
         help_text="""The User who created this invitation.
             This field is REQUIRED.""")
 
-    _recipients_who_accepted = ag_fields.StringArrayField(
-        default=list, blank=True)
+    _recipients_who_accepted = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
+        default=list, blank=True
+    )
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE,
                                 related_name='group_invitations')

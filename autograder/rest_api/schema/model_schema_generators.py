@@ -468,8 +468,6 @@ _FIELD_TYPES: Dict[Type[Field[object, object]], SchemaObject] = {
     TimeZoneField: {'type': 'string', 'format': 'timezone'},
 
     pg_fields.JSONField: {'type': 'object'},
-
-    ag_fields.StringArrayField: {'type': 'array', 'items': {'type': 'string'}},
 }
 
 

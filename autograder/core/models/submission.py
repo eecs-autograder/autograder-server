@@ -9,6 +9,7 @@ from django.core.files import File
 from django.db import models, transaction
 from django.db.models import Prefetch
 from django.utils import timezone
+from django.contrib.postgres import fields as pg_fields
 
 import autograder.core.constants as const
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
@@ -188,12 +189,14 @@ class Submission(ag_model_base.AutograderModel):
         """
         return (self.get_file(filename) for filename in self.submitted_filenames)
 
-    submitted_filenames = ag_fields.StringArrayField(
+    submitted_filenames = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         blank=True, default=list,
         help_text="""The names of files that were submitted,
                      excluding those that were discarded.""")
 
-    discarded_files = ag_fields.StringArrayField(
+    discarded_files = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         default=list, blank=True,
         help_text="""The names of files that were discarded when this Submission was created.""")
 

@@ -12,13 +12,7 @@ if TYPE_CHECKING:
     from .models.ag_model_base import DictSerializable
 
 
-# HACK: This should get rid of "call to untyped function" errors when
-# we use our custom fields.
-if TYPE_CHECKING:
-    class ValidatedArrayField(pg_fields.ArrayField[List[Any], Union[Sequence[Any], Combinable]]):
-        ...
-
-
+# DEPRECATED: DO NOT USE
 # TODO: Remove in 5.0.0
 class ValidatedArrayField(pg_fields.ArrayField):  # type: ignore
     """
@@ -72,6 +66,7 @@ class ValidatedArrayField(pg_fields.ArrayField):  # type: ignore
 _ValidatorCallable = Callable[..., None]
 
 
+# DEPRECATED: DO NOT USE
 class StringArrayField(ValidatedArrayField):
     """
     A convenience wrapper around ValidatedArrayField that always
