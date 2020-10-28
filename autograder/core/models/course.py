@@ -9,7 +9,7 @@ from django.db import models
 from django.core import validators
 from django.contrib.auth.models import User
 from django.db.models import Case, When, Value
-from typing import Optional, Sequence, TypedDict, Union, cast
+from typing import Iterable, Optional, Sequence, TypedDict, Union, cast
 
 from .ag_model_base import AutograderModel, AutograderModelManager
 
@@ -190,7 +190,7 @@ class Course(AutograderModel):
         force_insert: bool = False,
         force_update: bool = False,
         using: Optional[str] = None,
-        update_fields: Optional[Union[Sequence[str], str]] = None
+        update_fields: Optional[Iterable[str]] = None
     ) -> None:
         super().save(force_insert, force_update, using, update_fields)
 

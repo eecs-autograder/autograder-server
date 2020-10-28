@@ -5,7 +5,6 @@ import os
 import shutil
 from typing import Any, Collection, ContextManager, Iterable, Iterator, Mapping, Optional, Protocol, Sequence, Type, TypeVar, cast
 from contextlib import contextmanager
-import unittest
 from unittest import mock
 
 from django.conf import settings
@@ -176,7 +175,7 @@ class UnitTestBase(_CustomAssertsMixin, _SetUpTearDownCommon, TestCase):
         logging.disable(logging.NOTSET)
 
     def setUp(self) -> None:
-        super().setUp()  # type: ignore
+        super().setUp()
 
         # Here we wrap django's Atomic class and QuerySet's
         # select_for_update() method. The wrapper around Atomic keeps
@@ -243,7 +242,7 @@ class TransactionUnitTestBase(_CustomAssertsMixin, _SetUpTearDownCommon, Transac
         cls.flush_sandbox_docker_images()
 
     def setUp(self) -> None:
-        super().setUp()  # type: ignore
+        super().setUp()
         self.create_default_sandbox_image()
 
     @classmethod

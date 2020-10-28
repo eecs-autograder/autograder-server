@@ -1,10 +1,12 @@
-from typing import Callable, List, Union, Sequence, Any, TYPE_CHECKING, Type, Optional, Generic, TypeVar, Dict
 from enum import Enum
+from typing import (
+    TYPE_CHECKING, Any, Callable, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
+)
 
 from django.contrib.postgres import fields as pg_fields
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models.expressions import Combinable
+from django.db.models.base import Model
 
 from . import constants as const
 
@@ -165,22 +167,27 @@ class ShortStringField(models.CharField):  # type: ignore
         return self.to_python(value)
 
 
-if TYPE_CHECKING:
-    class EnumField(models.TextField['str', 'str']):
-        ...
+_EnumType = TypeVar('_EnumType', bound=Enum)
 
 
-class EnumField(models.TextField):
-    def __init__(self, enum_type: Type[Enum], **kwargs):
+class EnumField(
+    Generic[_EnumType],
+    models.TextField  # type: ignore
+):
+    _pyi_private_set_type: Union[_EnumType, str]  # type: ignore
+    _pyi_private_get_type: _EnumType  # type: ignore
+    _pyi_lookup_exact_type: Union[_EnumType, str]
+
+    def __init__(self, enum_type: Type[_EnumType], **kwargs: Any):
         self.enum_type = enum_type
         super().__init__(**kwargs)
 
-    def deconstruct(self):
+    def deconstruct(self) -> Tuple[Any, Any, Any, Any]:
         name, path, args, kwargs = super().deconstruct()
         kwargs['enum_type'] = self.enum_type
         return name, path, args, kwargs
 
-    def to_python(self, value):
+    def to_python(self, value: Any) -> Optional[_EnumType]:
         if value is None:
             return None
 
@@ -190,10 +197,10 @@ class EnumField(models.TextField):
             raise ValidationError(
                 '"{}" is not a valid {}'.format(value, self.enum_type.__name__))
 
-    def from_db_value(self, value, *args, **kwargs):
+    def from_db_value(self, value: Any, *args: Any, **kwargs: Any) -> Any:
         return self.to_python(value)
 
-    def get_prep_value(self, value):
+    def get_prep_value(self, value: Any) -> Any:
         if value is None:
             return None
 
@@ -217,16 +224,16 @@ class ValidatedJSONField(
     in the database.
     """
 
-    def __init__(self, serializable_class: Type['DictSerializable'], **kwargs: object):
+    def __init__(self, serializable_class: Type[_JSONObjType], **kwargs: Any):
         self.serializable_class = serializable_class
         super().__init__(**kwargs)
 
-    def deconstruct(self):
+    def deconstruct(self) -> Tuple[Any, Any, Any, Any]:
         name, path, args, kwargs = super().deconstruct()
         kwargs['serializable_class'] = self.serializable_class
         return name, path, args, kwargs
 
-    def to_python(self, value):
+    def to_python(self, value: Any) -> Optional[_JSONObjType]:
         if value is None:
             return None
 
@@ -235,16 +242,21 @@ class ValidatedJSONField(
 
         return self.serializable_class.from_dict(value)
 
-    def validate(self, value, model_instance):
+    def validate(self, value: Optional[_JSONObjType], model_instance: Model) -> None:
         if value is None:
             super().validate(value, model_instance)
         else:
             super().validate(value.to_dict(), model_instance)
 
-    def from_db_value(self, value, *args, **kwargs):
-        return self.to_python(super().from_db_value(value, *args, **kwargs))
+    def from_db_value(self, value: Any, *args: Any, **kwargs: Any) -> Optional[_JSONObjType]:
+        return self.to_python(
+            super().from_db_value(value, *args, **kwargs)  # type: ignore
+        )
 
-    def get_prep_value(self, value):
+    def get_prep_value(
+        self,
+        value: Union[Dict[str, object], _JSONObjType, None]
+    ) -> Any:
         if value is None:
             return None
 

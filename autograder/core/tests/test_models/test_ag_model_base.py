@@ -179,8 +179,8 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
         self.assertEqual(foreign_key, ag_model.foreign_key)
         self.assertIsNone(ag_model.nullable_foreign_key)
 
-        self.assertSequenceEqual(self.many_to_manys, ag_model.many_to_many.all())
-        self.assertSequenceEqual(self.many_to_manys, ag_model.another_many_to_many.all())
+        self.assert_collection_equal(self.many_to_manys, ag_model.many_to_many.all())
+        self.assert_collection_equal(self.many_to_manys, ag_model.another_many_to_many.all())
         self.assertCountEqual(self.users, ag_model.users.all())
 
     def test_create_with_int_passed_for_to_one_relationships(self) -> None:
@@ -283,8 +283,8 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.assertEqual(foreign_key, self.ag_model.foreign_key)
         self.assertEqual(nullable_foreign_key, self.ag_model.nullable_foreign_key)
 
-        self.assertSequenceEqual(many_to_manys, self.ag_model.many_to_many.all())
-        self.assertSequenceEqual(many_to_manys, self.ag_model.another_many_to_many.all())
+        self.assert_collection_equal(many_to_manys, self.ag_model.many_to_many.all())
+        self.assert_collection_equal(many_to_manys, self.ag_model.another_many_to_many.all())
         self.assertCountEqual(users, self.ag_model.users.all())
 
         second_new_num = new_num + 1
@@ -297,7 +297,7 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.assertEqual(second_new_num, self.ag_model.pos_num_val)
         self.assertIsNone(self.ag_model.nullable_one_to_one)
         self.assertIsNone(self.ag_model.nullable_foreign_key)
-        self.assertSequenceEqual([], self.ag_model.many_to_many.all())
+        self.assert_collection_equal([], self.ag_model.many_to_many.all())
 
     def test_update_with_int_passed_for_to_one_relationships(self) -> None:
         one_to_one_obj = DummyForeignAutograderModel.objects.create(name='qehkfdnm')
@@ -558,7 +558,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
 
 
 class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.obj: AGModelWithSerializableField = (
