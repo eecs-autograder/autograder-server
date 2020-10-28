@@ -144,6 +144,7 @@ class StringArrayField(ValidatedArrayField):
         return self.to_python(value)
 
 
+# DEPRECATED: DO NOT USE
 class ShortStringField(models.CharField):  # type: ignore
     def __init__(
         self,

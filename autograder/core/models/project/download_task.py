@@ -1,3 +1,4 @@
+from autograder.core.models.ag_model_base import AutograderModelManager
 import enum
 
 from django.db import models
@@ -15,6 +16,8 @@ class DownloadType(enum.Enum):
 
 
 class DownloadTask(Task):
+    objects = AutograderModelManager['DownloadTask']()
+
     project = models.ForeignKey(Project, related_name='download_tasks', on_delete=models.CASCADE)
     download_type = EnumField(DownloadType)
     result_filename = models.TextField(blank=True)

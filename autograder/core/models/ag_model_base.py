@@ -55,7 +55,7 @@ class AutograderModelManager(models.Manager[_AutograderModelType]):
             field = instance._meta.get_field(field_name)
             # Remove this cast once django-stubs fixes:
             # https://github.com/typeddjango/django-stubs/issues/447
-            if not cast(RelatedField[object, object], field).many_to_many:
+            if not cast('RelatedField[object, object]', field).many_to_many:
                 continue
 
             objs = cast(Sequence[object], kwargs.pop(field_name))
@@ -98,7 +98,7 @@ class AutograderModelManager(models.Manager[_AutograderModelType]):
 def _field_is_to_one(instance: AutograderModel, field_name: str) -> bool:
     # Remove this cast once django-stubs fixes:
     # https://github.com/typeddjango/django-stubs/issues/447
-    field = cast(RelatedField[object, object], instance._meta.get_field(field_name))
+    field = cast('RelatedField[object, object]', instance._meta.get_field(field_name))
     return field.many_to_one or field.one_to_one
 
 
@@ -232,7 +232,7 @@ class ToDictMixin:
 
                 # Remove this cast once django-stubs fixes:
                 # https://github.com/typeddjango/django-stubs/issues/447
-                related_field = cast(RelatedField[object, object], field)
+                related_field = cast('RelatedField[object, object]', field)
                 if related_field.many_to_one or related_field.one_to_one:
                     field_val = getattr(self, field_name)
                     if field_val is None:
@@ -585,7 +585,7 @@ class AutograderModel(ToDictMixin, models.Model):
 
             # Remove this cast once django-stubs fixes:
             # https://github.com/typeddjango/django-stubs/issues/447
-            if cast(RelatedField[object, object], field).many_to_many:
+            if cast('RelatedField[object, object]', field).many_to_many:
                 assert field.related_model is not None
                 loaded_vals = _load_related_to_many_objs(
                     field.related_model, cast(Sequence[object], val))

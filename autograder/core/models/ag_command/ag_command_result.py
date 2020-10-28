@@ -1,3 +1,4 @@
+from autograder.core.models.ag_model_base import AutograderModelManager
 import os
 
 from django.db import models
@@ -11,6 +12,8 @@ class AGCommandResult(AGCommandResultBase):
     """
     Contains the core run results of a Command.
     """
+    objects = AutograderModelManager['AGCommandResult']()
+
     @property
     def stdout_filename(self):
         if not self.pk:

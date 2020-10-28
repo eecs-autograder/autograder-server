@@ -2,6 +2,7 @@ import os
 
 from django.db import models
 
+from autograder.core.models.ag_model_base import AutograderModelManager
 import autograder.core.utils as core_ut
 
 from ..ag_command import AGCommandResultBase
@@ -14,6 +15,8 @@ class AGTestCommandResult(AGCommandResultBase):
     and provides an interface for serializing the data with different
     feedback levels.
     """
+    objects = AutograderModelManager['AGTestCommandResult']()
+
     class Meta:
         unique_together = ('ag_test_command', 'ag_test_case_result')
         ordering = ('ag_test_command___order',)
