@@ -33,7 +33,9 @@ class _Permissions(permissions.BasePermission):
 
 class CurrentUserView(AGModelAPIView):
     schema = AGDetailViewSchemaGenerator(
-        tags=[APITags.users], api_class=User, operation_id_override='getCurrentUser'
+        tags=[APITags.users],
+        api_class=User,
+        operation_id_overrides={'GET': 'getCurrentUser'}
     )
 
     def get(self, *args, **kwargs):

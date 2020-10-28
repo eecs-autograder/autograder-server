@@ -60,21 +60,17 @@ class AGViewSchemaGenerator(AutoSchema):  # type: ignore
         self,
         tags: List[APITags],
         api_class: Optional[APIClassType] = None,
-        operation_id_override: Optional[str] = None
+        operation_id_overrides: Optional[Dict[HTTPMethodName, str]] = None
     ):
         super().__init__()
         self._tags = [tag.value for tag in tags]
         self._api_class = api_class
-        self._operation_id_override = operation_id_override
+        self._operation_id_overrides = operation_id_overrides
 
     def get_operation(self, path: str, method: HTTPMethodName) -> OperationObject:
         result = self.get_operation_impl(path, method)
         result['tags'] = self._tags
-        if self._operation_id_override is not None:
-            result['operationId'] = self._operation_id_override
-        else:
-            result['operationId'] = self._get_operation_id(path, method)
-
+        result['operationId'] = self._get_operation_id(path, method)
         return result
 
     # Derived classes will typically override this.
@@ -83,12 +79,16 @@ class AGViewSchemaGenerator(AutoSchema):  # type: ignore
         return cast(OperationObject, super().get_operation(path, method))
 
     def _get_operation_id(self, path: str, method: HTTPMethodName) -> str:
+        if self._operation_id_overrides is not None and method in self._operation_id_overrides:
+            return self._operation_id_overrides[method]
+
         return self._get_operation_id_impl(path, method)
 
     def _get_operation_id_impl(self, path: str, method: HTTPMethodName) -> str:
         raise NotImplementedError(
             f'Unable to create operation ID for {type(self.view).__name__} {method} {path}.\n'
-            'You must either use an appropriate "AGxxSchema" class or provide the '
+            'You must either use an appropriate "AGxxSchema" class, '
+            'pass an operation_id_overrides dict to __init__, or provide the '
             '"operation_id" key to "CustomViewSchema".'
         )
 
@@ -376,8 +376,6 @@ class CustomViewSchema(AGViewSchemaGenerator):
 
         responses: Dict[str, OrRef[ResponseObject]] = {}
         for status, response_data in method_data.get('responses', {}).items():
-            if response_data is None:
-                stderr('WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa', path, method)
             responses[status] = {'description': ''} if response_data is None else response_data
 
         if responses:

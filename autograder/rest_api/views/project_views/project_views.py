@@ -161,7 +161,6 @@ class ImportHandgradingRubricView(AGModelAPIView):
     schema = CustomViewSchema([APITags.projects, APITags.handgrading_rubrics], {
         'POST': {
             'operation_id': 'importHandgradingRubric',
-            'request': {'content': {}},
             'responses': {
                 '201': {
                     'content': as_content_obj(hg_models.HandgradingRubric)

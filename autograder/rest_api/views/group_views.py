@@ -128,7 +128,6 @@ class CreateSoloGroupView(AGModelAPIView):
     schema = CustomViewSchema([APITags.groups], {
         'POST': {
             'operation_id': 'createSoloGroup',
-            'request': {'content': {}},
             'responses': {
                 '201': {
                     'content': as_content_obj(ag_models.Group)
@@ -293,7 +292,6 @@ class MergeGroupsView(AGModelAPIView):
     schema = CustomViewSchema([APITags.groups], {
         'POST': {
             'operation_id': 'mergeGroups',
-            'request': {'content': {}},
             'responses': {
                 '201': {
                     'content': as_content_obj(ag_models.Group)

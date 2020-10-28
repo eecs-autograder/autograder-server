@@ -5257,7 +5257,7 @@ paths:
       - submission_output
   /api/projects/{project_pk}/handgrading_rubric/:
     get:
-      operationId: getHandgradingRubric
+      operationId: getHandgradingRubricForProject
       description: ''
       parameters:
       - name: project_pk

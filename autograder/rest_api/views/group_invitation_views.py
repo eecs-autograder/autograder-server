@@ -150,7 +150,6 @@ class AcceptGroupInvitationView(AGModelAPIView):
     schema = CustomViewSchema([APITags.group_invitations], {
         'POST': {
             'operation_id': 'acceptGroupInvitation',
-            'request': {'content': {}},
             'responses': {
                 '200': {
                     'description': 'You have accepted the invitation.',

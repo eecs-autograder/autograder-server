@@ -56,7 +56,6 @@ class HandgradingResultView(NestedModelView):
     schema = _HandgradingResultViewSchema({
         'POST': {
             'operation_id': 'getOrCreateHandgradingResult',
-            'request': {'content': {}},
             'responses': {
                 '200': {
                     'description': 'A HandgradingResult already exists for the group. '
