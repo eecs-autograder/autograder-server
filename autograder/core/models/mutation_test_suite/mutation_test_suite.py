@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from django.core import exceptions
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
@@ -166,7 +167,8 @@ class MutationTestSuite(AutograderModel):
     STUDENT_TEST_NAME_PLACEHOLDER = r'${student_test_name}'
     BUGGY_IMPL_NAME_PLACEHOLDER = r'${buggy_impl_name}'
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         help_text="""The name used to identify this MutationTestSuite.
                      Must be non-empty and non-null.""")
     project = models.ForeignKey(

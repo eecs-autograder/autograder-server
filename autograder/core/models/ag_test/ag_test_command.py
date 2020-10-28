@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import enum
 
 from django.core import exceptions
@@ -125,7 +126,8 @@ class AGTestCommand(AutograderModel):
         unique_together = ('name', 'ag_test_case')
         order_with_respect_to = 'ag_test_case'
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         help_text='''The name used to identify this command.
                          Must be non-empty and non-null.
                          Must be unique among commands that belong to the same autograder test.

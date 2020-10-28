@@ -469,7 +469,6 @@ _FIELD_TYPES: Dict[Type[Field[object, object]], SchemaObject] = {
 
     pg_fields.JSONField: {'type': 'object'},
 
-    ag_fields.ShortStringField: {'type': 'string'},
     ag_fields.StringArrayField: {'type': 'array', 'items': {'type': 'string'}},
 }
 

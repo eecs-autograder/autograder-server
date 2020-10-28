@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from typing import Union, Optional
 
 from django.core import exceptions
@@ -30,7 +31,8 @@ class AGTestCase(AutograderModel):
         unique_together = ('name', 'ag_test_suite')
         order_with_respect_to = 'ag_test_suite'
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         help_text='''The name used to identify this autograder test.
                      Must be non-empty and non-null.
                      Must be unique among autograder tests that belong to the same suite.

@@ -144,11 +144,6 @@ class StringArrayField(ValidatedArrayField):
         return self.to_python(value)
 
 
-if TYPE_CHECKING:
-    class ShortStringField(models.CharField[str, str]):
-        ...
-
-
 class ShortStringField(models.CharField):  # type: ignore
     def __init__(
         self,

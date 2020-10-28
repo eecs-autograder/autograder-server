@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import enum
 import os
 
@@ -57,7 +58,8 @@ class Course(AutograderModel):
             ('create_course', 'Can create new courses and clone courses they are an admin for.'),
         )
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         validators=[validators.MinLengthValidator(1)],
         help_text="The name of this course. Must be unique, non-empty and non-null.")
 
@@ -66,7 +68,8 @@ class Course(AutograderModel):
     year = models.IntegerField(blank=True, null=True, default=None,
                                validators=[MinValueValidator(1950)])
 
-    subtitle = ag_fields.ShortStringField(
+    subtitle = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=True, help_text='An optional descriptive name for the course.')
 
     num_late_days = models.IntegerField(
@@ -98,7 +101,8 @@ class Course(AutograderModel):
                      associated with this Course and may be in
                      groups together.""")
 
-    allowed_guest_domain = ag_fields.ShortStringField(
+    allowed_guest_domain = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=True,
         help_text="""When non-empty, indicates that guest users' usernames
                      must end with this string for them to be allowed access

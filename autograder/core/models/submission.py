@@ -11,6 +11,7 @@ from django.db.models import Prefetch
 from django.utils import timezone
 
 import autograder.core.constants as const
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
@@ -175,7 +176,8 @@ class Submission(ag_model_base.AutograderModel):
 
     timestamp = models.DateTimeField(default=timezone.now)
 
-    submitter = ag_fields.ShortStringField(
+    submitter = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=True,
         help_text="""The name of the user who made this submission""")
 

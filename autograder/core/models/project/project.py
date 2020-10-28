@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import datetime
 import enum
 import os
@@ -54,7 +55,8 @@ class Project(AutograderModel):
     class Meta:
         unique_together = ('name', 'course')
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         help_text="""The name used to identify this project.
             Must be non-empty and non-null.
             Must be unique among Projects associated with

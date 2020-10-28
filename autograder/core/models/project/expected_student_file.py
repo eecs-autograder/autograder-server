@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from django.core import validators, exceptions
 from django.db import models
 
@@ -36,7 +37,8 @@ class ExpectedStudentFile(AutograderModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE,
                                 related_name='expected_student_files')
 
-    pattern = ag_fields.ShortStringField(
+    pattern = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         validators=[core_ut.check_filename],
         help_text='''A shell-style file pattern suitable for
             use with Python's fnmatch.fnmatch()

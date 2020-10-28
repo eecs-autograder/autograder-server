@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import enum
 import os
 
@@ -28,14 +29,16 @@ class SandboxDockerImage(AutograderModel):
         ordering = ('display_name',)
         unique_together = ('display_name', 'course')
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=False,
         unique=True,
         help_text="""A string uniquely identifying this sandbox image.
                      This field is required and cannot be edited after
                      creation.""")
 
-    display_name = ag_fields.ShortStringField(
+    display_name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=False,
         help_text="""A human-readable name for this sandbox image.
                      Must be unique among images belonging to a course.
