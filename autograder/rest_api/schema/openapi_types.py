@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, TypeVar, TypedDict, Union
+from typing import Any, Dict, List, Literal, TypedDict, TypeVar, Union
 
 # NOTE on imports: This module should NOT import from any of the other
 # modules in the schema package.

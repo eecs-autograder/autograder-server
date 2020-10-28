@@ -4,8 +4,10 @@ import copy
 from decimal import Decimal
 from enum import Enum
 from functools import singledispatch
-from typing import (Any, Dict, List, Mapping, Optional, Sequence, Type, TypeVar, Union, cast,
-                    get_args, get_origin, get_type_hints)
+from typing import (
+    Any, Dict, List, Mapping, Optional, Sequence, Type, TypeVar, Union, cast, get_args, get_origin,
+    get_type_hints
+)
 
 import django.contrib.postgres.fields as pg_fields
 from django.contrib.auth.models import User
@@ -20,12 +22,13 @@ import autograder.core.fields as ag_fields
 import autograder.core.models as ag_models
 import autograder.handgrading.models as hg_models
 from autograder.core.models.ag_model_base import AutograderModel, DictSerializable, ToDictMixin
-from autograder.core.submission_feedback import (AGTestCaseResultFeedback,
-                                                 AGTestCommandResultFeedback,
-                                                 AGTestSuiteResultFeedback,
-                                                 SubmissionResultFeedback)
-from autograder.rest_api.schema.openapi_types import (OrRef, ParameterObject, ReferenceObject,
-                                                      SchemaObject)
+from autograder.core.submission_feedback import (
+    AGTestCaseResultFeedback, AGTestCommandResultFeedback, AGTestSuiteResultFeedback,
+    SubmissionResultFeedback
+)
+from autograder.rest_api.schema.openapi_types import (
+    OrRef, ParameterObject, ReferenceObject, SchemaObject
+)
 
 
 def generate_model_schemas() -> Dict[str, OrRef[SchemaObject]]:

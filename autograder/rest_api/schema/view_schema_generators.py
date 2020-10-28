@@ -1,5 +1,4 @@
 from __future__ import annotations
-from autograder.rest_api.schema.utils import stderr
 
 import enum
 from typing import Dict, List, Optional, TypedDict, Union, cast
@@ -7,14 +6,13 @@ from typing import Dict, List, Optional, TypedDict, Union, cast
 from rest_framework.schemas.openapi import AutoSchema  # type: ignore
 
 from autograder import utils
-from autograder.rest_api.schema.model_schema_generators import (API_OBJ_TYPE_NAMES,
-                                                                AGModelSchemaGenerator,
-                                                                APIClassType, as_schema_ref,
-                                                                assert_not_ref)
-from autograder.rest_api.schema.openapi_types import (ContentType, HTTPMethodName, MediaTypeObject,
-                                                      OperationObject, OrRef, ParameterObject,
-                                                      ReferenceObject, RequestBodyObject,
-                                                      ResponseObject, SchemaObject)
+from autograder.rest_api.schema.model_schema_generators import (
+    API_OBJ_TYPE_NAMES, AGModelSchemaGenerator, APIClassType, as_schema_ref, assert_not_ref
+)
+from autograder.rest_api.schema.openapi_types import (
+    ContentType, HTTPMethodName, MediaTypeObject, OperationObject, OrRef, ParameterObject,
+    ReferenceObject, RequestBodyObject, ResponseObject, SchemaObject
+)
 
 
 # Defines the order of API tags and provides a single point of
