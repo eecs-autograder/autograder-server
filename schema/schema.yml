@@ -2177,6 +2177,8 @@ paths:
                   readOnly: true
                   type: array
                   items:
+                    description: ''
+                    nullable: false
                     type: string
                 discarded_files:
                   description: The names of files that were discarded when this Submission
@@ -2185,6 +2187,8 @@ paths:
                   readOnly: true
                   type: array
                   items:
+                    description: ''
+                    nullable: false
                     type: string
                 missing_files:
                   description: "Stores missing filenames and the additional number\n\
@@ -4002,6 +4006,8 @@ paths:
                   readOnly: false
                   type: array
                   items:
+                    description: ''
+                    nullable: false
                     type: string
                 use_setup_command:
                   description: ''
@@ -4282,6 +4288,8 @@ paths:
                   readOnly: false
                   type: array
                   items:
+                    description: ''
+                    nullable: false
                     type: string
                 use_setup_command:
                   description: ''
@@ -7579,6 +7587,8 @@ components:
           nullable: false
           type: array
           items:
+            description: ''
+            nullable: false
             type: string
         discarded_files:
           description: The names of files that were discarded when this Submission
@@ -7586,6 +7596,8 @@ components:
           nullable: false
           type: array
           items:
+            description: ''
+            nullable: false
             type: string
         missing_files:
           description: "Stores missing filenames and the additional number\n     \
@@ -7728,6 +7740,8 @@ components:
           nullable: false
           type: array
           items:
+            description: ''
+            nullable: false
             type: string
         course_id:
           description: "The course this task is associated with.\n            Only\
@@ -8425,6 +8439,8 @@ components:
           nullable: false
           type: array
           items:
+            description: ''
+            nullable: false
             type: string
         use_setup_command:
           description: ''
