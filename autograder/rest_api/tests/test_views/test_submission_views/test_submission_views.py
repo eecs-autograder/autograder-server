@@ -367,7 +367,7 @@ class CreateSubmissionTestCase(AGViewTestBase):
 
         resubmittable_statuses = list(
             set(ag_models.Submission.GradingStatus.values)
-            - set(ag_models.Submission.GradingStatus.active_statuses)
+            - set(ag_models.Submission.active_statuses)
         )
 
         for group in self._all_roles_groups():
@@ -1099,7 +1099,7 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
         ]
         self.assertCountEqual(
             count_towards_limit_statuses,
-            ag_models.Submission.GradingStatus.count_towards_limit_statuses)
+            ag_models.Submission.count_towards_limit_statuses)
         num_statuses = len(count_towards_limit_statuses)
         self.project.validate_and_update(submission_limit_per_day=1)
 

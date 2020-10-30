@@ -1,23 +1,21 @@
-from autograder.core.constants import MAX_CHAR_FIELD_LEN
-import enum
 import os
+from typing import Iterable, Optional, TypedDict, cast
 
+from django.contrib.auth.models import User
+from django.core import validators
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.core import validators
-from django.contrib.auth.models import User
-from django.db.models import Case, When, Value
-from typing import Iterable, Optional, Sequence, TypedDict, Union, cast
+from django.db.models import Case, Value, When
+
+import autograder.core.utils as core_ut
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 
 from .ag_model_base import AutograderModel, AutograderModelManager
 
-import autograder.core.fields as ag_fields
-import autograder.core.utils as core_ut
 
-
-class Semester(enum.Enum):
+class Semester(models.TextChoices):
     fall = 'Fall'
     winter = 'Winter'
     spring = 'Spring'
@@ -63,7 +61,7 @@ class Course(AutograderModel):
         validators=[validators.MinLengthValidator(1)],
         help_text="The name of this course. Must be unique, non-empty and non-null.")
 
-    semester = ag_fields.EnumField(Semester, blank=True, null=True, default=None)
+    semester = models.TextField(choices=Semester.choices, blank=True, null=True, default=None)
 
     year = models.IntegerField(blank=True, null=True, default=None,
                                validators=[MinValueValidator(1950)])

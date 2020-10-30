@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import ClassVar, Final, Optional, Sequence
 from datetime import timedelta
 import fnmatch
 import os
@@ -110,7 +110,7 @@ class Submission(ag_model_base.AutograderModel):
     class Meta:
         ordering = ['-pk']
 
-    class GradingStatus:
+    class GradingStatus(models.TextChoices):
         # The submission has been accepted and saved to the database
         received = 'received'
 
@@ -136,25 +136,24 @@ class Submission(ag_model_base.AutograderModel):
         # Something unexpected occurred during the grading process.
         error = 'error'
 
-        values = [
-            received,
-            queued,
-            being_graded,
-            waiting_for_deferred,
-            finished_grading,
-            removed_from_queue,
-            error,
-        ]
+    # These statuses bar users from making another submission
+    # while the current one is active.
+    active_statuses: Final[Sequence[GradingStatus]] = [
+        GradingStatus.received,
+        GradingStatus.queued,
+        GradingStatus.being_graded
+    ]
 
-        # These statuses bar users from making another submission
-        # while the current one is active.
-        active_statuses = [received, queued, being_graded]
+    # A submission should only be counted towards the daily limit if
+    # it has one of these statuses.
+    count_towards_limit_statuses: Final[Sequence[GradingStatus]] = [
+        GradingStatus.received,
+        GradingStatus.queued,
+        GradingStatus.being_graded,
 
-        # A submission should only be counted towards the daily limit if
-        # it has one of these statuses.
-        count_towards_limit_statuses = [
-            received, queued, being_graded,
-            waiting_for_deferred, finished_grading]
+        GradingStatus.waiting_for_deferred,
+        GradingStatus.finished_grading
+    ]
 
     # -------------------------------------------------------------------------
 
@@ -208,8 +207,9 @@ class Submission(ag_model_base.AutograderModel):
             {pattern: num_additional_needed}""")
 
     status = models.CharField(
-        max_length=const.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,
-        choices=zip(GradingStatus.values, GradingStatus.values),
+        max_length=const.MAX_CHAR_FIELD_LEN,
+        default=GradingStatus.received,
+        choices=GradingStatus.choices,
         help_text="""The grading status of this submission see
             Submission.GradingStatus for details on allowed values.""")
 

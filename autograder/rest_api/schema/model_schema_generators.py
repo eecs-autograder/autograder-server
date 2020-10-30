@@ -1,4 +1,5 @@
 from __future__ import annotations
+from autograder.rest_api.schema.utils import stderr
 
 import copy
 from decimal import Decimal
@@ -397,6 +398,9 @@ def _django_field(
 
     if include_readonly:
         result['readOnly'] = read_only
+
+    if hasattr(field, 'choices') and field.choices is not None:
+        result['enum'] = [str(choice[0]) for choice in field.choices]
 
     if type(field) in _FIELD_TYPES:
         result.update(_FIELD_TYPES[type(field)])

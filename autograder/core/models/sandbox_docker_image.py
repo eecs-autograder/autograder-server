@@ -118,7 +118,7 @@ class _BuildSandboxDockerImageManager(AutograderModelManager['BuildSandboxDocker
         return build_task
 
 
-class BuildImageStatus(enum.Enum):
+class BuildImageStatus(models.TextChoices):
     queued = 'queued'
     in_progress = 'in_progress'
     done = 'done'
@@ -136,8 +136,8 @@ class BuildSandboxDockerImageTask(AutograderModel):
 
     created_at = models.DateTimeField(default=timezone.now)
 
-    status = ag_fields.EnumField(
-        BuildImageStatus, blank=True, default=BuildImageStatus.queued,
+    status = models.TextField(
+        choices=BuildImageStatus.choices, blank=True, default=BuildImageStatus.queued,
         help_text="The status of the build."
     )
 

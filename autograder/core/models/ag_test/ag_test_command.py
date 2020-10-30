@@ -1,5 +1,4 @@
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
-import enum
 
 from django.core import exceptions
 from django.core.validators import (
@@ -91,7 +90,7 @@ class AGTestCommandFeedbackConfig(DictSerializable):
     )
 
 
-class StdinSource(enum.Enum):
+class StdinSource(models.TextChoices):
     none = 'none'  # No input to redirect
     text = 'text'
     instructor_file = 'instructor_file'
@@ -99,13 +98,13 @@ class StdinSource(enum.Enum):
     setup_stderr = 'setup_stderr'
 
 
-class ExpectedOutputSource(enum.Enum):
+class ExpectedOutputSource(models.TextChoices):
     none = 'none'  # Don't check output
     text = 'text'
     instructor_file = 'instructor_file'
 
 
-class ExpectedReturnCode(enum.Enum):
+class ExpectedReturnCode(models.TextChoices):
     none = 'none'  # Don't check return code
     zero = 'zero'
     nonzero = 'nonzero'
@@ -148,8 +147,8 @@ class AGTestCommand(AutograderModel):
         on_delete=models.CASCADE,
         help_text="""The AGTestCase that this command belongs to.""")
 
-    stdin_source = ag_fields.EnumField(
-        StdinSource, default=StdinSource.none,
+    stdin_source = models.TextField(
+        choices=StdinSource.choices, default=StdinSource.none,
         help_text='''Specifies what kind of source stdin will be redirected from.''')
     stdin_text = models.TextField(
         blank=True,
@@ -163,12 +162,12 @@ class AGTestCommand(AutograderModel):
                      command. This value is used when stdin_source is StdinSource.instructor_file
                      and is ignored otherwise.''')
 
-    expected_return_code = ag_fields.EnumField(
-        ExpectedReturnCode, default=ExpectedReturnCode.none,
+    expected_return_code = models.TextField(
+        choices=ExpectedReturnCode.choices, default=ExpectedReturnCode.none,
         help_text="Specifies the command's expected return code.")
 
-    expected_stdout_source = ag_fields.EnumField(
-        ExpectedOutputSource, default=ExpectedOutputSource.none,
+    expected_stdout_source = models.TextField(
+        choices=ExpectedOutputSource.choices, default=ExpectedOutputSource.none,
         help_text="Specifies what kind of source this command's stdout should be compared to.")
     expected_stdout_text = models.TextField(
         blank=True,
@@ -183,8 +182,8 @@ class AGTestCommand(AutograderModel):
                      stdout. This value is used (and may not be null) when expected_stdout_source
                      is ExpectedOutputSource.instructor_file and is ignored otherwise.''')
 
-    expected_stderr_source = ag_fields.EnumField(
-        ExpectedOutputSource, default=ExpectedOutputSource.none,
+    expected_stderr_source = models.TextField(
+        choices=ExpectedOutputSource.choices, default=ExpectedOutputSource.none,
         help_text="Specifies what kind of source this command's stderr should be compared to.")
     expected_stderr_text = models.TextField(
         blank=True,

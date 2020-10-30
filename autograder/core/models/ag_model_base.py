@@ -11,7 +11,6 @@ from django.core import exceptions
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models, transaction
 from django.db.models import Model
-from django.db.models.fields.related import RelatedField
 
 from autograder.core.fields import ValidatedJSONField
 from autograder.rest_api.serialize_user import serialize_user
@@ -53,9 +52,7 @@ class AutograderModelManager(models.Manager[_AutograderModelType]):
         many_to_many_to_set = {}
         for field_name in list(kwargs.keys()):
             field = instance._meta.get_field(field_name)
-            # Remove this cast once django-stubs fixes:
-            # https://github.com/typeddjango/django-stubs/issues/447
-            if not cast('RelatedField[object, object]', field).many_to_many:
+            if not field.many_to_many:
                 continue
 
             objs = cast(Sequence[object], kwargs.pop(field_name))
@@ -96,10 +93,8 @@ class AutograderModelManager(models.Manager[_AutograderModelType]):
 
 
 def _field_is_to_one(instance: AutograderModel, field_name: str) -> bool:
-    # Remove this cast once django-stubs fixes:
-    # https://github.com/typeddjango/django-stubs/issues/447
-    field = cast('RelatedField[object, object]', instance._meta.get_field(field_name))
-    return field.many_to_one or field.one_to_one
+    field = instance._meta.get_field(field_name)
+    return bool(field.many_to_one) or bool(field.one_to_one)
 
 
 class _HasPK(TypedDict):
@@ -128,23 +123,6 @@ def _load_related_to_many_objs(
             'Invalid type for related objects. '
             'Expected {}, dict, or int, but was {}'.format(str(related_model),
                                                            type(objs[0])))
-
-
-# class ToDictProtocol(Protocol):
-#     @classmethod
-#     def get_serializable_fields(cls) -> Sequence[str]:
-#         ...
-
-#     SERIALIZABLE_FIELDS: Sequence[str]
-
-#     @classmethod
-#     def get_serialize_related_fields(cls) -> Sequence[str]:
-#         ...
-
-#     SERIALIZE_RELATED: Sequence[str]
-
-#     def to_dict(self) -> Dict[str, object]:
-#         ...
 
 
 class ToDictMixin:
@@ -230,10 +208,7 @@ class ToDictMixin:
                     result[field_name] = value.to_dict() if value is not None else None
                     continue
 
-                # Remove this cast once django-stubs fixes:
-                # https://github.com/typeddjango/django-stubs/issues/447
-                related_field = cast('RelatedField[object, object]', field)
-                if related_field.many_to_one or related_field.one_to_one:
+                if field.many_to_one or field.one_to_one:
                     field_val = getattr(self, field_name)
                     if field_val is None:
                         continue
@@ -245,7 +220,7 @@ class ToDictMixin:
                             result[field_name] = field_val
                         else:
                             result[field_name] = field_val.pk
-                elif related_field.many_to_many or related_field.one_to_many:
+                elif field.many_to_many or field.one_to_many:
                     if field_name in self.get_serialize_related_fields():
                         result[field_name] = [
                             _serialize_model_obj(obj) for obj in getattr(self, field_name).all()
@@ -583,9 +558,7 @@ class AutograderModel(ToDictMixin, models.Model):
 
                 continue
 
-            # Remove this cast once django-stubs fixes:
-            # https://github.com/typeddjango/django-stubs/issues/447
-            if cast('RelatedField[object, object]', field).many_to_many:
+            if field.many_to_many:
                 assert field.related_model is not None
                 loaded_vals = _load_related_to_many_objs(
                     field.related_model, cast(Sequence[object], val))

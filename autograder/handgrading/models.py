@@ -4,17 +4,15 @@ from django.core.validators import MaxValueValidator
 from django.db import models
 
 import autograder.core.fields as ag_fields
-from autograder.core.fields import EnumField
 from django.core import validators
 from django.core.exceptions import ValidationError
-from enum import Enum
 
 from autograder.core.models import AutograderModel, Project, Submission, Group
 from autograder.core.models.ag_model_base import (
     AutograderModelManager, DictSerializable, non_empty_str_validator, make_min_value_validator)
 
 
-class PointsStyle(Enum):
+class PointsStyle(models.TextChoices):
     """
     Specifies how handgrading scores should be initialized.
 
@@ -41,8 +39,8 @@ class HandgradingRubric(AutograderModel):
         Project, related_name='handgrading_rubric', on_delete=models.CASCADE,
         help_text="The Project this HandgradingRubric belongs to.")
 
-    points_style = EnumField(
-        PointsStyle, default=PointsStyle.start_at_zero_and_add, blank=True,
+    points_style = models.TextField(
+        choices=PointsStyle.choices, default=PointsStyle.start_at_zero_and_add, blank=True,
         help_text='''Determines how total_points and total_possible_points are calculated
                      for HandgradingResults.''')
 

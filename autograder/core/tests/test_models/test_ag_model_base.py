@@ -1,6 +1,6 @@
 import copy
 import enum
-from typing import List, Sequence, cast
+from typing import Any, Callable, Dict, List, cast
 from unittest import mock
 
 from django.contrib.auth.models import User
@@ -11,8 +11,9 @@ from autograder.core.models.ag_model_base import AutograderModel, DictSerializab
 from autograder.utils.testing import UnitTestBase
 
 from .models import (
-    DummyAutograderModel, DummyForeignAutograderModel, DummyToManyModel, AnEnum,
-    AGModelWithSerializableField, DictSerializableClass, AGModelWithDecimalField)
+    AGModelWithDecimalField, AGModelWithSerializableField, AnEnum, DictSerializableClass,
+    DummyAutograderModel, DummyForeignAutograderModel, DummyToManyModel
+)
 
 
 class AGModelBaseToDictTest(UnitTestBase):
@@ -63,10 +64,9 @@ class AGModelBaseToDictTest(UnitTestBase):
             'many_to_many': [obj.pk for obj in self.many_to_manys],
             'another_many_to_many': [],
 
-            'users': [user.pk for user in self.users]
+            'users': list(sorted(user.pk for user in self.users))
         }
         result = self.ag_model.to_dict()
-        cast(List[User], result['users']).sort()
         print(result)
         self.assertEqual(expected, result)
 
@@ -103,12 +103,10 @@ class AGModelBaseToDictTest(UnitTestBase):
                 'many_to_many': [obj.to_dict() for obj in self.many_to_manys],
                 'another_many_to_many': [],
 
-                'users': [user.pk for user in self.users]
+                'users': list(sorted(user.pk for user in self.users))
             }
 
             result = self.ag_model.to_dict()
-            cast(List[User], result['users']).sort()
-
             print(result)
             self.assertEqual(expected, result)
 
@@ -393,7 +391,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
             nullable_serializable=None
         )
 
-        expected = {
+        expected: Dict[str, Any] = {
             'serializable': copy.copy(data),
             'nullable_serializable': None
         }
@@ -728,16 +726,18 @@ class _MyEnum(enum.Enum):
     two = 'two'
 
 
-def _make_min_value_validator(min_value: int):
-    def validator(value: int):
+def _make_min_value_validator(min_value: int) -> Callable[[object], None]:
+    def validator(value: object) -> None:
+        assert isinstance(value, int)
         if value < min_value:
             raise exceptions.ValidationError(f'Must be >= {min_value}')
 
     return validator
 
 
-def _make_max_value_validator(max_value: int):
-    def validator(value: int):
+def _make_max_value_validator(max_value: int) -> Callable[[object], None]:
+    def validator(value: object) -> None:
+        assert isinstance(value, int)
         if value > max_value:
             raise exceptions.ValidationError(f'Must be <= {max_value}')
 
@@ -760,7 +760,7 @@ class _SerializableClass(DictSerializable):
         'required_int': [_make_min_value_validator(0), _make_max_value_validator(10)]
     }
 
-    def validate(self):
+    def validate(self) -> None:
         if self.less_than >= self.greater_than:
             raise exceptions.ValidationError(
                 '"less_than" must be greater than "greater_than"')

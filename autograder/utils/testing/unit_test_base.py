@@ -3,8 +3,11 @@ from __future__ import annotations
 import logging
 import os
 import shutil
-from typing import Any, Collection, ContextManager, Iterable, Iterator, Mapping, Optional, Protocol, Sequence, Type, TypeVar, cast
 from contextlib import contextmanager
+from typing import (
+    Any, Collection, ContextManager, Iterable, Iterator, Mapping, Optional, Protocol, Sequence,
+    Type, TypeVar, cast
+)
 from unittest import mock
 
 from django.conf import settings
@@ -20,19 +23,31 @@ from autograder.rest_api.signals import on_project_created
 
 
 class _TestCaseProtocol(Protocol):
-    def assertEqual(self, first: Any, second: Any, msg: Any = ...) -> None: ...
+    def assertEqual(self, first: Any, second: Any, msg: Any = ...) -> None:
+        ...
+
     def assertCountEqual(
-        self, first: Iterable[Any], second: Iterable[Any], msg: Any = ...) -> None: ...
+        self, first: Iterable[Any], second: Iterable[Any], msg: Any = ...
+    ) -> None:
+        ...
+
     def assertSequenceEqual(
         self,
         seq1: Sequence[Any],
         seq2: Sequence[Any],
         msg: Any = ...,
         seq_type: Optional[Type[Sequence[Any]]] = ...
-    ) -> None: ...
-    def assertNotEqual(self, first: Any, second: Any, msg: Any = ...) -> None: ...
-    def assertTrue(self, expr: Any, msg: Any = ...) -> None: ...
-    def assertFalse(self, expr: Any, msg: Any = ...) -> None: ...
+    ) -> None:
+        ...
+
+    def assertNotEqual(self, first: Any, second: Any, msg: Any = ...) -> None:
+        ...
+
+    def assertTrue(self, expr: Any, msg: Any = ...) -> None:
+        ...
+
+    def assertFalse(self, expr: Any, msg: Any = ...) -> None:
+        ...
 
 
 class _CustomAssertsMixin:
@@ -130,12 +145,19 @@ class _SetUpTearDownCommon:
       (details in inline comments).
 
     IMPORTANT: Classes inheriting from this mixin should override the
-    MEDIA_ROOT setting, such as with this decorator:
-        @override_settings(MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem'))
+    MEDIA_ROOT setting by applying the _SetUpTearDownCommon.settings_decorator
+    decorator.
 
-    NOTE: Avoid using setUpTestData until we implement some sort of filesystem
-    rollback behavior.
+    NOTE: Avoid using setUpTestData, as it causes issues with files stored
+    in the filesystem (course/project folders, submitted files, etc.).
     """
+    # We use the decorate_class method explicitly because the stub for
+    # override_settings.__call__ returns Any:
+    #  https://github.com/typeddjango/django-stubs/blob/master/django-stubs/test/utils.pyi#L62
+    settings_decorator = override_settings(
+        MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem')
+    ).decorate_class
+
     def setUp(self: _TestCaseProtocol) -> None:
         super().setUp()  # type: ignore
 
@@ -162,7 +184,7 @@ class _SetUpTearDownCommon:
             pass
 
 
-@override_settings(MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem'))
+@_SetUpTearDownCommon.settings_decorator
 class UnitTestBase(_CustomAssertsMixin, _SetUpTearDownCommon, TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -234,7 +256,7 @@ class UnitTestBase(_CustomAssertsMixin, _SetUpTearDownCommon, TestCase):
         self.addCleanup(patch_select_for_update.stop)
 
 
-@override_settings(MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem'))
+@_SetUpTearDownCommon.settings_decorator
 class TransactionUnitTestBase(_CustomAssertsMixin, _SetUpTearDownCommon, TransactionTestCase):
     @classmethod
     def setUpClass(cls) -> None:

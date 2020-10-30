@@ -1,16 +1,12 @@
-from typing import Sequence
-from typing import cast
 import os
 
 from django.core.exceptions import ValidationError
 
-from autograder.core.models import Course, LateDaysRemaining, Semester
-
 import autograder.core.utils as core_ut
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core.models import Course, LateDaysRemaining, Semester
 from autograder.core.models.course import clear_cached_user_roles
 from autograder.utils.testing import UnitTestBase
-
-import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class CourseTestCase(UnitTestBase):
@@ -71,7 +67,7 @@ class CourseTestCase(UnitTestBase):
         eecs183f16 = Course.objects.validate_and_create(
             name='EECS 183', semester=Semester.fall, year=2016)
 
-        self.assertSequenceEqual(
+        self.assert_collection_equal(
             [
                 eecs183f16,
                 eecs183w17,
@@ -89,7 +85,7 @@ class CourseTestCase(UnitTestBase):
                 eecs280su18,
                 eecs280f18,
             ],
-            cast(Sequence[Course], Course.objects.all())
+            Course.objects.all()
         )
 
     def test_exception_on_empty_name(self) -> None:

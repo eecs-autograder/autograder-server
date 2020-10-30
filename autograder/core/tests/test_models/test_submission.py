@@ -224,7 +224,7 @@ class SubmissionTestCase(UnitTestBase):
             ag_models.Submission.GradingStatus.being_graded]
         self.assertCountEqual(
             statuses,
-            ag_models.Submission.GradingStatus.active_statuses)
+            ag_models.Submission.active_statuses)
 
     def test_serializable_fields(self):
         expected = [

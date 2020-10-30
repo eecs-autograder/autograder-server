@@ -170,14 +170,12 @@ class ShortStringField(models.CharField):  # type: ignore
 _EnumType = TypeVar('_EnumType', bound=Enum)
 
 
+# Use Django 3.1 TextChoices and TextField instead of this field.
+# DEPRECATED: DO NOT USE
 class EnumField(
     Generic[_EnumType],
-    models.TextField  # type: ignore
+    models.TextField  # type: ignore # see https://github.com/typeddjango/django-stubs/issues/285
 ):
-    _pyi_private_set_type: Union[_EnumType, str]  # type: ignore
-    _pyi_private_get_type: _EnumType  # type: ignore
-    _pyi_lookup_exact_type: Union[_EnumType, str]
-
     def __init__(self, enum_type: Type[_EnumType], **kwargs: Any):
         self.enum_type = enum_type
         super().__init__(**kwargs)
@@ -210,6 +208,9 @@ class EnumField(
 _JSONObjType = TypeVar('_JSONObjType', bound='DictSerializable')
 
 
+# django-stubs type stubs for JSONField are incomplete.
+# Once they are fully-implemented, try to remove the type: ignore
+# comments.
 class ValidatedJSONField(
     Generic[_JSONObjType],
     pg_fields.JSONField
