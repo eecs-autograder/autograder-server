@@ -73,7 +73,8 @@ def oauth2_callback(request):
         token, created = Token.objects.get_or_create(user=user)
 
         response = HttpResponseRedirect(state['http_referer'])
-        response.set_cookie('token', token.key, domain=settings.SITE_DOMAIN)
+        response.set_cookie(
+            'token', token.key, domain=settings.SITE_DOMAIN, secure=not settings.DEBUG)
         return response
     except Exception as e:
         print('Unexpected auth error', file=sys.stderr, flush=True)
