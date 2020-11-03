@@ -1,5 +1,5 @@
 import os
-from typing import Iterable, Optional, TypedDict, cast
+from typing import Any, Optional, TypedDict, cast
 
 from django.contrib.auth.models import User
 from django.core import validators
@@ -183,14 +183,8 @@ class Course(AutograderModel):
         if duplicate_exists:
             raise ValidationError('A course with this name, semester, and year already exists.')
 
-    def save(
-        self,
-        force_insert: bool = False,
-        force_update: bool = False,
-        using: Optional[str] = None,
-        update_fields: Optional[Iterable[str]] = None
-    ) -> None:
-        super().save(force_insert, force_update, using, update_fields)
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        super().save(*args, **kwargs)
 
         course_root_dir = core_ut.get_course_root_dir(self)
         if not os.path.isdir(course_root_dir):
