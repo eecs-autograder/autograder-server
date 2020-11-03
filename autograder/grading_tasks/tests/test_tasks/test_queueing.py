@@ -20,9 +20,8 @@ class RaceConditionTestCase(TransactionUnitTestBase):
         submission = obj_build.make_submission(group=group)
 
         @sleeper_subtest(
-            'autograder.core.models.Submission.GradingStatus.removed_from_queue',
-            new_callable=mock.PropertyMock,
-            return_value=(ag_models.Submission.GradingStatus.removed_from_queue))
+            'autograder.grading_tasks.tasks.grade_submission.remove_from_queue_check_mocking_hook',
+        )
         def do_request_and_wait():
             tasks.grade_submission_task(submission.pk)
 

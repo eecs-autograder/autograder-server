@@ -1,17 +1,20 @@
-from celery.result import GroupResult
 from django.contrib.postgres.fields import ArrayField, JSONField
 from django.core import exceptions
 from django.db import models
 
-from .task import Task
-from .submission import Submission
-from .project import Project
-from .ag_test.ag_test_suite import AGTestSuite
+from autograder.core.models.ag_model_base import AutograderModelManager
+
 from .ag_test.ag_test_case import AGTestCase
+from .ag_test.ag_test_suite import AGTestSuite
 from .mutation_test_suite import MutationTestSuite
+from .project import Project
+from .submission import Submission
+from .task import Task
 
 
 class RerunSubmissionsTask(Task):
+    objects = AutograderModelManager['RerunSubmissionsTask']()
+
     project = models.ForeignKey(Project, related_name='rerun_submission_tasks',
                                 on_delete=models.CASCADE,
                                 help_text="The Project this task belongs to.")

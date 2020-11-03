@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import enum
 import os
 
@@ -5,6 +6,7 @@ from django.conf import settings
 from django.core import exceptions
 from django.db import models, transaction
 from django.utils import timezone
+from django.contrib.postgres import fields as pg_fields
 
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
@@ -22,19 +24,22 @@ class SandboxDockerImage(AutograderModel):
     Contains the information required to identify and load sandbox
     Docker images when running test suites.
     """
+    objects = AutograderModelManager['SandboxDockerImage']()
 
     class Meta:
         ordering = ('display_name',)
         unique_together = ('display_name', 'course')
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=False,
         unique=True,
         help_text="""A string uniquely identifying this sandbox image.
                      This field is required and cannot be edited after
                      creation.""")
 
-    display_name = ag_fields.ShortStringField(
+    display_name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=False,
         help_text="""A human-readable name for this sandbox image.
                      Must be unique among images belonging to a course.
@@ -73,7 +78,7 @@ class SandboxDockerImage(AutograderModel):
     ]
 
 
-class _BuildSandboxDockerImageManager(AutograderModelManager):
+class _BuildSandboxDockerImageManager(AutograderModelManager['BuildSandboxDockerImageTask']):
     @transaction.atomic
     def validate_and_create(
         self, files, course, image=None
@@ -113,7 +118,7 @@ class _BuildSandboxDockerImageManager(AutograderModelManager):
         return build_task
 
 
-class BuildImageStatus(enum.Enum):
+class BuildImageStatus(models.TextChoices):
     queued = 'queued'
     in_progress = 'in_progress'
     done = 'done'
@@ -131,8 +136,8 @@ class BuildSandboxDockerImageTask(AutograderModel):
 
     created_at = models.DateTimeField(default=timezone.now)
 
-    status = ag_fields.EnumField(
-        BuildImageStatus, blank=True, default=BuildImageStatus.queued,
+    status = models.TextField(
+        choices=BuildImageStatus.choices, blank=True, default=BuildImageStatus.queued,
         help_text="The status of the build."
     )
 
@@ -146,7 +151,8 @@ class BuildSandboxDockerImageTask(AutograderModel):
         help_text="True if the build timed out."
     )
 
-    filenames = ag_fields.StringArrayField(
+    filenames = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         blank=True, default=list,
         help_text="The names of the files uploaded by the user."
     )

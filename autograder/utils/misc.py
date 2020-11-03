@@ -1,6 +1,6 @@
 import os
 from decimal import Decimal
-from typing import Sequence
+from typing import Callable, Iterable, Optional, Sequence, TypeVar
 
 from django.contrib import auth
 
@@ -13,7 +13,10 @@ def count_if(iterable, unary_predicate):
     return sum(1 for item in iterable if unary_predicate(item))
 
 
-def find_if(iterable, unary_predicate):
+_T = TypeVar('_T')
+
+
+def find_if(iterable: Iterable[_T], unary_predicate: Callable[[_T], bool]) -> Optional[_T]:
     """
     Returns the first element for which unary_predicate returns True.
     Returns None if no such element could be found.

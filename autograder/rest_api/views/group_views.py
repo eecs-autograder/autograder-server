@@ -18,13 +18,13 @@ from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
 from autograder.rest_api import permissions as ag_permissions
 from autograder.rest_api.schema import (AGListViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags,
-                                        CustomViewSchema, RequestBody, as_content_obj)
+                                        CustomViewSchema, RequestBodyObject, as_content_obj)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
                                                       NestedModelView,
                                                       convert_django_validation_error,
                                                       require_body_params, require_query_params)
 
-_MEMBER_NAMES_REQUEST_BODY: RequestBody = {
+_MEMBER_NAMES_REQUEST_BODY: RequestBodyObject = {
     'content': {
         'application/json': {
             'schema': {

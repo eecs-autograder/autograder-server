@@ -1,21 +1,27 @@
 import copy
 import enum
+from typing import Any, Callable, Dict, List, cast
 from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core import exceptions
 from django.test import SimpleTestCase
 
-from autograder.core.models.ag_model_base import AutograderModel, DictSerializableMixin
+from autograder.core.models.ag_model_base import AutograderModel, DictSerializable
 from autograder.utils.testing import UnitTestBase
 
 from .models import (
-    DummyAutograderModel, DummyForeignAutograderModel, DummyToManyModel, AnEnum,
-    AGModelWithSerializableField, DictSerializableClass, AGModelWithDecimalField)
+    AGModelWithDecimalField, AGModelWithSerializableField, AnEnum, DictSerializableClass,
+    DummyAutograderModel, DummyForeignAutograderModel, DummyToManyModel
+)
 
 
 class AGModelBaseToDictTest(UnitTestBase):
-    def setUp(self):
+    ag_model: DummyAutograderModel
+    many_to_manys: List[DummyToManyModel]
+    users: List[User]
+
+    def setUp(self) -> None:
         super().setUp()
 
         self.maxDiff = None
@@ -35,7 +41,7 @@ class AGModelBaseToDictTest(UnitTestBase):
             User.objects.create(username='usr{}'.format(i)) for i in range(2)]
         self.ag_model.users.set(self.users, clear=True)
 
-    def test_to_one_and_to_many_default_serialized_as_pk(self):
+    def test_to_one_and_to_many_default_serialized_as_pk(self) -> None:
         expected = {
             'pk': self.ag_model.pk,
             'pos_num_val': self.ag_model.pos_num_val,
@@ -58,10 +64,9 @@ class AGModelBaseToDictTest(UnitTestBase):
             'many_to_many': [obj.pk for obj in self.many_to_manys],
             'another_many_to_many': [],
 
-            'users': [user.pk for user in self.users]
+            'users': list(sorted(user.pk for user in self.users))
         }
         result = self.ag_model.to_dict()
-        result['users'].sort()
         print(result)
         self.assertEqual(expected, result)
 
@@ -72,7 +77,7 @@ class AGModelBaseToDictTest(UnitTestBase):
         }
         self.assertEqual(expected_one_to_many, self.ag_model.foreign_key.to_dict())
 
-    def test_to_one_and_to_many_in_serialize_related(self):
+    def test_to_one_and_to_many_in_serialize_related(self) -> None:
         serialize_related = ('one_to_one', 'nullable_one_to_one', 'foreign_key', 'many_to_many')
         target = 'autograder.core.tests.test_models.models.DummyAutograderModel.SERIALIZE_RELATED'
         with mock.patch(target, new=serialize_related):
@@ -98,12 +103,10 @@ class AGModelBaseToDictTest(UnitTestBase):
                 'many_to_many': [obj.to_dict() for obj in self.many_to_manys],
                 'another_many_to_many': [],
 
-                'users': [user.pk for user in self.users]
+                'users': list(sorted(user.pk for user in self.users))
             }
 
             result = self.ag_model.to_dict()
-            result['users'].sort()
-
             print(result)
             self.assertEqual(expected, result)
 
@@ -117,11 +120,11 @@ class AGModelBaseToDictTest(UnitTestBase):
             }
             self.assertEqual(expected_one_to_many, self.ag_model.foreign_key.to_dict())
 
-    def test_empty_to_many_serialized_correctly(self):
+    def test_empty_to_many_serialized_correctly(self) -> None:
         self.ag_model.many_to_many.clear()
-        self.assertSequenceEqual([], self.ag_model.to_dict()['many_to_many'])
+        self.assertSequenceEqual([], cast(List[User], self.ag_model.to_dict()['many_to_many']))
 
-    def test_decimal_field_serialized_as_string(self):
+    def test_decimal_field_serialized_as_string(self) -> None:
         obj = AGModelWithDecimalField.objects.validate_and_create(decimal_field=.5)
         self.assertEqual('0.50', obj.to_dict()['decimal_field'])
 
@@ -130,7 +133,10 @@ class AGModelBaseToDictTest(UnitTestBase):
 
 
 class AGModelValidateAndCreateTestCase(UnitTestBase):
-    def setUp(self):
+    many_to_manys: List[DummyToManyModel]
+    users: List[User]
+
+    def setUp(self) -> None:
         super().setUp()
 
         self.many_to_manys = [
@@ -138,7 +144,7 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
         self.users = [
             User.objects.create(username='usr{}'.format(i)) for i in range(2)]
 
-    def test_valid_create(self):
+    def test_valid_create(self) -> None:
         num_val = 827349
         str_val = 'badsvihajhfs'
 
@@ -171,11 +177,11 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
         self.assertEqual(foreign_key, ag_model.foreign_key)
         self.assertIsNone(ag_model.nullable_foreign_key)
 
-        self.assertSequenceEqual(self.many_to_manys, ag_model.many_to_many.all())
-        self.assertSequenceEqual(self.many_to_manys, ag_model.another_many_to_many.all())
+        self.assert_collection_equal(self.many_to_manys, ag_model.many_to_many.all())
+        self.assert_collection_equal(self.many_to_manys, ag_model.another_many_to_many.all())
         self.assertCountEqual(self.users, ag_model.users.all())
 
-    def test_create_with_int_passed_for_to_one_relationships(self):
+    def test_create_with_int_passed_for_to_one_relationships(self) -> None:
         one_to_one_obj = DummyForeignAutograderModel.objects.create(name='qehkfdnm')
         foreign_obj = DummyForeignAutograderModel.objects.create(name='cmnbse')
 
@@ -191,7 +197,7 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
         self.assertEqual(one_to_one_obj, created_with_ints.one_to_one)
         self.assertEqual(foreign_obj, created_with_ints.foreign_key)
 
-    def test_create_with_dict_passed_for_to_one_relationships(self):
+    def test_create_with_dict_passed_for_to_one_relationships(self) -> None:
         one_to_one_obj = DummyForeignAutograderModel.objects.create(name='qehkfdnm')
         foreign_obj = DummyForeignAutograderModel.objects.create(name='cmnbse')
 
@@ -206,7 +212,7 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
         self.assertEqual(one_to_one_obj, created_with_dicts.one_to_one)
         self.assertEqual(foreign_obj, created_with_dicts.foreign_key)
 
-    def test_invalid_create_bad_values(self):
+    def test_invalid_create_bad_values(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             DummyAutograderModel.objects.validate_and_create(
                 pos_num_val=-42,
@@ -219,7 +225,7 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
 
 
 class AGModelValidateAndUpdateTestCase(UnitTestBase):
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.ag_model = DummyAutograderModel.objects.validate_and_create(
@@ -233,7 +239,7 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
 
         self.assertEqual(1, self.ag_model.many_to_many.count())
 
-    def test_valid_update(self):
+    def test_valid_update(self) -> None:
         new_num = self.ag_model.pos_num_val + 1
         new_str = self.ag_model.non_empty_str_val + 'aksdjhflaksdf'
 
@@ -275,8 +281,8 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.assertEqual(foreign_key, self.ag_model.foreign_key)
         self.assertEqual(nullable_foreign_key, self.ag_model.nullable_foreign_key)
 
-        self.assertSequenceEqual(many_to_manys, self.ag_model.many_to_many.all())
-        self.assertSequenceEqual(many_to_manys, self.ag_model.another_many_to_many.all())
+        self.assert_collection_equal(many_to_manys, self.ag_model.many_to_many.all())
+        self.assert_collection_equal(many_to_manys, self.ag_model.another_many_to_many.all())
         self.assertCountEqual(users, self.ag_model.users.all())
 
         second_new_num = new_num + 1
@@ -289,9 +295,9 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.assertEqual(second_new_num, self.ag_model.pos_num_val)
         self.assertIsNone(self.ag_model.nullable_one_to_one)
         self.assertIsNone(self.ag_model.nullable_foreign_key)
-        self.assertSequenceEqual([], self.ag_model.many_to_many.all())
+        self.assert_collection_equal([], self.ag_model.many_to_many.all())
 
-    def test_update_with_int_passed_for_to_one_relationships(self):
+    def test_update_with_int_passed_for_to_one_relationships(self) -> None:
         one_to_one_obj = DummyForeignAutograderModel.objects.create(name='qehkfdnm')
         foreign_obj = DummyForeignAutograderModel.objects.create(name='cmnbse')
 
@@ -316,7 +322,7 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.assertEqual(new_one_to_one_obj, obj.one_to_one)
         self.assertEqual(new_foreign_obj, obj.foreign_key)
 
-    def test_update_with_dict_passed_for_to_one_relationships(self):
+    def test_update_with_dict_passed_for_to_one_relationships(self) -> None:
         one_to_one_obj = DummyForeignAutograderModel.objects.create(name='qehkfdnm')
         foreign_obj = DummyForeignAutograderModel.objects.create(name='cmnbse')
 
@@ -341,7 +347,7 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.assertEqual(new_one_to_one_obj, obj.one_to_one)
         self.assertEqual(new_foreign_obj, obj.foreign_key)
 
-    def test_invalid_update_bad_values(self):
+    def test_invalid_update_bad_values(self) -> None:
         old_vals = self.ag_model.to_dict()
 
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -354,7 +360,7 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.ag_model.refresh_from_db()
         self.assert_dict_contents_equal(old_vals, self.ag_model.to_dict())
 
-    def test_invalid_update_nonexistant_field(self):
+    def test_invalid_update_nonexistant_field(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             self.ag_model.validate_and_update(not_a_field_name='spam')
 
@@ -362,7 +368,7 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
             'not_a_field_name',
             cm.exception.message_dict[AutograderModel.INVALID_FIELD_NAMES_KEY])
 
-    def test_invalid_update_non_editable_field(self):
+    def test_invalid_update_non_editable_field(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             self.ag_model.validate_and_update(read_only_field='steve')
 
@@ -372,7 +378,7 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
 
 
 class CreateAGModelWithSerializableFieldTest(UnitTestBase):
-    def test_to_dict(self):
+    def test_to_dict(self) -> None:
         data = {
             'num': 42,
             'string': 'nsroitenarositean',
@@ -385,7 +391,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
             nullable_serializable=None
         )
 
-        expected = {
+        expected: Dict[str, Any] = {
             'serializable': copy.copy(data),
             'nullable_serializable': None
         }
@@ -397,7 +403,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         obj.refresh_from_db()
         self.assertEqual(expected, obj.to_dict())
 
-    def test_create_with_dict_param_nullable_is_null(self):
+    def test_create_with_dict_param_nullable_is_null(self) -> None:
         data = {
             'num': 24,
             'string': 'nxcvn',
@@ -417,7 +423,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
 
         self.assertIsNone(obj.nullable_serializable)
 
-    def test_create_with_dict_param_nullable_is_non_null(self):
+    def test_create_with_dict_param_nullable_is_non_null(self) -> None:
         data = {
             'num': 24,
             'string': 'nxcvn',
@@ -439,7 +445,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertEqual(data['string'], obj.nullable_serializable.string)
         self.assertEqual(AnEnum.egg, obj.nullable_serializable.an_enum)
 
-    def test_create_with_class_param_nullable_is_null(self):
+    def test_create_with_class_param_nullable_is_null(self) -> None:
         serializable = DictSerializableClass(
             num=67,
             string='qpfwp',
@@ -459,7 +465,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
 
         self.assertIsNone(obj.nullable_serializable)
 
-    def test_create_with_class_param_nullable_is_non_null(self):
+    def test_create_with_class_param_nullable_is_non_null(self) -> None:
         serializable = DictSerializableClass(
             num=67,
             string='qpfwp',
@@ -481,7 +487,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertEqual(serializable.string, obj.nullable_serializable.string)
         self.assertEqual(serializable.an_enum, obj.nullable_serializable.an_enum)
 
-    def test_create_error_extra_field(self):
+    def test_create_error_extra_field(self) -> None:
         data = {
             'num': 19,
             'string': 'jaeija',
@@ -495,7 +501,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertIn('serializable', cm.exception.message_dict)
         self.assertIn('Extra fields:', cm.exception.message_dict['serializable'][0])
 
-    def test_error_missing_required_field(self):
+    def test_error_missing_required_field(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             AGModelWithSerializableField.objects.validate_and_create(
                 serializable={
@@ -516,7 +522,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
 
         self.assertIn('an_enum', cm.exception.message_dict['nullable_serializable'][0])
 
-    def test_create_error_wrong_type(self):
+    def test_create_error_wrong_type(self) -> None:
         data = {
             'num': '34',
             'string': 'aeiai',
@@ -529,7 +535,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertIn('serializable', cm.exception.message_dict)
         self.assertIn('num:', cm.exception.message_dict['serializable'][0])
 
-    def test_create_error_bad_enum_value(self):
+    def test_create_error_bad_enum_value(self) -> None:
         data = {
             'num': 23,
             'string': 'sss',
@@ -542,7 +548,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertIn('serializable', cm.exception.message_dict)
         self.assertIn('an_enum:', cm.exception.message_dict['serializable'][0])
 
-    def test_non_nullable_is_null(self):
+    def test_non_nullable_is_null(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             AGModelWithSerializableField.objects.validate_and_create(serializable=None)
 
@@ -550,7 +556,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
 
 
 class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.obj: AGModelWithSerializableField = (
@@ -563,7 +569,7 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
             )
         )
 
-    def test_full_update_with_dict_param_nullable_is_null(self):
+    def test_full_update_with_dict_param_nullable_is_null(self) -> None:
         self.assertIsNone(self.obj.nullable_serializable)
 
         new_data = {
@@ -584,7 +590,7 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertEqual(new_data['string'], self.obj.nullable_serializable.string)
         self.assertEqual(AnEnum.spam, self.obj.nullable_serializable.an_enum)
 
-    def test_full_update_with_dict_param_nullable_is_non_null(self):
+    def test_full_update_with_dict_param_nullable_is_non_null(self) -> None:
         self.obj.nullable_serializable = self.obj.serializable
         self.obj.save()
 
@@ -606,7 +612,7 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertEqual(new_data['string'], self.obj.nullable_serializable.string)
         self.assertEqual(AnEnum.spam, self.obj.nullable_serializable.an_enum)
 
-    def test_partial_update_with_dict_param_nullable_is_null(self):
+    def test_partial_update_with_dict_param_nullable_is_null(self) -> None:
         self.assertIsNone(self.obj.nullable_serializable)
 
         original_num = self.obj.serializable.num
@@ -631,7 +637,7 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertEqual(DictSerializableClass.has_default_default_val,
                          self.obj.nullable_serializable.has_default)
 
-    def test_error_nullable_is_null_partial_update_with_dict_missing_required_field(self):
+    def test_error_nullable_is_null_partial_update_with_dict_missing_required_field(self) -> None:
         self.assertIsNone(self.obj.nullable_serializable)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -644,7 +650,7 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
 
         self.assertIn('an_enum', cm.exception.message_dict['nullable_serializable'][0])
 
-    def test_partial_update_with_dict_param_nullable_is_non_null(self):
+    def test_partial_update_with_dict_param_nullable_is_non_null(self) -> None:
         self.obj.nullable_serializable = self.obj.serializable.to_dict()
         self.obj.save()
 
@@ -669,7 +675,7 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertEqual(original_num, self.obj.nullable_serializable.num)
         self.assertEqual(original_an_enum, self.obj.nullable_serializable.an_enum)
 
-    def test_update_with_class_param(self):
+    def test_update_with_class_param(self) -> None:
         new_data = copy.deepcopy(self.obj.serializable)
         new_data.num = 892
 
@@ -680,7 +686,7 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertEqual(new_data.string, self.obj.serializable.string)
         self.assertEqual(new_data.an_enum, self.obj.serializable.an_enum)
 
-    def test_update_error_extra_field(self):
+    def test_update_error_extra_field(self) -> None:
         data = {
             'extra': 45
         }
@@ -691,7 +697,7 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertIn('serializable', cm.exception.message_dict)
         self.assertIn('Extra fields:', cm.exception.message_dict['serializable'][0])
 
-    def test_update_error_wrong_type(self):
+    def test_update_error_wrong_type(self) -> None:
         data = {
             'string': 42,
         }
@@ -702,7 +708,7 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertIn('serializable', cm.exception.message_dict)
         self.assertIn('string:', cm.exception.message_dict['serializable'][0])
 
-    def test_update_error_bad_enum_value(self):
+    def test_update_error_bad_enum_value(self) -> None:
         data = {
 
             'an_enum': 'not_a_value',
@@ -720,23 +726,25 @@ class _MyEnum(enum.Enum):
     two = 'two'
 
 
-def _make_min_value_validator(min_value: int):
-    def validator(value: int):
+def _make_min_value_validator(min_value: int) -> Callable[[object], None]:
+    def validator(value: object) -> None:
+        assert isinstance(value, int)
         if value < min_value:
             raise exceptions.ValidationError(f'Must be >= {min_value}')
 
     return validator
 
 
-def _make_max_value_validator(max_value: int):
-    def validator(value: int):
+def _make_max_value_validator(max_value: int) -> Callable[[object], None]:
+    def validator(value: object) -> None:
+        assert isinstance(value, int)
         if value > max_value:
             raise exceptions.ValidationError(f'Must be <= {max_value}')
 
     return validator
 
 
-class _SerializableClass(DictSerializableMixin):
+class _SerializableClass(DictSerializable):
     def __init__(self, required_int: int,
                  optional_bool: bool=True,
                  my_enum: _MyEnum=_MyEnum.one,
@@ -752,14 +760,14 @@ class _SerializableClass(DictSerializableMixin):
         'required_int': [_make_min_value_validator(0), _make_max_value_validator(10)]
     }
 
-    def validate(self):
+    def validate(self) -> None:
         if self.less_than >= self.greater_than:
             raise exceptions.ValidationError(
                 '"less_than" must be greater than "greater_than"')
 
 
 class DictSerializableMixinTestCase(SimpleTestCase):
-    def test_valid_from_dict(self):
+    def test_valid_from_dict(self) -> None:
         obj = _SerializableClass.from_dict({'required_int': 5})
         self.assertEqual(5, obj.required_int)
         self.assertTrue(obj.optional_bool)
@@ -778,7 +786,7 @@ class DictSerializableMixinTestCase(SimpleTestCase):
         self.assertEqual(obj.less_than, 2)
         self.assertEqual(obj.greater_than, 4)
 
-    def test_valid_update(self):
+    def test_valid_update(self) -> None:
         obj = _SerializableClass.from_dict({'required_int': 5})
         self.assertEqual(5, obj.required_int)
         self.assertTrue(obj.optional_bool)
@@ -800,13 +808,13 @@ class DictSerializableMixinTestCase(SimpleTestCase):
         self.assertEqual(obj.less_than, 2)
         self.assertEqual(obj.greater_than, 4)
 
-    def test_error_missing_required_field(self):
+    def test_error_missing_required_field(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             _SerializableClass.from_dict({})
 
         self.assertIn('required_int', cm.exception.message)
 
-    def test_extra_field_present(self):
+    def test_extra_field_present(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             _SerializableClass.from_dict({'required_int': 5, 'extra_field': 42})
 
@@ -819,7 +827,7 @@ class DictSerializableMixinTestCase(SimpleTestCase):
         self.assertIn('extra_field', cm.exception.message)
         self.assertEqual(5, obj.required_int)
 
-    def test_error_bad_field_type(self):
+    def test_error_bad_field_type(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             _SerializableClass.from_dict({'required_int': 'spam'})
 
@@ -831,7 +839,7 @@ class DictSerializableMixinTestCase(SimpleTestCase):
 
         self.assertIn('optional_bool', cm.exception.message)
 
-    def test_error_bad_field_enum_type(self):
+    def test_error_bad_field_enum_type(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             _SerializableClass.from_dict({'required_int': 5, 'my_enum': 'nope'})
 
@@ -843,7 +851,7 @@ class DictSerializableMixinTestCase(SimpleTestCase):
 
         self.assertIn('my_enum', cm.exception.message)
 
-    def test_error_custom_field_validation_failure(self):
+    def test_error_custom_field_validation_failure(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             _SerializableClass.from_dict({'required_int': -1})
 
@@ -867,7 +875,7 @@ class DictSerializableMixinTestCase(SimpleTestCase):
         self.assertIn('required_int', cm.exception.message)
         self.assertEqual(5, obj.required_int)
 
-    def test_error_custom_object_validation_failure(self):
+    def test_error_custom_object_validation_failure(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             _SerializableClass.from_dict({
                 'required_int': 4,
@@ -889,14 +897,14 @@ class DictSerializableMixinTestCase(SimpleTestCase):
         self.assertEqual(5, obj.greater_than)
         self.assertEqual(2, obj.required_int)
 
-    def test_allowed_fields_excludes_self(self):
+    def test_allowed_fields_excludes_self(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             _SerializableClass.from_dict({'required_int': 2, 'self': None})
 
         self.assertIn('self', cm.exception.message)
         self.assertIn('extra', cm.exception.message.lower())
 
-    def test_serialize(self):
+    def test_serialize(self) -> None:
         data = {
             'required_int': 3,
             'optional_bool': True,

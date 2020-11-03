@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import logging
 import os
 import shutil
-import unittest
 from contextlib import contextmanager
+from typing import (
+    Any, Collection, ContextManager, Iterable, Iterator, Mapping, Optional, Protocol, Sequence,
+    Type, TypeVar, cast
+)
 from unittest import mock
 
 from django.conf import settings
@@ -17,42 +22,94 @@ import autograder.core.models as ag_models
 from autograder.rest_api.signals import on_project_created
 
 
+class _TestCaseProtocol(Protocol):
+    def assertEqual(self, first: Any, second: Any, msg: Any = ...) -> None:
+        ...
+
+    def assertCountEqual(
+        self, first: Iterable[Any], second: Iterable[Any], msg: Any = ...
+    ) -> None:
+        ...
+
+    def assertSequenceEqual(
+        self,
+        seq1: Sequence[Any],
+        seq2: Sequence[Any],
+        msg: Any = ...,
+        seq_type: Optional[Type[Sequence[Any]]] = ...
+    ) -> None:
+        ...
+
+    def assertNotEqual(self, first: Any, second: Any, msg: Any = ...) -> None:
+        ...
+
+    def assertTrue(self, expr: Any, msg: Any = ...) -> None:
+        ...
+
+    def assertFalse(self, expr: Any, msg: Any = ...) -> None:
+        ...
+
+
 class _CustomAssertsMixin:
-    def assert_dict_is_subset(self, subset_dict, superset_dict):
+    def assert_collection_equal(
+        self: _TestCaseProtocol,
+        first: Collection[Any],
+        second: Collection[Any]
+    ) -> None:
+        """
+        Use this method when comparing a QuerySet with another Collection.
+        Since QuerySets have their own implementation of count() that does
+        something different than Sequence.count(), assertSequenceEqual()
+        cannot be used with QuerySets.
+        """
+        self.assertSequenceEqual(cast(Sequence[Any], first), cast(Sequence[Any], second))
+
+    def assert_dict_is_subset(
+        self: _TestCaseProtocol,
+        subset_dict: Mapping[str, object],
+        superset_dict: Mapping[str, object]
+    ) -> None:
         for key, value in subset_dict.items():
             self.assertEqual(value, superset_dict[key])
 
-    def assert_dict_contents_equal(self, first, second):
+    def assert_dict_contents_equal(
+        self: _TestCaseProtocol,
+        first: Mapping[str, object],
+        second: Mapping[str, object]
+    ) -> None:
         self.assertEqual(_ordered(first), _ordered(second))
 
-    def assert_list_contents_equal(self, first, second):
+    def assert_list_contents_equal(
+        self: _TestCaseProtocol,
+        first: Iterable[object],
+        second: Iterable[object]
+    ) -> None:
         self.assertCountEqual(_ordered(first), _ordered(second))
 
-    def assert_queryset_count_unchanged(self, queryset):
-        return UnitTestBase._AssertQuerySetCountUnchanged(queryset, self)
+    def assert_queryset_count_unchanged(
+        self: _TestCaseProtocol,
+        queryset: 'QuerySet[Any]'
+    ) -> _CustomAssertsMixin._AssertQuerySetCountUnchanged:
+        return _CustomAssertsMixin._AssertQuerySetCountUnchanged(queryset, self)
 
     class _AssertQuerySetCountUnchanged:
-        def __init__(self, queryset, test_case_object):
-            self.original_count = None
+        def __init__(self, queryset: 'QuerySet[Any]', test_case_object: _TestCaseProtocol):
+            self.original_count: Optional[int] = None
             self.queryset = queryset
             self.test_case_object = test_case_object
 
-        def __enter__(self):
+        def __enter__(self) -> None:
             self.original_count = self.queryset.count()
 
-        def __exit__(self, *args):
+        def __exit__(self, *args: object) -> None:
             self.test_case_object.assertEqual(self.original_count, self.queryset.count())
 
-    def assert_cache_key_invalidated(self, cache_key: str):
+    def assert_cache_key_invalidated(self, cache_key: str) -> ContextManager[None]:
         return _assert_cache_key_invalidated(cache_key)
-
-    @property
-    def mock_register_project_queues(self):
-        return _mock_register_project_queues
 
 
 @contextmanager
-def _assert_cache_key_invalidated(cache_key: str):
+def _assert_cache_key_invalidated(cache_key: str) -> Iterator[None]:
     if cache.get(cache_key) is None:
         raise AssertionError(f'Cache key "{cache_key}" not present before expected invalidation.')
 
@@ -62,15 +119,18 @@ def _assert_cache_key_invalidated(cache_key: str):
         raise AssertionError(f'Cache key "{cache_key}" unexpectedly present.')
 
 
+_T = TypeVar('_T')
+
+
 # Adapted from: http://stackoverflow.com/questions/25851183/
-def _ordered(obj):
+def _ordered(obj: _T) -> _T:
     if isinstance(obj, dict):
-        return {key: _ordered(value) for key, value in obj.items()}
+        return cast(_T, {key: _ordered(value) for key, value in obj.items()})
     if isinstance(obj, list) or isinstance(obj, tuple):
         try:
-            return list(sorted(_ordered(value) for value in obj))
+            return cast(_T, list(sorted(_ordered(value) for value in obj)))
         except TypeError:
-            return [_ordered(value) for value in obj]
+            return cast(_T, [_ordered(value) for value in obj])
     else:
         return obj
 
@@ -85,14 +145,21 @@ class _SetUpTearDownCommon:
       (details in inline comments).
 
     IMPORTANT: Classes inheriting from this mixin should override the
-    MEDIA_ROOT setting, such as with this decorator:
-        @override_settings(MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem'))
+    MEDIA_ROOT setting by applying the _SetUpTearDownCommon.settings_decorator
+    decorator.
 
-    NOTE: Avoid using setUpTestData until we implement some sort of filesystem
-    rollback behavior.
+    NOTE: Avoid using setUpTestData, as it causes issues with files stored
+    in the filesystem (course/project folders, submitted files, etc.).
     """
-    def setUp(self):
-        super().setUp()
+    # We use the decorate_class method explicitly because the stub for
+    # override_settings.__call__ returns Any:
+    #  https://github.com/typeddjango/django-stubs/blob/master/django-stubs/test/utils.pyi#L62
+    settings_decorator = override_settings(
+        MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem')
+    ).decorate_class
+
+    def setUp(self: _TestCaseProtocol) -> None:
+        super().setUp()  # type: ignore
 
         cache.clear()
 
@@ -108,8 +175,8 @@ class _SetUpTearDownCommon:
         # signal. We can re-connect in tests where it's needed.
         post_save.disconnect(on_project_created, sender=ag_models.Project)
 
-    def tearDown(self):
-        super().tearDown()
+    def tearDown(self) -> None:
+        super().tearDown()  # type: ignore
 
         try:
             shutil.rmtree(settings.MEDIA_ROOT)
@@ -117,19 +184,19 @@ class _SetUpTearDownCommon:
             pass
 
 
-@override_settings(MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem'))
+@_SetUpTearDownCommon.settings_decorator
 class UnitTestBase(_CustomAssertsMixin, _SetUpTearDownCommon, TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         super().setUpClass()
         logging.disable(logging.CRITICAL)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         super().tearDownClass()
         logging.disable(logging.NOTSET)
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         # Here we wrap django's Atomic class and QuerySet's
@@ -154,19 +221,19 @@ class UnitTestBase(_CustomAssertsMixin, _SetUpTearDownCommon, TestCase):
         original_atomic_enter = transaction.Atomic.__enter__
         original_atomic_exit = transaction.Atomic.__exit__
 
-        def mock_enter(*args):
+        def mock_enter(*args: Any) -> None:
             nonlocal atomic_block_counter
             atomic_block_counter += 1
             original_atomic_enter(*args)
 
-        def mock_exit(*args):
+        def mock_exit(*args: Any) -> None:
             nonlocal atomic_block_counter
             atomic_block_counter -= 1
             original_atomic_exit(*args)
 
         original_select_for_update = QuerySet.select_for_update
 
-        def disable_select_for_update(*args, **kwargs):
+        def disable_select_for_update(*args: Any, **kwargs: Any) -> 'QuerySet[Any]':
             self.assertGreater(
                 atomic_block_counter, 0,
                 msg='select_for_update() can only be used inside a transaction')
@@ -189,23 +256,23 @@ class UnitTestBase(_CustomAssertsMixin, _SetUpTearDownCommon, TestCase):
         self.addCleanup(patch_select_for_update.stop)
 
 
-@override_settings(MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem'))
+@_SetUpTearDownCommon.settings_decorator
 class TransactionUnitTestBase(_CustomAssertsMixin, _SetUpTearDownCommon, TransactionTestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         super().setUpClass()
         cls.flush_sandbox_docker_images()
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.create_default_sandbox_image()
 
     @classmethod
-    def flush_sandbox_docker_images(cls):
+    def flush_sandbox_docker_images(cls) -> None:
         ag_models.SandboxDockerImage.objects.exclude(name='default').delete()
 
     @classmethod
-    def create_default_sandbox_image(cls):
+    def create_default_sandbox_image(cls) -> None:
         ag_models.SandboxDockerImage.objects.get_or_create(
             defaults={
                 "display_name": "Default",

@@ -1,16 +1,10 @@
 import fnmatch
 import os
 import tempfile
-import traceback
-
-import time
 from io import FileIO
-from typing import Union, Optional, List
+from typing import List, Optional, Union
 
-from autograder_sandbox import AutograderSandbox
-from autograder_sandbox import SANDBOX_USERNAME
-from autograder_sandbox.autograder_sandbox import CompletedCommand
-from django.conf import settings
+from autograder_sandbox import SANDBOX_USERNAME, AutograderSandbox, CompletedCommand
 from django import db
 from django.db import transaction
 from django.db.models import QuerySet
@@ -18,12 +12,11 @@ from django.db.models import QuerySet
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 from autograder.core import constants
-
 from autograder.utils.retry import retry_should_recover
 
 
 @retry_should_recover
-def mark_submission_as_error(submission_pk, error_msg):
+def mark_submission_as_error(submission_pk: int, error_msg: str) -> None:
     with transaction.atomic():
         ag_models.Submission.objects.select_for_update().filter(
             pk=submission_pk
@@ -32,7 +25,7 @@ def mark_submission_as_error(submission_pk, error_msg):
 
 def add_files_to_sandbox(sandbox: AutograderSandbox,
                          suite: Union[ag_models.AGTestSuite, ag_models.MutationTestSuite],
-                         submission: ag_models.Submission):
+                         submission: ag_models.Submission) -> None:
     student_files_to_add = []
     for student_file in load_queryset_with_retry(suite.student_files_needed.all()):
         matching_files = fnmatch.filter(submission.submitted_filenames,

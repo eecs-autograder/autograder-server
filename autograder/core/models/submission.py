@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import ClassVar, Final, Optional, Sequence
 from datetime import timedelta
 import fnmatch
 import os
@@ -9,8 +9,10 @@ from django.core.files import File
 from django.db import models, transaction
 from django.db.models import Prefetch
 from django.utils import timezone
+from django.contrib.postgres import fields as pg_fields
 
 import autograder.core.constants as const
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
@@ -108,7 +110,7 @@ class Submission(ag_model_base.AutograderModel):
     class Meta:
         ordering = ['-pk']
 
-    class GradingStatus:
+    class GradingStatus(models.TextChoices):
         # The submission has been accepted and saved to the database
         received = 'received'
 
@@ -134,25 +136,24 @@ class Submission(ag_model_base.AutograderModel):
         # Something unexpected occurred during the grading process.
         error = 'error'
 
-        values = [
-            received,
-            queued,
-            being_graded,
-            waiting_for_deferred,
-            finished_grading,
-            removed_from_queue,
-            error,
-        ]
+    # These statuses bar users from making another submission
+    # while the current one is active.
+    active_statuses: Final[Sequence[GradingStatus]] = [
+        GradingStatus.received,
+        GradingStatus.queued,
+        GradingStatus.being_graded
+    ]
 
-        # These statuses bar users from making another submission
-        # while the current one is active.
-        active_statuses = [received, queued, being_graded]
+    # A submission should only be counted towards the daily limit if
+    # it has one of these statuses.
+    count_towards_limit_statuses: Final[Sequence[GradingStatus]] = [
+        GradingStatus.received,
+        GradingStatus.queued,
+        GradingStatus.being_graded,
 
-        # A submission should only be counted towards the daily limit if
-        # it has one of these statuses.
-        count_towards_limit_statuses = [
-            received, queued, being_graded,
-            waiting_for_deferred, finished_grading]
+        GradingStatus.waiting_for_deferred,
+        GradingStatus.finished_grading
+    ]
 
     # -------------------------------------------------------------------------
 
@@ -175,7 +176,8 @@ class Submission(ag_model_base.AutograderModel):
 
     timestamp = models.DateTimeField(default=timezone.now)
 
-    submitter = ag_fields.ShortStringField(
+    submitter = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=True,
         help_text="""The name of the user who made this submission""")
 
@@ -186,12 +188,14 @@ class Submission(ag_model_base.AutograderModel):
         """
         return (self.get_file(filename) for filename in self.submitted_filenames)
 
-    submitted_filenames = ag_fields.StringArrayField(
+    submitted_filenames = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         blank=True, default=list,
         help_text="""The names of files that were submitted,
                      excluding those that were discarded.""")
 
-    discarded_files = ag_fields.StringArrayField(
+    discarded_files = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         default=list, blank=True,
         help_text="""The names of files that were discarded when this Submission was created.""")
 
@@ -203,8 +207,9 @@ class Submission(ag_model_base.AutograderModel):
             {pattern: num_additional_needed}""")
 
     status = models.CharField(
-        max_length=const.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,
-        choices=zip(GradingStatus.values, GradingStatus.values),
+        max_length=const.MAX_CHAR_FIELD_LEN,
+        default=GradingStatus.received,
+        choices=GradingStatus.choices,
         help_text="""The grading status of this submission see
             Submission.GradingStatus for details on allowed values.""")
 

@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 
 from autograder.core.models import AutograderModel
 import autograder.core.fields as ag_fields
-from autograder.core.models.ag_model_base import DictSerializableMixin
+from autograder.core.models.ag_model_base import AutograderModelManager, DictSerializable
 
 # -----------------------------------------------------------------------------
 # DUMMY MODELS FOR TESTING AutograderModel BASE CLASS
@@ -14,6 +14,8 @@ from autograder.core.models.ag_model_base import DictSerializableMixin
 
 
 class DummyToManyModel(AutograderModel):
+    objects = AutograderModelManager['DummyToManyModel']()
+
     class Meta:
         ordering = ('name',)
 
@@ -24,6 +26,8 @@ class DummyToManyModel(AutograderModel):
 
 
 class DummyForeignAutograderModel(AutograderModel):
+    objects = AutograderModelManager['DummyForeignAutograderModel']()
+
     name = models.CharField(max_length=255)
 
     SERIALIZABLE_FIELDS = ('pk', 'name', 'rev_foreign_key')
@@ -40,6 +44,8 @@ class AnEnum(enum.Enum):
 
 
 class DummyAutograderModel(AutograderModel):
+    objects = AutograderModelManager['DummyAutograderModel']()
+
     pos_num_val = models.IntegerField(
         validators=[validators.MinValueValidator(0)])
     non_empty_str_val = models.TextField(
@@ -117,7 +123,7 @@ class DummyAutograderModel(AutograderModel):
     )
 
 
-class DictSerializableClass(DictSerializableMixin):
+class DictSerializableClass(DictSerializable):
     has_default_default_val = 8769
 
     def __init__(self, num: int, string: str, an_enum: AnEnum,
@@ -136,6 +142,8 @@ class DictSerializableClass(DictSerializableMixin):
 
 
 class AGModelWithSerializableField(AutograderModel):
+    objects = AutograderModelManager['AGModelWithSerializableField']()
+
     serializable = ag_fields.ValidatedJSONField(DictSerializableClass)
     nullable_serializable = ag_fields.ValidatedJSONField(
         DictSerializableClass, blank=True, null=True, default=None)
@@ -145,6 +153,7 @@ class AGModelWithSerializableField(AutograderModel):
 
 
 class AGModelWithDecimalField(AutograderModel):
+    objects = AutograderModelManager['AGModelWithDecimalField']()
     decimal_field = models.DecimalField(max_digits=3, decimal_places=2)
 
     SERIALIZABLE_FIELDS = ['decimal_field']

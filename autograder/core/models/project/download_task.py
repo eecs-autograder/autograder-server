@@ -1,13 +1,12 @@
-import enum
+from autograder.core.models.ag_model_base import AutograderModelManager
 
 from django.db import models
 
-from autograder.core.fields import EnumField
 from ..task import Task
 from .project import Project
 
 
-class DownloadType(enum.Enum):
+class DownloadType(models.TextChoices):
     all_scores = 'all_scores'
     final_graded_submission_scores = 'final_graded_submission_scores'
     all_submission_files = 'all_submission_files'
@@ -15,8 +14,10 @@ class DownloadType(enum.Enum):
 
 
 class DownloadTask(Task):
+    objects = AutograderModelManager['DownloadTask']()
+
     project = models.ForeignKey(Project, related_name='download_tasks', on_delete=models.CASCADE)
-    download_type = EnumField(DownloadType)
+    download_type = models.TextField(choices=DownloadType.choices)
     result_filename = models.TextField(blank=True)
 
     SERIALIZABLE_FIELDS = (

@@ -4,27 +4,26 @@ import copy
 import decimal
 import enum
 import inspect
-import warnings
-from collections import OrderedDict
-from typing import Callable, Dict, List, Mapping, Sequence, Tuple, Union, cast
+from typing import Callable, Dict, List, Mapping, Sequence, Type, TypedDict, TypeVar, Union, cast
 
 from django.contrib.auth.models import User
 from django.core import exceptions
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models, transaction
 from django.db.models import Model
-from django.db.models.fields.related import RelatedField
 
 from autograder.core.fields import ValidatedJSONField
 from autograder.rest_api.serialize_user import serialize_user
 
+_AutograderModelType = TypeVar('_AutograderModelType', bound='AutograderModel')
 
-class AutograderModelManager(models.Manager):
+
+class AutograderModelManager(models.Manager[_AutograderModelType]):
     """
     The default manager for autograder model classes.
     Its main purpose is to provide the validate_and_create method.
     """
-    def validate_and_create(self, **kwargs) -> AutograderModel:
+    def validate_and_create(self, **kwargs: object) -> _AutograderModelType:
         """
         This method is a shortcut for constructing a model object,
         calling full_clean(), and then calling save().
@@ -52,14 +51,16 @@ class AutograderModelManager(models.Manager):
         instance = self.model()
         many_to_many_to_set = {}
         for field_name in list(kwargs.keys()):
-            if not instance._meta.get_field(field_name).many_to_many:
+            field = instance._meta.get_field(field_name)
+            if not field.many_to_many:
                 continue
 
-            objs = kwargs.pop(field_name)
+            objs = cast(Sequence[object], kwargs.pop(field_name))
             if not objs:
                 continue
 
             related_model = instance._meta.get_field(field_name).related_model
+            assert related_model is not None
             many_to_many_to_set[field_name] = _load_related_to_many_objs(related_model, objs)
 
         with transaction.atomic():
@@ -92,20 +93,31 @@ class AutograderModelManager(models.Manager):
 
 
 def _field_is_to_one(instance: AutograderModel, field_name: str) -> bool:
-    field = cast(RelatedField, instance._meta.get_field(field_name))
-    return field.many_to_one or field.one_to_one
+    field = instance._meta.get_field(field_name)
+    return bool(field.many_to_one) or bool(field.one_to_one)
 
 
-def _load_related_to_many_objs(related_model, objs: Sequence):
+class _HasPK(TypedDict):
+    pk: int
+
+
+def _load_related_to_many_objs(
+    related_model: Type[Model],
+    objs: Sequence[object]
+) -> Sequence[Model]:
     if not objs:
         return []
 
     if isinstance(objs[0], related_model):
-        return objs
+        return cast(Sequence[Model], objs)
     elif isinstance(objs[0], int):
         return list(related_model.objects.filter(pk__in=objs))
     elif isinstance(objs[0], dict):
-        return list(related_model.objects.filter(pk__in=[obj['pk'] for obj in objs]))
+        return list(
+            related_model.objects.filter(
+                pk__in=[obj['pk'] for obj in cast(Sequence[_HasPK], objs)]
+            )
+        )
     else:
         raise ValueError(
             'Invalid type for related objects. '
@@ -163,7 +175,7 @@ class ToDictMixin:
 
     SERIALIZE_RELATED: Sequence[str] = tuple()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, object]:
         """
         Returns a dictionary representation of this model instance.
         """
@@ -196,8 +208,7 @@ class ToDictMixin:
                     result[field_name] = value.to_dict() if value is not None else None
                     continue
 
-                related_field = cast(RelatedField, field)
-                if related_field.many_to_one or related_field.one_to_one:
+                if field.many_to_one or field.one_to_one:
                     field_val = getattr(self, field_name)
                     if field_val is None:
                         continue
@@ -209,7 +220,7 @@ class ToDictMixin:
                             result[field_name] = field_val
                         else:
                             result[field_name] = field_val.pk
-                elif related_field.many_to_many or related_field.one_to_many:
+                elif field.many_to_many or field.one_to_many:
                     if field_name in self.get_serialize_related_fields():
                         result[field_name] = [
                             _serialize_model_obj(obj) for obj in getattr(self, field_name).all()
@@ -222,14 +233,14 @@ class ToDictMixin:
         return result
 
 
-def _serialize_model_obj(obj: Union[ToDictMixin, User]) -> dict:
+def _serialize_model_obj(obj: Union[ToDictMixin, User]) -> Dict[str, object]:
     if isinstance(obj, User):
         return serialize_user(obj)
 
     return obj.to_dict()
 
 
-class DictSerializableMixin(ToDictMixin):
+class DictSerializable(ToDictMixin):
     """
     In addition to the functionality provided by ToDictMixin,
     provides a way to validate data and construct or update
@@ -242,16 +253,18 @@ class DictSerializableMixin(ToDictMixin):
 
     Note: This mixin should NOT be used with Django model classes.
     """
-    def __init__(self, **kwargs):
+    _DerivedType = TypeVar('_DerivedType', bound='DictSerializable')
+
+    def __init__(self, **kwargs: object) -> None:
         raise NotImplementedError('Derived classes must provide their own constructor.')
 
     @classmethod
-    def from_dict(cls, input_: dict):
+    def from_dict(cls: Type[_DerivedType], input_: Dict[str, object]) -> _DerivedType:
         """
         Validates input_ and constructs an object from it.
         To add custom validation, override the validate() method.
 
-        Note that calling DictSerializableMixin.from_dict(obj.to_dict())
+        Note that calling DictSerializable.from_dict(obj.to_dict())
         should return an equivalent object.
         """
         cls._check_for_missing_fields(input_)
@@ -266,12 +279,12 @@ class DictSerializableMixin(ToDictMixin):
         by taking their names from the constructor arguments.
         Override this method if you want to manually specify
         serializable fields. When doing so, make sure that
-        DictSerializableMixin.from_dict(obj.to_dict()) still produces a
+        DictSerializable.from_dict(obj.to_dict()) still produces a
         valid result.
         """
         return tuple(cls._allowed_fields())
 
-    def update(self, input_):
+    def update(self, input_: Dict[str, object]) -> None:
         """
         Validates input_ and updates the current object from it.
         To add custom validation, override the validate() method.
@@ -289,7 +302,7 @@ class DictSerializableMixin(ToDictMixin):
             self.update(original)
             raise
 
-    def validate(self):
+    def validate(self) -> None:
         """
         Override this method to perform validation that requires more
         than one field (e.g. if one field is supposed to be greater
@@ -298,7 +311,7 @@ class DictSerializableMixin(ToDictMixin):
         Raises django.core.exceptions.ValidationError constructed with
         a string if any invalid data is detected.
 
-        This method is called in DictSerializableMixin.from_dict()
+        This method is called in DictSerializable.from_dict()
         before the new object is returned and in self.update() after
         updated fields are assigned. Note that this is done in a way
         that the updates will be undone if an exception is thrown.
@@ -306,7 +319,7 @@ class DictSerializableMixin(ToDictMixin):
         pass
 
     @classmethod
-    def prepare_input(cls, input_: dict) -> dict:
+    def prepare_input(cls, input_: Dict[str, object]) -> Dict[str, object]:
         """
         Prepares input_ for constructing an instance of cls. If a string
         is given where an enum is expected, an object of the enum type
@@ -341,7 +354,7 @@ class DictSerializableMixin(ToDictMixin):
         return processed_input
 
     @classmethod
-    def _check_for_missing_fields(cls, input_: dict):
+    def _check_for_missing_fields(cls, input_: Dict[str, object]) -> None:
         ctor_fields = cls._allowed_fields()
         for field_name in ctor_fields:
             if cls.field_is_required(field_name) and field_name not in input_:
@@ -368,7 +381,7 @@ class DictSerializableMixin(ToDictMixin):
         if param.annotation is inspect.Parameter.empty:
             raise ValueError(f'Missing type annotation for {field_name} in {cls.__name__}')
 
-        return param.annotation
+        return cast(type, param.annotation)
 
     @classmethod
     def field_is_required(cls, field_name: str) -> bool:
@@ -379,7 +392,7 @@ class DictSerializableMixin(ToDictMixin):
         return cls.get_field_default(field_name) is inspect.Parameter.empty
 
     @classmethod
-    def get_field_default(cls, field_name):
+    def get_field_default(cls, field_name: str) -> object:
         """
         Returns the default value for the field with the given name.
         The default value is introspected from the parameter of the
@@ -389,7 +402,7 @@ class DictSerializableMixin(ToDictMixin):
         return default.value if isinstance(default, enum.Enum) else default
 
     @classmethod
-    def get_field_descriptions(cls):
+    def get_field_descriptions(cls) -> Mapping[str, str]:
         return cls.FIELD_DESCRIPTIONS
 
     # A dictionary of field names to field descriptions. Used for
@@ -397,7 +410,7 @@ class DictSerializableMixin(ToDictMixin):
     FIELD_DESCRIPTIONS: Mapping[str, str] = {}
 
     @classmethod
-    def run_field_validators(cls, input_: dict) -> None:
+    def run_field_validators(cls, input_: Dict[str, object]) -> None:
         """
         Runs the validators defined in cls.FIELD_VALIDATORS on input_.
         Re-raises the first caught ValidationError with the field name
@@ -415,40 +428,53 @@ class DictSerializableMixin(ToDictMixin):
     # Validator functions should take in one argument and raise
     # django.core.exceptions.ValidationError constructed with a
     # string if the argument is invalid.
-    FIELD_VALIDATORS: Dict[str, List[Callable[[object], None]]] = {}
+    FIELD_VALIDATORS: Dict[str, List[_FieldValidatorFunc]] = {}
 
 
-def make_min_value_validator(min_value: int):
-    def validator(value: int):
+_FieldValidatorFunc = Callable[[object], None]
+
+
+def make_min_value_validator(min_value: int) -> _FieldValidatorFunc:
+    def validator(value: object) -> None:
+        if not isinstance(value, int):
+            raise exceptions.ValidationError(f'Expected int but got type {type(value).__name__}')
         if value < min_value:
             raise exceptions.ValidationError(f'Must be >= {min_value}')
 
     return validator
 
 
-def make_max_value_validator(max_value: int):
-    def validator(value: int):
+def make_max_value_validator(max_value: int) -> _FieldValidatorFunc:
+    def validator(value: object) -> None:
+        if not isinstance(value, int):
+            raise exceptions.ValidationError(f'Expected int but got type {type(value).__name__}')
         if value > max_value:
             raise exceptions.ValidationError(f'Must be <= {max_value}')
 
     return validator
 
 
-def non_empty_str_validator(string: str):
+def non_empty_str_validator(string: object) -> None:
+    if not isinstance(string, str):
+        raise exceptions.ValidationError(f'Expected str but got type {type(string).__name__}')
     if len(string) == 0:
         raise exceptions.ValidationError(f'Must not be empty')
 
 
 class AutograderModel(ToDictMixin, models.Model):
     """
-    The base class for non-polymorphic autograder model classes. This
-    class sets an AutograderModelManager as the default manager and
-    provides a last_modified field and a validate_and_update method.
+    The base class for non-polymorphic autograder model classes.
+    Provides a last_modified field and a validate_and_update method.
+
+    Derived classes should set an AutograderModelManager as the
+    default manager. For example, if the model class name is Course,
+    that class should include the line:
+        objects = AutograderModelManager['Course']()
+    This will ensure that the validate_and_create method is properly
+    type-checked.
     """
     class Meta:
         abstract = True
-
-    objects = AutograderModelManager()
 
     INVALID_FIELD_NAMES_KEY = 'invalid_field_names'
 
@@ -470,7 +496,7 @@ class AutograderModel(ToDictMixin, models.Model):
     EDITABLE_FIELDS: Sequence[str] = tuple()
 
     @transaction.atomic
-    def validate_and_update(self, **kwargs):
+    def validate_and_update(self, **kwargs: object) -> None:
         """
         Updates the values of the fields specified as
         keyword arguments, runs model validation, and saves the
@@ -533,7 +559,9 @@ class AutograderModel(ToDictMixin, models.Model):
                 continue
 
             if field.many_to_many:
-                loaded_vals = _load_related_to_many_objs(field.related_model, val)
+                assert field.related_model is not None
+                loaded_vals = _load_related_to_many_objs(
+                    field.related_model, cast(Sequence[object], val))
                 getattr(self, field_name).set(loaded_vals, clear=True)
             elif _field_is_to_one(self, field_name):
                 _set_to_one_relationship(self, field_name, val)
@@ -543,12 +571,17 @@ class AutograderModel(ToDictMixin, models.Model):
         self.full_clean()
         self.save()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '<{}: {}>'.format(self.__class__.__name__, self.pk)
 
 
-def _set_to_one_relationship(model_obj, field_name, value):
+def _set_to_one_relationship(
+    model_obj: _AutograderModelType,
+    field_name: str,
+    value: object
+) -> None:
     related_model = model_obj._meta.get_field(field_name).related_model
+    assert related_model is not None
 
     if value is None:
         related_obj = None

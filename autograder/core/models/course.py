@@ -1,26 +1,32 @@
-import enum
 import os
+from typing import Any, Optional, TypedDict, cast
 
+from django.contrib.auth.models import User
+from django.core import validators
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.core import validators
-from django.contrib.auth.models import User
-from django.db.models import Case, When, Value
-from typing import Dict
+from django.db.models import Case, Value, When
 
-from .ag_model_base import AutograderModel
-
-import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
+
+from .ag_model_base import AutograderModel, AutograderModelManager
 
 
-class Semester(enum.Enum):
+class Semester(models.TextChoices):
     fall = 'Fall'
     winter = 'Winter'
     spring = 'Spring'
     summer = 'Summer'
+
+
+class UserRolesDict(TypedDict):
+    is_admin: bool
+    is_staff: bool
+    is_student: bool
+    is_handgrader: bool
 
 
 class Course(AutograderModel):
@@ -31,6 +37,7 @@ class Course(AutograderModel):
     Related object fields:
         projects -- The group of Projects that belong to this Course.
     """
+    objects = AutograderModelManager['Course']()
 
     class Meta:
         unique_together = ('name', 'semester', 'year')
@@ -49,16 +56,18 @@ class Course(AutograderModel):
             ('create_course', 'Can create new courses and clone courses they are an admin for.'),
         )
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         validators=[validators.MinLengthValidator(1)],
         help_text="The name of this course. Must be unique, non-empty and non-null.")
 
-    semester = ag_fields.EnumField(Semester, blank=True, null=True, default=None)
+    semester = models.TextField(choices=Semester.choices, blank=True, null=True, default=None)
 
     year = models.IntegerField(blank=True, null=True, default=None,
                                validators=[MinValueValidator(1950)])
 
-    subtitle = ag_fields.ShortStringField(
+    subtitle = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=True, help_text='An optional descriptive name for the course.')
 
     num_late_days = models.IntegerField(
@@ -90,7 +99,8 @@ class Course(AutograderModel):
                      associated with this Course and may be in
                      groups together.""")
 
-    allowed_guest_domain = ag_fields.ShortStringField(
+    allowed_guest_domain = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=True,
         help_text="""When non-empty, indicates that guest users' usernames
                      must end with this string for them to be allowed access
@@ -127,15 +137,15 @@ class Course(AutograderModel):
         """
         return self.get_user_roles(user)['is_student']
 
-    def get_user_roles(self, user: User) -> Dict:
+    def get_user_roles(self, user: User) -> UserRolesDict:
         # To prevent different permissions checks from causing redundant
         # cache hits, we'll store the user roles in self.
         user_roles_attr = f'_user_roles_{user.pk}'
         if hasattr(self, user_roles_attr):
-            return getattr(self, user_roles_attr)
+            return cast(UserRolesDict, getattr(self, user_roles_attr))
 
         cache_key = f'course_{self.pk}_user_{user.pk}'
-        user_roles = cache.get(cache_key)
+        user_roles = cast(Optional[UserRolesDict], cache.get(cache_key))
 
         if user_roles is None:
             is_admin = self.admins.filter(pk=user.pk).exists()
@@ -162,7 +172,7 @@ class Course(AutograderModel):
 
         return user.username.endswith(self.allowed_guest_domain)
 
-    def clean(self):
+    def clean(self) -> None:
         super().clean()
 
         duplicate_exists = Course.objects.exclude(
@@ -173,12 +183,12 @@ class Course(AutograderModel):
         if duplicate_exists:
             raise ValidationError('A course with this name, semester, and year already exists.')
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         super().save(*args, **kwargs)
 
         course_root_dir = core_ut.get_course_root_dir(self)
         if not os.path.isdir(course_root_dir):
-            # Since the database is in charge or validating the uniqueness
+            # Since the database is in charge of validating the uniqueness
             # of this course, we can assume at this point that creating
             # the course directory will succeed. If for some reason it fails,
             # this will be considered a more severe error, and the OSError
@@ -207,6 +217,8 @@ class Course(AutograderModel):
 
 
 class LateDaysRemaining(AutograderModel):
+    objects = AutograderModelManager['LateDaysRemaining']()
+
     class Meta:
         unique_together = ('course', 'user')
 

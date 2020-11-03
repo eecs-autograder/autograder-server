@@ -4,17 +4,15 @@ from django.core.validators import MaxValueValidator
 from django.db import models
 
 import autograder.core.fields as ag_fields
-from autograder.core.fields import EnumField
 from django.core import validators
 from django.core.exceptions import ValidationError
-from enum import Enum
 
 from autograder.core.models import AutograderModel, Project, Submission, Group
 from autograder.core.models.ag_model_base import (
-    DictSerializableMixin, non_empty_str_validator, make_min_value_validator)
+    AutograderModelManager, DictSerializable, non_empty_str_validator, make_min_value_validator)
 
 
-class PointsStyle(Enum):
+class PointsStyle(models.TextChoices):
     """
     Specifies how handgrading scores should be initialized.
 
@@ -35,12 +33,14 @@ class HandgradingRubric(AutograderModel):
     """
     Contains general settings for handgrading.
     """
+    objects = AutograderModelManager['HandgradingRubric']()
+
     project = models.OneToOneField(
         Project, related_name='handgrading_rubric', on_delete=models.CASCADE,
         help_text="The Project this HandgradingRubric belongs to.")
 
-    points_style = EnumField(
-        PointsStyle, default=PointsStyle.start_at_zero_and_add, blank=True,
+    points_style = models.TextField(
+        choices=PointsStyle.choices, default=PointsStyle.start_at_zero_and_add, blank=True,
         help_text='''Determines how total_points and total_possible_points are calculated
                      for HandgradingResults.''')
 
@@ -106,6 +106,8 @@ class Criterion(AutograderModel):
     """
     A "checkbox" rubric item.
     """
+    objects = AutograderModelManager['Criterion']()
+
     class Meta:
         order_with_respect_to = 'handgrading_rubric'
 
@@ -146,6 +148,8 @@ class Annotation(AutograderModel):
     A pre-defined comment that can be applied to specific lines of code, with
     an optional deduction attached.
     """
+    objects = AutograderModelManager['Annotation']()
+
     class Meta:
         order_with_respect_to = 'handgrading_rubric'
 
@@ -199,6 +203,8 @@ class HandgradingResult(AutograderModel):
     Contains general information about a group's handgrading result.
     Represents the handgrading result of a group's best submission.
     """
+    objects = AutograderModelManager['HandgradingResult']()
+
     group = models.OneToOneField(
         Group, related_name='handgrading_result', on_delete=models.CASCADE,
         help_text='''The SubmissionGroup that this HandgradingResult is for.''')
@@ -309,6 +315,8 @@ class CriterionResult(AutograderModel):
     """
     Specifies whether a handgrading criterion was selected (i.e. the checkbox was checked).
     """
+    objects = AutograderModelManager['CriterionResult']()
+
     class Meta:
         ordering = ('criterion___order',)
 
@@ -344,7 +352,7 @@ class CriterionResult(AutograderModel):
     SERIALIZE_RELATED = ('criterion',)
 
 
-class Location(DictSerializableMixin):
+class Location(DictSerializable):
     """
     A region of source code in a specific file with a starting and ending line.
     """
@@ -374,6 +382,8 @@ class AppliedAnnotation(AutograderModel):
     """
     Represents a single instance of adding an annotation to student source code.
     """
+    objects = AutograderModelManager['AppliedAnnotation']()
+
     annotation = models.ForeignKey(
         Annotation, on_delete=models.CASCADE,
         help_text='''The Annotation that was applied to the source code.''')
@@ -416,6 +426,8 @@ class Comment(AutograderModel):
     A custom comment that can either apply to the whole submission or a specific
     location in the source code.
     """
+    objects = AutograderModelManager['Comment']()
+
     class Meta:
         ordering = ('pk',)
 

@@ -5,7 +5,7 @@ verify_ssl = true
 
 [packages]
 autograder-sandbox = "*"
-celery = "*"
+celery = "<5.0.0"
 django-extensions = "*"
 django-redis = "*"
 django-timezone-field = "*"
@@ -18,7 +18,7 @@ psycopg2 = "*"
 redis = "*"
 uwsgitop = "*"
 ipython = "*"
-Django = "*"
+Django = "<4.0.0"
 PyYAML = "*"
 uWSGI = "*"
 oauth2client = "*"
@@ -29,6 +29,7 @@ pydocstyle = "*"
 mypy = "*"
 django-stubs = "*"
 djangorestframework-stubs = "*"
+isort = "*"
 
 [requires]
 python_version = "3.8"

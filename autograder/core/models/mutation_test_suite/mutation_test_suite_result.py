@@ -1,14 +1,16 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import os
 from decimal import Decimal
 from typing import BinaryIO, List, Optional
 
 from django.db import models
+from django.contrib.postgres import fields as pg_fields
 
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 
 from ..ag_command import AGCommandResult
-from ..ag_model_base import AutograderModel, ToDictMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, ToDictMixin
 from ..ag_test.feedback_category import FeedbackCategory
 from .mutation_test_suite import (BugsExposedFeedbackLevel, MutationTestSuite,
                                   MutationTestSuiteFeedbackConfig)
@@ -19,6 +21,7 @@ def _make_get_test_names_result_default() -> int:
 
 
 class MutationTestSuiteResult(AutograderModel):
+    objects = AutograderModelManager['MutationTestSuiteResult']()
 
     class Meta:
         unique_together = ('mutation_test_suite', 'submission')
@@ -28,21 +31,26 @@ class MutationTestSuiteResult(AutograderModel):
     submission = models.ForeignKey('Submission', related_name='mutation_test_suite_results',
                                    on_delete=models.CASCADE)
 
-    student_tests = ag_fields.StringArrayField(
+    student_tests = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         blank=True, default=list,
         help_text="The names of discovered student test cases.")
-    discarded_tests = ag_fields.StringArrayField(
+    discarded_tests = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         blank=True, default=list,
         help_text=""""The names of student tests that were discarded due
                       to too many tests being discovered.""")
-    invalid_tests = ag_fields.StringArrayField(
+    invalid_tests = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         blank=True, default=list,
         help_text="The names of student test cases that failed the validity check.")
-    timed_out_tests = ag_fields.StringArrayField(
+    timed_out_tests = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         blank=True, default=list,
         help_text="The names of student test cases that timed out during the validity check.")
 
-    bugs_exposed = ag_fields.StringArrayField(
+    bugs_exposed = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         blank=True, default=list,
         help_text="""The names of instructor buggy implementations that were exposed
                      by the student's test cases.""")

@@ -24,7 +24,10 @@ class _GetCreateHandgradingRubricSchema(
 
 class GetCreateHandgradingRubricView(AGModelAPIView):
     schema = _GetCreateHandgradingRubricSchema(
-        [APITags.handgrading_rubrics], hg_models.HandgradingRubric)
+        tags=[APITags.handgrading_rubrics],
+        api_class=hg_models.HandgradingRubric,
+        operation_id_overrides={'GET': 'getHandgradingRubricForProject'}
+    )
 
     permission_classes = [
         P(is_admin_or_read_only) | (P(is_handgrader) & P(ag_permissions.IsReadOnly))
@@ -57,7 +60,7 @@ class GetCreateHandgradingRubricView(AGModelAPIView):
 
 
 class HandgradingRubricDetailView(AGModelDetailView):
-    schema = AGDetailViewSchemaGenerator([APITags.handgrading_rubrics])
+    schema = AGDetailViewSchemaGenerator(tags=[APITags.handgrading_rubrics])
 
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(

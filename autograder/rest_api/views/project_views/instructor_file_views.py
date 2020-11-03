@@ -9,7 +9,7 @@ import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core import constants
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator, AGListViewSchemaMixin,
-                                        APITags, ContentTypeVal, CustomViewSchema, MediaTypeObject,
+                                        APITags, ContentType, CustomViewSchema, MediaTypeObject,
                                         as_content_obj, as_schema_ref)
 from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
@@ -22,7 +22,7 @@ class _Schema(AGListViewSchemaMixin, CustomViewSchema):
     pass
 
 
-_INSTRUCTOR_FILE_BODY_SCHEMA: Dict[ContentTypeVal, MediaTypeObject] = {
+_INSTRUCTOR_FILE_BODY_SCHEMA: Dict[ContentType, MediaTypeObject] = {
     'multipart/form-data': {
         'schema': {
             'type': 'object',

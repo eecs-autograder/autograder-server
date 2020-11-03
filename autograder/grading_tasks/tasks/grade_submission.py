@@ -24,6 +24,10 @@ from autograder.core.submission_email_receipts import send_submission_score_summ
 from .exceptions import SubmissionRejected, SubmissionRemovedFromQueue
 
 
+def remove_from_queue_check_mocking_hook() -> None:
+    pass
+
+
 class SubmissionGrader:
     def __init__(self, submission_pk: int):
         self.submission_pk = submission_pk
@@ -82,6 +86,7 @@ class SubmissionGrader:
             ).get(pk=self.submission_pk)
             self._group = self._submission.group
             self._project = self.submission.project
+            remove_from_queue_check_mocking_hook()
             if self.submission.status == ag_models.Submission.GradingStatus.removed_from_queue:
                 print('submission {} has been removed '
                       'from the queue'.format(self.submission.pk))

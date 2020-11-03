@@ -1,10 +1,11 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from django.core import validators, exceptions
 from django.db import models
 
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from .project import Project
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, AutograderModelManager
 
 
 class ExpectedStudentFile(AutograderModel):
@@ -12,6 +13,8 @@ class ExpectedStudentFile(AutograderModel):
     These objects describe Unix-style shell patterns that files
     submitted by students can or should match.
     """
+    objects = AutograderModelManager['ExpectedStudentFile']()
+
     class Meta:
         ordering = ('pattern',)
         unique_together = ('pattern', 'project')
@@ -34,7 +37,8 @@ class ExpectedStudentFile(AutograderModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE,
                                 related_name='expected_student_files')
 
-    pattern = ag_fields.ShortStringField(
+    pattern = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         validators=[core_ut.check_filename],
         help_text='''A shell-style file pattern suitable for
             use with Python's fnmatch.fnmatch()

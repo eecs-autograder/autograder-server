@@ -138,7 +138,7 @@ def _make_download_result_filename(project: ag_models.project,
                                    task: ag_models.DownloadTask) -> str:
     downloads_dir = os.path.join(settings.MEDIA_ROOT, 'project_downloads')
     os.makedirs(downloads_dir, exist_ok=True)
-    filename = '{}-{}-{}'.format(project.pk, task.download_type.value, uuid.uuid4().hex)
+    filename = '{}-{}-{}'.format(project.pk, task.download_type, uuid.uuid4().hex)
     return os.path.join(downloads_dir, filename)
 
 

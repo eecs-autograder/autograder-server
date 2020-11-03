@@ -110,7 +110,7 @@ class CreateHandgradingRubricTestCase(test_impls.CreateObjectTest, UnitTestBase)
         loaded = handgrading_models.HandgradingRubric.objects.get(pk=response.data['pk'])
         self.assert_dict_contents_equal(loaded.to_dict(), response.data)
 
-        self.assertEqual(self.data["points_style"], loaded.points_style.value)
+        self.assertEqual(self.data["points_style"], loaded.points_style)
         self.assertEqual(self.data["max_points"], loaded.max_points)
         self.assertEqual(self.data["show_grades_and_rubric_to_students"],
                          loaded.show_grades_and_rubric_to_students)

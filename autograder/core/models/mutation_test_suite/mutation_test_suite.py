@@ -1,12 +1,14 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from django.core import exceptions
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.contrib.postgres import fields as pg_fields
 
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from ..ag_command import Command
-from ..ag_model_base import AutograderModel, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
 from ..project import Project, InstructorFile, ExpectedStudentFile
 from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
@@ -18,7 +20,7 @@ class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
     all_bug_names = 'all_bug_names'
 
 
-class MutationTestSuiteFeedbackConfig(DictSerializableMixin):
+class MutationTestSuiteFeedbackConfig(DictSerializable):
     """
     Contains feedback options for a MutationTestSuite
     """
@@ -157,6 +159,7 @@ class MutationTestSuite(AutograderModel):
     test cases against a set of intentionally buggy implementations
     of instructor code.
     """
+    objects = AutograderModelManager['MutationTestSuite']()
 
     class Meta:
         unique_together = ('name', 'project')
@@ -165,7 +168,8 @@ class MutationTestSuite(AutograderModel):
     STUDENT_TEST_NAME_PLACEHOLDER = r'${student_test_name}'
     BUGGY_IMPL_NAME_PLACEHOLDER = r'${buggy_impl_name}'
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         help_text="""The name used to identify this MutationTestSuite.
                      Must be non-empty and non-null.""")
     project = models.ForeignKey(
@@ -188,8 +192,8 @@ class MutationTestSuite(AutograderModel):
         help_text='''Student-submitted files matching these patterns will be copied into the
                      sandbox before the suite is graded.''')
 
-    buggy_impl_names = ag_fields.StringArrayField(
-        strip_strings=True,
+    buggy_impl_names = pg_fields.ArrayField(
+        models.CharField(max_length=MAX_CHAR_FIELD_LEN, blank=False),
         blank=True,
         default=list,
         help_text="The names of buggy implementations that student tests should be run against.")

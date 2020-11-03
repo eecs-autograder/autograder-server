@@ -1,15 +1,21 @@
+from __future__ import annotations
+
 import datetime
 import enum
 import os
 import re
 import subprocess
 from typing import List
+import typing
 
 from django.conf import settings
 from django.core import exceptions
 from django.utils import timezone
 
 from . import constants as const
+
+if typing.TYPE_CHECKING:
+    from .models.course import Course
 
 
 class DiffResult:
@@ -105,7 +111,7 @@ def check_filename(filename):
 # -----------------------------------------------------------------------------
 
 
-def get_course_root_dir(course):
+def get_course_root_dir(course: Course) -> str:
     """
     Computes the absolute path of the base directory for the given course.
     """
@@ -113,7 +119,7 @@ def get_course_root_dir(course):
         settings.MEDIA_ROOT, get_course_relative_root_dir(course))
 
 
-def get_course_relative_root_dir(course):
+def get_course_relative_root_dir(course: Course) -> str:
     """
     Same as get_course_root_dir() but returns a path that is
     relative to MEDIA_ROOT.

@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from typing import List
 from django.core import exceptions
 from django.core.exceptions import ValidationError
@@ -5,12 +6,12 @@ from django.db import models, connection, transaction
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
-from ..ag_model_base import AutograderModel, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
 from ..project import ExpectedStudentFile, Project, InstructorFile
 from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
 
-class AGTestSuiteFeedbackConfig(DictSerializableMixin):
+class AGTestSuiteFeedbackConfig(DictSerializable):
     """
     Contains feedback options for an AGTestSuite.
     """
@@ -52,6 +53,7 @@ class AGTestSuite(AutograderModel):
     """
     A group of autograder test cases to be run inside the same sandbox.
     """
+    objects = AutograderModelManager['AGTestSuite']()
 
     class Meta:
         unique_together = ('name', 'project')
@@ -70,7 +72,8 @@ class AGTestSuite(AutograderModel):
 
         project.set_agtestsuite_order(order)
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         help_text='''The name used to identify this suite.
                      Must be non-empty and non-null.
                      Must be unique among suites that belong to the same project.
@@ -104,7 +107,8 @@ class AGTestSuite(AutograderModel):
                      have been added to the sandbox.
                      If this field is empty, then no setup command will be run.""")
 
-    setup_suite_cmd_name = ag_fields.ShortStringField(
+    setup_suite_cmd_name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         blank=True, help_text="""The name of this suite's setup command.""")
 
     reject_submission_if_setup_fails = models.BooleanField(

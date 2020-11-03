@@ -121,7 +121,7 @@ class ListCreateSubmissionView(NestedModelView):
     def _create_submission_if_allowed(self, request, group: ag_models.Group,
                                       timestamp: datetime.datetime) -> ag_models.Submission:
         has_active_submission = group.submissions.filter(
-            status__in=ag_models.Submission.GradingStatus.active_statuses
+            status__in=ag_models.Submission.active_statuses
         ).exists()
         if has_active_submission:
             raise exceptions.ValidationError(

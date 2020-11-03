@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import datetime
 import enum
 import os
@@ -6,13 +7,12 @@ from django.core import exceptions, validators
 from django.db import models
 from timezone_field import TimeZoneField
 
-import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, AutograderModelManager
 from ..course import Course
 
 
-class UltimateSubmissionPolicy(enum.Enum):
+class UltimateSubmissionPolicy(models.TextChoices):
     """
     This class contains options for choosing which submissions are
     used for final grading. AG test cases also have a feedback
@@ -49,10 +49,13 @@ class Project(AutograderModel):
         group_invitations -- The pending submission group
             invitations belonging to this Project.
     """
+    objects = AutograderModelManager['Project']()
+
     class Meta:
         unique_together = ('name', 'course')
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         help_text="""The name used to identify this project.
             Must be non-empty and non-null.
             Must be unique among Projects associated with
@@ -166,8 +169,8 @@ class Project(AutograderModel):
         help_text="""Whether to allow the use of late days for submitting
             past the deadline.""")
 
-    ultimate_submission_policy = ag_fields.EnumField(
-        UltimateSubmissionPolicy,
+    ultimate_submission_policy = models.TextField(
+        choices=UltimateSubmissionPolicy.choices,
         default=UltimateSubmissionPolicy.most_recent,
         blank=True,
         help_text="""The "ultimate" submission for a group is the one

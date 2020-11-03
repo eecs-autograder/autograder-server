@@ -1,19 +1,12 @@
-from django.core import exceptions
-from django.core.validators import MaxValueValidator
-from django.core.validators import MinValueValidator
-from django.db import models
-
 from autograder.core import constants
 from ..ag_model_base import (
-    AutograderModel,
-    DictSerializableMixin,
+    DictSerializable,
     non_empty_str_validator,
     make_min_value_validator,
     make_max_value_validator)
-import autograder.core.fields as ag_fields
 
 
-class Command(DictSerializableMixin):
+class Command(DictSerializable):
     """
     Contains the core information needed to run a command during grading.
     """

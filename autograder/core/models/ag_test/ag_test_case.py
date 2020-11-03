@@ -1,3 +1,4 @@
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from typing import Union, Optional
 
 from django.core import exceptions
@@ -5,10 +6,10 @@ from django.db import models, transaction, connection
 
 import autograder.core.fields as ag_fields
 from .ag_test_suite import AGTestSuite
-from ..ag_model_base import AutograderModel, DictSerializableMixin
+from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
 
 
-class AGTestCaseFeedbackConfig(DictSerializableMixin):
+class AGTestCaseFeedbackConfig(DictSerializable):
     """
     Contains feedback options for an AGTestCase.
     """
@@ -24,12 +25,14 @@ class AGTestCase(AutograderModel):
     An AGTestCase consists of a series of commands to be run together.
     An AGTestCase must belong to exactly one AGTestSuite.
     """
+    objects = AutograderModelManager['AGTestCase']()
 
     class Meta:
         unique_together = ('name', 'ag_test_suite')
         order_with_respect_to = 'ag_test_suite'
 
-    name = ag_fields.ShortStringField(
+    name = models.CharField(
+        max_length=MAX_CHAR_FIELD_LEN,
         help_text='''The name used to identify this autograder test.
                      Must be non-empty and non-null.
                      Must be unique among autograder tests that belong to the same suite.

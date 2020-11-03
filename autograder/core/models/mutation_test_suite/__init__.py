@@ -1,3 +1,4 @@
-from .mutation_test_suite import (BugsExposedFeedbackLevel, MutationTestSuite,
-                                  MutationTestSuiteFeedbackConfig)
-from .mutation_test_suite_result import MutationTestSuiteResult
+from .mutation_test_suite import BugsExposedFeedbackLevel as BugsExposedFeedbackLevel
+from .mutation_test_suite import MutationTestSuite as MutationTestSuite
+from .mutation_test_suite import MutationTestSuiteFeedbackConfig as MutationTestSuiteFeedbackConfig
+from .mutation_test_suite_result import MutationTestSuiteResult as MutationTestSuiteResult
