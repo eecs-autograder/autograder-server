@@ -52,7 +52,8 @@ class OAuth2CallbackHandler:
         else:
             response = HttpResponse()
 
-        response.set_cookie('token', token.key, domain=settings.SITE_DOMAIN)
+        response.set_cookie(
+            'token', token.key, domain=settings.SITE_DOMAIN, secure=not settings.DEBUG)
         return response
 
     def load_state(self, request):
