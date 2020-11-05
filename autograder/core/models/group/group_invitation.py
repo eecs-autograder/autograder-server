@@ -1,21 +1,30 @@
-from autograder.core.constants import MAX_CHAR_FIELD_LEN
+from __future__ import annotations
+
 import itertools
-from typing import List
+from typing import Any, Collection, Dict, List, cast
 
 from django.contrib.auth.models import User
+from django.contrib.postgres import fields as pg_fields
 from django.core import exceptions
 from django.db import models, transaction
-from django.contrib.postgres import fields as pg_fields
 
-from autograder.core import fields as ag_fields
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 
 from .. import ag_model_base
 from ..project import Project
 from . import verification
 
 
-class GroupInvitationManager(ag_model_base.AutograderModelManager):
-    def validate_and_create(self, sender, recipients, **kwargs):
+class GroupInvitationManager(ag_model_base.AutograderModelManager['GroupInvitation']):
+    # Technically this violates the Liskov Substitution Principal.
+    # However, GroupInvitation.objects will always be an instance of
+    # GroupInvitationManager typed as such, so we know this to be safe.
+    def validate_and_create(  # type: ignore
+        self,
+        sender: User,
+        recipients: Collection[User],
+        **kwargs: Any
+    ) -> GroupInvitation:
         with transaction.atomic():
             if sender in recipients:
                 raise exceptions.ValidationError(
@@ -35,8 +44,7 @@ class GroupInvitationManager(ag_model_base.AutograderModelManager):
                         'You may not send any additional group invitations until '
                         'your pending invitations are resolved.'})
 
-            invitation = self.model(
-                sender=sender, **kwargs)
+            invitation = self.model(sender=sender, **kwargs)
             invitation.save()
             invitation.recipients.add(*recipients)
             invitation.full_clean()
@@ -71,7 +79,7 @@ class GroupInvitation(ag_model_base.AutograderModel):
 
     objects = GroupInvitationManager()
 
-    def clean(self):
+    def clean(self) -> None:
         super().clean()
         if not self.recipients.count():
             raise exceptions.ValidationError(
@@ -104,20 +112,20 @@ class GroupInvitation(ag_model_base.AutograderModel):
         return list(self._recipients_who_accepted)
 
     @property
-    def all_recipients_accepted(self):
+    def all_recipients_accepted(self) -> bool:
         """
         Returns True if all invited users have accepted the invitation.
         """
         return set(self.recipient_usernames) == set(self._recipients_who_accepted)
 
-    def recipient_accept(self, user):
+    def recipient_accept(self, user: User) -> None:
         """
         Marks the given user as having accepted the group invitation.
         """
         if user == self.sender:
             return
 
-        if user in self.recipients_who_accepted:
+        if user.username in self.recipients_who_accepted:
             return
 
         self._recipients_who_accepted.append(user.username)
@@ -135,7 +143,9 @@ class GroupInvitation(ag_model_base.AutograderModel):
 
     SERIALIZE_RELATED = ('sender', 'recipients')
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, object]:
         result = super().to_dict()
-        result['recipients'].sort(key=lambda user: user['username'])
+        cast(
+            List[Dict[str, object]], result['recipients']
+        ).sort(key=lambda user: cast(str, user['username']))
         return result

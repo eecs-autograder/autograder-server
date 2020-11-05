@@ -1,15 +1,20 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Iterable, Optional
+
 from django.contrib.auth.models import User
 from django.core import exceptions
-from typing import Iterable
 
 from autograder import utils
 
-from ..project import Project
+if TYPE_CHECKING:
+    from ..project import Project
+    from .group import Group
 
 
 def verify_users_have_same_enrollment_status(users: Iterable[User], project: Project,
                                              error_dict_field_name: str,
-                                             ignore_guest_restrictions: bool):
+                                             ignore_guest_restrictions: bool) -> None:
     """
     Parameters:
         users -- An iterable of User objects that will potentially be
@@ -77,7 +82,11 @@ def verify_users_have_same_enrollment_status(users: Iterable[User], project: Pro
             })
 
 
-def verify_group_size_allowed_by_project(users, project, error_dict_field_name):
+def verify_group_size_allowed_by_project(
+    users: Iterable[User],
+    project: Project,
+    error_dict_field_name: str
+) -> None:
     """
     Parameters:
         users -- An iterable of User objects that will potentially be in
@@ -113,15 +122,19 @@ def verify_group_size_allowed_by_project(users, project, error_dict_field_name):
                     project.max_group_size))})
 
 
-def verify_at_least_one_user_in_group(users, project, error_dict_field_name):
+def verify_at_least_one_user_in_group(users: Iterable[User], error_dict_field_name: str) -> None:
     users = tuple(users)
     if len(users) < 1:
         raise exceptions.ValidationError({
             error_dict_field_name: "Groups must have at least one member"})
 
 
-def verify_users_not_in_other_group(users, project, error_dict_field_name,
-                                    group_to_ignore=None):
+def verify_users_not_in_other_group(
+    users: Iterable[User],
+    project: Project,
+    error_dict_field_name: str,
+    group_to_ignore: Optional[Group] = None
+) -> None:
     """
     Parameters:
         users -- An iterable of User objects that will potentially be
@@ -155,10 +168,14 @@ def verify_users_not_in_other_group(users, project, error_dict_field_name,
                         member, project.name))})
 
 
-def verify_users_can_be_in_group(users, project, error_dict_field_name,
-                                 group_to_ignore=None,
-                                 check_group_size_limits=True,
-                                 ignore_guest_restrictions=False):
+def verify_users_can_be_in_group(
+    users: Iterable[User],
+    project: Project,
+    error_dict_field_name: str,
+    group_to_ignore: Optional[Group] = None,
+    check_group_size_limits: bool = True,
+    ignore_guest_restrictions: bool = False
+) -> None:
     """
     A shortcut for calling the above 4 "verify_" functions.
     """
@@ -167,6 +184,6 @@ def verify_users_can_be_in_group(users, project, error_dict_field_name,
     if check_group_size_limits:
         verify_group_size_allowed_by_project(
             users, project, error_dict_field_name)
-    verify_at_least_one_user_in_group(users, project, error_dict_field_name)
+    verify_at_least_one_user_in_group(users, error_dict_field_name)
     verify_users_not_in_other_group(
         users, project, error_dict_field_name, group_to_ignore=group_to_ignore)

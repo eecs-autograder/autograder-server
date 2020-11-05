@@ -1,12 +1,13 @@
+from __future__ import annotations
+
 import os
-from typing import List
+from typing import Any, Dict, Iterable, List, cast
 
 import django.contrib.postgres.fields as pg_fields
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
-from django.db.models.expressions import F
 from django.utils import timezone
 
 import autograder.core.utils as core_ut
@@ -19,10 +20,16 @@ from ..submission import Submission
 from . import verification
 
 
-class GroupManager(ag_model_base.AutograderModelManager):
-    def validate_and_create(self, members,
-                            check_group_size_limits=True,
-                            **kwargs):
+class GroupManager(ag_model_base.AutograderModelManager['Group']):
+    # Technically this violates the Liskov Substitution Principal.
+    # However, Group.objects will always be an instance of
+    # GroupManager typed as such, so we know this to be safe.
+    def validate_and_create(  # type: ignore
+        self,
+        members: Iterable[User],
+        check_group_size_limits: bool = True,
+        **kwargs: object
+    ) -> Group:
         """
         New parameters:
             check_group_size_limits -- When False, validation of whether
@@ -32,8 +39,11 @@ class GroupManager(ag_model_base.AutograderModelManager):
         """
         with transaction.atomic():
             verification.verify_users_can_be_in_group(
-                members, kwargs['project'], 'members',
-                check_group_size_limits=check_group_size_limits)
+                members,
+                cast(Project, kwargs['project']),
+                'members',
+                check_group_size_limits=check_group_size_limits
+            )
 
             member_names = [
                 user.username for user in sorted(members, key=lambda user: user.username)]
@@ -159,13 +169,13 @@ class Group(ag_model_base.AutograderModel):
             self.project.submission_limit_reset_time,
             timezone.now().astimezone(self.project.submission_limit_reset_timezone))
 
-        def _is_towards_limit(submission):
+        def _is_towards_limit(submission: Submission) -> bool:
             return (start_datetime <= submission.timestamp < end_datetime
                     and submission.status in Submission.count_towards_limit_statuses)
 
         return utils.count_if(self.submissions.all(), _is_towards_limit)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         super().save(*args, **kwargs)
 
         group_dir = core_ut.get_student_group_dir(self)
@@ -175,8 +185,13 @@ class Group(ag_model_base.AutograderModel):
     # IMPORTANT: If you add additional non-field arguments
     # (like check_group_size_limits), update group patching
     # in autograder/rest_api/views/group_views.py - GroupDetailView.patch
-    def validate_and_update(self, check_group_size_limits=True, ignore_guest_restrictions=False,
-                            **kwargs):
+    def validate_and_update(  # type: ignore
+        self,
+        *,
+        check_group_size_limits: bool = True,
+        ignore_guest_restrictions: bool = False,
+        **kwargs: object
+    ) -> None:
         """
         New parameters:
             check_group_size_limits -- When False, validation of
@@ -191,17 +206,20 @@ class Group(ag_model_base.AutograderModel):
         This method is overridden to provide validation and atomicity
         when overwriting the members field.
         """
-        members = kwargs.pop('members', None)
+        members = cast(Iterable[User], kwargs.pop('members', None))
         with transaction.atomic():
             super().validate_and_update(**kwargs)
             if members is None:
                 return
 
             verification.verify_users_can_be_in_group(
-                members, self.project, 'members',
+                members,
+                self.project,
+                'members',
                 group_to_ignore=self,
                 check_group_size_limits=check_group_size_limits,
-                ignore_guest_restrictions=ignore_guest_restrictions)
+                ignore_guest_restrictions=ignore_guest_restrictions
+            )
 
             self.members.set(members, clear=True)
             self._member_names = [
@@ -230,7 +248,9 @@ class Group(ag_model_base.AutograderModel):
 
     EDITABLE_FIELDS = ('extended_due_date', 'bonus_submissions_remaining')
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, object]:
         result = super().to_dict()
-        result['members'].sort(key=lambda user: user['username'])
+        cast(
+            List[Dict[str, object]], result['members']
+        ).sort(key=lambda user: cast(str, user['username']))
         return result
