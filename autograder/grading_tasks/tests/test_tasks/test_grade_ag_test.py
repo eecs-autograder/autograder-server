@@ -463,8 +463,11 @@ sys.stderr.flush()
         tasks.grade_submission_task(self.submission.pk)
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
 
-        self.assertEqual(self.non_utf_bytes, res.open_setup_stdout().read())
-        self.assertEqual(self.non_utf_bytes, res.open_setup_stderr().read())
+        with open(res.setup_stdout_filename) as f:
+            self.assertEqual(self.non_utf_bytes, f.read())
+
+        with open(res.setup_stderr_filename) as f:
+            self.assertEqual(self.non_utf_bytes, f.read())
 
     # Remove process and stack limit tests in version 5.0.0
     def test_time_process_stack_and_virtual_mem_limits_passed_to_run_command(self, *args):

@@ -116,12 +116,12 @@ def get_stdin_file(cmd: ag_models.AGTestCommand,
         if ag_test_suite_result is None:
             raise Exception('Expected ag test suite result, but got None.')
 
-        return ag_test_suite_result.open_setup_stdout('rb')
+        return open(ag_test_suite_result.setup_stdout_filename, 'rb')
     elif cmd.stdin_source == ag_models.StdinSource.setup_stderr:
         if ag_test_suite_result is None:
             raise Exception('Expected ag test suite result, but got None.')
 
-        return ag_test_suite_result.open_setup_stderr('rb')
+        return open(ag_test_suite_result.setup_stderr_filename, 'rb')
     else:
         return None
 

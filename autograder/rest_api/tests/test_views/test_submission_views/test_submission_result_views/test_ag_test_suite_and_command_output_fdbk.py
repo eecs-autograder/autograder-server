@@ -97,9 +97,9 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
 
         suite_result = self.staff_result.ag_test_case_result.ag_test_suite_result
 
-        with suite_result.open_setup_stdout('w') as f:
+        with open(suite_result.setup_stdout_filename, 'w') as f:
             f.write('weee')
-        with suite_result.open_setup_stderr('w') as f:
+        with open(suite_result.setup_stderr_filename, 'w') as f:
             f.write('wooo')
 
         field_names = ['setup_stdout', 'setup_stderr']
@@ -128,9 +128,9 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
     def _do_suite_result_output_test(self, client, submission, suite_result, fdbk_category):
-        with suite_result.open_setup_stdout('w') as f:
+        with open(suite_result.setup_stdout_filename, 'w') as f:
             f.write('adkjfaksdjf;akjsdf;')
-        with suite_result.open_setup_stderr('w') as f:
+        with open(suite_result.setup_stderr_filename, 'w') as f:
             f.write('qewiruqpewpuir')
 
         fdbk = get_suite_fdbk(suite_result, fdbk_category)
