@@ -1,11 +1,11 @@
-from autograder.core.constants import MAX_CHAR_FIELD_LEN
-from django.core import validators, exceptions
+from django.core import exceptions, validators
 from django.db import models
 
-import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
-from .project import Project
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
+
 from ..ag_model_base import AutograderModel, AutograderModelManager
+from .project import Project
 
 
 class ExpectedStudentFile(AutograderModel):
@@ -59,7 +59,7 @@ class ExpectedStudentFile(AutograderModel):
         help_text='''The maximum number of submitted student files that
             can match the pattern. Must be >= min_num_matches''')
 
-    def clean(self):
+    def clean(self) -> None:
         if self.max_num_matches < self.min_num_matches:
             raise exceptions.ValidationError(
                 {'max_num_matches': (
