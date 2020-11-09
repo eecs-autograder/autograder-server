@@ -1,33 +1,50 @@
-from typing import ClassVar, Final, Optional, Sequence
-from datetime import timedelta
+from __future__ import annotations
+
+import datetime
 import fnmatch
 import os
+from datetime import timedelta
+from typing import TYPE_CHECKING, Any, Final, Iterable, List, Optional, Sequence
 
 import django.contrib.postgres.fields as pg_fields
+from django.contrib.postgres import fields as pg_fields
 from django.core import exceptions
 from django.core.files import File
+from django.core.files.uploadedfile import UploadedFile
 from django.db import models, transaction
 from django.db.models import Prefetch
+from django.db.models.query import QuerySet
 from django.utils import timezone
-from django.contrib.postgres import fields as pg_fields
 
 import autograder.core.constants as const
-from autograder.core.constants import MAX_CHAR_FIELD_LEN
-import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
+
 from . import ag_model_base
 from .mutation_test_suite import MutationTestSuiteResult
 
+if TYPE_CHECKING:
+    from .group import Group
 
-def _get_submission_file_upload_to_dir(submission, filename):
+
+def _get_submission_file_upload_to_dir(submission: Submission, filename: str) -> str:
     value = os.path.join(
         core_ut.get_submission_dir(submission), filename)
     return value
 
 
-class _SubmissionManager(ag_model_base.AutograderModelManager):
-    def validate_and_create(self, submitted_files, group, timestamp=None, submitter=''):
+class _SubmissionManager(ag_model_base.AutograderModelManager['Submission']):
+    # Technically this violates the Liskov Substitution Principal.
+    # However, Submission.objects will always be an instance of
+    # SubmissionManager typed as such, so we know this to be safe.
+    def validate_and_create(  # type: ignore
+        self,
+        submitted_files: Sequence[UploadedFile],
+        group: Group,
+        timestamp: Optional[datetime.datetime] = None,
+        submitter: str = ''
+    ) -> Submission:
         """
         This method override handles additional details required for
         creating a Submission.
@@ -74,7 +91,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
             submission.save()
             return submission
 
-    def check_for_missing_files(self, submission):
+    def check_for_missing_files(self, submission: Submission) -> None:
         submitted_filenames = submission.get_submitted_file_basenames()
 
         expected_student_files = submission.group.project.expected_student_files.all()
@@ -84,7 +101,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
                 submission.missing_files[expected_file.pattern] = (
                     expected_file.min_num_matches - count)
 
-    def file_is_extra(self, submission, filename):
+    def file_is_extra(self, submission: Submission, filename: str) -> bool:
         project = submission.group.project
         for expected_file in project.expected_student_files.all():
             if not fnmatch.fnmatch(filename, expected_file.pattern):
@@ -182,7 +199,7 @@ class Submission(ag_model_base.AutograderModel):
         help_text="""The name of the user who made this submission""")
 
     @property
-    def submitted_files(self):
+    def submitted_files(self) -> Iterable[File]:
         """
         An iterable of the files included in this submission.
         """
@@ -275,7 +292,9 @@ class Submission(ag_model_base.AutograderModel):
         "ag_test_case_results": {
             "<ag test case pk>": {
                 <ag test case result data>,
-                "ag_test_command_results": <ag test command result data>
+                "ag_test_command_results": {
+                    "<ag test command pk>": <ag test command result data>
+                }
             }
         }
     }
@@ -314,30 +333,29 @@ class Submission(ag_model_base.AutograderModel):
 
     # -------------------------------------------------------------------------
 
-    def get_file(self, filename, mode='rb'):
+    def get_file(self, filename: str) -> File:
         """
         Returns a Django File object containing the submitted file with
-        the given name. The file is opened using the specified mode
-        (mode can be any valid value for the same argument to the Python
-        open() function).
+        the given name. The file is opened in 'rb mode'.
+
         If the file doesn't exist, ObjectDoesNotExist will be raised.
         """
         self._check_file_exists(filename)
         return File(
-            open(self._get_submitted_file_dir(filename), mode),
+            open(self._get_submitted_file_dir(filename), 'rb'),
             name=os.path.basename(filename))
 
-    def _check_file_exists(self, filename):
+    def _check_file_exists(self, filename: str) -> None:
         if filename not in self.submitted_filenames:
             raise exceptions.ObjectDoesNotExist()
 
-    def _get_submitted_file_dir(self, filename):
+    def _get_submitted_file_dir(self, filename: str) -> str:
         return os.path.join(core_ut.get_submission_dir(self), filename)
 
-    def get_submitted_file_basenames(self):
+    def get_submitted_file_basenames(self) -> List[str]:
         return self.submitted_filenames
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         super().save(*args, **kwargs)
 
         # result_output_dir is a subdir of the submission dir
@@ -377,7 +395,9 @@ class Submission(ag_model_base.AutograderModel):
 # that use order_with_respect_to.
 
 
-def get_submissions_with_results_queryset(base_manager=Submission.objects):
+def get_submissions_with_results_queryset(
+    base_manager: QuerySet[Submission] = Submission.objects
+) -> QuerySet[Submission]:
     mutation_suite_result_queryset = get_mutation_test_suite_results_queryset()
     prefetch_mutation_suite_results = Prefetch(
         'mutation_test_suite_results', mutation_suite_result_queryset)
@@ -385,7 +405,7 @@ def get_submissions_with_results_queryset(base_manager=Submission.objects):
     return base_manager.prefetch_related(prefetch_mutation_suite_results)
 
 
-def get_mutation_test_suite_results_queryset():
+def get_mutation_test_suite_results_queryset() -> QuerySet[MutationTestSuiteResult]:
     return MutationTestSuiteResult.objects.select_related(
         'setup_result',
         'get_test_names_result',
