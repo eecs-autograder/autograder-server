@@ -1,3 +1,4 @@
+from typing import Mapping
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from django.core import exceptions
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -128,7 +129,7 @@ class MutationTestSuiteFeedbackConfig(DictSerializable):
             bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.get_max()
         )
 
-    FIELD_DESCRIPTIONS = {}
+    FIELD_DESCRIPTIONS: Mapping[str, str] = {}
 
 
 def new_make_default_setup_cmd() -> Command:
