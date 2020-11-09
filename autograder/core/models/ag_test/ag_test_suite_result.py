@@ -1,8 +1,10 @@
 import os
+from typing import Dict
 
 from django.db import models
 
 import autograder.core.utils as core_ut
+
 from ..ag_model_base import AutograderModel, AutograderModelManager
 from .ag_test_suite import AGTestSuite
 
@@ -35,19 +37,13 @@ class AGTestSuiteResult(AutograderModel):
     setup_stderr_truncated = models.BooleanField(
         blank=True, default=False, help_text="Whether the setup command's stderr was truncated")
 
-    def open_setup_stdout(self, mode='rb'):
-        return open(self.setup_stdout_filename, mode)
-
     @property
-    def setup_stdout_filename(self):
+    def setup_stdout_filename(self) -> str:
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'suite_result_{}_setup_stdout'.format(self.pk))
 
-    def open_setup_stderr(self, mode='rb'):
-        return open(self.setup_stderr_filename, mode)
-
     @property
-    def setup_stderr_filename(self):
+    def setup_stderr_filename(self) -> str:
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'suite_result_{}_setup_stderr'.format(self.pk))
 
@@ -64,7 +60,7 @@ class AGTestSuiteResult(AutograderModel):
         'setup_stderr_truncated',
     )
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, object]:
         result = super().to_dict()
         result['ag_test_case_results'] = {
             str(case_res.ag_test_case_id): case_res.to_dict()

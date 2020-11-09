@@ -1,16 +1,19 @@
-from autograder.core.constants import MAX_CHAR_FIELD_LEN
+from __future__ import annotations
+
+from typing import Any, Dict, Tuple
 
 from django.core import exceptions
-from django.core.validators import (
-    MinValueValidator, MaxValueValidator, MaxLengthValidator)
-from django.db import models, transaction, connection
+from django.core.validators import MaxLengthValidator, MaxValueValidator, MinValueValidator
+from django.db import connection, models, transaction
 
 import autograder.core.fields as ag_fields
-from autograder.core import constants
 import autograder.core.utils as core_ut
-from .ag_test_case import AGTestCase
+from autograder.core import constants
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
+
 from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
 from ..project import InstructorFile
+from .ag_test_case import AGTestCase
 
 
 class ValueFeedbackLevel(core_ut.OrderedEnum):
@@ -48,7 +51,7 @@ class AGTestCommandFeedbackConfig(DictSerializable):
         self.show_whether_timed_out = show_whether_timed_out
 
     @classmethod
-    def default_ultimate_submission_fdbk_config(cls):
+    def default_ultimate_submission_fdbk_config(cls) -> AGTestCommandFeedbackConfig:
         return AGTestCommandFeedbackConfig(
             return_code_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
             stdout_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
@@ -61,11 +64,11 @@ class AGTestCommandFeedbackConfig(DictSerializable):
         )
 
     @classmethod
-    def default_staff_viewer_fdbk_config(cls):
+    def default_staff_viewer_fdbk_config(cls) -> AGTestCommandFeedbackConfig:
         return cls.max_fdbk_config()
 
     @classmethod
-    def max_fdbk_config(cls):
+    def max_fdbk_config(cls) -> AGTestCommandFeedbackConfig:
         return AGTestCommandFeedbackConfig(
             return_code_fdbk_level=ValueFeedbackLevel.get_max(),
             stdout_fdbk_level=ValueFeedbackLevel.get_max(),
@@ -327,7 +330,7 @@ class AGTestCommand(AutograderModel):
                   of those processes will count towards the main
                   program's process limit.""")
 
-    def clean(self):
+    def clean(self) -> None:
         error_dict = {}
 
         try:
@@ -376,7 +379,7 @@ class AGTestCommand(AutograderModel):
             raise exceptions.ValidationError(error_dict)
 
     @transaction.atomic()
-    def delete(self, *args, **kwargs):
+    def delete(self, *args: Any, **kwargs: Any) -> Tuple[int, Dict[str, int]]:
         with connection.cursor() as cursor:
             cursor.execute(
                 '''UPDATE core_submission

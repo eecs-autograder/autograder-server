@@ -1,3 +1,5 @@
+from typing import Dict
+
 from django.db import models
 
 from ..ag_model_base import AutograderModel, AutograderModelManager
@@ -30,7 +32,7 @@ class AGTestCaseResult(AutograderModel):
         'ag_test_suite_result_id',
     )
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, object]:
         result = super().to_dict()
         result['ag_test_command_results'] = {
             str(cmd_res.ag_test_command_id): cmd_res.to_dict()

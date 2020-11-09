@@ -1,12 +1,13 @@
-from autograder.core.constants import MAX_CHAR_FIELD_LEN
-from typing import Union, Optional
+from typing import Any, Dict, Optional, Tuple, Union
 
 from django.core import exceptions
-from django.db import models, transaction, connection
+from django.db import connection, models, transaction
 
 import autograder.core.fields as ag_fields
-from .ag_test_suite import AGTestSuite
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
+
 from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
+from .ag_test_suite import AGTestSuite
 
 
 class AGTestCaseFeedbackConfig(DictSerializable):
@@ -55,7 +56,11 @@ class AGTestCase(AutograderModel):
         AGTestCaseFeedbackConfig, default=AGTestCaseFeedbackConfig)
 
     @transaction.atomic
-    def validate_and_update(self, ag_test_suite: Optional[Union[int, AGTestSuite]]=None, **kwargs):
+    def validate_and_update(  # type: ignore
+        self,
+        ag_test_suite: Optional[Union[int, AGTestSuite]] = None,
+        **kwargs: Any
+    ):
         """
         :param ag_test_suite:
             An AGTestSuite (or its primary key) that this AGTestCase
@@ -78,6 +83,7 @@ class AGTestCase(AutograderModel):
         if isinstance(ag_test_suite, int):
             ag_test_suite = AGTestSuite.objects.get(pk=ag_test_suite)
 
+        assert ag_test_suite is not None
         if ag_test_suite.project != self.ag_test_suite.project:
             raise exceptions.ValidationError(
                 {'ag_test_suite':
@@ -102,7 +108,7 @@ class AGTestCase(AutograderModel):
         super().validate_and_update(**kwargs)
 
     @transaction.atomic()
-    def delete(self, *args, **kwargs):
+    def delete(self, *args: Any, **kwargs: Any) -> Tuple[int, Dict[str, int]]:
         with connection.cursor() as cursor:
             cursor.execute(
                 '''UPDATE core_submission

@@ -1,13 +1,17 @@
-from autograder.core.constants import MAX_CHAR_FIELD_LEN
-from typing import List
+from __future__ import annotations
+
+from typing import Any, Dict, List, Tuple
+
 from django.core import exceptions
 from django.core.exceptions import ValidationError
-from django.db import models, connection, transaction
+from django.db import connection, models, transaction
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
+
 from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
-from ..project import ExpectedStudentFile, Project, InstructorFile
+from ..project import ExpectedStudentFile, InstructorFile, Project
 from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
 
@@ -65,12 +69,12 @@ class AGTestSuite(AutograderModel):
             return
 
         rejector_suite = project.ag_test_suites.filter(reject_submission_if_setup_fails=True)
-        if rejector_suite.count() == 1 and rejector_suite.first().pk != order[0]:
+        if (suite := rejector_suite.first()) is not None and suite.pk != order[0]:
             raise ValidationError(
                 'Only the first test suite can be used to reject submissions on setup failure.'
             )
 
-        project.set_agtestsuite_order(order)
+        project.set_agtestsuite_order(order)  # type: ignore
 
     name = models.CharField(
         max_length=MAX_CHAR_FIELD_LEN,
@@ -157,7 +161,7 @@ class AGTestSuite(AutograderModel):
     staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
         AGTestSuiteFeedbackConfig, default=AGTestSuiteFeedbackConfig)
 
-    def clean(self):
+    def clean(self) -> None:
         if self.pk is None:
             return
 
@@ -201,7 +205,7 @@ class AGTestSuite(AutograderModel):
                     )
                 })
 
-            order = self.project.get_agtestsuite_order()
+            order: List[int] = self.project.get_agtestsuite_order()  # type: ignore
             if len(order) != 0 and order[0] != self.pk:
                 raise exceptions.ValidationError({
                     'reject_submission_if_setup_fails': (
@@ -214,7 +218,7 @@ class AGTestSuite(AutograderModel):
             raise exceptions.ValidationError(errors)
 
     @transaction.atomic()
-    def delete(self, *args, **kwargs):
+    def delete(self, *args: Any, **kwargs: Any) -> Tuple[int, Dict[str, int]]:
         with connection.cursor() as cursor:
             cursor.execute(
                 '''UPDATE core_submission
