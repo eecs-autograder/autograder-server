@@ -226,7 +226,7 @@ def get_submission_dir_basename(submission: Submission) -> str:
     return 'submission{}'.format(submission.pk)
 
 
-def get_result_output_dir(submission: Submission)   -> str:
+def get_result_output_dir(submission: Submission) -> str:
     return os.path.join(get_submission_dir(submission), 'output')
 
 
