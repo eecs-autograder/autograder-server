@@ -37,13 +37,13 @@ class AGTestCommandResult(AGCommandResultBase):
     stderr_correct = models.NullBooleanField(null=True, default=None)
 
     @property
-    def stdout_filename(self):
+    def stdout_filename(self) -> str:
         result_output_dir = core_ut.get_result_output_dir(
             self.ag_test_case_result.ag_test_suite_result.submission)
         return os.path.join(result_output_dir, 'cmd_result_{}_stdout'.format(self.pk))
 
     @property
-    def stderr_filename(self):
+    def stderr_filename(self) -> str:
         result_output_dir = core_ut.get_result_output_dir(
             self.ag_test_case_result.ag_test_suite_result.submission)
         return os.path.join(result_output_dir, 'cmd_result_{}_stderr'.format(self.pk))
