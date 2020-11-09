@@ -1,28 +1,25 @@
 from __future__ import annotations
 
 import os
-import tempfile
 from decimal import Decimal
-from typing import BinaryIO, Dict, Iterable, List, Optional, Sequence, Union
+from typing import BinaryIO, Dict, List, Mapping, Optional, Sequence, TypedDict, Union, cast
 
 from django.db import transaction
 from django.db.models import Prefetch
 from django.utils.functional import cached_property
 
-import autograder.core.utils as core_ut
 from autograder.core.models import AGTestCommandResult, MutationTestSuiteResult, Submission
 from autograder.core.models.ag_model_base import ToDictMixin
 from autograder.core.models.ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 from autograder.core.models.ag_test.ag_test_case_result import AGTestCaseResult
-from autograder.core.models.ag_test.ag_test_command import (AGTestCommand, ExpectedOutputSource,
-                                                            ExpectedReturnCode,
-                                                            AGTestCommandFeedbackConfig,
-                                                            ValueFeedbackLevel)
+from autograder.core.models.ag_test.ag_test_command import AGTestCommand
 from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
 from autograder.core.models.ag_test.ag_test_suite_result import AGTestSuiteResult
 from autograder.core.models.ag_test.feedback_category import FeedbackCategory
-from autograder.core.models.project import Project
 from autograder.core.models.mutation_test_suite import MutationTestSuite
+from autograder.core.models.project import Project
+
+from . import utils as core_ut
 
 
 class AGTestPreLoader:
@@ -92,6 +89,18 @@ class MutationTestSuitePreLoader:
         return self._suites_by_pk
 
 
+# The primary key of an object as a string
+PkStr = str
+
+
+class AGTestSuiteResultDict(TypedDict):
+    ag_test_case_results: Dict[PkStr, AGTestCaseResultDict]
+
+
+class AGTestCaseResultDict(TypedDict):
+    ag_test_command_results: Dict[PkStr, Dict[str, object]]
+
+
 DenormedAGSuiteResType = Union[AGTestSuiteResult, 'SerializedAGTestSuiteResultWrapper']
 DenormedAGCaseResType = Union[AGTestCaseResult, 'SerializedAGTestCaseResultWrapper']
 DenormedAGCommandResType = Union[AGTestCommandResult, 'SerializedAGTestCommandResultWrapper']
@@ -106,57 +115,51 @@ class DenormalizedAGTestSuiteResult:
 
 class DenormalizedAGTestCaseResult:
     def __init__(self, ag_test_case_result: DenormedAGCaseResType,
-                 ag_test_command_results: List[DenormedAGCommandResType]):
+                 ag_test_command_results: Sequence[DenormedAGCommandResType]):
         self.ag_test_case_result = ag_test_case_result
         self.ag_test_command_results = ag_test_command_results
 
 
 class SerializedAGTestSuiteResultWrapper:
-    def __init__(self, suite_result_dict):
+    def __init__(self, suite_result_dict: Mapping[str, object]):
         self._suite_result_dict = suite_result_dict
 
     @property
-    def pk(self):
-        return self._suite_result_dict['pk']
+    def pk(self) -> int:
+        return cast(int, self._suite_result_dict['pk'])
 
     @property
-    def ag_test_suite_id(self):
-        return self._suite_result_dict['ag_test_suite_id']
+    def ag_test_suite_id(self) -> int:
+        return cast(int, self._suite_result_dict['ag_test_suite_id'])
 
     @property
-    def submission_id(self):
-        return self._suite_result_dict['submission_id']
+    def submission_id(self) -> int:
+        return cast(int, self._suite_result_dict['submission_id'])
 
     @property
-    def setup_return_code(self):
-        return self._suite_result_dict['setup_return_code']
+    def setup_return_code(self) -> int:
+        return cast(int, self._suite_result_dict['setup_return_code'])
 
     @property
-    def setup_timed_out(self):
-        return self._suite_result_dict['setup_timed_out']
+    def setup_timed_out(self) -> bool:
+        return cast(bool, self._suite_result_dict['setup_timed_out'])
 
     @property
-    def setup_stdout_truncated(self):
-        return self._suite_result_dict['setup_stdout_truncated']
+    def setup_stdout_truncated(self) -> bool:
+        return cast(bool, self._suite_result_dict['setup_stdout_truncated'])
 
     @property
-    def setup_stderr_truncated(self):
-        return self._suite_result_dict['setup_stderr_truncated']
+    def setup_stderr_truncated(self) -> bool:
+        return cast(bool, self._suite_result_dict['setup_stderr_truncated'])
 
     # ------------------------------------------------------------------
 
-    def open_setup_stdout(self, mode='rb'):
-        return self._ag_test_suite_result.open_setup_stdout(mode=mode)
-
     @property
-    def setup_stdout_filename(self):
+    def setup_stdout_filename(self) -> str:
         return self._ag_test_suite_result.setup_stdout_filename
 
-    def open_setup_stderr(self, mode='rb'):
-        return self._ag_test_suite_result.open_setup_stderr(mode=mode)
-
     @property
-    def setup_stderr_filename(self):
+    def setup_stderr_filename(self) -> str:
         return self._ag_test_suite_result.setup_stderr_filename
 
     @cached_property
@@ -165,74 +168,74 @@ class SerializedAGTestSuiteResultWrapper:
 
 
 class SerializedAGTestCaseResultWrapper:
-    def __init__(self, case_result_dict):
+    def __init__(self, case_result_dict: Mapping[str, object]):
         self._case_result_dict = case_result_dict
 
     @property
-    def pk(self):
-        return self._case_result_dict['pk']
+    def pk(self) -> int:
+        return cast(int, self._case_result_dict['pk'])
 
     @property
-    def ag_test_case_id(self):
-        return self._case_result_dict['ag_test_case_id']
+    def ag_test_case_id(self) -> int:
+        return cast(int, self._case_result_dict['ag_test_case_id'])
 
     @property
-    def ag_test_suite_result_id(self):
-        return self._case_result_dict['ag_test_suite_result_id']
+    def ag_test_suite_result_id(self) -> int:
+        return cast(int, self._case_result_dict['ag_test_suite_result_id'])
 
 
 class SerializedAGTestCommandResultWrapper:
-    def __init__(self, cmd_result_dict):
+    def __init__(self, cmd_result_dict: Dict[str, object]):
         self._cmd_result_dict = cmd_result_dict
 
     @property
-    def pk(self):
-        return self._cmd_result_dict['pk']
+    def pk(self) -> int:
+        return cast(int, self._cmd_result_dict['pk'])
 
     @property
-    def ag_test_command_id(self):
-        return self._cmd_result_dict['ag_test_command_id']
+    def ag_test_command_id(self) -> int:
+        return cast(int, self._cmd_result_dict['ag_test_command_id'])
 
     @property
-    def ag_test_case_result_id(self):
-        return self._cmd_result_dict['ag_test_case_result_id']
+    def ag_test_case_result_id(self) -> int:
+        return cast(int, self._cmd_result_dict['ag_test_case_result_id'])
 
     @property
-    def return_code(self):
-        return self._cmd_result_dict['return_code']
+    def return_code(self) -> int:
+        return cast(int, self._cmd_result_dict['return_code'])
 
     @property
-    def return_code_correct(self):
-        return self._cmd_result_dict['return_code_correct']
+    def return_code_correct(self) -> bool:
+        return cast(bool, self._cmd_result_dict['return_code_correct'])
 
     @property
-    def stdout_correct(self):
-        return self._cmd_result_dict['stdout_correct']
+    def stdout_correct(self) -> bool:
+        return cast(bool, self._cmd_result_dict['stdout_correct'])
 
     @property
-    def stderr_correct(self):
-        return self._cmd_result_dict['stderr_correct']
+    def stderr_correct(self) -> bool:
+        return cast(bool, self._cmd_result_dict['stderr_correct'])
 
     @property
-    def timed_out(self):
-        return self._cmd_result_dict['timed_out']
+    def timed_out(self) -> bool:
+        return cast(bool, self._cmd_result_dict['timed_out'])
 
     @property
-    def stdout_truncated(self):
-        return self._cmd_result_dict['stdout_truncated']
+    def stdout_truncated(self) -> bool:
+        return cast(bool, self._cmd_result_dict['stdout_truncated'])
 
     @property
-    def stderr_truncated(self):
-        return self._cmd_result_dict['stderr_truncated']
+    def stderr_truncated(self) -> bool:
+        return cast(bool, self._cmd_result_dict['stderr_truncated'])
 
     # ------------------------------------------------------------------
 
     @property
-    def stdout_filename(self):
+    def stdout_filename(self) -> str:
         return self._ag_test_command_result.stdout_filename
 
     @property
-    def stderr_filename(self):
+    def stderr_filename(self) -> str:
         return self._ag_test_command_result.stderr_filename
 
     @cached_property
@@ -244,7 +247,8 @@ def _deserialize_denormed_ag_test_results(
     submission: Submission
 ) -> List[DenormalizedAGTestSuiteResult]:
     result = []
-    for serialized_suite_result in submission.denormalized_ag_test_results.values():
+    data = cast(Dict[PkStr, AGTestSuiteResultDict], submission.denormalized_ag_test_results)
+    for serialized_suite_result in data.values():
         deserialized_suite_result = SerializedAGTestSuiteResultWrapper(serialized_suite_result)
 
         case_results = [
@@ -257,7 +261,9 @@ def _deserialize_denormed_ag_test_results(
     return result
 
 
-def _deserialize_denormed_ag_test_case_result(case_result: dict) -> DenormalizedAGTestCaseResult:
+def _deserialize_denormed_ag_test_case_result(
+    case_result: AGTestCaseResultDict
+) -> DenormalizedAGTestCaseResult:
     deserialized_case_result = SerializedAGTestCaseResultWrapper(case_result)
 
     cmd_results = [
@@ -269,7 +275,8 @@ def _deserialize_denormed_ag_test_case_result(case_result: dict) -> Denormalized
 
 
 def _deserialize_denormed_ag_test_cmd_result(
-        cmd_result: dict) -> SerializedAGTestCommandResultWrapper:
+    cmd_result: Dict[str, object]
+) -> SerializedAGTestCommandResultWrapper:
     return SerializedAGTestCommandResultWrapper(cmd_result)
 
 
@@ -306,7 +313,8 @@ def update_denormalized_ag_test_results(submission_pk: int) -> Submission:
 
 
 class SubmissionResultFeedback(ToDictMixin):
-    def __init__(self, submission: Submission, fdbk_category: FeedbackCategory,
+    def __init__(self, submission: Submission,
+                 fdbk_category: FeedbackCategory,
                  ag_test_preloader: AGTestPreLoader,
                  mutation_test_suite_preloader: Optional[MutationTestSuitePreLoader]=None):
         self._submission = submission
@@ -321,19 +329,19 @@ class SubmissionResultFeedback(ToDictMixin):
         self._ag_test_suite_results = _deserialize_denormed_ag_test_results(self._submission)
 
     @property
-    def ag_test_preloader(self):
+    def ag_test_preloader(self) -> AGTestPreLoader:
         return self._ag_test_loader
 
     @property
-    def mutation_test_suite_preloader(self):
+    def mutation_test_suite_preloader(self) -> MutationTestSuitePreLoader:
         return self._mutation_test_suite_preloader
 
     @property
-    def pk(self):
-        return self._submission.pk
+    def pk(self) -> int:
+        return cast(int, self._submission.pk)
 
     @property
-    def submission(self):
+    def submission(self) -> Submission:
         return self._submission
 
     @cached_property
@@ -392,15 +400,17 @@ class SubmissionResultFeedback(ToDictMixin):
 
         return visible
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, object]:
         result = super().to_dict()
 
         result['ag_test_suite_results'] = [
-            res_fdbk.to_dict() for res_fdbk in result['ag_test_suite_results']
+            res_fdbk.to_dict() for res_fdbk in
+            cast(List[AGTestSuiteResultFeedback], result['ag_test_suite_results'])
         ]
 
         result['mutation_test_suite_results'] = [
-            result.to_dict() for result in result['mutation_test_suite_results']
+            result.to_dict() for result in
+            cast(List[ToDictMixin], result['mutation_test_suite_results'])
         ]
 
         return result
@@ -415,6 +425,8 @@ class SubmissionResultFeedback(ToDictMixin):
 
 
 class AGTestSuiteResultFeedback(ToDictMixin):
+    _fdbk: AGTestSuiteFeedbackConfig
+
     def __init__(self, ag_test_suite_result: DenormalizedAGTestSuiteResult,
                  fdbk_category: FeedbackCategory,
                  ag_test_preloader: AGTestPreLoader):
@@ -439,11 +451,11 @@ class AGTestSuiteResultFeedback(ToDictMixin):
             self._fdbk = AGTestSuiteFeedbackConfig()
 
     @property
-    def fdbk_conf(self):
+    def fdbk_conf(self) -> AGTestSuiteFeedbackConfig:
         return self._fdbk
 
     @property
-    def pk(self):
+    def pk(self) -> int:
         return self._ag_test_suite_result.pk
 
     @property
@@ -456,14 +468,14 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 
     @property
     def ag_test_suite_pk(self) -> int:
-        return self._ag_test_suite.pk
+        return cast(int, self._ag_test_suite.pk)
 
     @property
     def ag_test_suite_order(self) -> int:
-        return self._ag_test_suite._order
+        return self._ag_test_suite._order  # type: ignore
 
     @property
-    def fdbk_settings(self) -> dict:
+    def fdbk_settings(self) -> Dict[str, object]:
         return self._fdbk.to_dict()
 
     @property
@@ -492,7 +504,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         if not self._fdbk.show_setup_stdout:
             return None
 
-        return self._ag_test_suite_result.open_setup_stdout()
+        return open(self._ag_test_suite_result.setup_stdout_filename, 'rb')
 
     def get_setup_stdout_size(self) -> Optional[int]:
         if not self._fdbk.show_setup_stderr:
@@ -512,7 +524,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         if not self._fdbk.show_setup_stderr:
             return None
 
-        return self._ag_test_suite_result.open_setup_stderr()
+        return open(self._ag_test_suite_result.setup_stderr_filename, 'rb')
 
     def get_setup_stderr_size(self) -> Optional[int]:
         if not self._fdbk.show_setup_stderr:
@@ -598,16 +610,19 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         'ag_test_case_results'
     )
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, object]:
         result = super().to_dict()
         result['ag_test_case_results'] = [
-            res_fdbk.to_dict() for res_fdbk in result['ag_test_case_results']
+            res_fdbk.to_dict() for res_fdbk in
+            cast(List[AGTestCaseResultFeedback], result['ag_test_case_results'])
         ]
 
         return result
 
 
 class AGTestCaseResultFeedback(ToDictMixin):
+    _fdbk: AGTestCaseFeedbackConfig
+
     def __init__(self, ag_test_case_result: DenormalizedAGTestCaseResult,
                  fdbk_category: FeedbackCategory,
                  ag_test_preloader: AGTestPreLoader,
@@ -619,7 +634,7 @@ class AGTestCaseResultFeedback(ToDictMixin):
         self._ag_test_preloader = ag_test_preloader
 
         self._ag_test_case = self._ag_test_preloader.get_ag_test_case(
-            self._ag_test_case_result.ag_test_case_id)
+            cast(int, self._ag_test_case_result.ag_test_case_id))
 
         if fdbk_category == FeedbackCategory.normal:
             self._fdbk = self._ag_test_case.normal_fdbk_config
@@ -631,15 +646,17 @@ class AGTestCaseResultFeedback(ToDictMixin):
             self._fdbk = self._ag_test_case.staff_viewer_fdbk_config
         elif fdbk_category == FeedbackCategory.max:
             self._fdbk = AGTestCaseFeedbackConfig()
+        else:
+            assert False, f'Unexpected feedback category: {FeedbackCategory}'
 
         self.is_first_failure = is_first_failure
 
     @property
-    def fdbk_conf(self):
+    def fdbk_conf(self) -> AGTestCaseFeedbackConfig:
         return self._fdbk
 
     @property
-    def pk(self):
+    def pk(self) -> int:
         return self._ag_test_case_result.pk
 
     @property

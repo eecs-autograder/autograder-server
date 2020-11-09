@@ -1,12 +1,13 @@
 import base64
+from decimal import Decimal
 import logging
 import traceback
-from typing import Tuple
+from typing import Protocol, Tuple, Union
 
 from django.conf import settings
 from django.core.mail import send_mail
 from django.urls import reverse
-import gnupg
+import gnupg  # type: ignore
 
 import autograder.core.models as ag_models
 from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResultFeedback
@@ -102,7 +103,17 @@ to view all available details on these results.\n
         traceback.print_exc()
 
 
-def _get_points_str(has_points):
+class HasPoints(Protocol):
+    @property
+    def total_points(self) -> Union[Decimal, int]:
+        ...
+
+    @property
+    def total_points_possible(self) -> Union[Decimal, int]:
+        ...
+
+
+def _get_points_str(has_points: HasPoints) -> str:
     if has_points.total_points_possible != 0:
         return f'{has_points.total_points}/{has_points.total_points_possible}'
 
