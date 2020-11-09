@@ -1,22 +1,22 @@
-from autograder.core.constants import MAX_CHAR_FIELD_LEN
-import enum
 import os
+from typing import Any, Collection, cast
 
 from django.conf import settings
+from django.contrib.postgres import fields as pg_fields
 from django.core import exceptions
+from django.core.files.uploadedfile import UploadedFile
 from django.db import models, transaction
 from django.utils import timezone
-from django.contrib.postgres import fields as pg_fields
 
-import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 
 from .ag_model_base import AutograderModel, AutograderModelManager
 from .course import Course
 
 
-def get_default_image_pk():
-    return SandboxDockerImage.objects.get(display_name='Default', course=None).pk
+def get_default_image_pk() -> int:
+    return cast(int, SandboxDockerImage.objects.get(display_name='Default', course=None).pk)
 
 
 class SandboxDockerImage(AutograderModel):
@@ -58,7 +58,7 @@ class SandboxDockerImage(AutograderModel):
                      with the 'docker pull' command, e.g. localhost:5001/eecs280:latest."""
     )
 
-    def full_clean(self, *args, **kwargs):
+    def full_clean(self, *args: Any, **kwargs: Any) -> None:
         if not self.name:
             self.name = self.display_name
             if self.course is not None:
@@ -80,15 +80,21 @@ class SandboxDockerImage(AutograderModel):
 
 class _BuildSandboxDockerImageManager(AutograderModelManager['BuildSandboxDockerImageTask']):
     @transaction.atomic
-    def validate_and_create(
-        self, files, course, image=None
+    def validate_and_create(  # type: ignore
+        self,
+        files: Collection[UploadedFile],
+        course: Course,
+        image=None
     ) -> 'BuildSandboxDockerImageTask':
         pending_tasks_for_image = BuildSandboxDockerImageTask.objects.filter(
             image=image,
             status__in=[BuildImageStatus.queued, BuildImageStatus.in_progress]
         )
         if image is not None and pending_tasks_for_image.exists():
-            raise exceptions.ValidationError({'image': 'There is a '})
+            raise exceptions.ValidationError({
+                'image':
+                    'There is a pending build task for this image. Please wait for it to finish.'
+            })
 
         build_task = self.model(
             course=course,
@@ -197,14 +203,14 @@ class BuildSandboxDockerImageTask(AutograderModel):
     def build_dir(self) -> str:
         return get_build_sandbox_docker_image_task_dir(self)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         super().save(*args, **kwargs)
 
         dirname = self.build_dir
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
 
-    def clean(self, *args, **kwargs):
+    def clean(self) -> None:
         if self.image is None:
             return
 
