@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
+import tempfile
 from decimal import Decimal
-from typing import BinaryIO, Dict, List, Mapping, Optional, Sequence, TypedDict, Union, cast
+from typing import BinaryIO, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, TypedDict, Union, cast
 
 from django.db import transaction
 from django.db.models import Prefetch
@@ -12,7 +13,10 @@ from autograder.core.models import AGTestCommandResult, MutationTestSuiteResult,
 from autograder.core.models.ag_model_base import ToDictMixin
 from autograder.core.models.ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 from autograder.core.models.ag_test.ag_test_case_result import AGTestCaseResult
-from autograder.core.models.ag_test.ag_test_command import AGTestCommand
+from autograder.core.models.ag_test.ag_test_command import (
+    AGTestCommand, AGTestCommandFeedbackConfig, ExpectedOutputSource, ExpectedReturnCode,
+    ValueFeedbackLevel
+)
 from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
 from autograder.core.models.ag_test.ag_test_suite_result import AGTestSuiteResult
 from autograder.core.models.ag_test.feedback_category import FeedbackCategory
@@ -101,23 +105,56 @@ class AGTestCaseResultDict(TypedDict):
     ag_test_command_results: Dict[PkStr, Dict[str, object]]
 
 
-DenormedAGSuiteResType = Union[AGTestSuiteResult, 'SerializedAGTestSuiteResultWrapper']
-DenormedAGCaseResType = Union[AGTestCaseResult, 'SerializedAGTestCaseResultWrapper']
-DenormedAGCommandResType = Union[AGTestCommandResult, 'SerializedAGTestCommandResultWrapper']
-
-
 class DenormalizedAGTestSuiteResult:
-    def __init__(self, ag_test_suite_result: DenormedAGSuiteResType,
+    def __init__(self, ag_test_suite_result: AGTestSuiteResultProtocol,
                  ag_test_case_results: List[DenormalizedAGTestCaseResult]):
         self.ag_test_suite_result = ag_test_suite_result
         self.ag_test_case_results = ag_test_case_results
 
 
 class DenormalizedAGTestCaseResult:
-    def __init__(self, ag_test_case_result: DenormedAGCaseResType,
-                 ag_test_command_results: Sequence[DenormedAGCommandResType]):
+    def __init__(self, ag_test_case_result: AGTestCaseResultProtocol,
+                 ag_test_command_results: Sequence[AGTestCommandResultProtocol]):
         self.ag_test_case_result = ag_test_case_result
         self.ag_test_command_results = ag_test_command_results
+
+
+class AGTestSuiteResultProtocol(Protocol):
+    @property
+    def pk(self) -> int:
+        ...
+
+    @property
+    def ag_test_suite_id(self) -> int:
+        ...
+
+    @property
+    def submission_id(self) -> int:
+        ...
+
+    @property
+    def setup_return_code(self) -> int:
+        ...
+
+    @property
+    def setup_timed_out(self) -> bool:
+        ...
+
+    @property
+    def setup_stdout_truncated(self) -> bool:
+        ...
+
+    @property
+    def setup_stderr_truncated(self) -> bool:
+        ...
+
+    @property
+    def setup_stdout_filename(self) -> str:
+        ...
+
+    @property
+    def setup_stderr_filename(self) -> str:
+        ...
 
 
 class SerializedAGTestSuiteResultWrapper:
@@ -167,6 +204,20 @@ class SerializedAGTestSuiteResultWrapper:
         return AGTestSuiteResult.objects.get(pk=self.pk)
 
 
+class AGTestCaseResultProtocol(Protocol):
+    @property
+    def pk(self) -> int:
+        ...
+
+    @property
+    def ag_test_case_id(self) -> int:
+        ...
+
+    @property
+    def ag_test_suite_result_id(self) -> int:
+        ...
+
+
 class SerializedAGTestCaseResultWrapper:
     def __init__(self, case_result_dict: Mapping[str, object]):
         self._case_result_dict = case_result_dict
@@ -182,6 +233,56 @@ class SerializedAGTestCaseResultWrapper:
     @property
     def ag_test_suite_result_id(self) -> int:
         return cast(int, self._case_result_dict['ag_test_suite_result_id'])
+
+
+class AGTestCommandResultProtocol(Protocol):
+    @property
+    def pk(self) -> int:
+        ...
+
+    @property
+    def ag_test_command_id(self) -> int:
+        ...
+
+    @property
+    def ag_test_case_result_id(self) -> int:
+        ...
+
+    @property
+    def return_code(self) -> int:
+        ...
+
+    @property
+    def return_code_correct(self) -> bool:
+        ...
+
+    @property
+    def stdout_correct(self) -> bool:
+        ...
+
+    @property
+    def stderr_correct(self) -> bool:
+        ...
+
+    @property
+    def timed_out(self) -> bool:
+        ...
+
+    @property
+    def stdout_truncated(self) -> bool:
+        ...
+
+    @property
+    def stderr_truncated(self) -> bool:
+        ...
+
+    @property
+    def stdout_filename(self) -> str:
+        ...
+
+    @property
+    def stderr_filename(self) -> str:
+        ...
 
 
 class SerializedAGTestCommandResultWrapper:
@@ -540,7 +641,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return self._ag_test_suite_result.setup_stderr_truncated
 
     @property
-    def _show_setup_name(self):
+    def _show_setup_name(self) -> bool:
         has_setup_result = (self._ag_test_suite_result.setup_return_code is not None
                             or self._ag_test_suite_result.setup_timed_out)
         setup_info_is_available = (
@@ -634,7 +735,7 @@ class AGTestCaseResultFeedback(ToDictMixin):
         self._ag_test_preloader = ag_test_preloader
 
         self._ag_test_case = self._ag_test_preloader.get_ag_test_case(
-            cast(int, self._ag_test_case_result.ag_test_case_id))
+            self._ag_test_case_result.ag_test_case_id)
 
         if fdbk_category == FeedbackCategory.normal:
             self._fdbk = self._ag_test_case.normal_fdbk_config
@@ -665,18 +766,18 @@ class AGTestCaseResultFeedback(ToDictMixin):
 
     @property
     def ag_test_case_pk(self) -> int:
-        return self._ag_test_case.pk
+        return cast(int, self._ag_test_case.pk)
 
     @property
     def ag_test_case_order(self) -> int:
-        return self._ag_test_case._order
+        return self._ag_test_case._order  # type: ignore
 
     @property
     def denormalized_ag_test_case_result(self) -> DenormalizedAGTestCaseResult:
         return self._denormalized_ag_test_case_result
 
     @property
-    def fdbk_settings(self) -> dict:
+    def fdbk_settings(self) -> Dict[str, object]:
         return self._fdbk.to_dict()
 
     @property
@@ -723,10 +824,11 @@ class AGTestCaseResultFeedback(ToDictMixin):
         'ag_test_command_results',
     )
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, object]:
         result = super().to_dict()
         result['ag_test_command_results'] = [
-            res_fdbk.to_dict() for res_fdbk in result['ag_test_command_results']
+            res_fdbk.to_dict() for res_fdbk in
+            cast(List[ToDictMixin], result['ag_test_command_results'])
         ]
 
         return result
@@ -738,10 +840,15 @@ class AGTestCommandResultFeedback(ToDictMixin):
     feedback data to give for an AGTestCommandResult.
     """
 
-    def __init__(self, ag_test_command_result: AGTestCommandResult,
-                 fdbk_category: FeedbackCategory,
-                 ag_test_preloader: AGTestPreLoader,
-                 is_in_first_failed_test: bool=False):
+    _fdbk: AGTestCommandFeedbackConfig
+
+    def __init__(
+        self,
+        ag_test_command_result: AGTestCommandResultProtocol,
+        fdbk_category: FeedbackCategory,
+        ag_test_preloader: AGTestPreLoader,
+        is_in_first_failed_test: bool = False
+    ):
         self._ag_test_command_result = ag_test_command_result
         self._ag_test_preloader = ag_test_preloader
 
@@ -766,7 +873,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
             self._fdbk = AGTestCommandFeedbackConfig.max_fdbk_config()
 
     @property
-    def pk(self):
+    def pk(self) -> int:
         return self._ag_test_command_result.pk
 
     @property
@@ -775,11 +882,11 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def ag_test_command_pk(self) -> int:
-        return self._cmd.pk
+        return cast(int, self._cmd.pk)
 
     @property
     def ag_test_command_order(self) -> int:
-        return self._cmd._order
+        return self._cmd._order  # type: ignore
 
     @property
     def fdbk_conf(self) -> AGTestCommandFeedbackConfig:
@@ -790,7 +897,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return self._fdbk
 
     @property
-    def fdbk_settings(self) -> dict:
+    def fdbk_settings(self) -> Dict[str, object]:
         return self.fdbk_conf.to_dict()
 
     @property
@@ -813,7 +920,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
         if self._fdbk.return_code_fdbk_level != ValueFeedbackLevel.expected_and_actual:
             return None
 
-        return self._cmd.expected_return_code
+        return ExpectedReturnCode(self._cmd.expected_return_code)
 
     @property
     def actual_return_code(self) -> Optional[int]:
@@ -894,6 +1001,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
                 return core_ut.get_diff(expected_stdout.name, stdout_filename,
                                         **diff_whitespace_kwargs)
         elif self._cmd.expected_stdout_source == ExpectedOutputSource.instructor_file:
+            assert self._cmd.expected_stdout_instructor_file is not None
             return core_ut.get_diff(self._cmd.expected_stdout_instructor_file.abspath,
                                     stdout_filename,
                                     **diff_whitespace_kwargs)
@@ -947,7 +1055,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return None
 
     @property
-    def _show_actual_stderr(self):
+    def _show_actual_stderr(self) -> bool:
         return (self._fdbk.show_actual_stderr
                 or self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual)
 
@@ -979,6 +1087,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
                 return core_ut.get_diff(expected_stderr.name, stderr_filename,
                                         **diff_whitespace_kwargs)
         elif self._cmd.expected_stderr_source == ExpectedOutputSource.instructor_file:
+            assert self._cmd.expected_stderr_instructor_file is not None
             return core_ut.get_diff(self._cmd.expected_stderr_instructor_file.abspath,
                                     stderr_filename,
                                     **diff_whitespace_kwargs)
