@@ -215,16 +215,11 @@ class ValidatedJSONField(
     Generic[_JSONObjType],
     pg_fields.JSONField
 ):
-    _pyi_private_set_type: Union[_JSONObjType, Dict[str, object]]
-    _pyi_private_get_type: _JSONObjType
-    _pyi_lookup_exact_type: Union[_JSONObjType, Dict[str, object]]
-
     """
     This field uses the Postgres JSON field, ToDictMixin, and
     FromDictMixin to validate and store serializable Python objects
     in the database.
     """
-
     def __init__(self, serializable_class: Type[_JSONObjType], **kwargs: Any):
         self.serializable_class = serializable_class
         super().__init__(**kwargs)
