@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 import tempfile
 from decimal import Decimal
-from typing import BinaryIO, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, TypedDict, Union, cast
+from typing import (
+    BinaryIO, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, TypedDict, Union, cast
+)
 
 from django.db import transaction
 from django.db.models import Prefetch
@@ -439,7 +441,7 @@ class SubmissionResultFeedback(ToDictMixin):
 
     @property
     def pk(self) -> int:
-        return cast(int, self._submission.pk)
+        return self._submission.id
 
     @property
     def submission(self) -> Submission:
@@ -506,7 +508,7 @@ class SubmissionResultFeedback(ToDictMixin):
 
         result['ag_test_suite_results'] = [
             res_fdbk.to_dict() for res_fdbk in
-            cast(List[AGTestSuiteResultFeedback], result['ag_test_suite_results'])
+            cast(List[ToDictMixin], result['ag_test_suite_results'])
         ]
 
         result['mutation_test_suite_results'] = [
@@ -550,6 +552,8 @@ class AGTestSuiteResultFeedback(ToDictMixin):
             self._fdbk = self._ag_test_suite.staff_viewer_fdbk_config
         elif fdbk_category == FeedbackCategory.max:
             self._fdbk = AGTestSuiteFeedbackConfig()
+        else:
+            assert False, f'Unexpected feedback category: {fdbk_category}'
 
     @property
     def fdbk_conf(self) -> AGTestSuiteFeedbackConfig:
@@ -569,7 +573,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 
     @property
     def ag_test_suite_pk(self) -> int:
-        return cast(int, self._ag_test_suite.pk)
+        return self._ag_test_suite.id
 
     @property
     def ag_test_suite_order(self) -> int:
@@ -715,7 +719,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         result = super().to_dict()
         result['ag_test_case_results'] = [
             res_fdbk.to_dict() for res_fdbk in
-            cast(List[AGTestCaseResultFeedback], result['ag_test_case_results'])
+            cast(List[ToDictMixin], result['ag_test_case_results'])
         ]
 
         return result
@@ -748,7 +752,7 @@ class AGTestCaseResultFeedback(ToDictMixin):
         elif fdbk_category == FeedbackCategory.max:
             self._fdbk = AGTestCaseFeedbackConfig()
         else:
-            assert False, f'Unexpected feedback category: {FeedbackCategory}'
+            assert False, f'Unexpected feedback category: {fdbk_category}'
 
         self.is_first_failure = is_first_failure
 
@@ -766,7 +770,7 @@ class AGTestCaseResultFeedback(ToDictMixin):
 
     @property
     def ag_test_case_pk(self) -> int:
-        return cast(int, self._ag_test_case.pk)
+        return self._ag_test_case.id
 
     @property
     def ag_test_case_order(self) -> int:
@@ -882,7 +886,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def ag_test_command_pk(self) -> int:
-        return cast(int, self._cmd.pk)
+        return self._cmd.id
 
     @property
     def ag_test_command_order(self) -> int:
