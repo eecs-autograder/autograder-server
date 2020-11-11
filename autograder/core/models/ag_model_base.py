@@ -4,7 +4,9 @@ import copy
 import decimal
 import enum
 import inspect
-from typing import Callable, Dict, List, Mapping, Sequence, Type, TypedDict, TypeVar, Union, cast
+from typing import (
+    Callable, Dict, List, Mapping, Sequence, Type, TypedDict, TypeVar, Union, cast, get_type_hints
+)
 
 from django.contrib.auth.models import User
 from django.core import exceptions
@@ -377,11 +379,11 @@ class DictSerializable(ToDictMixin):
         Raises ValueError if there is no type annotation for the
         parameter.
         """
-        param = inspect.signature(cls.__init__).parameters[field_name]
-        if param.annotation is inspect.Parameter.empty:
+        type_hints = get_type_hints(cls.__init__)
+        if field_name not in type_hints:
             raise ValueError(f'Missing type annotation for {field_name} in {cls.__name__}')
 
-        return cast(type, param.annotation)
+        return cast(type, type_hints[field_name])
 
     @classmethod
     def field_is_required(cls, field_name: str) -> bool:
