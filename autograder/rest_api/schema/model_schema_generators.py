@@ -1,5 +1,4 @@
 from __future__ import annotations
-from autograder.rest_api.schema.utils import stderr
 
 import copy
 from decimal import Decimal
@@ -582,6 +581,9 @@ def _get_py_type_schema(type_: type) -> OrRef[SchemaObject]:
             'type': 'array',
             'items': _get_py_type_schema(get_args(type_)[0])
         }
+
+    if origin is dict:
+        return {'type': 'object'}
 
     if type_ in API_OBJ_TYPE_NAMES:
         return as_schema_ref(type_)

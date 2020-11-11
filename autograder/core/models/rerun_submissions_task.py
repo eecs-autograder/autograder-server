@@ -1,3 +1,5 @@
+from typing import AbstractSet, Any, Dict, List, Union, cast
+
 from django.contrib.postgres.fields import ArrayField, JSONField
 from django.core import exceptions
 from django.db import models
@@ -72,13 +74,13 @@ class RerunSubmissionsTask(Task):
     total_num_subtasks = models.IntegerField(default=0)
 
     @property
-    def progress(self) -> int:
+    def progress(self) -> int:  # type: ignore
         if self.total_num_subtasks == 0:
             return 100
 
         return int(min((self.num_completed_subtasks / self.total_num_subtasks) * 100, 100))
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         if self.pk is None:
             if self.rerun_all_submissions:
                 num_submissions = Submission.objects.filter(
@@ -106,46 +108,51 @@ class RerunSubmissionsTask(Task):
 
         return super().save(*args, **kwargs)
 
-    def clean(self):
+    def clean(self) -> None:
         super().clean()
 
-        errors = {}
+        errors: Dict[str, Union[str, List[str]]] = {}
 
         if not self.rerun_all_submissions:
             submissions = Submission.objects.filter(
                 pk__in=self.submission_pks, group__project=self.project)
-            found_pks = {submission.pk for submission in submissions}
-            not_found_pks = set(self.submission_pks) - found_pks
+            found_submission_pks = {submission.pk for submission in submissions}
+            not_found_submission_pks = set(self.submission_pks) - found_submission_pks
 
-            if not_found_pks:
+            if not_found_submission_pks:
                 errors['submission_pks'] = (
                     'The following submissions do not belong to the project {}: {}'.format(
-                        self.project.name, ', '.join((str(pk) for pk in not_found_pks))))
+                        self.project.name, ', '.join((str(pk) for pk in not_found_submission_pks))
+                    )
+                )
 
         if not self.rerun_all_ag_test_suites:
             ag_suites = AGTestSuite.objects.filter(
                 pk__in=self.ag_test_suite_data.keys(), project=self.project)
-            found_pks = {str(suite.pk) for suite in ag_suites}
-            not_found_pks = {str(pk) for pk in self.ag_test_suite_data.keys()} - found_pks
+            found_ag_test_suite_pks = {str(suite.pk) for suite in ag_suites}
+            not_found_ag_test_suite_pks = {
+                str(pk) for pk in self.ag_test_suite_data.keys()
+            } - found_ag_test_suite_pks
 
-            if not_found_pks:
-                errors['ag_test_suite_data'] = (
+            if not_found_ag_test_suite_pks:
+                errors['ag_test_suite_data'] = [
                     'The following ag test suites do not belong to the project {}: {}'.format(
-                        self.project.name, ', '.join(not_found_pks)))
+                        self.project.name, ', '.join(not_found_ag_test_suite_pks)
+                    )
+                ]
 
             for suite_pk, ag_test_pks in self.ag_test_suite_data.items():
                 ag_cases = AGTestCase.objects.filter(pk__in=ag_test_pks, ag_test_suite=suite_pk)
-                found_pks = {case.pk for case in ag_cases}
-                not_found_pks = set(ag_test_pks) - found_pks
+                found_ag_test_case_pks = {case.pk for case in ag_cases}
+                not_found_ag_test_case_pks = set(ag_test_pks) - found_ag_test_case_pks
 
-                if not_found_pks:
-                    if 'ag_test_suite_data' not in errors:
-                        errors['ag_test_suite_data'] = []
-
-                    errors['ag_test_suite_data'] += (
+                if not_found_ag_test_case_pks:
+                    cast(List[str], errors.setdefault('ag_test_suite_data', [])).append(
                         'The following ag test cases do not belong '
                         'to the ag test suite {}: {}'.format(
-                            suite_pk, ', '.join((str(pk) for pk in not_found_pks))))
+                            suite_pk, ', '.join((str(pk) for pk in not_found_ag_test_case_pks))
+                        )
+                    )
 
         if not self.rerun_all_mutation_test_suites:
             mutation_suites = MutationTestSuite.objects.filter(

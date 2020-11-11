@@ -1,23 +1,29 @@
-from autograder.core.constants import MAX_CHAR_FIELD_LEN
+from __future__ import annotations
+
 import os
 from decimal import Decimal
-from typing import BinaryIO, List, Optional
+from typing import TYPE_CHECKING, Any, BinaryIO, Dict, List, Optional, cast
 
-from django.db import models
 from django.contrib.postgres import fields as pg_fields
+from django.db import models
 
-import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
 
 from ..ag_command import AGCommandResult
+from ..ag_command.command import Command
 from ..ag_model_base import AutograderModel, AutograderModelManager, ToDictMixin
 from ..ag_test.feedback_category import FeedbackCategory
-from .mutation_test_suite import (BugsExposedFeedbackLevel, MutationTestSuite,
-                                  MutationTestSuiteFeedbackConfig)
+from .mutation_test_suite import (
+    BugsExposedFeedbackLevel, MutationTestSuite, MutationTestSuiteFeedbackConfig
+)
+
+if TYPE_CHECKING:
+    from autograder.core.submission_feedback import MutationTestSuitePreLoader
 
 
 def _make_get_test_names_result_default() -> int:
-    return AGCommandResult.objects.validate_and_create().pk
+    return cast(int, AGCommandResult.objects.validate_and_create().pk)
 
 
 class MutationTestSuiteResult(AutograderModel):
@@ -65,26 +71,26 @@ class MutationTestSuiteResult(AutograderModel):
         default=_make_get_test_names_result_default, related_name='+')
 
     @property
-    def validity_check_stdout_filename(self):
+    def validity_check_stdout_filename(self) -> str:
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'student_suite_result_{}_validity_check_stdout'.format(self.pk))
 
     @property
-    def validity_check_stderr_filename(self):
+    def validity_check_stderr_filename(self) -> str:
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'student_suite_result_{}_validity_check_stderr'.format(self.pk))
 
     @property
-    def grade_buggy_impls_stdout_filename(self):
+    def grade_buggy_impls_stdout_filename(self) -> str:
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'student_suite_result_{}_grade_buggy_impls_stdout'.format(self.pk))
 
     @property
-    def grade_buggy_impls_stderr_filename(self):
+    def grade_buggy_impls_stderr_filename(self) -> str:
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'student_suite_result_{}_grade_buggy_impls_stderr'.format(self.pk))
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         is_create = self.pk is None
         super().save(*args, **kwargs)
 
@@ -98,8 +104,8 @@ class MutationTestSuiteResult(AutograderModel):
     def get_fdbk(
         self,
         fdbk_category: FeedbackCategory,
-        mutation_test_suite_preloader: 'MutationTestSuitePreLoader'
-    ) -> 'MutationTestSuiteResult.FeedbackCalculator':
+        mutation_test_suite_preloader: MutationTestSuitePreLoader
+    ) -> MutationTestSuiteResult.FeedbackCalculator:
         return MutationTestSuiteResult.FeedbackCalculator(
             self, fdbk_category, mutation_test_suite_preloader)
 
@@ -109,7 +115,9 @@ class MutationTestSuiteResult(AutograderModel):
         feedback data to give for a MutationTestSuiteResult
         """
 
-        def __init__(self, mutation_test_suite_result: 'MutationTestSuiteResult',
+        _fdbk: MutationTestSuiteFeedbackConfig
+
+        def __init__(self, mutation_test_suite_result: MutationTestSuiteResult,
                      fdbk_category: FeedbackCategory,
                      mutation_test_suite_preloader: 'MutationTestSuitePreLoader'):
             self._mutation_test_suite_result = mutation_test_suite_result
@@ -126,10 +134,12 @@ class MutationTestSuiteResult(AutograderModel):
                 self._fdbk = self._mutation_test_suite.staff_viewer_fdbk_config
             elif fdbk_category == FeedbackCategory.max:
                 self._fdbk = MutationTestSuiteFeedbackConfig.max_fdbk_config()
+            else:
+                assert False, f'Unexpected feedback category "{fdbk_category}"'
 
         @property
-        def pk(self):
-            return self._mutation_test_suite_result.pk
+        def pk(self) -> int:
+            return cast(int, self._mutation_test_suite_result.pk)
 
         @property
         def mutation_test_suite_name(self) -> str:
@@ -137,7 +147,7 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def mutation_test_suite_pk(self) -> int:
-            return self._mutation_test_suite.pk
+            return cast(int, self._mutation_test_suite.pk)
 
         @property
         def fdbk_conf(self) -> MutationTestSuiteFeedbackConfig:
@@ -148,7 +158,7 @@ class MutationTestSuiteResult(AutograderModel):
             return self._fdbk
 
         @property
-        def fdbk_settings(self) -> dict:
+        def fdbk_settings(self) -> Dict[str, object]:
             """
             A dictionary representation of this object's feedback config.
             """
@@ -163,7 +173,7 @@ class MutationTestSuiteResult(AutograderModel):
             if not self._mutation_test_suite.use_setup_command:
                 return None
 
-            return self._mutation_test_suite.setup_command.name
+            return cast(Command, self._mutation_test_suite.setup_command).name
 
         @property
         def setup_return_code(self) -> Optional[int]:
@@ -190,16 +200,18 @@ class MutationTestSuiteResult(AutograderModel):
             if not self._show_setup_stdout:
                 return None
 
+            assert self._mutation_test_suite_result.setup_result is not None
             return open(self._mutation_test_suite_result.setup_result.stdout_filename, 'rb')
 
         def get_setup_stdout_size(self) -> Optional[int]:
             if not self._show_setup_stdout:
                 return None
 
+            assert self._mutation_test_suite_result.setup_result is not None
             return os.path.getsize(self._mutation_test_suite_result.setup_result.stdout_filename)
 
         @property
-        def _show_setup_stdout(self):
+        def _show_setup_stdout(self) -> bool:
             return (self._fdbk.show_setup_stdout
                     and self._mutation_test_suite_result.setup_result is not None)
 
@@ -208,16 +220,18 @@ class MutationTestSuiteResult(AutograderModel):
             if not self._show_setup_stderr:
                 return None
 
+            assert self._mutation_test_suite_result.setup_result is not None
             return open(self._mutation_test_suite_result.setup_result.stderr_filename, 'rb')
 
         def get_setup_stderr_size(self) -> Optional[int]:
             if not self._show_setup_stderr:
                 return None
 
+            assert self._mutation_test_suite_result.setup_result is not None
             return os.path.getsize(self._mutation_test_suite_result.setup_result.stderr_filename)
 
         @property
-        def _show_setup_stderr(self):
+        def _show_setup_stderr(self) -> bool:
             return (self._fdbk.show_setup_stderr
                     and self._mutation_test_suite_result.setup_result is not None)
 
@@ -366,7 +380,7 @@ class MutationTestSuiteResult(AutograderModel):
         @property
         def total_points(self) -> Decimal:
             if self.num_bugs_exposed is None:
-                return 0
+                return Decimal(0)
 
             return min(self.total_points_possible,
                        self.num_bugs_exposed * self._mutation_test_suite.points_per_exposed_bug)
@@ -374,7 +388,7 @@ class MutationTestSuiteResult(AutograderModel):
         @property
         def total_points_possible(self) -> Decimal:
             if not self._fdbk.show_points or self.num_bugs_exposed is None:
-                return 0
+                return Decimal(0)
 
             if self._mutation_test_suite.max_points is not None:
                 return Decimal(self._mutation_test_suite.max_points)

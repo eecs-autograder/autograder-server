@@ -5,18 +5,19 @@ from django.db import transaction
 
 from autograder import utils
 from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
-from .course import Course, Semester
-from .project import Project, InstructorFile
-from .ag_test.ag_test_suite import AGTestSuite
+
 from .ag_test.ag_test_case import AGTestCase
 from .ag_test.ag_test_command import AGTestCommand
+from .ag_test.ag_test_suite import AGTestSuite
+from .course import Course, Semester
 from .mutation_test_suite import MutationTestSuite
+from .project import InstructorFile, Project
 from .sandbox_docker_image import SandboxDockerImage
 
 
 @transaction.atomic()
 def copy_project(project: Project, target_course: Course,
-                 new_project_name: Optional[str]=None):
+                 new_project_name: Optional[str] = None) -> Project:
     """
     Makes a copy of the given course along with all instructor file,
      expected student file, test case, and handgrading data.
@@ -58,7 +59,7 @@ def copy_project(project: Project, target_course: Course,
     return new_project
 
 
-def _copy_ag_tests(project, new_project):
+def _copy_ag_tests(project: Project, new_project: Project) -> None:
     for suite in project.ag_test_suites.all():
         instructor_files_needed = [
             file_ for file_ in new_project.instructor_files.all()
@@ -78,7 +79,7 @@ def _copy_ag_tests(project, new_project):
                 suite.sandbox_docker_image, new_project.course),
             **utils.exclude_dict(
                 suite.to_dict(),
-                ('pk', 'project') + AGTestSuite.get_serialize_related_fields())
+                ('pk', 'project') + tuple(AGTestSuite.get_serialize_related_fields()))
         )
 
         for case in suite.ag_test_cases.all():
@@ -86,30 +87,32 @@ def _copy_ag_tests(project, new_project):
                 ag_test_suite=new_suite,
                 **utils.exclude_dict(
                     case.to_dict(),
-                    ('pk', 'ag_test_suite') + AGTestCase.get_serialize_related_fields())
+                    ('pk', 'ag_test_suite') + tuple(AGTestCase.get_serialize_related_fields()))
             )
 
             for cmd in case.ag_test_commands.all():
                 stdin_instructor_file = None
                 if cmd.stdin_instructor_file is not None:
+                    filename = cmd.stdin_instructor_file.name
                     stdin_instructor_file = utils.find_if(
                         new_project.instructor_files.all(),
-                        lambda instr_file: instr_file.name == cmd.stdin_instructor_file.name)
+                        lambda instr_file: instr_file.name == filename
+                    )
 
                 expected_stdout_instructor_file = None
                 if cmd.expected_stdout_instructor_file is not None:
+                    filename = cmd.expected_stdout_instructor_file.name
                     expected_stdout_instructor_file = utils.find_if(
                         new_project.instructor_files.all(),
-                        lambda instr_file:
-                            instr_file.name == cmd.expected_stdout_instructor_file.name
+                        lambda instr_file: instr_file.name == filename
                     )
 
                 expected_stderr_instructor_file = None
                 if cmd.expected_stderr_instructor_file is not None:
+                    filename = cmd.expected_stderr_instructor_file.name
                     expected_stderr_instructor_file = utils.find_if(
                         new_project.instructor_files.all(),
-                        lambda instr_file:
-                            instr_file.name == cmd.expected_stderr_instructor_file.name
+                        lambda instr_file: instr_file.name == filename
                     )
 
                 AGTestCommand.objects.validate_and_create(
@@ -119,11 +122,12 @@ def _copy_ag_tests(project, new_project):
                     expected_stderr_instructor_file=expected_stderr_instructor_file,
                     **utils.exclude_dict(
                         cmd.to_dict(),
-                        ('pk', 'ag_test_case') + AGTestCommand.get_serialize_related_fields())
+                        ('pk', 'ag_test_case')
+                        + tuple(AGTestCommand.get_serialize_related_fields()))
                 )
 
 
-def _copy_mutation_suites(project, new_project):
+def _copy_mutation_suites(project: Project, new_project: Project) -> None:
     for mutation_suite in project.mutation_test_suites.all():
         instructor_files_needed = [
             file_ for file_ in new_project.instructor_files.all()
@@ -146,11 +150,14 @@ def _copy_mutation_suites(project, new_project):
                 mutation_suite.sandbox_docker_image, new_project.course),
             **utils.exclude_dict(
                 mutation_suite.to_dict(),
-                ('pk', 'project') + MutationTestSuite.get_serialize_related_fields())
+                ('pk', 'project') + tuple(MutationTestSuite.get_serialize_related_fields()))
         )
 
 
-def _copy_sandbox_docker_image(to_copy: SandboxDockerImage, target_course: Course):
+def _copy_sandbox_docker_image(
+    to_copy: SandboxDockerImage,
+    target_course: Course
+) -> SandboxDockerImage:
     if to_copy.course is None:
         return to_copy
 
@@ -170,7 +177,7 @@ def _copy_sandbox_docker_image(to_copy: SandboxDockerImage, target_course: Cours
 def copy_course(course: Course,
                 new_course_name: str,
                 new_course_semester: Optional[Semester],
-                new_course_year: Optional[int]):
+                new_course_year: Optional[int]) -> Course:
     """
     Makes a copy of the given course and all its projects. The projects
     are copied using copy_project.

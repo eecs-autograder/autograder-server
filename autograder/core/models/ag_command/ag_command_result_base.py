@@ -26,9 +26,9 @@ class AGCommandResultBase(AutograderModel):
         blank=True, default=False, help_text="Whether the command's stderr was truncated.")
 
     @property
-    def stdout_filename(self):
+    def stdout_filename(self) -> str:
         raise NotImplementedError('Derived classes must implement this property')
 
     @property
-    def stderr_filename(self):
+    def stderr_filename(self) -> str:
         raise NotImplementedError('Derived classes must implement this property')

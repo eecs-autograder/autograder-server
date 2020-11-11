@@ -1,13 +1,14 @@
-from autograder.core.constants import MAX_CHAR_FIELD_LEN
 import datetime
-import enum
 import os
+from typing import Any, Dict
 
 from django.core import exceptions, validators
 from django.db import models
-from timezone_field import TimeZoneField
+from timezone_field import TimeZoneField  # type: ignore
 
 import autograder.core.utils as core_ut
+from autograder.core.constants import MAX_CHAR_FIELD_LEN
+
 from ..ag_model_base import AutograderModel, AutograderModelManager
 from ..course import Course
 
@@ -209,7 +210,7 @@ class Project(AutograderModel):
         help_text="""The text of the honor pledge to display."""
     )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         super().save(*args, **kwargs)
 
         project_root_dir = core_ut.get_project_root_dir(self)
@@ -228,7 +229,7 @@ class Project(AutograderModel):
             os.mkdir(project_files_dir)
             os.mkdir(project_submissions_dir)
 
-    def clean(self):
+    def clean(self) -> None:
         super().clean()
 
         if self.max_group_size < self.min_group_size:
@@ -254,7 +255,7 @@ class Project(AutograderModel):
         """
         return hasattr(self, 'handgrading_rubric')
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, object]:
         result = super().to_dict()
         result['submission_limit_reset_timezone'] = (
             self.submission_limit_reset_timezone.tzname(None))

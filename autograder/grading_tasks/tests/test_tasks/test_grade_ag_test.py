@@ -426,8 +426,12 @@ sys.stderr.flush()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(0, res.return_code)
-        self.assertEqual(self.non_utf_bytes, open(res.stdout_filename, 'rb').read())
-        self.assertEqual(self.non_utf_bytes, open(res.stderr_filename, 'rb').read())
+
+        with open(res.stdout_filename, 'rb') as f:
+            self.assertEqual(self.non_utf_bytes, f.read())
+
+        with open(res.stderr_filename, 'rb') as f:
+            self.assertEqual(self.non_utf_bytes, f.read())
 
     def test_suite_setup_return_code_set(self, *args):
         self.ag_test_suite.validate_and_update(setup_suite_cmd='bash -c "exit 2"')
@@ -463,8 +467,11 @@ sys.stderr.flush()
         tasks.grade_submission_task(self.submission.pk)
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
 
-        self.assertEqual(self.non_utf_bytes, res.open_setup_stdout().read())
-        self.assertEqual(self.non_utf_bytes, res.open_setup_stderr().read())
+        with open(res.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(self.non_utf_bytes, f.read())
+
+        with open(res.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(self.non_utf_bytes, f.read())
 
     # Remove process and stack limit tests in version 5.0.0
     def test_time_process_stack_and_virtual_mem_limits_passed_to_run_command(self, *args):

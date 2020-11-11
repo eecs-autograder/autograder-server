@@ -1,3 +1,4 @@
+from typing import Dict, Optional
 from django.core.cache import cache
 
 import autograder.core.models as ag_models
@@ -17,7 +18,7 @@ def delete_cached_submission_result(submission: ag_models.Submission) -> None:
 
 
 def get_cached_submission_feedback(submission: ag_models.Submission,
-                                   feedback: SubmissionResultFeedback) -> dict:
+                                   feedback: SubmissionResultFeedback) -> Dict[str, object]:
     """
     Loads the serialized normal feedback for the given submission from
     the cache and returns it.
@@ -28,7 +29,7 @@ def get_cached_submission_feedback(submission: ag_models.Submission,
         project_pk=submission.group.project.pk,
         submission_pk=submission.pk)
 
-    result = cache.get(cache_key)
+    result: Optional[Dict[str, object]] = cache.get(cache_key)
     if result is None:
         result = feedback.to_dict()
         cache.set(cache_key, result, timeout=None)

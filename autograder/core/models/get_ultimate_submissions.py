@@ -1,14 +1,17 @@
 import warnings
-from typing import Iterator, Optional, List, Sequence
+from typing import Collection, Iterator, Optional
 
 from django.contrib.auth.models import User
 from django.db.models import Prefetch
+from django.db.models.query import QuerySet
 
 from autograder.core.submission_feedback import (
-    SubmissionResultFeedback, AGTestPreLoader, MutationTestSuitePreLoader)
-from .project import Project, UltimateSubmissionPolicy
+    AGTestPreLoader, MutationTestSuitePreLoader, SubmissionResultFeedback
+)
+
 from .ag_test.feedback_category import FeedbackCategory
 from .group import Group
+from .project import Project, UltimateSubmissionPolicy
 from .submission import Submission, get_submissions_with_results_queryset
 
 
@@ -35,11 +38,14 @@ def get_ultimate_submission(group: Group, user: Optional[User]=None) -> Optional
             user=user
         )
         return best.submission if best is not None else None
+    else:
+        assert False, \
+            f'Unexpected ultimate submission policy "{project.ultimate_submission_policy}"'
 
 
 def get_ultimate_submissions(
     project: Project,
-    *, filter_groups: Optional[Sequence[Group]], ag_test_preloader: AGTestPreLoader
+    *, filter_groups: Optional[Collection[Group]], ag_test_preloader: AGTestPreLoader
 ) -> Iterator[SubmissionResultFeedback]:
     """
     :param project: The Project to load final graded submissions from.
@@ -58,12 +64,13 @@ def get_ultimate_submissions(
     if project.ultimate_submission_policy == UltimateSubmissionPolicy.most_recent:
         return (
             SubmissionResultFeedback(
-                group.submissions.first(),
+                most_recent_submission,
                 FeedbackCategory.max,
                 ag_test_preloader,
                 mutation_test_suite_preloader
             )
-            for group in filter_groups if group.submissions.count()
+            for group in filter_groups
+            if (most_recent_submission := group.submissions.first()) is not None
         )
     elif project.ultimate_submission_policy == UltimateSubmissionPolicy.best_with_normal_fdbk:
         warnings.warn('best_with_normal_fdbk is currently untested and may be deprecated soon.',
@@ -93,7 +100,10 @@ def get_ultimate_submissions(
     assert False
 
 
-def _prefetch_submissions(project: Project, groups: Optional[Sequence[Group]]) -> List[Group]:
+def _prefetch_submissions(
+    project: Project,
+    groups: Optional[Collection[Group]]
+) -> QuerySet[Group]:
     finished_submissions_queryset = Submission.objects.filter(
         status=Submission.GradingStatus.finished_grading)
 

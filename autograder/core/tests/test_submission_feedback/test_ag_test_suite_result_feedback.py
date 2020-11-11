@@ -156,9 +156,9 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
 
         self.ag_test_suite_result.setup_return_code = setup_return_code
         self.ag_test_suite_result.setup_timed_out = setup_timed_out
-        with self.ag_test_suite_result.open_setup_stdout('w') as f:
+        with open(self.ag_test_suite_result.setup_stdout_filename, 'w') as f:
             f.write(setup_stdout)
-        with self.ag_test_suite_result.open_setup_stderr('w') as f:
+        with open(self.ag_test_suite_result.setup_stderr_filename, 'w') as f:
             f.write(setup_stderr)
         self.ag_test_suite_result.save()
 

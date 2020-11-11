@@ -1,12 +1,14 @@
 import base64
 import logging
 import traceback
-from typing import Tuple
+from decimal import Decimal
+from typing import Protocol, Tuple, Union
 
+import gnupg  # type: ignore
 from django.conf import settings
 from django.core.mail import send_mail
 from django.urls import reverse
-import gnupg
+from django.utils.functional import cached_property
 
 import autograder.core.models as ag_models
 from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResultFeedback
@@ -102,7 +104,22 @@ to view all available details on these results.\n
         traceback.print_exc()
 
 
-def _get_points_str(has_points):
+_PropOrCachedProp = Union[
+    Union[Decimal, int], 'cached_property[Union[Decimal, int]]'
+]
+
+
+class HasPoints(Protocol):
+    @property
+    def total_points(self) -> _PropOrCachedProp:
+        ...
+
+    @property
+    def total_points_possible(self) -> _PropOrCachedProp:
+        ...
+
+
+def _get_points_str(has_points: HasPoints) -> str:
     if has_points.total_points_possible != 0:
         return f'{has_points.total_points}/{has_points.total_points_possible}'
 

@@ -1,38 +1,41 @@
+from __future__ import annotations
+
 import os
 import shutil
+from typing import IO, Any, AnyStr, BinaryIO, Dict, Literal, TextIO, Tuple, cast, overload
 
-from django.db import models, transaction
 from django.conf import settings
 from django.core import exceptions
+from django.db import models, transaction
+from django.db.models.fields.files import FieldFile
 
-import autograder.core.utils as core_ut
 import autograder.core.constants as const
+import autograder.core.utils as core_ut
 from autograder import utils
 
 from ..ag_model_base import AutograderModel, AutograderModelManager
 from .project import Project
 
 
-def _get_project_file_upload_to_path(instance, filename):
-    return os.path.join(
-        core_ut.get_project_files_relative_dir(instance.project), filename)
+def _get_project_file_upload_to_path(instance: InstructorFile, filename: str) -> str:
+    return os.path.join(core_ut.get_project_files_relative_dir(instance.project), filename)
 
 
-def _validate_filename(file_obj):
+def _validate_filename(file_obj: FieldFile) -> None:
     core_ut.check_filename(file_obj.name)
 
 
 class InstructorFileManager(AutograderModelManager['InstructorFile']):
-    def validate_and_create(self, **kwargs):
+    def validate_and_create(self, **kwargs: object) -> InstructorFile:
         # Custom validation that we want to run only when the file
         # is created.
         if 'file_obj' in kwargs and 'project' in kwargs:
-            file_obj = kwargs['file_obj']
+            file_obj = cast(FieldFile, kwargs['file_obj'])
             if file_obj.size > const.MAX_INSTRUCTOR_FILE_SIZE:
                 raise exceptions.ValidationError(
                     {'content': 'Project files cannot be bigger than {} bytes'.format(
                         const.MAX_INSTRUCTOR_FILE_SIZE)})
-            project = kwargs['project']
+            project = cast(Project, kwargs['project'])
 
             file_exists = utils.find_if(
                 project.instructor_files.all(),
@@ -72,7 +75,7 @@ class InstructorFile(AutograderModel):
         max_length=const.MAX_CHAR_FIELD_LEN * 2)
     name = models.TextField()
 
-    def rename(self, new_name):
+    def rename(self, new_name: str) -> None:
         """
         Renames the file stored in this model instance.
         Any path information in new_name is stripped before renaming the
@@ -102,16 +105,16 @@ class InstructorFile(AutograderModel):
         self.save()
 
     @property
-    def abspath(self):
+    def abspath(self) -> str:
         return os.path.join(settings.MEDIA_ROOT, self.file_obj.name)
 
     @property
     def size(self) -> int:
-        return self.file_obj.size
+        return cast(FieldFile, self.file_obj).size
 
     @transaction.atomic()
-    def delete(self, **kwargs):
-        from ..ag_test.ag_test_command import AGTestCommand, StdinSource, ExpectedOutputSource
+    def delete(self, *args: Any, **kwargs: Any) -> Tuple[int, Dict[str, int]]:
+        from ..ag_test.ag_test_command import AGTestCommand, ExpectedOutputSource, StdinSource
 
         AGTestCommand.objects.filter(
             stdin_source=StdinSource.instructor_file,
@@ -129,10 +132,18 @@ class InstructorFile(AutograderModel):
         ).update(expected_stderr_source=ExpectedOutputSource.none)
 
         file_path = self.abspath
-        return_val = super().delete()
+        return_val = super().delete(*args, **kwargs)
         os.remove(file_path)
 
         return return_val
 
-    def open(self, mode='r'):
+    @overload
+    def open(self, mode: Literal['r', 'w']) -> TextIO:
+        ...
+
+    @overload
+    def open(self, mode: Literal['rb', 'wb']) -> BinaryIO:
+        ...
+
+    def open(self, mode: Literal['r', 'w', 'rb', 'wb']='r') -> IO[AnyStr]:
         return open(self.abspath, mode)
