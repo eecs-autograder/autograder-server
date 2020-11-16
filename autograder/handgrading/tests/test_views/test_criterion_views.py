@@ -52,8 +52,8 @@ class ListCriteriaTestCase(UnitTestBase):
         self.assertSequenceEqual(self.criterion.to_dict(), response.data[0])
 
     def test_non_staff_list_cases_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.course)
+        self.client.force_authenticate(student)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -89,9 +89,9 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
             hg_models.Criterion.objects, self.client, admin, self.url, self.data)
 
     def test_non_admin_create_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
+        student = obj_build.make_student_user(self.course)
         self.do_permission_denied_create_test(
-            hg_models.Criterion.objects, self.client, enrolled, self.url, self.data)
+            hg_models.Criterion.objects, self.client, student, self.url, self.data)
 
     def test_create_criterion_results_on_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
@@ -189,8 +189,8 @@ class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
         self.do_get_object_test(self.client, staff, self.url, self.criterion.to_dict())
 
     def test_non_staff_get_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.do_permission_denied_get_test(self.client, enrolled, self.url)
+        student = obj_build.make_student_user(self.course)
+        self.do_permission_denied_get_test(self.client, student, self.url)
 
     def test_admin_valid_update(self):
         patch_data = {
@@ -286,10 +286,10 @@ class CriterionOrderTestCase(UnitTestBase):
             self.assertSequenceEqual(new_order, response.data)
 
     def test_non_staff_get_order_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
+        student = obj_build.make_student_user(self.course)
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
-        for user in enrolled, handgrader:
+        for user in student, handgrader:
             self.client.force_authenticate(user)
 
             response = self.client.get(self.url)
@@ -306,10 +306,10 @@ class CriterionOrderTestCase(UnitTestBase):
 
     def test_non_admin_set_order_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
-        [enrolled] = obj_build.make_student_users(self.course, 1)
+        student = obj_build.make_student_user(self.course)
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
-        for user in staff, enrolled, handgrader:
+        for user in staff, student, handgrader:
             self.client.force_authenticate(user)
 
             original_order = list(self.handgrading_rubric.get_criterion_order())

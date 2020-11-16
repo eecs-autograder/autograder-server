@@ -78,8 +78,8 @@ class RetrieveHandgradingRubricTestCase(UnitTestBase):
                                  self.handgrading_rubric.get_annotation_order())
 
     def test_non_staff_retrieve_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.course)
+        self.client.force_authenticate(student)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -120,12 +120,12 @@ class CreateHandgradingRubricTestCase(test_impls.CreateObjectTest, UnitTestBase)
                          loaded.handgraders_can_adjust_points)
 
     def test_non_admin_create_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
+        student = obj_build.make_student_user(self.course)
         [staff] = obj_build.make_staff_users(self.course, 1)
         [handgrader] = obj_build.make_users(1)
         self.project.course.handgraders.add(handgrader)
 
-        for user in [enrolled, staff, handgrader]:
+        for user in [student, staff, handgrader]:
             self.do_permission_denied_create_test(handgrading_models.HandgradingRubric.objects,
                                                   self.client, user, self.url, self.data)
 
@@ -160,8 +160,8 @@ class GetUpdateDeleteHandgradingRubricTestCase(test_impls.GetObjectTest,
         self.do_get_object_test(self.client, staff, self.url, self.handgrading_rubric.to_dict())
 
     def test_non_staff_get_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.do_permission_denied_get_test(self.client, enrolled, self.url)
+        student = obj_build.make_student_user(self.course)
+        self.do_permission_denied_get_test(self.client, student, self.url)
 
     def test_admin_valid_update(self):
         patch_data = {

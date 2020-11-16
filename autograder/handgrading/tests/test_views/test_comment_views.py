@@ -61,8 +61,8 @@ class ListCommentsTestCase(UnitTestBase):
             self.assertSequenceEqual(self.comment.to_dict(), response.data[0])
 
     def test_student_list_comments_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.course)
+        self.client.force_authenticate(student)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -137,10 +137,10 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
         self.do_create_object_test(handgrading_models.Comment.objects, self.client, handgrader,
                                    self.url, data)
 
-    def test_enrolled_create_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
+    def test_student_create_permission_denied(self):
+        student = obj_build.make_student_user(self.course)
         self.do_permission_denied_create_test(handgrading_models.Comment.objects, self.client,
-                                              enrolled, self.url, self.data)
+                                              student, self.url, self.data)
 
     def test_handgrader_comments_not_allowed_permission_denied(self):
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)

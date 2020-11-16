@@ -50,8 +50,8 @@ class ListRerunSubmissionsTasksTestCase(AGViewTestBase):
         self.assertCountEqual([self.task1.to_dict(), self.task2.to_dict()], response.data)
 
     def test_non_admin_list_rerun_tasks_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.project.course, 1)
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.project.course)
+        self.client.force_authenticate(student)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)

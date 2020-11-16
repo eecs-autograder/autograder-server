@@ -33,8 +33,8 @@ def verify_users_have_same_enrollment_status(users: Iterable[User], project: Pro
     Checks to see whether the users have the same enrollment status.
     - All users must either be:
         - staff members/course admins
-        - enrolled students
-        - non-enrolled students with allowed domain usernames
+        - students
+        - guests with allowed domain usernames
             AND the project must allow submissions from guests
 
     If these conditions are not met, then ValidationError will be raised.
