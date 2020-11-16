@@ -53,7 +53,8 @@ _BUILD_IMAGE_SCHEMA: CustomViewMethodData = {
     },
     'responses': {
         '202': {
-            'content': as_content_obj(ag_models.BuildSandboxDockerImageTask)
+            'content': as_content_obj(ag_models.BuildSandboxDockerImageTask),
+            'description': 'The build task has been started.'
         }
     }
 }
@@ -75,7 +76,8 @@ class ListCreateGlobalSandboxDockerImageView(ag_views.AGModelAPIView):
                                     'items': as_schema_ref(ag_models.SandboxDockerImage)
                                 }
                             }
-                        }
+                        },
+                        'description': ''
                     }
                 }
             },
@@ -114,7 +116,8 @@ class ListCreateSandboxDockerImageForCourseView(ag_views.NestedModelView):
             'operation_id': 'listSandboxDockerImagesForCourse',
             'responses': {
                 '200': {
-                    'content': as_array_content_obj(ag_models.SandboxDockerImage)
+                    'content': as_array_content_obj(ag_models.SandboxDockerImage),
+                    'description': ''
                 }
             }
         },
@@ -150,7 +153,8 @@ class ListGlobalBuildTasksView(ag_views.AGModelAPIView):
             'operation_id': 'listGlobalBuildSandboxDockerImageTasks',
             'responses': {
                 '200': {
-                    'content': as_array_content_obj(ag_models.BuildSandboxDockerImageTask)
+                    'content': as_array_content_obj(ag_models.BuildSandboxDockerImageTask),
+                    'description': ''
                 }
             }
         }
@@ -173,7 +177,8 @@ class ListBuildTasksForCourseView(ag_views.NestedModelView):
             'operation_id': 'listBuildSandboxDockerImageTasksForCourse',
             'responses': {
                 '200': {
-                    'content': as_array_content_obj(ag_models.BuildSandboxDockerImageTask)
+                    'content': as_array_content_obj(ag_models.BuildSandboxDockerImageTask),
+                    'description': ''
                 }
             }
         }
@@ -221,7 +226,8 @@ class BuildTaskOutputView(ag_views.AGModelAPIView):
                         'application/octet-stream': {
                             'schema': {'type': 'string', 'format': 'binary'}
                         }
-                    }
+                    },
+                    'description': ''
                 }
             }
         }
@@ -241,7 +247,8 @@ class CancelBuildTaskView(ag_views.AGModelAPIView):
             'operation_id': 'cancelBuildSandboxDockerImageTask',
             'responses': {
                 '200': {
-                    'content': as_content_obj(ag_models.BuildSandboxDockerImageTask)
+                    'content': as_content_obj(ag_models.BuildSandboxDockerImageTask),
+                    'description': ''
                 }
             }
         }
@@ -278,7 +285,8 @@ class DownloadBuildTaskFilesView(ag_views.AGModelAPIView):
                                 'format': 'binary',
                             }
                         }
-                    }
+                    },
+                    'description': 'A zip archive of the files included in the build.'
                 }
             }
         }

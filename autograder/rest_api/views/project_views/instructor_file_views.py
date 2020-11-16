@@ -47,7 +47,8 @@ class ListCreateInstructorFileView(NestedModelView):
             },
             'responses': {
                 '201': {
-                    'content': as_content_obj(ag_models.InstructorFile)
+                    'content': as_content_obj(ag_models.InstructorFile),
+                    'description': ''
                 }
             }
         }
@@ -102,7 +103,8 @@ class RenameInstructorFileView(AGModelAPIView):
             },
             'responses': {
                 '200': {
-                    'content': as_content_obj(ag_models.InstructorFile)
+                    'content': as_content_obj(ag_models.InstructorFile),
+                    'description': ''
                 }
             }
         }
@@ -133,7 +135,8 @@ class InstructorFileContentView(AGModelAPIView):
                         'application/octet-stream': {
                             'schema': {'type': 'string', 'format': 'binary'}
                         }
-                    }
+                    },
+                    'description': ''
                 }
             }
         },
@@ -144,7 +147,8 @@ class InstructorFileContentView(AGModelAPIView):
             },
             'responses': {
                 '201': {
-                    'content': as_content_obj(ag_models.InstructorFile)
+                    'content': as_content_obj(ag_models.InstructorFile),
+                    'description': ''
                 }
             }
         }

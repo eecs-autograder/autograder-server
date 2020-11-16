@@ -170,7 +170,8 @@ class HandgradingResultFileContentView(NestedModelView):
                                 'format': 'binary'
                             }
                         }
-                    }
+                    },
+                    'description': 'The file content.'
                 }
             }
         }
@@ -203,7 +204,8 @@ class HandgradingResultHasCorrectSubmissionView(NestedModelView):
                         'application/json': {
                             'schema': {'type': 'boolean'}
                         }
-                    }
+                    },
+                    'description': ''
                 }
             }
         }
@@ -261,6 +263,7 @@ class ListHandgradingResultsView(AGModelAPIView):
             ],
             'responses': {
                 '200': {
+                    'description': '',
                     'content': as_paginated_content_obj({
                         'allOf': [
                             as_schema_ref(ag_models.Group),

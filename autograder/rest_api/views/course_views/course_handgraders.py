@@ -18,7 +18,8 @@ class CourseHandgradersViewSet(NestedModelView):
             'operation_id': 'listCourseHandgraders',
             'responses': {
                 '200': {
-                    'content': as_array_content_obj(User)
+                    'content': as_array_content_obj(User),
+                    'description': ''
                 }
             }
         },

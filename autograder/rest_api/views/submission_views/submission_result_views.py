@@ -64,7 +64,8 @@ class SubmissionResultsView(SubmissionResultsViewBase):
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
-                    'content': as_content_obj(SubmissionResultFeedback)
+                    'content': as_content_obj(SubmissionResultFeedback),
+                    'description': ''
                 }
             }
         }
@@ -114,7 +115,8 @@ class _OutputViewSchema(CustomViewSchema):
                             'application/octet-stream': {
                                 'schema': {'type': 'string', 'format': 'binary'},
                             },
-                        }
+                        },
+                        'description': ''
                     }
                 }
             }
@@ -150,6 +152,7 @@ class AGTestSuiteResultOutputSizeView(SubmissionResultsViewBase):
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
+                    'description': '',
                     'content': {
                         'application/json': {
                             'schema': {
@@ -258,6 +261,7 @@ class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
+                    'description': '',
                     'content': {
                         'application/json': {
                             'schema': {
@@ -335,6 +339,7 @@ class _DiffViewSchema(CustomViewSchema):
                 'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
                 'responses': {
                     '200': {
+                        'description': '',
                         'content': {
                             'application/json': {
                                 'schema': {
@@ -540,6 +545,7 @@ class MutationTestSuiteOutputSizeView(SubmissionResultsViewBase):
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
+                    'description': '',
                     'content': {
                         'application/json': {
                             'schema': {

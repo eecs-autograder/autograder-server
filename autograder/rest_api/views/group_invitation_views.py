@@ -71,7 +71,8 @@ class ListCreateGroupInvitationView(NestedModelView):
                 },
                 'responses': {
                     '201': {
-                        'content': as_content_obj(ag_models.GroupInvitation)
+                        'content': as_content_obj(ag_models.GroupInvitation),
+                        'description': ''
                     }
                 }
             }

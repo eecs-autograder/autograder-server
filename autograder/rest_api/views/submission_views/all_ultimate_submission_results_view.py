@@ -67,6 +67,7 @@ class AllUltimateSubmissionResults(AGModelAPIView):
             ],
             'responses': {
                 '200': {
+                    'description': '',
                     'content': as_paginated_content_obj({
                         'properties': {
                             'username': {

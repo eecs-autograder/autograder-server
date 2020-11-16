@@ -19,7 +19,8 @@ class CourseAdminViewSet(NestedModelView):
             'operation_id': 'listCourseAdmins',
             'responses': {
                 '200': {
-                    'content': as_array_content_obj(User)
+                    'content': as_array_content_obj(User),
+                    'description': ''
                 }
             }
         },

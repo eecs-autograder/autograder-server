@@ -63,7 +63,8 @@ class _UserEntityListViewSchema(CustomViewSchema):
                 'operation_id': operation_id,
                 'responses': {
                     '200': {
-                        'content': as_array_content_obj(api_class)
+                        'content': as_array_content_obj(api_class),
+                        'description': ''
                     }
                 }
             }
@@ -153,7 +154,8 @@ class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
                         'application/json': {
                             'schema': {'type': 'boolean'}
                         }
-                    }
+                    },
+                    'description': ''
                 }
             }
         }
@@ -207,7 +209,10 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
             'operation_id': 'getUserLateDaysRemaining',
             'parameters': _PARAMS,
             'responses': {
-                '200': {'content': _LATE_DAYS_REMAINING_BODY}
+                '200': {
+                    'content': _LATE_DAYS_REMAINING_BODY,
+                    'description': ''
+                }
             }
         },
         'PUT': {
@@ -215,7 +220,10 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
             'parameters': _PARAMS,
             'request': {'content': _LATE_DAYS_REMAINING_BODY},
             'responses': {
-                '200': {'content': _LATE_DAYS_REMAINING_BODY}
+                '200': {
+                    'content': _LATE_DAYS_REMAINING_BODY,
+                    'description': ''
+                }
             }
         }
     })

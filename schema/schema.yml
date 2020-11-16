@@ -28,6 +28,7 @@ paths:
             application/json:
               schema:
                 type: boolean
+          description: ''
       tags:
       - users
   /api/users/{id}/:
@@ -88,6 +89,7 @@ paths:
                 properties:
                   late_days_remaining:
                     type: integer
+          description: ''
       tags:
       - courses
       - users
@@ -139,6 +141,7 @@ paths:
                 properties:
                   late_days_remaining:
                     type: integer
+          description: ''
       tags:
       - courses
       - users
@@ -161,6 +164,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Course'
+          description: ''
       tags:
       - users
       - courses
@@ -183,6 +187,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Course'
+          description: ''
       tags:
       - users
       - courses
@@ -205,6 +210,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Course'
+          description: ''
       tags:
       - users
       - courses
@@ -227,6 +233,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Course'
+          description: ''
       tags:
       - users
       - courses
@@ -249,6 +256,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Group'
+          description: ''
       tags:
       - users
       - groups
@@ -271,6 +279,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GroupInvitation'
+          description: ''
       tags:
       - users
       - groups
@@ -293,6 +302,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GroupInvitation'
+          description: ''
       tags:
       - users
       - groups
@@ -517,6 +527,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserRoles'
+          description: ''
       tags:
       - courses
       - users
@@ -571,6 +582,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+          description: ''
       tags:
       - rosters
     post:
@@ -651,6 +663,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+          description: ''
       tags:
       - rosters
     post:
@@ -732,6 +745,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+          description: ''
       tags:
       - rosters
     post:
@@ -847,6 +861,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+          description: ''
       tags:
       - rosters
     post:
@@ -2333,6 +2348,7 @@ paths:
             application/json:
               schema:
                 type: integer
+          description: ''
       tags:
       - projects
       - submissions
@@ -2385,6 +2401,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InstructorFile'
+          description: ''
       tags:
       - instructor_files
   /api/instructor_files/{id}/:
@@ -2491,6 +2508,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - instructor_files
     put:
@@ -2520,6 +2538,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InstructorFile'
+          description: ''
       tags:
       - instructor_files
   /api/projects/{id}/expected_student_files/:
@@ -2762,6 +2781,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GroupInvitation'
+          description: ''
       tags:
       - group_invitations
   /api/group_invitations/{id}/:
@@ -2853,6 +2873,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+          description: ''
       tags:
       - groups
   /api/groups/{id}/:
@@ -2903,6 +2924,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+          description: ''
       tags:
       - groups
     delete:
@@ -2950,6 +2972,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Submission'
+          description: ''
       tags:
       - groups
       - submissions
@@ -3003,6 +3026,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Submission'
+          description: ''
       tags:
       - submissions
   /api/submissions/{id}/:
@@ -3187,6 +3211,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: The file content.
       tags:
       - submissions
   /api/sandbox_docker_images/:
@@ -3202,6 +3227,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SandboxDockerImage'
+          description: ''
       tags:
       - sandbox_docker_images
     post:
@@ -3227,6 +3253,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BuildSandboxDockerImageTask'
+          description: The build task has been started.
       tags:
       - sandbox_docker_images
   /api/courses/{id}/sandbox_docker_images/:
@@ -3248,6 +3275,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SandboxDockerImage'
+          description: ''
       tags:
       - sandbox_docker_images
     post:
@@ -3279,6 +3307,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BuildSandboxDockerImageTask'
+          description: The build task has been started.
       tags:
       - sandbox_docker_images
   /api/image_build_tasks/:
@@ -3294,6 +3323,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/BuildSandboxDockerImageTask'
+          description: ''
       tags:
       - sandbox_docker_images
   /api/courses/{id}/image_build_tasks/:
@@ -3315,6 +3345,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/BuildSandboxDockerImageTask'
+          description: ''
       tags:
       - sandbox_docker_images
   /api/image_build_tasks/{id}/:
@@ -3355,6 +3386,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - sandbox_docker_images
   /api/image_build_tasks/{id}/files/:
@@ -3375,6 +3407,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: A zip archive of the files included in the build.
       tags:
       - sandbox_docker_images
   /api/sandbox_docker_images/{id}/:
@@ -5569,6 +5602,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SubmissionWithResults'
+          description: ''
       tags:
       - submissions
   /api/submissions/{id}/results/:
@@ -5589,6 +5623,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SubmissionResultFeedback'
+          description: ''
       tags:
       - submissions
   /api/projects/{project_pk}/all_ultimate_submission_results/:
@@ -5627,6 +5662,7 @@ paths:
       - $ref: '#/components/parameters/includeStaff'
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -5686,6 +5722,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/ag_test_suite_results/{result_pk}/stderr/:
@@ -5713,6 +5750,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/ag_test_suite_results/{result_pk}/output_size/:
@@ -5735,6 +5773,7 @@ paths:
       - $ref: '#/components/parameters/feedbackCategory'
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -5779,6 +5818,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stderr/:
@@ -5806,6 +5846,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stdout_diff/:
@@ -5828,6 +5869,7 @@ paths:
       - $ref: '#/components/parameters/feedbackCategory'
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -5866,6 +5908,7 @@ paths:
       - $ref: '#/components/parameters/feedbackCategory'
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -5904,6 +5947,7 @@ paths:
       - $ref: '#/components/parameters/feedbackCategory'
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -5954,6 +5998,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/mutation_test_suite_results/{result_pk}/setup_stderr/:
@@ -5981,6 +6026,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/mutation_test_suite_results/{result_pk}/get_student_test_names_stdout/:
@@ -6008,6 +6054,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/mutation_test_suite_results/{result_pk}/get_student_test_names_stderr/:
@@ -6035,6 +6082,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/mutation_test_suite_results/{result_pk}/validity_check_stdout/:
@@ -6062,6 +6110,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/mutation_test_suite_results/{result_pk}/validity_check_stderr/:
@@ -6089,6 +6138,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/mutation_test_suite_results/{result_pk}/grade_buggy_impls_stdout/:
@@ -6116,6 +6166,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/mutation_test_suite_results/{result_pk}/grade_buggy_impls_stderr/:
@@ -6143,6 +6194,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
       tags:
       - submission_output
   /api/submissions/{id}/mutation_test_suite_results/{result_pk}/output_size/:
@@ -6165,6 +6217,7 @@ paths:
       - $ref: '#/components/parameters/feedbackCategory'
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -7120,6 +7173,7 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: The file content.
       tags:
       - handgrading_results
   /api/groups/{group_pk}/handgrading_result/has_correct_submission/:
@@ -7142,6 +7196,7 @@ paths:
             application/json:
               schema:
                 type: boolean
+          description: ''
       tags:
       - handgrading_results
   /api/handgrading_results/{handgrading_result_pk}/applied_annotations/:
@@ -7623,6 +7678,7 @@ paths:
       - $ref: '#/components/parameters/includeStaff'
       responses:
         '200':
+          description: ''
           content:
             application/json:
               schema:
@@ -7706,6 +7762,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Course'
+          description: ''
       tags:
       - courses
   /api/projects/{project_pk}/copy_to_course/{target_course_pk}/:
@@ -7752,6 +7809,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Project'
+          description: ''
       tags:
       - projects
   /api/projects/{project_pk}/import_handgrading_rubric_from/{import_from_project_pk}/:
@@ -7785,6 +7843,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HandgradingRubric'
+          description: ''
       tags:
       - projects
       - handgrading_rubrics
@@ -7849,6 +7908,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+          description: ''
       tags:
       - groups
   /api/groups/{id}/merge_with/{other_group_pk}/:
@@ -7884,6 +7944,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+          description: ''
       tags:
       - groups
   /api/submissions/{id}/remove_from_queue/:
@@ -7911,6 +7972,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Submission'
+          description: ''
       tags:
       - submissions
   /api/image_build_tasks/{id}/cancel/:
@@ -7938,6 +8000,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BuildSandboxDockerImageTask'
+          description: ''
       tags:
       - sandbox_docker_images
   /api/rerun_submissions_tasks/{id}/cancel/:
@@ -7965,6 +8028,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RerunSubmissionsTask'
+          description: ''
       tags:
       - rerun_submissions_tasks
   /api/instructor_files/{id}/name/:
@@ -7990,6 +8054,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InstructorFile'
+          description: ''
       tags:
       - instructor_files
   /api/sandbox_docker_images/{id}/rebuild/:
@@ -8022,6 +8087,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BuildSandboxDockerImageTask'
+          description: The build task has been started.
       tags:
       - sandbox_docker_images
   /api/projects/{id}/results_cache/:

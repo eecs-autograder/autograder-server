@@ -112,7 +112,8 @@ class CourseUserRolesView(AGModelAPIView):
                         'application/json': {
                             'schema': {'$ref': '#/components/schemas/UserRoles'}
                         }
-                    }
+                    },
+                    'description': ''
                 }
             }
         }
@@ -153,7 +154,10 @@ class CopyCourseView(AGModelAPIView):
                 }
             },
             'responses': {
-                '201': {'content': as_content_obj(ag_models.Course)}
+                '201': {
+                    'content': as_content_obj(ag_models.Course),
+                    'description': ''
+                }
             }
         }
     })
