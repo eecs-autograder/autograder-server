@@ -152,7 +152,7 @@ class CreateGroupTestCase(AGViewTestBase):
         self.do_create_object_test(self.project.groups,
                                    self.client, self.admin, self.url, args)
 
-    def test_admin_create_non_enrolled_group(self):
+    def test_admin_create_guest_group(self):
         self.project.validate_and_update(guests_can_submit=True)
         args = {'member_names': ['not_enrolled1', 'not_enrolled2']}
         self.do_create_object_test(self.project.groups, self.client, self.admin, self.url, args)
@@ -298,7 +298,7 @@ class CreateSoloGroupTestCase(AGViewTestBase):
         self.do_invalid_create_object_test(
             self.project.groups, self.client, wrong_domain_guest, self.url, {})
 
-    def test_non_enrolled_create_solo_group_project_private_permission_denied(self):
+    def test_guest_create_solo_group_project_private_permission_denied(self):
         self.project.validate_and_update(visible_to_students=True)
         self.do_permission_denied_create_test(
             self.project.groups, self.client, obj_build.make_user(), self.url, {})

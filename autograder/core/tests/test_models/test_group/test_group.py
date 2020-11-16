@@ -493,7 +493,7 @@ class UpdateGroupMemberRolesTestCase(UnitTestBase):
             self.group.validate_and_update(
                 members=[obj_build.make_user(), obj_build.make_user()])
 
-    def test_exception_group_mix_of_enrolled_and_staff(self):
+    def test_exception_group_mix_of_student_and_staff(self):
         with self.assertRaises(exceptions.ValidationError):
             self.group.validate_and_update(
                 members=[obj_build.make_student_user(self.course),
@@ -515,7 +515,7 @@ class GroupMembershipTestCase(_SetUp):
             ag_models.Group.objects.validate_and_create(
                 members=self.student_users, project=self.project)
 
-    def test_exception_on_some_members_not_enrolled(self):
+    def test_exception_on_some_members_not_student(self):
         mixed_group = self.student_users[0:1] + [obj_build.create_dummy_user()]
         with self.assertRaises(exceptions.ValidationError):
             ag_models.Group.objects.validate_and_create(
@@ -537,7 +537,7 @@ class GroupMembershipTestCase(_SetUp):
         self.assertCountEqual(self.staff_users, group.members.all())
         self.assertEqual(self.project, group.project)
 
-    def test_exception_all_members_not_enrolled_and_unenrolled_not_allowed(self):
+    def test_exception_all_members_not_student_and_guests_not_allowed(self):
         with self.assertRaises(exceptions.ValidationError):
             ag_models.Group.objects.validate_and_create(
                 members=self.guest_group, project=self.project)
@@ -570,7 +570,7 @@ class GroupMembershipTestCase(_SetUp):
                 members=[obj_build.make_user(), obj_build.make_user()],
                 project=self.project)
 
-    def test_no_exception_on_all_members_not_enrolled_and_unenrolled_allowed(self):
+    def test_no_exception_on_all_members_not_student_and_guests_allowed(self):
         self.project.guests_can_submit = True
         self.project.save()
 
@@ -582,7 +582,7 @@ class GroupMembershipTestCase(_SetUp):
         self.assertCountEqual(self.guest_group, group.members.all())
         self.assertEqual(self.project, group.project)
 
-    def test_exception_group_mix_of_enrolled_and_staff(self):
+    def test_exception_group_mix_of_student_and_staff(self):
         self.project.max_group_size = 5
         self.project.save()
         with self.assertRaises(exceptions.ValidationError):

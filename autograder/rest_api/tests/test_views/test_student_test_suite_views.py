@@ -29,8 +29,8 @@ class ListMutationTestSuitesTestCase(AGViewTestBase):
         self.assertSequenceEqual([self.suite1.to_dict(), self.suite2.to_dict()], response.data)
 
     def test_non_staff_list_suites_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.project.course, 1)
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.project.course)
+        self.client.force_authenticate(student)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -59,12 +59,11 @@ class CreateMutationTestSuiteTestCase(AGViewTestBase):
         self.do_permission_denied_create_test(
             ag_models.MutationTestSuite.objects, self.client, staff, self.url, self.create_data)
 
-        [enrolled] = obj_build.make_student_users(self.project.course, 1)
-
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.project.course)
+        self.client.force_authenticate(student)
 
         self.do_permission_denied_create_test(
-            ag_models.MutationTestSuite.objects, self.client, enrolled, self.url, self.create_data)
+            ag_models.MutationTestSuite.objects, self.client, student, self.url, self.create_data)
 
 
 class MutationTestSuitesOrderTestCase(AGViewTestBase):
@@ -96,8 +95,8 @@ class MutationTestSuitesOrderTestCase(AGViewTestBase):
         self.assertSequenceEqual(new_order, response.data)
 
     def test_non_staff_get_order_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.project.course, 1)
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.project.course)
+        self.client.force_authenticate(student)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -135,8 +134,8 @@ class GetUpdateDeleteMutationTestSuiteTestCase(AGViewTestBase):
         self.do_get_object_test(self.client, staff, self.url, self.mutation_suite.to_dict())
 
     def test_non_staff_get_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.do_permission_denied_get_test(self.client, enrolled, self.url)
+        student = obj_build.make_student_user(self.course)
+        self.do_permission_denied_get_test(self.client, student, self.url)
 
     def test_admin_valid_update(self):
         patch_data = {

@@ -72,8 +72,8 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
             self.assertSequenceEqual(self.applied_annotation.to_dict(), response.data[0])
 
     def test_student_list_applied_annotations_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.course)
+        self.client.force_authenticate(student)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -145,10 +145,10 @@ class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase)
             self.assertEqual(self.data["location"], response_location_dict)
 
     def test_student_create_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
+        student = obj_build.make_student_user(self.course)
 
         self.do_permission_denied_create_test(handgrading_models.AppliedAnnotation.objects,
-                                              self.client, enrolled, self.url, self.data)
+                                              self.client, student, self.url, self.data)
 
 
 class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
@@ -212,8 +212,8 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
             self.do_get_object_test(self.client, user, self.url, self.applied_annotation.to_dict())
 
     def test_student_get_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.do_permission_denied_get_test(self.client, enrolled, self.url)
+        student = obj_build.make_student_user(self.course)
+        self.do_permission_denied_get_test(self.client, student, self.url)
 
     def test_admin_valid_delete(self):
         [admin] = obj_build.make_admin_users(self.course, 1)

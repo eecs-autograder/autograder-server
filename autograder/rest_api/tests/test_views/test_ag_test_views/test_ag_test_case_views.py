@@ -32,8 +32,8 @@ class ListAGTestCasesTestCase(UnitTestBase):
         self.assertSequenceEqual([self.case1.to_dict(), self.case2.to_dict()], response.data)
 
     def test_non_staff_list_cases_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.course)
+        self.client.force_authenticate(student)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -62,9 +62,9 @@ class CreateAGTestCaseTestCase(test_impls.CreateObjectTest, UnitTestBase):
         self.do_permission_denied_create_test(
             ag_models.AGTestCase.objects, self.client, staff, self.url, data)
 
-        [enrolled] = obj_build.make_student_users(self.ag_test_suite.project.course, 1)
+        student = obj_build.make_student_user(self.ag_test_suite.project.course)
         self.do_permission_denied_create_test(
-            ag_models.AGTestCase.objects, self.client, enrolled, self.url, data)
+            ag_models.AGTestCase.objects, self.client, student, self.url, data)
 
 
 class AGTestCaseOrderTestCase(UnitTestBase):
@@ -93,8 +93,8 @@ class AGTestCaseOrderTestCase(UnitTestBase):
         self.assertSequenceEqual([self.case2.pk, self.case1.pk], response.data)
 
     def test_non_staff_get_order_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.course)
+        self.client.force_authenticate(student)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -135,8 +135,8 @@ class GetUpdateDeleteAGTestCaseTestCase(test_impls.GetObjectTest,
         self.do_get_object_test(self.client, staff, self.url, self.ag_test_case.to_dict())
 
     def test_non_staff_get_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.do_permission_denied_get_test(self.client, enrolled, self.url)
+        student = obj_build.make_student_user(self.course)
+        self.do_permission_denied_get_test(self.client, student, self.url)
 
     def test_admin_valid_update(self):
         other_suite = obj_build.make_ag_test_suite(project=self.ag_test_case.ag_test_suite.project)

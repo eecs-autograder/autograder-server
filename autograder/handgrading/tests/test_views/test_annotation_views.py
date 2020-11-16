@@ -45,8 +45,8 @@ class ListAnnotationsTestCase(UnitTestBase):
         self.assertSequenceEqual(self.annotation.to_dict(), response.data[0])
 
     def test_non_staff_list_cases_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.client.force_authenticate(enrolled)
+        student = obj_build.make_student_user(self.course)
+        self.client.force_authenticate(student)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -84,9 +84,9 @@ class CreateAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase):
             handgrading_models.Annotation.objects, self.client, admin, self.url, self.data)
 
     def test_non_admin_create_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
+        student = obj_build.make_student_user(self.course)
         self.do_permission_denied_create_test(
-            handgrading_models.Annotation.objects, self.client, enrolled, self.url, self.data)
+            handgrading_models.Annotation.objects, self.client, student, self.url, self.data)
 
 
 class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
@@ -120,8 +120,8 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
         self.do_get_object_test(self.client, staff, self.url, self.annotation.to_dict())
 
     def test_non_staff_get_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.do_permission_denied_get_test(self.client, enrolled, self.url)
+        student = obj_build.make_student_user(self.course)
+        self.do_permission_denied_get_test(self.client, student, self.url)
 
     def test_admin_valid_update(self):
         patch_data = {
@@ -211,10 +211,10 @@ class AnnotationOrderTestCase(UnitTestBase):
             self.assertSequenceEqual(new_order, response.data)
 
     def test_non_staff_get_order_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
+        student = obj_build.make_student_user(self.course)
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
-        for user in enrolled, handgrader:
+        for user in student, handgrader:
             self.client.force_authenticate(user)
 
             response = self.client.get(self.url)
@@ -231,10 +231,10 @@ class AnnotationOrderTestCase(UnitTestBase):
 
     def test_non_admin_set_order_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
-        [enrolled] = obj_build.make_student_users(self.course, 1)
+        student = obj_build.make_student_user(self.course)
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
-        for user in staff, enrolled, handgrader:
+        for user in staff, student, handgrader:
             self.client.force_authenticate(user)
 
             original_order = list(self.handgrading_rubric.get_annotation_order())
