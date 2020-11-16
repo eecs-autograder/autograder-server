@@ -55,7 +55,8 @@ class ListCreateGroupsView(NestedModelView):
             'request': _MEMBER_NAMES_REQUEST_BODY,
             'responses': {
                 '201': {
-                    'content': as_content_obj(ag_models.Group)
+                    'content': as_content_obj(ag_models.Group),
+                    'description': ''
                 }
             }
         }
@@ -130,7 +131,8 @@ class CreateSoloGroupView(AGModelAPIView):
             'operation_id': 'createSoloGroup',
             'responses': {
                 '201': {
-                    'content': as_content_obj(ag_models.Group)
+                    'content': as_content_obj(ag_models.Group),
+                    'description': ''
                 }
             }
         }
@@ -192,7 +194,8 @@ class GroupDetailView(AGModelDetailView):
             'request': _MEMBER_NAMES_REQUEST_BODY,
             'responses': {
                 '200': {
-                    'content': as_content_obj(ag_models.Group)
+                    'content': as_content_obj(ag_models.Group),
+                    'description': ''
                 }
             }
         },
@@ -256,7 +259,8 @@ class GroupUltimateSubmissionView(AGModelAPIView):
             'operation_id': 'getUltimateSubmissionForGroup',
             'responses': {
                 '200': {
-                    'content': as_content_obj(ag_models.Submission)
+                    'content': as_content_obj(ag_models.Submission),
+                    'description': ''
                 }
             }
         }
@@ -294,7 +298,8 @@ class MergeGroupsView(AGModelAPIView):
             'operation_id': 'mergeGroups',
             'responses': {
                 '201': {
-                    'content': as_content_obj(ag_models.Group)
+                    'content': as_content_obj(ag_models.Group),
+                    'description': ''
                 }
             }
         }

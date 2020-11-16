@@ -18,7 +18,8 @@ class CourseStudentsViewSet(NestedModelView):
             'operation_id': 'listCourseStudents',
             'responses': {
                 '200': {
-                    'content': as_array_content_obj(User)
+                    'content': as_array_content_obj(User),
+                    'description': ''
                 }
             }
         },

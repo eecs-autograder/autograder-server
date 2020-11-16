@@ -74,7 +74,8 @@ class ListCreateSubmissionView(NestedModelView):
             },
             'responses': {
                 '201': {
-                    'content': as_content_obj(ag_models.Submission)
+                    'content': as_content_obj(ag_models.Submission),
+                    'description': ''
                 }
             }
         }
@@ -265,7 +266,8 @@ class ListSubmissionsWithResults(AGModelAPIView):
                                 'items': {'$ref': '#/components/schemas/SubmissionWithResults'}
                             }
                         }
-                    }
+                    },
+                    'description': ''
                 }
             }
         }
@@ -360,7 +362,8 @@ class GetSubmittedFileView(AGModelAPIView):
                         'application/octet-stream': {
                             'schema': {'type': 'string', 'format': 'binary'}
                         }
-                    }
+                    },
+                    'description': 'The file content.'
                 }
             }
         }
@@ -391,8 +394,9 @@ class RemoveSubmissionFromQueueView(AGModelAPIView):
             'operation_id': 'removeSubmissionFromQueue',
             'responses': {
                 '200': {
-                    'content': as_content_obj(ag_models.Submission)
-                }
+                    'content': as_content_obj(ag_models.Submission),
+                    'description': ''
+                },
             }
         }
     })

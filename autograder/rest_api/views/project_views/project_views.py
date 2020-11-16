@@ -124,7 +124,10 @@ class CopyProjectView(AGModelAPIView):
                 }
             },
             'responses': {
-                '201': {'content': as_content_obj(ag_models.Project)}
+                '201': {
+                    'content': as_content_obj(ag_models.Project),
+                    'description': ''
+                }
             }
         }
     })
@@ -163,7 +166,8 @@ class ImportHandgradingRubricView(AGModelAPIView):
             'operation_id': 'importHandgradingRubric',
             'responses': {
                 '201': {
-                    'content': as_content_obj(hg_models.HandgradingRubric)
+                    'content': as_content_obj(hg_models.HandgradingRubric),
+                    'description': ''
                 }
             }
         }
@@ -205,7 +209,8 @@ class NumQueuedSubmissionsView(AGModelAPIView):
                         'application/json': {
                             'schema': {'type': 'integer'}
                         }
-                    }
+                    },
+                    'description': ''
                 }
             }
         }

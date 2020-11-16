@@ -18,7 +18,8 @@ class CourseStaffViewSet(NestedModelView):
             'operation_id': 'listCourseStaff',
             'responses': {
                 '200': {
-                    'content': as_array_content_obj(User)
+                    'content': as_array_content_obj(User),
+                    'description': ''
                 }
             }
         },

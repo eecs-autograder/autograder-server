@@ -83,7 +83,8 @@ class CancelRerunSubmissionsTaskView(AGModelAPIView):
             'operation_id': 'cancelRerunSubmissionsTask',
             'responses': {
                 '200': {
-                    'content': as_content_obj(ag_models.RerunSubmissionsTask)
+                    'content': as_content_obj(ag_models.RerunSubmissionsTask),
+                    'description': ''
                 }
             }
         }
