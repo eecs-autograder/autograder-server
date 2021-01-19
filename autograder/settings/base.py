@@ -7,7 +7,7 @@ import sys
 
 from django.utils.crypto import get_random_string
 
-VERSION = '4.2.0'
+VERSION = '4.2.1'
 
 # This is the autograder-server directory
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
