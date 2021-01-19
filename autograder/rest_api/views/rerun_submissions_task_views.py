@@ -55,14 +55,14 @@ class RerunSubmissionsTaskListCreateView(NestedModelView):
                     ]
                 )
 
-            signatures = [
-                rerun_submission.s(
-                    submission.pk, rerun_task.pk
-                ).set(queue=settings.RERUN_QUEUE_TMPL.format(project.pk))
-                for submission in submissions
-            ]
-            from autograder.celery import app
-            celery.group(signatures, app=app).apply_async()
+        signatures = [
+            rerun_submission.s(
+                submission.pk, rerun_task.pk
+            ).set(queue=settings.RERUN_QUEUE_TMPL.format(project.pk))
+            for submission in submissions
+        ]
+        from autograder.celery import app
+        celery.group(signatures, app=app).apply_async()
 
         return response.Response(rerun_task.to_dict(), status=status.HTTP_201_CREATED)
 
