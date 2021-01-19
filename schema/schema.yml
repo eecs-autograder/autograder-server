@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: Autograder.io API
-  version: 4.1.3
+  version: 4.2.0
 paths:
   /api/users/current/:
     get:
@@ -3280,7 +3280,7 @@ paths:
       - sandbox_docker_images
     post:
       operationId: createSandboxDockerImageForCourse
-      description: List all sandbox images for the specified course.
+      description: ''
       parameters:
       - name: id
         in: path
