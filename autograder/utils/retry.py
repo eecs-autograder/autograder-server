@@ -3,7 +3,7 @@ import traceback
 
 from django import db
 from django.conf import settings
-from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
 
 from autograder.grading_tasks.tasks.exceptions import StopGrading, TestDeleted
 
@@ -107,6 +107,7 @@ RERAISE_IMMEDIATELY = (
     db.IntegrityError,
     StopGrading,
     TestDeleted,
+    ObjectDoesNotExist,  # raised by QuerySet.get()
     MaxRetriesExceeded,  # We don't want nested retry loops
 )
 
