@@ -135,9 +135,6 @@ class ListCreateSandboxDockerImageForCourseView(ag_views.NestedModelView):
 
     @convert_django_validation_error
     def post(self, request, *args, **kwargs):
-        """
-        List all sandbox images for the specified course.
-        """
         with transaction.atomic():
             course = self.get_object()
             build_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(

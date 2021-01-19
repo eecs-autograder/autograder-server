@@ -57,7 +57,7 @@ class SubmissionRerunner:
 
     def rerun_submission(self) -> None:
         try:
-            self.load_submission()
+            self.load_data()
             self.rerun_suites()
             self.mark_as_finished()
         except RerunCancelled:
@@ -68,11 +68,9 @@ class SubmissionRerunner:
             self.record_submission_grading_error(traceback.format_exc())
 
     @retry_should_recover
-    def load_submission(self):
+    def load_data(self):
         """
-        Loads the submission self.submission to the loaded submission
-        and self.project to the project it belongs to.
-        This override does NOT modify the submission in the database.
+        Loads the rerun task, submission, group, and project requested.
         """
         with transaction.atomic():
             self._rerun_task = ag_models.RerunSubmissionsTask.objects.get(pk=self._rerun_task_pk)
