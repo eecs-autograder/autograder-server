@@ -50,8 +50,8 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         other_group = obj_build.make_group(project=other_project)
         other_submission = obj_build.make_finished_submission(other_group)
 
-    def _make_group_with_submissions(self, num_members: int, *, num_submissions: int=1,
-                                     members_role: obj_build.UserRole=obj_build.UserRole.student,
+    def _make_group_with_submissions(self, num_members: int, *, num_submissions: int = 1,
+                                     members_role: obj_build.UserRole = obj_build.UserRole.student,
                                      members=None,
                                      **group_kwargs):
         assert num_submissions > 0

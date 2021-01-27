@@ -345,7 +345,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def _make_url(self, submission: ag_models.Submission,
-                  fdbk_category: ag_models.FeedbackCategory=ag_models.FeedbackCategory.normal,
+                  fdbk_category: ag_models.FeedbackCategory = ag_models.FeedbackCategory.normal,
                   use_cache=True):
         url = reverse('submission-results', kwargs={'pk': submission.pk})
         url += '?feedback_category={}'.format(fdbk_category.value)

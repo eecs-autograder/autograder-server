@@ -419,7 +419,7 @@ class SubmissionResultFeedback(ToDictMixin):
     def __init__(self, submission: Submission,
                  fdbk_category: FeedbackCategory,
                  ag_test_preloader: AGTestPreLoader,
-                 mutation_test_suite_preloader: Optional[MutationTestSuitePreLoader]=None):
+                 mutation_test_suite_preloader: Optional[MutationTestSuitePreLoader] = None):
         self._submission = submission
         self._fdbk_category = fdbk_category
         self._project = self._submission.group.project
@@ -731,7 +731,7 @@ class AGTestCaseResultFeedback(ToDictMixin):
     def __init__(self, ag_test_case_result: DenormalizedAGTestCaseResult,
                  fdbk_category: FeedbackCategory,
                  ag_test_preloader: AGTestPreLoader,
-                 is_first_failure: bool=False):
+                 is_first_failure: bool = False):
         self._denormalized_ag_test_case_result = ag_test_case_result
         self._ag_test_case_result = ag_test_case_result.ag_test_case_result
         self._ag_test_command_results = ag_test_case_result.ag_test_command_results

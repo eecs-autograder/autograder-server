@@ -27,15 +27,15 @@ class AGTestCommandFeedbackConfig(DictSerializable):
     Contains feedback options for an AGTestCommand
     """
     def __init__(self,
-                 visible: bool=True,
-                 return_code_fdbk_level: ValueFeedbackLevel=ValueFeedbackLevel.get_min(),
-                 stdout_fdbk_level: ValueFeedbackLevel=ValueFeedbackLevel.get_min(),
-                 stderr_fdbk_level: ValueFeedbackLevel=ValueFeedbackLevel.get_min(),
-                 show_points: bool=False,
-                 show_actual_return_code: bool=False,
-                 show_actual_stdout: bool=False,
-                 show_actual_stderr: bool=False,
-                 show_whether_timed_out: bool=False):
+                 visible: bool = True,
+                 return_code_fdbk_level: ValueFeedbackLevel = ValueFeedbackLevel.get_min(),
+                 stdout_fdbk_level: ValueFeedbackLevel = ValueFeedbackLevel.get_min(),
+                 stderr_fdbk_level: ValueFeedbackLevel = ValueFeedbackLevel.get_min(),
+                 show_points: bool = False,
+                 show_actual_return_code: bool = False,
+                 show_actual_stdout: bool = False,
+                 show_actual_stderr: bool = False,
+                 show_whether_timed_out: bool = False):
         self.visible = visible
 
         self.return_code_fdbk_level = return_code_fdbk_level

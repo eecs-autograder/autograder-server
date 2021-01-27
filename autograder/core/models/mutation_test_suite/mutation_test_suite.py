@@ -26,21 +26,22 @@ class MutationTestSuiteFeedbackConfig(DictSerializable):
     Contains feedback options for a MutationTestSuite
     """
     def __init__(
-            self,
-            visible: bool=True,
-            show_setup_return_code: bool=True,
-            show_setup_stdout: bool=False,
-            show_setup_stderr: bool=False,
-            show_get_test_names_return_code: bool=False,
-            show_get_test_names_stdout: bool=False,
-            show_get_test_names_stderr: bool = False,
-            show_validity_check_stdout: bool=False,
-            show_validity_check_stderr: bool=False,
-            show_grade_buggy_impls_stdout: bool=False,
-            show_grade_buggy_impls_stderr: bool=False,
-            show_invalid_test_names: bool=True,
-            show_points: bool=False,
-            bugs_exposed_fdbk_level: BugsExposedFeedbackLevel=BugsExposedFeedbackLevel.get_min()):
+        self,
+        visible: bool = True,
+        show_setup_return_code: bool = True,
+        show_setup_stdout: bool = False,
+        show_setup_stderr: bool = False,
+        show_get_test_names_return_code: bool = False,
+        show_get_test_names_stdout: bool = False,
+        show_get_test_names_stderr: bool = False,
+        show_validity_check_stdout: bool = False,
+        show_validity_check_stderr: bool = False,
+        show_grade_buggy_impls_stdout: bool = False,
+        show_grade_buggy_impls_stderr: bool = False,
+        show_invalid_test_names: bool = True,
+        show_points: bool = False,
+        bugs_exposed_fdbk_level: BugsExposedFeedbackLevel = BugsExposedFeedbackLevel.get_min()
+    ):
         self.visible = visible
 
         self.show_setup_return_code = show_setup_return_code

@@ -902,7 +902,7 @@ class UltimateSubmissionWithLateDaysTestCase(UnitTestBase):
     def _make_submission_result_url(
             self,
             submission: ag_models.Submission,
-            fdbk_category: ag_models.FeedbackCategory=ag_models.FeedbackCategory.normal):
+            fdbk_category: ag_models.FeedbackCategory = ag_models.FeedbackCategory.normal):
         url = reverse('submission-results', kwargs={'pk': submission.pk})
         url += '?feedback_category={}'.format(fdbk_category.value)
 

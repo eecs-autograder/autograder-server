@@ -18,7 +18,7 @@ def get_unique_id() -> str:
     return uuid.uuid4().hex
 
 
-def create_dummy_user(is_superuser: bool=False):
+def create_dummy_user(is_superuser: bool = False):
     """
     Creates a User with a random username. If is_superuser is True,
     creates the User with superuser status.
@@ -26,7 +26,7 @@ def create_dummy_user(is_superuser: bool=False):
     return create_dummy_users(1, is_superuser=is_superuser)[0]
 
 
-def create_dummy_users(num_users: int, is_superuser: bool=False):
+def create_dummy_users(num_users: int, is_superuser: bool = False):
     """
     Creates list of num_users Users with random usernames.
     If is_superuser is True, creates each User with superuser status.
@@ -45,7 +45,7 @@ def create_dummy_users(num_users: int, is_superuser: bool=False):
     return users
 
 
-def build_course(course_kwargs: dict=None) -> ag_models.Course:
+def build_course(course_kwargs: dict = None) -> ag_models.Course:
     """
     Creates a Course with a unique name.
     Any fields present in course_kwargs will be used instead of
@@ -132,7 +132,7 @@ def make_allowed_domain_guest_user(course: ag_models.Course) -> User:
     return user
 
 
-def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_models.Project:
+def build_project(project_kwargs: dict = None, course_kwargs: dict = None) -> ag_models.Project:
     """
     Creates a Project with a unique name.
     Any fields in project_kwargs will be used instead of defaults.
@@ -189,7 +189,7 @@ def build_group(num_members=1,
     return group
 
 
-def make_submission(group: Optional[ag_models.Group]=None,
+def make_submission(group: Optional[ag_models.Group] = None,
                     **submission_kwargs) -> ag_models.Submission:
     """
     Creates a Submission with the given keyword arguments.
@@ -218,7 +218,7 @@ def make_submission(group: Optional[ag_models.Group]=None,
     return submission
 
 
-def make_finished_submission(group: Optional[ag_models.Group]=None,
+def make_finished_submission(group: Optional[ag_models.Group] = None,
                              **submission_kwargs) -> ag_models.Submission:
     return make_submission(status=ag_models.Submission.GradingStatus.finished_grading,
                            group=group,
@@ -232,7 +232,7 @@ def make_course(**kwargs) -> ag_models.Course:
     return ag_models.Course.objects.validate_and_create(**kwargs)
 
 
-def make_sandbox_docker_image(course: ag_models.Course=None) -> ag_models.SandboxDockerImage:
+def make_sandbox_docker_image(course: ag_models.Course = None) -> ag_models.SandboxDockerImage:
     return ag_models.SandboxDockerImage.objects.validate_and_create(
         course=course,
         display_name='Image ' + get_unique_id(),
@@ -240,7 +240,7 @@ def make_sandbox_docker_image(course: ag_models.Course=None) -> ag_models.Sandbo
     )
 
 
-def make_project(course: ag_models.Course=None, **project_kwargs) -> ag_models.Project:
+def make_project(course: ag_models.Course = None, **project_kwargs) -> ag_models.Project:
     if course is None:
         course = make_course()
 
@@ -273,9 +273,9 @@ class UserRole(core_ut.OrderedEnum):
     admin = 'admin'
 
 
-def make_group(num_members: int=1,
-               members_role: UserRole=UserRole.student,
-               project: ag_models.Project=None,
+def make_group(num_members: int = 1,
+               members_role: UserRole = UserRole.student,
+               project: ag_models.Project = None,
                **group_kwargs) -> ag_models.Group:
     if project is None:
         project = make_project()
@@ -307,9 +307,9 @@ def make_group(num_members: int=1,
 
 
 def make_group_invitation(
-    project: ag_models.Project=None,
-    num_recipients: int=1,
-    users_role: UserRole=UserRole.student,
+    project: ag_models.Project = None,
+    num_recipients: int = 1,
+    users_role: UserRole = UserRole.student,
 ):
     if project is None:
         project = make_project()
@@ -341,7 +341,7 @@ def make_group_invitation(
     return result
 
 
-def make_ag_test_suite(project: ag_models.Project=None,
+def make_ag_test_suite(project: ag_models.Project = None,
                        **ag_test_suite_args) -> ag_models.AGTestSuite:
     if project is None:
         project = make_project()
@@ -352,7 +352,7 @@ def make_ag_test_suite(project: ag_models.Project=None,
     return ag_models.AGTestSuite.objects.validate_and_create(project=project, **ag_test_suite_args)
 
 
-def make_ag_test_case(ag_test_suite: ag_models.AGTestSuite=None,
+def make_ag_test_case(ag_test_suite: ag_models.AGTestSuite = None,
                       **ag_test_case_args) -> ag_models.AGTestCase:
     if ag_test_suite is None:
         ag_test_suite = make_ag_test_suite()
@@ -365,7 +365,7 @@ def make_ag_test_case(ag_test_suite: ag_models.AGTestSuite=None,
 
 
 def make_full_ag_test_command(
-        ag_test_case: ag_models.AGTestCase=None,
+        ag_test_case: ag_models.AGTestCase = None,
         set_arbitrary_points=True,
         set_arbitrary_expected_vals=True,
         **ag_test_cmd_kwargs) -> ag_models.AGTestCommand:
@@ -406,8 +406,8 @@ def make_full_ag_test_command(
 
 
 def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand,
-                                        ag_test_case_result: ag_models.AGTestCaseResult=None,
-                                        submission: ag_models.Submission=None,
+                                        ag_test_case_result: ag_models.AGTestCaseResult = None,
+                                        submission: ag_models.Submission = None,
                                         **result_kwargs) -> ag_models.AGTestCommandResult:
     """
     Creates an AGTestCommandResult that is completely
@@ -466,8 +466,8 @@ def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand
 
 
 def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestCommand,
-                                          ag_test_case_result: ag_models.AGTestCaseResult=None,
-                                          submission: ag_models.Submission=None,
+                                          ag_test_case_result: ag_models.AGTestCaseResult = None,
+                                          submission: ag_models.Submission = None,
                                           **result_kwargs) -> ag_models.AGTestCommandResult:
     """
     Creates an AGTestCommandResult that is completely
@@ -494,7 +494,7 @@ def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestComma
     return result
 
 
-def make_mutation_test_suite(project: ag_models.Project=None,
+def make_mutation_test_suite(project: ag_models.Project = None,
                              **mutation_test_suite_kwargs) -> ag_models.MutationTestSuite:
     if project is None:
         project = make_project()

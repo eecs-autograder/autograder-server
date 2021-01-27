@@ -20,12 +20,12 @@ class AGTestSuiteFeedbackConfig(DictSerializable):
     Contains feedback options for an AGTestSuite.
     """
     def __init__(self,
-                 visible: bool=True,
-                 show_individual_tests: bool=True,
-                 show_setup_return_code: bool=True,
-                 show_setup_timed_out: bool=True,
-                 show_setup_stdout: bool=True,
-                 show_setup_stderr: bool=True):
+                 visible: bool = True,
+                 show_individual_tests: bool = True,
+                 show_setup_return_code: bool = True,
+                 show_setup_timed_out: bool = True,
+                 show_setup_stdout: bool = True,
+                 show_setup_stderr: bool = True):
         self.visible = visible
         self.show_individual_tests = show_individual_tests
         self.show_setup_return_code = show_setup_return_code

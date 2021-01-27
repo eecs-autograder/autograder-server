@@ -10,7 +10,7 @@ from autograder.rest_api.views.ag_model_views import AGModelDetailView, NestedMo
 GetRubricFnType = Callable[[Any], hg_models.HandgradingRubric]
 
 
-def comment_permissions(get_course_fn: GetRubricFnType=lambda rubric: rubric):
+def comment_permissions(get_course_fn: GetRubricFnType = lambda rubric: rubric):
     class CommentPermissions(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             rubric = get_course_fn(obj)

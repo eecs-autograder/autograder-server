@@ -107,7 +107,7 @@ class IsSuperuser(permissions.BasePermission):
         return self.has_permission(request, view)
 
 
-def is_admin(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
+def is_admin(get_course_fn: GetCourseFnType = _get_course) -> PermissionClassType:
     class IsAdmin(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -116,7 +116,7 @@ def is_admin(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
     return IsAdmin
 
 
-def is_staff(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
+def is_staff(get_course_fn: GetCourseFnType = _get_course) -> PermissionClassType:
     class IsStaff(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -125,7 +125,7 @@ def is_staff(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
     return IsStaff
 
 
-def is_handgrader(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
+def is_handgrader(get_course_fn: GetCourseFnType = _get_course) -> PermissionClassType:
     class IsHandgrader(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -134,7 +134,7 @@ def is_handgrader(get_course_fn: GetCourseFnType=_get_course) -> PermissionClass
     return IsHandgrader
 
 
-def is_student(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
+def is_student(get_course_fn: GetCourseFnType = _get_course) -> PermissionClassType:
     class IsStudent(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -144,7 +144,7 @@ def is_student(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassTyp
 
 
 def is_admin_or_staff_or_handgrader(
-        get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
+        get_course_fn: GetCourseFnType = _get_course) -> PermissionClassType:
     class IsAdminOrStaffOrHandgrader(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -155,7 +155,7 @@ def is_admin_or_staff_or_handgrader(
 
 
 def is_admin_or_read_only_staff_or_handgrader(
-        get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
+        get_course_fn: GetCourseFnType = _get_course) -> PermissionClassType:
     class IsAdminOrReadOnlyStaffOrHandgrader(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -169,7 +169,7 @@ def is_admin_or_read_only_staff_or_handgrader(
 
 
 def is_admin_or_read_only_staff(
-        get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
+        get_course_fn: GetCourseFnType = _get_course) -> PermissionClassType:
     class IsAdminOrReadOnlyStaff(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -181,7 +181,7 @@ def is_admin_or_read_only_staff(
 
 
 def can_view_project(
-    get_project_fn: GetProjectFnType=_get_project
+    get_project_fn: GetProjectFnType = _get_project
 ) -> Type[permissions.BasePermission]:
     class CanViewProject(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
@@ -201,7 +201,7 @@ def can_view_project(
 
 
 def is_admin_or_read_only_can_view_project(
-    get_project_fn: GetProjectFnType=_get_project
+    get_project_fn: GetProjectFnType = _get_project
 ) -> Type[permissions.BasePermission]:
     return (
         P(is_admin(lambda obj: get_project_fn(obj).course))
@@ -210,7 +210,7 @@ def is_admin_or_read_only_can_view_project(
 
 
 def is_staff_or_group_member(
-    get_group_fn: GetGroupFnType=_get_group
+    get_group_fn: GetGroupFnType = _get_group
 ) -> Type[permissions.BasePermission]:
     class IsStaffOrGroupMember(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
@@ -221,7 +221,7 @@ def is_staff_or_group_member(
     return IsStaffOrGroupMember
 
 
-def is_group_member(get_group_fn: GetGroupFnType=_get_group) -> PermissionClassType:
+def is_group_member(get_group_fn: GetGroupFnType = _get_group) -> PermissionClassType:
     class IsGroupMember(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             group = get_group_fn(obj)
@@ -231,7 +231,7 @@ def is_group_member(get_group_fn: GetGroupFnType=_get_group) -> PermissionClassT
 
 
 def can_request_feedback_category(
-    get_submission_fn: Callable[[Any], ag_models.Submission]=lambda submission: submission
+    get_submission_fn: Callable[[Any], ag_models.Submission] = lambda submission: submission
 ) -> Type[permissions.BasePermission]:
     class CanRequestFeedbackCategory(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):

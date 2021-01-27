@@ -145,5 +145,5 @@ class InstructorFile(AutograderModel):
     def open(self, mode: Literal['rb', 'wb']) -> BinaryIO:
         ...
 
-    def open(self, mode: Literal['r', 'w', 'rb', 'wb']='r') -> IO[AnyStr]:
+    def open(self, mode: Literal['r', 'w', 'rb', 'wb'] = 'r') -> IO[AnyStr]:
         return open(self.abspath, mode)

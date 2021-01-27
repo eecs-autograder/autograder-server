@@ -14,7 +14,7 @@ def validate_fdbk_category(fdbk_category: str) -> ag_models.FeedbackCategory:
         })
 
 
-def make_fdbk_category_param_docs(*, required: bool=True, in_: str='query'):
+def make_fdbk_category_param_docs(*, required: bool = True, in_: str = 'query'):
     return Parameter(
         name=FDBK_CATEGORY_PARAM,
         in_=in_,

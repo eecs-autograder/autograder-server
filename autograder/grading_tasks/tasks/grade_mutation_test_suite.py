@@ -158,11 +158,11 @@ def _save_results(mutation_test_suite: ag_models.MutationTestSuite,
                   invalid_tests: List[str],
                   timed_out_tests: List[str],
                   bugs_exposed: List[str],
-                  get_test_names_run_result: CompletedCommand=None,
-                  validity_check_stdout: FileIO=None,
-                  validity_check_stderr: FileIO=None,
-                  buggy_impls_stdout: FileIO=None,
-                  buggy_impls_stderr: FileIO=None):
+                  get_test_names_run_result: CompletedCommand = None,
+                  validity_check_stdout: FileIO = None,
+                  validity_check_stderr: FileIO = None,
+                  buggy_impls_stdout: FileIO = None,
+                  buggy_impls_stderr: FileIO = None):
     try:
         with transaction.atomic():
             result_kwargs = {
