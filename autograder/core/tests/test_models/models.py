@@ -127,7 +127,7 @@ class DictSerializableClass(DictSerializable):
     has_default_default_val = 8769
 
     def __init__(self, num: int, string: str, an_enum: AnEnum,
-                 has_default: int=has_default_default_val):
+                 has_default: int = has_default_default_val):
         self.num = num
         self.string = string
         self.an_enum = an_enum

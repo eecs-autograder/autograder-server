@@ -71,8 +71,8 @@ class ListProjectsTestCase(AGViewTestBase):
         self.do_valid_list_projects_test(student, self.all_projects)
 
     def do_valid_list_projects_test(self, user, expected_projects,
-                                    *, show_closing_time: bool=False,
-                                    show_instructor_files: bool=False):
+                                    *, show_closing_time: bool = False,
+                                    show_instructor_files: bool = False):
         expected_data = []
         for project in expected_projects:
             proj_dict = project.to_dict()
@@ -370,7 +370,7 @@ class CopyProjectViewTestCase(UnitTestBase):
     def send_copy_request(
         self, project: ag_models.Project,
         target_course: ag_models.Course,
-        new_name: Optional[str]=None
+        new_name: Optional[str] = None
     ):
         url = reverse(
             'copy-project',

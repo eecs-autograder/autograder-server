@@ -12,15 +12,15 @@ class Command(DictSerializable):
     """
     def __init__(self,
                  cmd: str,
-                 name: str='',
-                 time_limit: int=constants.DEFAULT_SUBPROCESS_TIMEOUT,
+                 name: str = '',
+                 time_limit: int = constants.DEFAULT_SUBPROCESS_TIMEOUT,
                  # Remove in version 5.0.0
-                 stack_size_limit: int=constants.DEFAULT_STACK_SIZE_LIMIT,
-                 use_virtual_memory_limit: bool=True,
-                 virtual_memory_limit: int=constants.DEFAULT_VIRTUAL_MEM_LIMIT,
-                 block_process_spawn: bool=False,
+                 stack_size_limit: int = constants.DEFAULT_STACK_SIZE_LIMIT,
+                 use_virtual_memory_limit: bool = True,
+                 virtual_memory_limit: int = constants.DEFAULT_VIRTUAL_MEM_LIMIT,
+                 block_process_spawn: bool = False,
                  # Remove in version 5.0.0
-                 process_spawn_limit: int=constants.DEFAULT_PROCESS_LIMIT):
+                 process_spawn_limit: int = constants.DEFAULT_PROCESS_LIMIT):
         self.cmd = cmd
         self.name = name
         self.time_limit = time_limit

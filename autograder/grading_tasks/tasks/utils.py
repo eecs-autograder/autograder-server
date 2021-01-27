@@ -72,7 +72,7 @@ def run_ag_test_command(cmd: ag_models.AGTestCommand,
 
 
 def run_ag_command(cmd: ag_models.Command, sandbox: AutograderSandbox,
-                   cmd_str_override: Optional[str]=None):
+                   cmd_str_override: Optional[str] = None):
     cmd_str = cmd_str_override if cmd_str_override is not None else cmd.cmd
     return run_command_from_args(
         cmd_str,
@@ -90,7 +90,7 @@ def run_command_from_args(cmd: str,
                           max_virtual_memory: Optional[int],
                           block_process_spawn: bool,
                           timeout: int,
-                          stdin: Optional[FileIO]=None) -> CompletedCommand:
+                          stdin: Optional[FileIO] = None) -> CompletedCommand:
     run_result = sandbox.run_command(['bash', '-c', cmd],
                                      stdin=stdin,
                                      as_root=False,
@@ -103,7 +103,7 @@ def run_command_from_args(cmd: str,
 
 
 def get_stdin_file(cmd: ag_models.AGTestCommand,
-                   ag_test_suite_result: ag_models.AGTestSuiteResult=None) -> Optional[FileIO]:
+                   ag_test_suite_result: ag_models.AGTestSuiteResult = None) -> Optional[FileIO]:
     if cmd.stdin_source == ag_models.StdinSource.text:
         stdin = tempfile.NamedTemporaryFile()
         stdin.write(cmd.stdin_text.encode())

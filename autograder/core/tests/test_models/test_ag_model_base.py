@@ -746,10 +746,10 @@ def _make_max_value_validator(max_value: int) -> Callable[[object], None]:
 
 class _SerializableClass(DictSerializable):
     def __init__(self, required_int: int,
-                 optional_bool: bool=True,
-                 my_enum: _MyEnum=_MyEnum.one,
-                 less_than: int=0,
-                 greater_than: int=5):
+                 optional_bool: bool = True,
+                 my_enum: _MyEnum = _MyEnum.one,
+                 less_than: int = 0,
+                 greater_than: int = 5):
         self.required_int = required_int
         self.optional_bool = optional_bool
         self.my_enum = my_enum

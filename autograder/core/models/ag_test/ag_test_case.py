@@ -14,7 +14,7 @@ class AGTestCaseFeedbackConfig(DictSerializable):
     """
     Contains feedback options for an AGTestCase.
     """
-    def __init__(self, visible: bool=True, show_individual_commands: bool=True):
+    def __init__(self, visible: bool = True, show_individual_commands: bool = True):
         self.visible = visible
         self.show_individual_commands = show_individual_commands
 

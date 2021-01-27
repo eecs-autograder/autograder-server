@@ -464,8 +464,8 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def do_handgrading_results_test(self, user: User, *,
-                                    num_results: int, num_groups: int=None,
-                                    page_size: int=None, page_num: int=None):
+                                    num_results: int, num_groups: int = None,
+                                    page_size: int = None, page_num: int = None):
         if num_groups is None:
             num_groups = num_results
         else:

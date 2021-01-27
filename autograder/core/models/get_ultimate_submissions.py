@@ -15,7 +15,7 @@ from .project import Project, UltimateSubmissionPolicy
 from .submission import Submission, get_submissions_with_results_queryset
 
 
-def get_ultimate_submission(group: Group, user: Optional[User]=None) -> Optional[Submission]:
+def get_ultimate_submission(group: Group, user: Optional[User] = None) -> Optional[Submission]:
     project = group.project
     [group] = _prefetch_submissions(project, [group])
     if project.ultimate_submission_policy == UltimateSubmissionPolicy.most_recent:
@@ -116,7 +116,7 @@ def _prefetch_submissions(
     return base_group_queryset.prefetch_related(Prefetch('submissions', submissions_queryset))
 
 
-def _get_most_recent_submission(group: Group, user: Optional[User]=None) -> Optional[Submission]:
+def _get_most_recent_submission(group: Group, user: Optional[User] = None) -> Optional[Submission]:
     for submission in group.submissions.all():
         if user is None or user.username not in submission.does_not_count_for:
             return submission
@@ -127,7 +127,7 @@ def _get_most_recent_submission(group: Group, user: Optional[User]=None) -> Opti
 def _get_best_submission(group: Group, fdbk_category: FeedbackCategory,
                          ag_test_preloader: AGTestPreLoader,
                          mutation_test_suite_preloader: MutationTestSuitePreLoader,
-                         user: Optional[User]=None) -> Optional[SubmissionResultFeedback]:
+                         user: Optional[User] = None) -> Optional[SubmissionResultFeedback]:
     best: Optional[SubmissionResultFeedback] = None
     for submission in group.submissions.all():
         if user is not None and user.username in submission.does_not_count_for:

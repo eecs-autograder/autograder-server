@@ -1181,7 +1181,7 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
                          group.num_submits_towards_limit)
 
     def _create_submission(self, group: ag_models.Group,
-                           timestamp: Optional[datetime.datetime]=None) -> ag_models.Submission:
+                           timestamp: Optional[datetime.datetime] = None) -> ag_models.Submission:
         client = APIClient()
         client.force_authenticate(group.members.first())
 
