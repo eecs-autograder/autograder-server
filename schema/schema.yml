@@ -5695,6 +5695,7 @@ paths:
                             properties:
                               results:
                                 $ref: '#/components/schemas/SubmissionResultFeedback'
+                          nullable: true
       tags:
       - submissions
   /api/submissions/{id}/ag_test_suite_results/{result_pk}/stdout/:

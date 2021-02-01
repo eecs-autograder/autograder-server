@@ -89,7 +89,8 @@ class AllUltimateSubmissionResults(AGModelAPIView):
                                             'results': as_schema_ref(SubmissionResultFeedback)
                                         }
                                     }
-                                ]
+                                ],
+                                'nullable': True
                             }
                         }
                     })
