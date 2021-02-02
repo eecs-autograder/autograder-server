@@ -1,5 +1,4 @@
 from __future__ import annotations
-from autograder.django_enum import TextChoices
 
 import datetime
 import fnmatch
@@ -21,6 +20,7 @@ import autograder.core.constants as const
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
+from autograder.django_enum import TextChoices
 
 from . import ag_model_base
 from .mutation_test_suite import MutationTestSuiteResult

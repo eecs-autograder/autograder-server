@@ -1,4 +1,3 @@
-from autograder.django_enum import TextChoices
 import datetime
 import os
 from typing import Any, Dict
@@ -9,6 +8,7 @@ from timezone_field import TimeZoneField  # type: ignore
 
 import autograder.core.utils as core_ut
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
+from autograder.django_enum import TextChoices
 
 from ..ag_model_base import AutograderModel, AutograderModelManager
 from ..course import Course

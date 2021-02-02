@@ -1,6 +1,6 @@
-from autograder.core.models.ag_model_base import AutograderModelManager
-
 from django.db import models
+
+from autograder.core.models.ag_model_base import AutograderModelManager
 from autograder.django_enum import TextChoices
 
 from ..task import Task

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from autograder.django_enum import TextChoices
 from typing import Any, Dict, Tuple
 
 from django.core import exceptions
@@ -11,6 +10,7 @@ import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
+from autograder.django_enum import TextChoices
 
 from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
 from ..project import InstructorFile

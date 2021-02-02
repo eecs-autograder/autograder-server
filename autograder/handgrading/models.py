@@ -1,16 +1,16 @@
-from autograder.django_enum import TextChoices
 from typing import List
 
+from django.core import validators
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator
 from django.db import models
 
 import autograder.core.fields as ag_fields
-from django.core import validators
-from django.core.exceptions import ValidationError
-
-from autograder.core.models import AutograderModel, Project, Submission, Group
+from autograder.core.models import AutograderModel, Group, Project, Submission
 from autograder.core.models.ag_model_base import (
-    AutograderModelManager, DictSerializable, non_empty_str_validator, make_min_value_validator)
+    AutograderModelManager, DictSerializable, make_min_value_validator, non_empty_str_validator
+)
+from autograder.django_enum import TextChoices
 
 
 class PointsStyle(TextChoices):

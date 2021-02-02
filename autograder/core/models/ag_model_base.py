@@ -5,7 +5,8 @@ import decimal
 import enum
 import inspect
 from typing import (
-    Callable, Dict, Generic, List, Mapping, Sequence, TYPE_CHECKING, Type, TypedDict, TypeVar, Union, cast, get_type_hints
+    TYPE_CHECKING, Callable, Dict, Generic, List, Mapping, Sequence, Type, TypedDict, TypeVar,
+    Union, cast, get_type_hints
 )
 
 from django.contrib.auth.models import User
