@@ -1,12 +1,13 @@
-from autograder.core.models.ag_model_base import AutograderModelManager
-
 from django.db import models
+
+from autograder.core.models.ag_model_base import AutograderModelManager
+from autograder.django_enum import TextChoices
 
 from ..task import Task
 from .project import Project
 
 
-class DownloadType(models.TextChoices):
+class DownloadType(TextChoices):
     all_scores = 'all_scores'
     final_graded_submission_scores = 'final_graded_submission_scores'
     all_submission_files = 'all_submission_files'

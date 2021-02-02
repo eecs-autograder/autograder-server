@@ -20,6 +20,7 @@ import autograder.core.constants as const
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
+from autograder.django_enum import TextChoices
 
 from . import ag_model_base
 from .mutation_test_suite import MutationTestSuiteResult
@@ -127,7 +128,7 @@ class Submission(ag_model_base.AutograderModel):
     class Meta:
         ordering = ['-pk']
 
-    class GradingStatus(models.TextChoices):
+    class GradingStatus(TextChoices):
         # The submission has been accepted and saved to the database
         received = 'received'
 
