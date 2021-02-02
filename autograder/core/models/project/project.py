@@ -1,3 +1,4 @@
+from autograder.django_enum import TextChoices
 import datetime
 import os
 from typing import Any, Dict
@@ -13,7 +14,7 @@ from ..ag_model_base import AutograderModel, AutograderModelManager
 from ..course import Course
 
 
-class UltimateSubmissionPolicy(models.TextChoices):
+class UltimateSubmissionPolicy(TextChoices):
     """
     This class contains options for choosing which submissions are
     used for final grading. AG test cases also have a feedback

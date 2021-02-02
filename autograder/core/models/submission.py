@@ -1,4 +1,5 @@
 from __future__ import annotations
+from autograder.django_enum import TextChoices
 
 import datetime
 import fnmatch
@@ -127,7 +128,7 @@ class Submission(ag_model_base.AutograderModel):
     class Meta:
         ordering = ['-pk']
 
-    class GradingStatus(models.TextChoices):
+    class GradingStatus(TextChoices):
         # The submission has been accepted and saved to the database
         received = 'received'
 

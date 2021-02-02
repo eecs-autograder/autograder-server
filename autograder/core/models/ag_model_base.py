@@ -5,7 +5,7 @@ import decimal
 import enum
 import inspect
 from typing import (
-    Callable, Dict, List, Mapping, Sequence, Type, TypedDict, TypeVar, Union, cast, get_type_hints
+    Callable, Dict, Generic, List, Mapping, Sequence, TYPE_CHECKING, Type, TypedDict, TypeVar, Union, cast, get_type_hints
 )
 
 from django.contrib.auth.models import User
@@ -20,7 +20,20 @@ from autograder.rest_api.serialize_user import serialize_user
 _AutograderModelType = TypeVar('_AutograderModelType', bound='AutograderModel')
 
 
-class AutograderModelManager(models.Manager[_AutograderModelType]):
+if TYPE_CHECKING:
+    # django.db.models.Manager doesn't support __getitem__ until 3.1,
+    # but we're staying on 2.2.x until we can figure out the
+    # "InterfaceError: connection already closed" problem that appears
+    # when we use 3.x
+    class AutograderModelManager(models.Manager[_AutograderModelType]):
+        def validate_and_create(self, **kwargs: object) -> _AutograderModelType:
+            ...
+
+
+class AutograderModelManager(  # type: ignore
+    Generic[_AutograderModelType],
+    models.Manager  # type: ignore
+):
     """
     The default manager for autograder model classes.
     Its main purpose is to provide the validate_and_create method.
@@ -50,7 +63,7 @@ class AutograderModelManager(models.Manager[_AutograderModelType]):
         The sequence must be homogenous (you cannot mix and match the types
         listed above.
         """
-        instance = self.model()
+        instance: _AutograderModelType = self.model()
         many_to_many_to_set = {}
         for field_name in list(kwargs.keys()):
             field = instance._meta.get_field(field_name)

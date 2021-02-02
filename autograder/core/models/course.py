@@ -1,3 +1,4 @@
+from autograder.django_enum import TextChoices
 import os
 from typing import Any, Optional, TypedDict, cast
 
@@ -15,7 +16,7 @@ from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from .ag_model_base import AutograderModel, AutograderModelManager
 
 
-class Semester(models.TextChoices):
+class Semester(TextChoices):
     fall = 'Fall'
     winter = 'Winter'
     spring = 'Spring'

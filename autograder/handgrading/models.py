@@ -1,3 +1,4 @@
+from autograder.django_enum import TextChoices
 from typing import List
 
 from django.core.validators import MaxValueValidator
@@ -12,7 +13,7 @@ from autograder.core.models.ag_model_base import (
     AutograderModelManager, DictSerializable, non_empty_str_validator, make_min_value_validator)
 
 
-class PointsStyle(models.TextChoices):
+class PointsStyle(TextChoices):
     """
     Specifies how handgrading scores should be initialized.
 

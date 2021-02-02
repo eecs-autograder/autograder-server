@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from autograder.django_enum import TextChoices
 from typing import Any, Dict, Tuple
 
 from django.core import exceptions
@@ -93,7 +94,7 @@ class AGTestCommandFeedbackConfig(DictSerializable):
     )
 
 
-class StdinSource(models.TextChoices):
+class StdinSource(TextChoices):
     none = 'none'  # No input to redirect
     text = 'text'
     instructor_file = 'instructor_file'
@@ -101,13 +102,13 @@ class StdinSource(models.TextChoices):
     setup_stderr = 'setup_stderr'
 
 
-class ExpectedOutputSource(models.TextChoices):
+class ExpectedOutputSource(TextChoices):
     none = 'none'  # Don't check output
     text = 'text'
     instructor_file = 'instructor_file'
 
 
-class ExpectedReturnCode(models.TextChoices):
+class ExpectedReturnCode(TextChoices):
     none = 'none'  # Don't check return code
     zero = 'zero'
     nonzero = 'nonzero'

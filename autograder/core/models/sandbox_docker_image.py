@@ -1,3 +1,4 @@
+from autograder.django_enum import TextChoices
 import os
 from typing import Any, Collection, cast
 
@@ -124,7 +125,7 @@ class _BuildSandboxDockerImageManager(AutograderModelManager['BuildSandboxDocker
         return build_task
 
 
-class BuildImageStatus(models.TextChoices):
+class BuildImageStatus(TextChoices):
     queued = 'queued'
     in_progress = 'in_progress'
     done = 'done'
