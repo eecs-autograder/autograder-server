@@ -51,15 +51,44 @@ sudo apt-get install redis-server
 ```
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt-get update
-sudo apt-get install python3.8 python3.8-distutils
+sudo apt-get install python3.8 python3.8-distutils python3.8-venv
 curl https://bootstrap.pypa.io/get-pip.py | sudo python3.8
 
-pip install pipenv
-pipenv sync --dev
+python3.8 -m venv venv
+source venv/bin/activate
+
+pip install pip-tools wheel
+pip-sync requirements.txt requirements-dev.txt
 ```
 
 You can then run `pipenv shell` to start a shell in the virtual environment,
 or if you prefer you can prefix the python commands below with `pipenv run`.
+
+### Updating Packages
+This section contains some useful reference commands for pip-tools.
+```
+# Note: After running any of these variants of `pip-compile`, you should
+# run `pip-sync requirements.txt requirements-dev.txt`
+# (or `./install_pip_packages.sh`, which is an alias script for this command).
+
+# Update one non-dev (listed in requirements.in) package
+pip-compile -P <package name>
+
+# Update one dev (listed in requirements-dev.in) package
+pip-compile requirements-dev.in -P <package name>
+
+# Update all non-dev packages
+pip-compile --upgrade
+
+# Update all dev packages
+pip-compile requirements-dev.in --upgrade
+```
+
+To install a new non-dev package, add it to requirements.in and then run
+`pip-compile` and `./install_pip_packages.sh`.
+
+To install a new dev package, add it to requirements-dev.in and then run
+`pip-compile requirements-dev.in` and `./install_pip_packages.sh`.
 
 ## Generate Secrets
 Run the following command to generate Django and GPG secrets.

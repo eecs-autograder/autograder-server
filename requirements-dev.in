@@ -1,0 +1,7 @@
+-c requirements.txt
+pycodestyle
+pydocstyle
+mypy
+django-stubs
+djangorestframework-stubs
+isort

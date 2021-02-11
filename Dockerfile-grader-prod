@@ -4,11 +4,10 @@ RUN wget https://get.docker.com -q -O /tmp/getdocker && \
     chmod +x /tmp/getdocker && \
     sh /tmp/getdocker
 
-RUN pip install pipenv
+RUN pip install pip-tools
 
-COPY ./Pipfile .
-COPY ./Pipfile.lock .
-RUN pipenv install --system
+COPY ./requirements.txt .
+RUN pip-sync requirements.txt
 
 WORKDIR /usr/src/app
 
