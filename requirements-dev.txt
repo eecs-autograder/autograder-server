@@ -34,7 +34,7 @@ markupsafe==1.1.1
     # via jinja2
 mypy-extensions==0.4.3
     # via mypy
-mypy==0.079
+mypy==0.800
     # via
     #   -r requirements-dev.in
     #   django-stubs

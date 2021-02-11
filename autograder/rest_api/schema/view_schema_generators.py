@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import enum
-from typing import Dict, List, Optional, TypedDict, Union, cast
+from typing import Any, Dict, List, Optional, TypedDict, Union, cast
 
-from rest_framework.schemas.openapi import AutoSchema  # type: ignore
+from rest_framework.schemas.openapi import AutoSchema
 
 from autograder import utils
 from autograder.rest_api.schema.model_schema_generators import (
@@ -53,7 +53,7 @@ class APITags(enum.Enum):
 
 
 # Drf stubs doesn't have stubs for rest_framework.schemas.openapi yet.
-class AGViewSchemaGenerator(AutoSchema):  # type: ignore
+class AGViewSchemaGenerator(AutoSchema):
     def __init__(
         self,
         tags: List[APITags],
@@ -65,11 +65,11 @@ class AGViewSchemaGenerator(AutoSchema):  # type: ignore
         self._api_class = api_class
         self._operation_id_overrides = operation_id_overrides
 
-    def get_operation(self, path: str, method: HTTPMethodName) -> OperationObject:
-        result = self.get_operation_impl(path, method)
+    def get_operation(self, path: str, method: str) -> Dict[str, Any]:
+        result = self.get_operation_impl(path, cast(HTTPMethodName, method))
         result['tags'] = self._tags
-        result['operationId'] = self._get_operation_id(path, method)
-        return result
+        result['operationId'] = self._get_operation_id(path, cast(HTTPMethodName, method))
+        return cast(Dict[str, Any], result)
 
     # Derived classes will typically override this.
     def get_operation_impl(self, path: str, method: HTTPMethodName) -> OperationObject:

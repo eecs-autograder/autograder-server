@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, TypedDict, TypeVar, Union
 
+from rest_framework.schemas.openapi import DRFOpenAPIInfo
+
 # NOTE on imports: This module should NOT import from any of the other
 # modules in the schema package.
 
@@ -18,7 +20,7 @@ HTTPMethodName = Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 class _OpenAPIObjectRequired(TypedDict):
     openapi: str
-    info: FIXME_TYPE
+    info: DRFOpenAPIInfo
     paths: Dict[str, PathItemObject]
 
 

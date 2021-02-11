@@ -69,6 +69,7 @@ This section contains some useful reference commands for pip-tools.
 ```
 # Note: After running any of these variants of `pip-compile`, you should
 # run `pip-sync requirements.txt requirements-dev.txt`
+# (or `./install_pip_packages.sh`, which is an alias script for this command).
 
 # Update one non-dev (listed in requirements.in) package
 pip-compile -P <package name>
@@ -83,11 +84,11 @@ pip-compile --upgrade
 pip-compile requirements-dev.in --upgrade
 ```
 
-To install a new package, add it to requirements.in and then run
-`pip-compile` and `pip-sync requirements.txt`.
+To install a new non-dev package, add it to requirements.in and then run
+`pip-compile` and `./install_pip_packages.sh`.
 
 To install a new dev package, add it to requirements-dev.in and then run
-`pip-compile requirements-dev.in` and `pip-sync requirements-dev.txt`.
+`pip-compile requirements-dev.in` and `./install_pip_packages.sh`.
 
 ## Generate Secrets
 Run the following command to generate Django and GPG secrets.
