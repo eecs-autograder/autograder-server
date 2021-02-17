@@ -383,6 +383,8 @@ class Submission(ag_model_base.AutograderModel):
 
         'position_in_queue',
 
+        'grading_start_time',
+        'non_deferred_grading_end_time',
         'last_modified'
     )
 
