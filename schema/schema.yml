@@ -1396,7 +1396,6 @@ paths:
                   - Australia/Adelaide
                   - Australia/Brisbane
                   - Australia/Broken_Hill
-                  - Australia/Currie
                   - Australia/Darwin
                   - Australia/Eucla
                   - Australia/Hobart
@@ -2092,7 +2091,6 @@ paths:
                   - Australia/Adelaide
                   - Australia/Brisbane
                   - Australia/Broken_Hill
-                  - Australia/Currie
                   - Australia/Darwin
                   - Australia/Eucla
                   - Australia/Hobart
@@ -3172,6 +3170,20 @@ paths:
                     \ submissions\n        to be graded for the associated project."
                   readOnly: true
                   type: integer
+                grading_start_time:
+                  description: The time that the submission was marked as being_graded.Can
+                    be used to calculate time spent in queue.
+                  nullable: true
+                  readOnly: true
+                  type: string
+                  format: date-time
+                non_deferred_grading_end_time:
+                  description: The time that the submission was marked as waiting_for_deferred.Can
+                    be used to calculate time spent grading non-deferred tests.
+                  nullable: true
+                  readOnly: true
+                  type: string
+                  format: date-time
                 last_modified:
                   description: ''
                   nullable: false
@@ -8601,7 +8613,6 @@ components:
           - Australia/Adelaide
           - Australia/Brisbane
           - Australia/Broken_Hill
-          - Australia/Currie
           - Australia/Darwin
           - Australia/Eucla
           - Australia/Hobart
@@ -9108,6 +9119,18 @@ components:
           description: "Returns this submission's position in the queue of submissions\n\
             \        to be graded for the associated project."
           type: integer
+        grading_start_time:
+          description: The time that the submission was marked as being_graded.Can
+            be used to calculate time spent in queue.
+          nullable: true
+          type: string
+          format: date-time
+        non_deferred_grading_end_time:
+          description: The time that the submission was marked as waiting_for_deferred.Can
+            be used to calculate time spent grading non-deferred tests.
+          nullable: true
+          type: string
+          format: date-time
         last_modified:
           description: ''
           nullable: false

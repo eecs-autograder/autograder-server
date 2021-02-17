@@ -398,7 +398,9 @@ def _django_field(
     if include_readonly:
         result['readOnly'] = read_only
 
-    if hasattr(field, 'choices') and field.choices is not None:
+    # In Django 2, choices is an empty list by default. In Django 3,
+    # choices is None by default.
+    if hasattr(field, 'choices') and field.choices:
         result['enum'] = [str(choice[0]) for choice in field.choices]
 
     if type(field) in _FIELD_TYPES:
