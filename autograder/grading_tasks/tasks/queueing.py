@@ -1,3 +1,5 @@
+import logging
+
 import celery
 from django.conf import settings
 from django.db import transaction
@@ -57,20 +59,21 @@ def register_project_queues(worker_names=None, project_pks=None):
             get_worker_prefix(worker_name) in settings.WORKER_PREFIX_TO_QUEUE_TMPLS
         ]
 
-    print('worker names', worker_names, flush=True)
+    logger = logging.getLogger(__name__)
+    logger.info(f'worker names: {", ".join(worker_names)}')
     if not worker_names:
         return
 
     if not project_pks:
         project_pks = [project.pk for project in ag_models.Project.objects.all()]
+    logger.info(f'{len(project_pks)} projects to register')
 
     for worker_name in worker_names:
         prefix = get_worker_prefix(worker_name)
         for pk in project_pks:
             queue_tmpls = settings.WORKER_PREFIX_TO_QUEUE_TMPLS[prefix]
             for tmpl in queue_tmpls:
-                res = app.control.add_consumer(tmpl.format(pk), destination=[worker_name])
-            print(res)
+                app.control.add_consumer(tmpl.format(pk), destination=[worker_name])
 
 
 def get_worker_prefix(worker_hostname: str):
