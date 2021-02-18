@@ -9,27 +9,29 @@ from django.db.models import F
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from rest_framework import decorators, exceptions, mixins, response, status
+from rest_framework import exceptions, response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.utils.testing as test_ut
 from autograder.core.submission_email_receipts import send_submission_received_email
-from autograder.core.submission_feedback import (AGTestPreLoader, MutationTestSuitePreLoader,
-                                                 SubmissionResultFeedback)
-from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
-                                        APITags, CustomViewDict, CustomViewSchema, as_content_obj,
-                                        as_schema_ref)
-from autograder.rest_api.serialize_ultimate_submission_results import \
+from autograder.core.submission_feedback import (
+    AGTestPreLoader, MutationTestSuitePreLoader, SubmissionResultFeedback
+)
+from autograder.rest_api.schema import (
+    AGDetailViewSchemaGenerator, AGListViewSchemaMixin, APITags, CustomViewDict, CustomViewSchema,
+    as_content_obj
+)
+from autograder.rest_api.serialize_ultimate_submission_results import (
     get_submission_data_with_results
+)
 from autograder.rest_api.size_file_response import SizeFileResponse
-from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      NestedModelView,
-                                                      convert_django_validation_error,
-                                                      require_query_params)
+from autograder.rest_api.views.ag_model_views import (
+    AGModelAPIView, AGModelDetailView, NestedModelView, convert_django_validation_error,
+    require_query_params
+)
 
-from .common import make_fdbk_category_param_docs, validate_fdbk_category
+from .common import validate_fdbk_category
 
 can_view_group = (
     P(ag_permissions.IsReadOnly)

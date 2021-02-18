@@ -1,3 +1,4 @@
+from autograder.core.models.project.project import UltimateSubmissionPolicy
 import datetime
 from unittest import mock
 
@@ -527,6 +528,52 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
             include_handgrading=True
         )
         self.assertEqual(expected, actual)
+
+    def test_handgrading_result_attached_to_non_ultimate_submission(self):
+        # Regression test for https://github.com/eecs-autograder/autograder-server/issues/487
+
+        self.project.validate_and_update(
+            ultimate_submission_policy=UltimateSubmissionPolicy.most_recent)
+        handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            project=self.project
+        )
+        points = 8  # Any nonzero value should be fine
+        criterion = hg_models.Criterion.objects.validate_and_create(
+            points=points, handgrading_rubric=handgrading_rubric)
+
+        group = obj_build.make_group(project=self.project)
+        submission = obj_build.make_finished_submission(group)
+        handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            group=group,
+            handgrading_rubric=handgrading_rubric,
+            finished_grading=True
+        )
+        hg_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=criterion,
+            handgrading_result=handgrading_result)
+
+        most_recent = obj_build.make_finished_submission(group)
+
+        # Even though we pass in the most recent submission
+        # (which has no handgrading result), the serialized results
+        # should include handgrading results because the handgrading
+        # result should be loaded from the group.
+        results = serialize_ultimate_submission_results(
+            [SubmissionResultFeedback(most_recent, ag_models.FeedbackCategory.max,
+                                      self.ag_test_preloader)],
+            full_results=False,
+            include_handgrading=True,
+        )
+        self.assertEqual(
+            points,
+            results[0]['ultimate_submission']['results']['handgrading_total_points']
+        )
+        self.assertEqual(
+            points,
+            results[0]['ultimate_submission']['results']['handgrading_total_points_possible']
+        )
 
     def _add_results_to_submission(self, submission: ag_models.Submission,
                                    *, results_correct: bool) -> ag_models.Submission:

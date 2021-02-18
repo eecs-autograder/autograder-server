@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Iterable, List
 
 from django.utils import timezone
@@ -51,7 +53,7 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
             submission_data = None
         else:
             submission_data = get_submission_data_with_results(
-                submission_fdbk, full_results, include_handgrading)
+                submission_fdbk, full_results, include_handgrading, group=group)
 
         group_data = group.to_dict()
 
@@ -77,7 +79,8 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
                         submission_fdbk.mutation_test_suite_preloader
                     ),
                     full_results,
-                    include_handgrading
+                    include_handgrading,
+                    group=group
                 )
                 user_data['ultimate_submission'] = user_submission_data
             else:
@@ -90,7 +93,8 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
 
 def get_submission_data_with_results(submission_fdbk: SubmissionResultFeedback,
                                      full_results: bool,
-                                     include_handgrading: bool = False):
+                                     include_handgrading: bool = False,
+                                     group: ag_models.Group | None = None):
     submission_data = submission_fdbk.submission.to_dict()
 
     if not full_results:
@@ -102,13 +106,13 @@ def get_submission_data_with_results(submission_fdbk: SubmissionResultFeedback,
         submission_results = submission_fdbk.to_dict()
 
     if include_handgrading:
-        handgrading_result_available = (
-            hasattr(submission_fdbk.submission, 'handgrading_result') and (
-                submission_fdbk.submission.handgrading_result.finished_grading)
-        )
+        assert group is not None, "'group' is required when 'include_handgrading' is True"
 
-        if handgrading_result_available:
-            handgrading_result = submission_fdbk.submission.handgrading_result
+        handgrading_result = None
+        if hasattr(group, 'handgrading_result'):
+            handgrading_result = group.handgrading_result
+
+        if handgrading_result is not None and handgrading_result.finished_grading:
             submission_results['handgrading_total_points'] = handgrading_result.total_points
             submission_results['handgrading_total_points_possible'] = (
                 handgrading_result.total_points_possible)

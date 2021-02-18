@@ -3,9 +3,7 @@ from typing import BinaryIO, Callable, Optional
 from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-from drf_composable_permissions.p import P
-from rest_framework import response, status
-from rest_framework.exceptions import ValidationError
+from rest_framework import response
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
@@ -14,14 +12,11 @@ from autograder.core.caching import get_cached_submission_feedback
 from autograder.core.models.submission import get_submissions_with_results_queryset
 from autograder.core.submission_feedback import (AGTestCommandResultFeedback, AGTestPreLoader,
                                                  AGTestSuiteResultFeedback,
-                                                 MutationTestSuitePreLoader,
                                                  SubmissionResultFeedback)
-from autograder.rest_api.schema import APITags, CustomViewSchema, as_content_obj, as_schema_ref
-from autograder.rest_api.serialize_ultimate_submission_results import \
-    get_submission_data_with_results
+from autograder.rest_api.schema import APITags, CustomViewSchema, as_content_obj
 from autograder.rest_api.views.ag_model_views import AGModelAPIView, require_query_params
 
-from .common import FDBK_CATEGORY_PARAM, make_fdbk_category_param_docs, validate_fdbk_category
+from .common import FDBK_CATEGORY_PARAM, validate_fdbk_category
 
 
 class SubmissionResultsViewBase(AGModelAPIView):
