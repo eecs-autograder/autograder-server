@@ -1,10 +1,9 @@
 from typing import Optional
 
 from django.db import transaction
-from django.db.models import Case, F, When
 from django.shortcuts import get_object_or_404
 from drf_composable_permissions.p import P
-from rest_framework import decorators, mixins, permissions, response, status
+from rest_framework import response, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -15,14 +14,15 @@ from autograder.core.caching import clear_submission_results_cache
 from autograder.core.models.copy_project_and_course import copy_project
 from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
 from autograder.rest_api import tasks as api_tasks
-from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator, APITags, CustomViewSchema,
-                                        as_content_obj, as_schema_ref)
+from autograder.rest_api.schema import (
+    AGDetailViewSchemaGenerator, AGListCreateViewSchemaGenerator, APITags, CustomViewSchema,
+    as_content_obj
+)
 from autograder.rest_api.size_file_response import SizeFileResponse
-from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      NestedModelView,
-                                                      convert_django_validation_error,
-                                                      handle_object_does_not_exist_404)
+from autograder.rest_api.views.ag_model_views import (
+    AGModelAPIView, AGModelDetailView, NestedModelView, convert_django_validation_error,
+    handle_object_does_not_exist_404
+)
 
 can_list_projects = (
     P(ag_permissions.IsReadOnly)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import autograder.core.models as ag_models
 import autograder.handgrading.models as hg_models
 
@@ -16,12 +18,16 @@ def import_handgrading_rubric(*, import_to: ag_models.Project, import_from: ag_m
     new_rubric.show_grades_and_rubric_to_students = False
     new_rubric.save()
 
+    new_criteria: list[hg_models.Criterion] = []
     for criterion in import_from.handgrading_rubric.criteria.all():
         criterion.pk = None
         criterion.handgrading_rubric = new_rubric
-        criterion.save()
+        new_criteria.append(criterion)
+    hg_models.Criterion.objects.bulk_create(new_criteria)
 
+    new_annotations: list[hg_models.Annotation] = []
     for annotation in import_from.handgrading_rubric.annotations.all():
         annotation.pk = None
         annotation.handgrading_rubric = new_rubric
-        annotation.save()
+        new_annotations.append(annotation)
+    hg_models.Annotation.objects.bulk_create(new_annotations)
