@@ -1,3 +1,4 @@
+from autograder.core.models.ag_test.ag_test_command import AGTestCommand
 import itertools
 from typing import Sequence
 
@@ -123,10 +124,10 @@ class CopyProjectTestCase(UnitTestBase):
 
         ignore_fields = ['pk', 'course', 'last_modified',
                          'instructor_files', 'expected_student_files']
-        expected_ag_tests = _pop_many(project.to_dict(), ignore_fields)
-        expected_ag_tests.update(
+        expected_project = _pop_many(project.to_dict(), ignore_fields)
+        expected_project.update(
             {'visible_to_students': False, 'hide_ultimate_submission_fdbk': True})
-        self.assertEqual(expected_ag_tests, _pop_many(new_project.to_dict(), ignore_fields))
+        self.assertEqual(expected_project, _pop_many(new_project.to_dict(), ignore_fields))
 
         self.assertEqual(project.instructor_files.count(), new_project.instructor_files.count())
         for old_file, new_file in itertools.zip_longest(
@@ -152,12 +153,16 @@ class CopyProjectTestCase(UnitTestBase):
 
         old_suite_pks = {suite.pk for suite in project.ag_test_suites.all()}
         new_suite_pks = {suite.pk for suite in new_project.ag_test_suites.all()}
+        self.assertEqual(len(old_suite_pks), len(new_suite_pks))
+        self.assertNotEqual(0, len(new_suite_pks))
         self.assertTrue(old_suite_pks.isdisjoint(new_suite_pks))
 
         old_case_pks = {case.pk for case in
                         ag_models.AGTestCase.objects.filter(ag_test_suite__project=project)}
         new_case_pks = {case.pk for case in
                         ag_models.AGTestCase.objects.filter(ag_test_suite__project=new_project)}
+        self.assertEqual(len(old_case_pks), len(new_case_pks))
+        self.assertNotEqual(0, len(new_case_pks))
         self.assertTrue(old_case_pks.isdisjoint(new_case_pks))
 
         old_cmd_pks = {
@@ -166,10 +171,14 @@ class CopyProjectTestCase(UnitTestBase):
         new_cmd_pks = {
             cmd.pk for cmd in ag_models.AGTestCommand.objects.filter(
                 ag_test_case__ag_test_suite__project=new_project)}
+        self.assertEqual(len(old_cmd_pks), len(new_cmd_pks))
+        self.assertNotEqual(0, len(new_cmd_pks))
         self.assertTrue(old_cmd_pks.isdisjoint(new_cmd_pks))
 
         old_mutation_suite_pks = {suite.pk for suite in project.mutation_test_suites.all()}
         new_mutation_suite_pks = {suite.pk for suite in new_project.mutation_test_suites.all()}
+        self.assertEqual(len(old_mutation_suite_pks), len(new_mutation_suite_pks))
+        self.assertNotEqual(0, len(new_mutation_suite_pks))
         self.assertTrue(old_mutation_suite_pks.isdisjoint(new_mutation_suite_pks))
 
         ignore_fields = ['pk', 'project', 'last_modified',
@@ -197,6 +206,48 @@ class CopyProjectTestCase(UnitTestBase):
             dict_['instructor_files_needed'].sort(key=lambda obj: obj['name'])
             dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
         self.assertEqual(expected_mutation_suites, actual_mutation_suites)
+
+        # Make sure that the [stdin/stdout/stderr]_instructor_file fields
+        # are using the copied instructor files, not the originals.
+        old_cmds = list(
+            ag_models.AGTestCommand.objects.filter(
+                ag_test_case__ag_test_suite__project=project))
+        new_cmds = list(
+            ag_models.AGTestCommand.objects.filter(
+                ag_test_case__ag_test_suite__project=new_project))
+        self.assertEqual(len(old_cmds), len(new_cmds))
+        for old_cmd, new_cmd in zip(old_cmds, new_cmds):
+            if old_cmd.stdin_instructor_file is None:
+                self.assertIsNone(new_cmd.stdin_instructor_file)
+            else:
+                self.assertEqual(
+                    _pop_many(old_cmd.stdin_instructor_file.to_dict(), ignore_fields),
+                    _pop_many(new_cmd.stdin_instructor_file.to_dict(), ignore_fields),
+                )
+                self.assertNotEqual(
+                    old_cmd.stdin_instructor_file.pk, new_cmd.stdin_instructor_file.pk)
+
+            if old_cmd.expected_stdout_instructor_file is None:
+                self.assertIsNone(new_cmd.expected_stdout_instructor_file)
+            else:
+                self.assertEqual(
+                    _pop_many(old_cmd.expected_stdout_instructor_file.to_dict(), ignore_fields),
+                    _pop_many(new_cmd.expected_stdout_instructor_file.to_dict(), ignore_fields),
+                )
+                self.assertNotEqual(
+                    old_cmd.expected_stdout_instructor_file.pk,
+                    new_cmd.expected_stdout_instructor_file.pk)
+
+            if old_cmd.expected_stderr_instructor_file is None:
+                self.assertIsNone(new_cmd.expected_stderr_instructor_file)
+            else:
+                self.assertEqual(
+                    _pop_many(old_cmd.expected_stderr_instructor_file.to_dict(), ignore_fields),
+                    _pop_many(new_cmd.expected_stderr_instructor_file.to_dict(), ignore_fields),
+                )
+                self.assertNotEqual(
+                    old_cmd.expected_stderr_instructor_file.pk,
+                    new_cmd.expected_stderr_instructor_file.pk)
 
         new_rubric = new_project.handgrading_rubric
         self.assertNotEqual(handgrading_rubric.pk, new_rubric.pk)
