@@ -224,7 +224,8 @@ class CopyProjectTestCase(UnitTestBase):
                     _pop_many(old_cmd.stdin_instructor_file.to_dict(), ignore_fields),
                     _pop_many(new_cmd.stdin_instructor_file.to_dict(), ignore_fields),
                 )
-                self.assertNotEqual(old_cmd.stdin_instructor_file.pk, new_cmd.stdin_instructor_file.pk)
+                self.assertNotEqual(
+                    old_cmd.stdin_instructor_file.pk, new_cmd.stdin_instructor_file.pk)
 
             if old_cmd.expected_stdout_instructor_file is None:
                 self.assertIsNone(new_cmd.expected_stdout_instructor_file)
