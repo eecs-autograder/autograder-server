@@ -1547,6 +1547,38 @@ paths:
                   nullable: false
                   readOnly: false
                   type: boolean
+                early_submission_bonuses:
+                  description: "A list of objects describing this project's early\n\
+                    \            submission bonus policy. The bonuses computed from\
+                    \ this list\n            are applied additively, i.e., if there\
+                    \ is one entry that grants\n            a 5% bonus for being 4\
+                    \ hours early and another that grants a 3%\n            bonus\
+                    \ for being 8 hours early, a submission that is 8 hours early\n\
+                    \            will receive an 8% bonus."
+                  nullable: false
+                  readOnly: true
+                  type: array
+                  items:
+                    description: ''
+                    nullable: false
+                    allOf:
+                    - $ref: '#/components/schemas/EarlySubmissionBonus'
+                late_submission_penalties:
+                  description: "A list of objects describing this project's late\n\
+                    \            submission penalty policy. The penalties computed\
+                    \ from this list\n            are applied additively, i.e., if\
+                    \ there is one entry that applies\n            a 5% penalty for\
+                    \ being 4 hours late and another that applies a 3%\n         \
+                    \   penalty for being 8 hours late, a submission that is 8 hours\
+                    \ late\n            will receive an 8% penalty."
+                  nullable: false
+                  readOnly: true
+                  type: array
+                  items:
+                    description: ''
+                    nullable: false
+                    allOf:
+                    - $ref: '#/components/schemas/LateSubmissionPenalty'
                 ultimate_submission_policy:
                   description: "The \"ultimate\" submission for a group is the one\n\
                     \            that will be used for final grading. This field specifies\n\
@@ -2242,6 +2274,38 @@ paths:
                   nullable: false
                   readOnly: false
                   type: boolean
+                early_submission_bonuses:
+                  description: "A list of objects describing this project's early\n\
+                    \            submission bonus policy. The bonuses computed from\
+                    \ this list\n            are applied additively, i.e., if there\
+                    \ is one entry that grants\n            a 5% bonus for being 4\
+                    \ hours early and another that grants a 3%\n            bonus\
+                    \ for being 8 hours early, a submission that is 8 hours early\n\
+                    \            will receive an 8% bonus."
+                  nullable: false
+                  readOnly: true
+                  type: array
+                  items:
+                    description: ''
+                    nullable: false
+                    allOf:
+                    - $ref: '#/components/schemas/EarlySubmissionBonus'
+                late_submission_penalties:
+                  description: "A list of objects describing this project's late\n\
+                    \            submission penalty policy. The penalties computed\
+                    \ from this list\n            are applied additively, i.e., if\
+                    \ there is one entry that applies\n            a 5% penalty for\
+                    \ being 4 hours late and another that applies a 3%\n         \
+                    \   penalty for being 8 hours late, a submission that is 8 hours\
+                    \ late\n            will receive an 8% penalty."
+                  nullable: false
+                  readOnly: true
+                  type: array
+                  items:
+                    description: ''
+                    nullable: false
+                    allOf:
+                    - $ref: '#/components/schemas/LateSubmissionPenalty'
                 ultimate_submission_policy:
                   description: "The \"ultimate\" submission for a group is the one\n\
                     \            that will be used for final grading. This field specifies\n\
@@ -8761,6 +8825,34 @@ components:
             \         past the deadline."
           nullable: false
           type: boolean
+        early_submission_bonuses:
+          description: "A list of objects describing this project's early\n      \
+            \      submission bonus policy. The bonuses computed from this list\n\
+            \            are applied additively, i.e., if there is one entry that\
+            \ grants\n            a 5% bonus for being 4 hours early and another that\
+            \ grants a 3%\n            bonus for being 8 hours early, a submission\
+            \ that is 8 hours early\n            will receive an 8% bonus."
+          nullable: false
+          type: array
+          items:
+            description: ''
+            nullable: false
+            allOf:
+            - $ref: '#/components/schemas/EarlySubmissionBonus'
+        late_submission_penalties:
+          description: "A list of objects describing this project's late\n       \
+            \     submission penalty policy. The penalties computed from this list\n\
+            \            are applied additively, i.e., if there is one entry that\
+            \ applies\n            a 5% penalty for being 4 hours late and another\
+            \ that applies a 3%\n            penalty for being 8 hours late, a submission\
+            \ that is 8 hours late\n            will receive an 8% penalty."
+          nullable: false
+          type: array
+          items:
+            description: ''
+            nullable: false
+            allOf:
+            - $ref: '#/components/schemas/LateSubmissionPenalty'
         ultimate_submission_policy:
           description: "The \"ultimate\" submission for a group is the one\n     \
             \       that will be used for final grading. This field specifies\n  \
@@ -8820,6 +8912,70 @@ components:
       - most_recent
       - best_basic_score
       - best
+    EarlySubmissionBonus:
+      type: object
+      properties:
+        num_hours_early:
+          description: "The number of hours before the deadline\n            a group's\
+            \ most recent submission must be to receive the bonus."
+          type: integer
+        percent_bonus:
+          description: "The bonus to be applied to the submission score, e.g.,\n \
+            \           if 'percent_bonus' is 10, we would compute \"score * 1.10\"\
+            .\n        "
+          type: integer
+        use_soft_deadline:
+          description: "\"When true, the number of hours early will be computed\n\
+            \            relative to the project's soft deadline. When false, the\
+            \ computation will\n            use the project's hard deadline.\n   \
+            \     "
+          type: boolean
+        max_num_applications:
+          description: "The maximum number of times to apply this bonus.\n       \
+            \     When this field is null, there is no limit on how many times this\
+            \ bonus\n            can be applied. For example, if 'num_hours_early'\
+            \ is 4 and the submission\n            in question is 13 hours early,\
+            \ the bonus will be applied three times. If we\n            set 'max_num_applications'\
+            \ to 2 in this same example, the bonus would\n            only be applied\
+            \ twice.\n\nMultiple applications of the bonus are applied additively.\
+            \ That is,\n            if 'percent_bonus' is 5 and the bonus is to be\
+            \ applied twice, we would\n            apply a single 10% bonus.\n   \
+            \     "
+          nullable: true
+          type: integer
+    LateSubmissionPenalty:
+      type: object
+      properties:
+        num_hours_late:
+          description: "The number of hours before the deadline\n            a group's\
+            \ most recent submission must be to receive the penalty."
+          type: integer
+        round_up_to_num_hours_late:
+          description: "\"When true, the number of hours past\n            the deadline\
+            \ will be rounded up to the nearest multiple of 'num_hours_late'.\n  \
+            \          For example, if 'num_hours_late' is 1 and the submission in\
+            \ question\n            is 30 minutes late, the penalty would be applied\
+            \ once if this field is\n            true and zero times if this field\
+            \ is false.\n        "
+          type: boolean
+        percent_penalty:
+          description: "The penalty to be applied to the submission score, e.g.,\n\
+            \            if 'percent_penalty' is 10, we would compute \"score * 1.10\"\
+            .\n        "
+          type: integer
+        max_num_applications:
+          description: "The maximum number of times to apply this penalty.\n     \
+            \       When this field is null, there is no limit on how many times this\
+            \ penalty\n            can be applied. For example, if 'num_hours_late'\
+            \ is 4 and the submission\n            in question is 13 hours late, the\
+            \ penalty will be applied three times. If we\n            set 'max_num_applications'\
+            \ to 2 in this same example, the penalty would\n            only be applied\
+            \ twice.\n\nMultiple applications of the penalty are applied additively.\
+            \ That is,\n            if 'percent_penalty' is 5 and the penalty is to\
+            \ be applied twice, we would\n            apply a single 10% penalty.\n\
+            \        "
+          nullable: true
+          type: integer
     ExpectedStudentFile:
       type: object
       properties:

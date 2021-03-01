@@ -1,16 +1,22 @@
+from __future__ import annotations
+
 import datetime
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
+from django.contrib.postgres.fields import ArrayField
 from django.core import exceptions, validators
 from django.db import models
 from timezone_field import TimeZoneField  # type: ignore
 
+import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from autograder.django_enum import TextChoices
 
-from ..ag_model_base import AutograderModel, AutograderModelManager
+from ..ag_model_base import (
+    AutograderModel, AutograderModelManager, DictSerializable, make_min_value_validator
+)
 from ..course import Course
 
 
@@ -31,6 +37,115 @@ class UltimateSubmissionPolicy(TextChoices):
     # for comparison is computed using maximum feedback
     # settings.
     best = 'best'
+
+
+def _max_num_applications_validator(value: object | None) -> None:
+    if object is None:
+        return
+
+    return make_min_value_validator(1)(value)
+
+
+class EarlySubmissionBonus(DictSerializable):
+    """
+    Contains data describing how to apply an early submission bonus to
+    a group's most recent submission.
+    """
+    def __init__(
+        self,
+        *,
+        num_hours_early: int,
+        percent_bonus: int,
+        use_soft_deadline: bool,
+        max_num_applications: Optional[int],
+    ):
+        self.num_hours_early = num_hours_early
+        self.percent_bonus = percent_bonus
+        self.use_soft_deadline = use_soft_deadline
+        self.max_num_applications = max_num_applications
+
+    FIELD_VALIDATORS = {
+        'num_hours_early': [make_min_value_validator(1)],
+        'percent_bonus': [make_min_value_validator(0)],
+        'max_num_applications': [_max_num_applications_validator],
+    }
+
+    FIELD_DESCRIPTIONS = {
+        'num_hours_early': """The number of hours before the deadline
+            a group's most recent submission must be to receive the bonus.""",
+        'percent_bonus': """The bonus to be applied to the submission score, e.g.,
+            if 'percent_bonus' is 10, we would compute "score * 1.10".
+        """,
+        'use_soft_deadline': """"When true, the number of hours early will be computed
+            relative to the project's soft deadline. When false, the computation will
+            use the project's hard deadline.
+        """,
+        'max_num_applications': """The maximum number of times to apply this bonus.
+            When this field is null, there is no limit on how many times this bonus
+            can be applied. For example, if 'num_hours_early' is 4 and the submission
+            in question is 13 hours early, the bonus will be applied three times. If we
+            set 'max_num_applications' to 2 in this same example, the bonus would
+            only be applied twice.
+        """.strip()  # For docs formatting
+        + """\n\nMultiple applications of the bonus are applied additively. That is,
+            if 'percent_bonus' is 5 and the bonus is to be applied twice, we would
+            apply a single 10% bonus.
+        """,
+    }
+
+
+class LateSubmissionPenalty(DictSerializable):
+    """
+    Contains data describing how to apply a late submission penalty to
+    a group's most recent submission.
+
+    Note that late submission penalties can only be computed relative to
+    a soft deadline. However, it is still possible to use a hard deadline
+    to prevent submissions after a given point in time.
+    """
+    def __init__(
+        self,
+        *,
+        num_hours_late: int,
+        round_up_to_num_hours_late: bool,
+        percent_penalty: int,
+        max_num_applications: Optional[int],
+    ):
+        self.num_hours_late = num_hours_late
+        self.percent_penalty = percent_penalty
+        self.round_up_to_num_hours_late = round_up_to_num_hours_late
+        self.max_num_applications = max_num_applications
+
+    FIELD_VALIDATORS = {
+        'num_hours_late': [make_min_value_validator(1)],
+        'percent_penalty': [make_min_value_validator(0)],
+        'max_num_applications': [_max_num_applications_validator],
+    }
+
+    FIELD_DESCRIPTIONS = {
+        'num_hours_late': """The number of hours before the deadline
+            a group's most recent submission must be to receive the penalty.""",
+        'percent_penalty': """The penalty to be applied to the submission score, e.g.,
+            if 'percent_penalty' is 10, we would compute "score * 1.10".
+        """,
+        'round_up_to_num_hours_late': """"When true, the number of hours past
+            the deadline will be rounded up to the nearest multiple of 'num_hours_late'.
+            For example, if 'num_hours_late' is 1 and the submission in question
+            is 30 minutes late, the penalty would be applied once if this field is
+            true and zero times if this field is false.
+        """,
+        'max_num_applications': """The maximum number of times to apply this penalty.
+            When this field is null, there is no limit on how many times this penalty
+            can be applied. For example, if 'num_hours_late' is 4 and the submission
+            in question is 13 hours late, the penalty will be applied three times. If we
+            set 'max_num_applications' to 2 in this same example, the penalty would
+            only be applied twice.
+        """.strip()  # For docs formatting
+        + """\n\nMultiple applications of the penalty are applied additively. That is,
+            if 'percent_penalty' is 5 and the penalty is to be applied twice, we would
+            apply a single 10% penalty.
+        """,
+    }
 
 
 class Project(AutograderModel):
@@ -171,6 +286,30 @@ class Project(AutograderModel):
         help_text="""Whether to allow the use of late days for submitting
             past the deadline.""")
 
+    early_submission_bonuses = ArrayField(
+        ag_fields.ValidatedJSONField(EarlySubmissionBonus),
+        blank=True, default=list,
+        help_text="""A list of objects describing this project's early
+            submission bonus policy. The bonuses computed from this list
+            are applied additively, i.e., if there is one entry that grants
+            a 5% bonus for being 4 hours early and another that grants a 3%
+            bonus for being 8 hours early, a submission that is 8 hours early
+            will receive an 8% bonus.
+        """
+    )
+
+    late_submission_penalties = ArrayField(
+        ag_fields.ValidatedJSONField(LateSubmissionPenalty),
+        blank=True, default=list,
+        help_text="""A list of objects describing this project's late
+            submission penalty policy. The penalties computed from this list
+            are applied additively, i.e., if there is one entry that applies
+            a 5% penalty for being 4 hours late and another that applies a 3%
+            penalty for being 8 hours late, a submission that is 8 hours late
+            will receive an 8% penalty.
+        """
+    )
+
     ultimate_submission_policy = models.TextField(
         choices=UltimateSubmissionPolicy.choices,
         default=UltimateSubmissionPolicy.most_recent,
@@ -249,6 +388,8 @@ class Project(AutograderModel):
                     {'soft_closing_time': (
                         'Soft closing time must be before hard closing time')})
 
+        # FIXME make sure closing times are not null when early/late bonuses are used
+
     @property
     def has_handgrading_rubric(self) -> bool:
         """
@@ -287,6 +428,8 @@ class Project(AutograderModel):
         'total_submission_limit',
 
         'allow_late_days',
+        'early_submission_bonuses',
+        'late_submission_penalties',
 
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',

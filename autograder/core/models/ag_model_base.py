@@ -271,7 +271,7 @@ class DictSerializable(ToDictMixin):
     """
     _DerivedType = TypeVar('_DerivedType', bound='DictSerializable')
 
-    def __init__(self, **kwargs: object) -> None:
+    def __init__(self, **kwargs: object):
         raise NotImplementedError('Derived classes must provide their own constructor.')
 
     @classmethod

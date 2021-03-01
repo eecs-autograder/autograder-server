@@ -27,6 +27,8 @@ from .mutation_test_suite import BugsExposedFeedbackLevel as BugsExposedFeedback
 from .mutation_test_suite import MutationTestSuite as MutationTestSuite
 from .mutation_test_suite import MutationTestSuiteFeedbackConfig as MutationTestSuiteFeedbackConfig
 from .mutation_test_suite import MutationTestSuiteResult as MutationTestSuiteResult
+from .project import EarlySubmissionBonus as EarlySubmissionBonus
+from .project import LateSubmissionPenalty as LateSubmissionPenalty
 from .project import Project as Project
 from .project import UltimateSubmissionPolicy as UltimateSubmissionPolicy
 from .project.download_task import DownloadTask as DownloadTask
@@ -38,8 +40,10 @@ from .sandbox_docker_image import BuildImageStatus as BuildImageStatus
 from .sandbox_docker_image import BuildSandboxDockerImageTask as BuildSandboxDockerImageTask
 from .sandbox_docker_image import SandboxDockerImage as SandboxDockerImage
 from .submission import Submission as Submission
-from .submission import \
+from .submission import (
     get_mutation_test_suite_results_queryset as get_mutation_test_suite_results_queryset
-from .submission import \
+)
+from .submission import (
     get_submissions_with_results_queryset as get_submissions_with_results_queryset
+)
 from .task import Task as Task

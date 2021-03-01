@@ -99,6 +99,14 @@ class Group(ag_model_base.AutograderModel):
             date, overriding the project closing time.
             Default value: None""")
 
+    allow_submissions_past_extension = models.BooleanField(
+        blank=True, default=False,
+        help_text="""When True, 'extended_due_date' is treated as a soft
+            deadline, and the group can continue submitting after
+            'extended_due_date' has passed.
+        """
+    )
+
     # Remove in version 5.0.0
     old_bonus_submissions_remaining = models.IntegerField(
         blank=True,

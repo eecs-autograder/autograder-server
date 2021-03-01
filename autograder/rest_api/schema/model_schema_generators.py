@@ -1,4 +1,5 @@
 from __future__ import annotations
+from autograder.core.models.project.project import EarlySubmissionBonus, LateSubmissionPenalty
 
 import copy
 from decimal import Decimal
@@ -125,6 +126,8 @@ API_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     ag_models.Semester: ag_models.Semester.__name__,
     ag_models.Project: ag_models.Project.__name__,
     ag_models.UltimateSubmissionPolicy: ag_models.UltimateSubmissionPolicy.__name__,
+    ag_models.EarlySubmissionBonus: ag_models.EarlySubmissionBonus.__name__,
+    ag_models.LateSubmissionPenalty: ag_models.LateSubmissionPenalty.__name__,
     ag_models.ExpectedStudentFile: ag_models.ExpectedStudentFile.__name__,
     ag_models.InstructorFile: ag_models.InstructorFile.__name__,
     ag_models.DownloadTask: ag_models.DownloadTask.__name__,
