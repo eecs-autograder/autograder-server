@@ -324,6 +324,23 @@ class CreateSubmissionTestCase(AGViewTestBase):
             response = self.do_bad_request_submit_test(group, group.members.first())
             self.assertIn('submission', response.data)
 
+    def test_non_staff_submit_deadline_and_extension_past_but_extension_is_soft(self) -> None:
+        closing_time = timezone.now() + timezone.timedelta(minutes=-1)
+        self.project.validate_and_update(
+            visible_to_students=True, guests_can_submit=True,
+            closing_time=closing_time)
+
+        student_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.student)
+        guest_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.guest)
+
+        for group in student_group, guest_group:
+            extension = timezone.now() + timezone.timedelta(seconds=-1)
+            group.validate_and_update(
+                extended_due_date=extension, allow_submissions_past_extension=True)
+            self.do_normal_submit_test(group, group.members.last())
+
     def test_non_staff_submit_submissions_disallowed(self) -> None:
         self.project.validate_and_update(
             visible_to_students=True, guests_can_submit=True,

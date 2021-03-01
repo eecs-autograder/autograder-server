@@ -473,6 +473,8 @@ class Project(AutograderModel):
         'total_submission_limit',
 
         'allow_late_days',
+        'early_submission_bonuses',
+        'late_submission_penalties',
 
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',

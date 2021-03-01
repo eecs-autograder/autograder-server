@@ -239,6 +239,7 @@ class Group(ag_model_base.AutograderModel):
         'pk',
         'project',
         'extended_due_date',
+        'allow_submissions_past_extension',
         'member_names',
         'members',
 
@@ -254,7 +255,11 @@ class Group(ag_model_base.AutograderModel):
     )
     SERIALIZE_RELATED = ('members',)
 
-    EDITABLE_FIELDS = ('extended_due_date', 'bonus_submissions_remaining')
+    EDITABLE_FIELDS = (
+        'extended_due_date',
+        'allow_submissions_past_extension',
+        'bonus_submissions_remaining'
+    )
 
     def to_dict(self) -> Dict[str, object]:
         result = super().to_dict()

@@ -224,8 +224,10 @@ class ListCreateSubmissionView(NestedModelView):
         if project.closing_time is None:
             return None
 
-        return (group.extended_due_date if group.extended_due_date is not None
-                else project.closing_time)
+        if group.extended_due_date is None:
+            return project.closing_time
+
+        return None if group.allow_submissions_past_extension else group.extended_due_date
 
     def _get_deadline_for_user(self, group: ag_models.Group,
                                user: User) -> Optional[datetime.datetime]:
