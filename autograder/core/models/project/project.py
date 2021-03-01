@@ -126,7 +126,7 @@ class LateSubmissionPenalty(DictSerializable):
         'num_hours_late': """The number of hours before the deadline
             a group's most recent submission must be to receive the penalty.""",
         'percent_penalty': """The penalty to be applied to the submission score, e.g.,
-            if 'percent_penalty' is 10, we would compute "score * 1.10".
+            if 'percent_penalty' is 10, we would compute "score * 0.9".
         """,
         'round_up_to_num_hours_late': """"When true, the number of hours past
             the deadline will be rounded up to the nearest multiple of 'num_hours_late'.

@@ -8960,7 +8960,7 @@ components:
           type: boolean
         percent_penalty:
           description: "The penalty to be applied to the submission score, e.g.,\n\
-            \            if 'percent_penalty' is 10, we would compute \"score * 1.10\"\
+            \            if 'percent_penalty' is 10, we would compute \"score * 0.9\"\
             .\n        "
           type: integer
         max_num_applications:
