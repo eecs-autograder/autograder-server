@@ -71,6 +71,15 @@ class CreateCourseTestCase(AGViewTestBase):
         self.assertEqual(loaded_course.to_dict(), response.data)
         self.assertTrue(loaded_course.is_admin(user))
 
+    def test_error_create_course_with_same_name(self) -> None:
+        superuser = obj_build.make_user(superuser=True)
+        self.client.force_authenticate(superuser)
+
+        name = 'coursey'
+        ag_models.Course.objects.validate_and_create(name=name)
+        response = self.client.post(reverse('list-create-courses'), {'name': name})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
     def test_other_create_course_permission_denied(self):
         guest = obj_build.make_user()
 
