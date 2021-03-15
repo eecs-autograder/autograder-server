@@ -4,8 +4,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from rest_framework import decorators, mixins, permissions, response, status
-from rest_framework.permissions import BasePermission, DjangoModelPermissions
+from rest_framework import permissions, response, status
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -13,14 +12,14 @@ import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.copy_project_and_course import copy_course
 from autograder.core.models.course import clear_cached_user_roles
-from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator, AGPatchViewSchemaMixin,
-                                        AGRetrieveViewSchemaMixin, APITags, CustomViewSchema,
-                                        as_content_obj, as_schema_ref)
-from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      AlwaysIsAuthenticatedMixin, NestedModelView,
-                                                      convert_django_validation_error,
-                                                      require_body_params)
+from autograder.rest_api.schema import (
+    AGListCreateViewSchemaGenerator, AGPatchViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags,
+    CustomViewSchema, as_content_obj, as_schema_ref
+)
+from autograder.rest_api.views.ag_model_views import (
+    AGModelAPIView, AGModelDetailView, AlwaysIsAuthenticatedMixin, convert_django_validation_error,
+    require_body_params
+)
 
 
 class CoursePermissions(permissions.BasePermission):
@@ -59,6 +58,7 @@ class ListCreateCourseView(APIView):
         )
 
     @transaction.atomic
+    @convert_django_validation_error
     def post(self, *args, **kwargs):
         new_course = ag_models.Course.objects.validate_and_create(
             **self.request.data
