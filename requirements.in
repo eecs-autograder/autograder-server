@@ -10,9 +10,8 @@ uritemplate
 drf-composable-permissions
 psycopg2
 redis
-uwsgitop
 ipython
 Django<3.0.0
 PyYAML
-uWSGI
+gunicorn
 oauth2client

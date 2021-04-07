@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from decimal import Decimal
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO, Dict, List, Optional, cast
 
 from django.contrib.postgres import fields as pg_fields
@@ -197,11 +198,18 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def setup_stdout(self) -> Optional[BinaryIO]:
+            if (filename := self.setup_stdout_filename) is None:
+                return None
+
+            return open(filename, 'rb')
+
+        @property
+        def setup_stdout_filename(self) -> Path | None:
             if not self._show_setup_stdout:
                 return None
 
             assert self._mutation_test_suite_result.setup_result is not None
-            return open(self._mutation_test_suite_result.setup_result.stdout_filename, 'rb')
+            return Path(self._mutation_test_suite_result.setup_result.stdout_filename)
 
         def get_setup_stdout_size(self) -> Optional[int]:
             if not self._show_setup_stdout:
@@ -217,11 +225,19 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def setup_stderr(self) -> Optional[BinaryIO]:
+            if (filename := self.setup_stderr_filename) is None:
+                return None
+
+            return open(filename, 'rb')
+
+        @property
+        def setup_stderr_filename(self) -> Path | None:
             if not self._show_setup_stderr:
                 return None
 
             assert self._mutation_test_suite_result.setup_result is not None
-            return open(self._mutation_test_suite_result.setup_result.stderr_filename, 'rb')
+            return Path(self._mutation_test_suite_result.setup_result.stderr_filename)
+
 
         def get_setup_stderr_size(self) -> Optional[int]:
             if not self._show_setup_stderr:
@@ -273,11 +289,17 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def get_student_test_names_stdout(self) -> Optional[BinaryIO]:
+            if (filename := self.get_student_test_names_stdout_filename) is None:
+                return None
+
+            return open(filename, 'rb')
+
+        @property
+        def get_student_test_names_stdout_filename(self) -> Path | None:
             if not self._fdbk.show_get_test_names_stdout:
                 return None
 
-            return open(
-                self._mutation_test_suite_result.get_test_names_result.stdout_filename, 'rb')
+            return Path(self._mutation_test_suite_result.get_test_names_result.stdout_filename)
 
         def get_student_test_names_stdout_size(self) -> Optional[int]:
             if not self._fdbk.show_get_test_names_stdout:
@@ -288,11 +310,17 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def get_student_test_names_stderr(self) -> Optional[BinaryIO]:
+            if (filename := self.get_student_test_names_stderr_filename) is None:
+                return None
+
+            return open(filename, 'rb')
+
+        @property
+        def get_student_test_names_stderr_filename(self) -> Path | None:
             if not self._fdbk.show_get_test_names_stderr:
                 return None
 
-            return open(
-                self._mutation_test_suite_result.get_test_names_result.stderr_filename, 'rb')
+            return Path(self._mutation_test_suite_result.get_test_names_result.stderr_filename)
 
         def get_student_test_names_stderr_size(self) -> Optional[int]:
             if not self._fdbk.show_get_test_names_stderr:
@@ -324,10 +352,17 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def validity_check_stdout(self) -> Optional[BinaryIO]:
+            if (filename := self.validity_check_stdout_filename) is None:
+                return None
+
+            return open(filename, 'rb')
+
+        @property
+        def validity_check_stdout_filename(self) -> Path | None:
             if not self._fdbk.show_validity_check_stdout:
                 return None
 
-            return open(self._mutation_test_suite_result.validity_check_stdout_filename, 'rb')
+            return Path(self._mutation_test_suite_result.validity_check_stdout_filename)
 
         def get_validity_check_stdout_size(self) -> Optional[int]:
             if not self._fdbk.show_validity_check_stdout:
@@ -337,10 +372,17 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def validity_check_stderr(self) -> Optional[BinaryIO]:
+            if (filename := self.validity_check_stderr_filename) is None:
+                return None
+
+            return open(filename, 'rb')
+
+        @property
+        def validity_check_stderr_filename(self) -> Path | None:
             if not self._fdbk.show_validity_check_stderr:
                 return None
 
-            return open(self._mutation_test_suite_result.validity_check_stderr_filename, 'rb')
+            return Path(self._mutation_test_suite_result.validity_check_stderr_filename)
 
         def get_validity_check_stderr_size(self) -> Optional[int]:
             if not self._fdbk.show_validity_check_stderr:
@@ -351,10 +393,17 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def grade_buggy_impls_stdout(self) -> Optional[BinaryIO]:
+            if (filename := self.grade_buggy_impls_stdout_filename) is None:
+                return None
+
+            return open(filename, 'rb')
+
+        @property
+        def grade_buggy_impls_stdout_filename(self) -> Path | None:
             if not self._fdbk.show_grade_buggy_impls_stdout:
                 return None
 
-            return open(self._mutation_test_suite_result.grade_buggy_impls_stdout_filename, 'rb')
+            return Path(self._mutation_test_suite_result.grade_buggy_impls_stdout_filename)
 
         def get_grade_buggy_impls_stdout_size(self) -> Optional[int]:
             if not self._fdbk.show_grade_buggy_impls_stdout:
@@ -365,10 +414,17 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def grade_buggy_impls_stderr(self) -> Optional[BinaryIO]:
+            if (filename := self.grade_buggy_impls_stderr_filename) is None:
+                return None
+
+            return open(filename, 'rb')
+
+        @property
+        def grade_buggy_impls_stderr_filename(self) -> Path | None:
             if not self._fdbk.show_grade_buggy_impls_stderr:
                 return None
 
-            return open(self._mutation_test_suite_result.grade_buggy_impls_stderr_filename, 'rb')
+            return Path(self._mutation_test_suite_result.grade_buggy_impls_stderr_filename)
 
         def get_grade_buggy_impls_stderr_size(self) -> Optional[int]:
             if not self._fdbk.show_grade_buggy_impls_stderr:

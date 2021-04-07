@@ -4,6 +4,7 @@ import datetime
 import fnmatch
 import os
 from datetime import timedelta
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Iterable, List, Optional, Sequence
 
 import django.contrib.postgres.fields as pg_fields
@@ -341,17 +342,21 @@ class Submission(ag_model_base.AutograderModel):
 
         If the file doesn't exist, ObjectDoesNotExist will be raised.
         """
+        return File(open(self.get_file_abspath(filename), 'rb'), name=os.path.basename(filename))
+
+    def get_file_abspath(self, filename: str) -> Path:
+        """
+        Returns the absolute path of the submitted file with
+        the given name.
+
+        If the file doesn't exist, ObjectDoesNotExist will be raised.
+        """
         self._check_file_exists(filename)
-        return File(
-            open(self._get_submitted_file_dir(filename), 'rb'),
-            name=os.path.basename(filename))
+        return Path(core_ut.get_submission_dir(self)) / filename
 
     def _check_file_exists(self, filename: str) -> None:
         if filename not in self.submitted_filenames:
             raise exceptions.ObjectDoesNotExist()
-
-    def _get_submitted_file_dir(self, filename: str) -> str:
-        return os.path.join(core_ut.get_submission_dir(self), filename)
 
     def get_submitted_file_basenames(self) -> List[str]:
         return self.submitted_filenames

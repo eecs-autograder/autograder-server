@@ -169,9 +169,37 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertEqual(setup_timed_out, fdbk.setup_timed_out)
         self.assertEqual(setup_stdout, fdbk.setup_stdout.read().decode())
         self.assertEqual(len(setup_stdout), fdbk.get_setup_stdout_size())
+        self.assertTrue(fdbk.setup_stdout_truncated)
         self.assertEqual(setup_stderr, fdbk.setup_stderr.read().decode())
         self.assertEqual(len(setup_stderr), fdbk.get_setup_stderr_size())
+        self.assertFalse(fdbk.setup_stderr_truncated)
+
+        self.ag_test_suite.validate_and_update(
+            normal_fdbk_config={
+                'show_setup_stdout': True,
+                'show_setup_stderr': False,
+            }
+        )
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
+        self.assertEqual(setup_stdout, fdbk.setup_stdout.read().decode())
+        self.assertEqual(len(setup_stdout), fdbk.get_setup_stdout_size())
         self.assertTrue(fdbk.setup_stdout_truncated)
+        self.assertIsNone(fdbk.setup_stderr)
+        self.assertIsNone(fdbk.get_setup_stderr_size())
+        self.assertIsNone(fdbk.setup_stderr_truncated)
+
+        self.ag_test_suite.validate_and_update(
+            normal_fdbk_config={
+                'show_setup_stdout': False,
+                'show_setup_stderr': True,
+            }
+        )
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
+        self.assertIsNone(fdbk.setup_stdout)
+        self.assertIsNone(fdbk.get_setup_stdout_size())
+        self.assertIsNone(fdbk.setup_stdout_truncated)
+        self.assertEqual(setup_stderr, fdbk.setup_stderr.read().decode())
+        self.assertEqual(len(setup_stderr), fdbk.get_setup_stderr_size())
         self.assertFalse(fdbk.setup_stderr_truncated)
 
         self.ag_test_suite.validate_and_update(
@@ -179,19 +207,18 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
                 'show_setup_return_code': False,
                 'show_setup_timed_out': False,
                 'show_setup_stdout': False,
-                'show_setup_stderr': False
+                'show_setup_stderr': False,
             }
         )
-
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_name)
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNone(fdbk.setup_timed_out)
         self.assertIsNone(fdbk.setup_stdout)
         self.assertIsNone(fdbk.get_setup_stdout_size())
+        self.assertIsNone(fdbk.setup_stdout_truncated)
         self.assertIsNone(fdbk.setup_stderr)
         self.assertIsNone(fdbk.get_setup_stderr_size())
-        self.assertIsNone(fdbk.setup_stdout_truncated)
         self.assertIsNone(fdbk.setup_stderr_truncated)
 
     def test_show_setup_name_with_return_code_non_null_and_timed_out_false(self) -> None:

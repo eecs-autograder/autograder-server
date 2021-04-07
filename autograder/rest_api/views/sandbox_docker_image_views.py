@@ -3,16 +3,17 @@ import zipfile
 
 from django.db import transaction
 from drf_composable_permissions.p import P
-from rest_framework import decorators, exceptions, mixins, permissions, response, status
+from rest_framework import exceptions, permissions, response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder import utils
 from autograder.core.tasks import build_sandbox_docker_image
-from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
-                                        APITags, CustomViewMethodData, CustomViewSchema,
-                                        as_array_content_obj, as_content_obj, as_schema_ref)
+from autograder.rest_api.schema import (
+    AGDetailViewSchemaGenerator, APITags, CustomViewMethodData, CustomViewSchema,
+    as_array_content_obj, as_content_obj, as_schema_ref
+)
+from autograder.rest_api.serve_file import serve_file
 from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import convert_django_validation_error
 
@@ -235,7 +236,7 @@ class BuildTaskOutputView(ag_views.AGModelAPIView):
 
     def get(self, *args, **kwargs):
         task = self.get_object()
-        return SizeFileResponse(open(task.output_filename, 'rb'))
+        return serve_file(task.output_filename)
 
 
 class CancelBuildTaskView(ag_views.AGModelAPIView):

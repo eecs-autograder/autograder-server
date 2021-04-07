@@ -15,3 +15,7 @@ class SizeFileResponse(FileResponse):
         super().set_headers(filelike)
         if 'Content-Length' not in self and hasattr(filelike, 'size'):
             self['Content-Length'] = filelike.size
+
+        print(filelike)
+        print(filelike.name)
+        self['X-Accel-Redirect'] = filelike.name

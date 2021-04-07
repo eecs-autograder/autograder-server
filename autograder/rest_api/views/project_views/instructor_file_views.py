@@ -1,21 +1,23 @@
+from pathlib import Path
 from typing import Dict
 
 from django.core import exceptions
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from rest_framework import decorators, mixins, permissions, response, status, viewsets
+from rest_framework import response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core import constants
-from autograder.rest_api.schema import (AGDetailViewSchemaGenerator, AGListViewSchemaMixin,
-                                        APITags, ContentType, CustomViewSchema, MediaTypeObject,
-                                        as_content_obj, as_schema_ref)
-from autograder.rest_api.size_file_response import SizeFileResponse
-from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      NestedModelView,
-                                                      convert_django_validation_error,
-                                                      require_body_params)
+from autograder.rest_api.schema import (
+    AGDetailViewSchemaGenerator, AGListViewSchemaMixin, APITags, ContentType, CustomViewSchema,
+    MediaTypeObject, as_content_obj
+)
+from autograder.rest_api.serve_file import serve_file
+from autograder.rest_api.views.ag_model_views import (
+    AGModelAPIView, AGModelDetailView, NestedModelView, convert_django_validation_error,
+    require_body_params
+)
 
 
 class _Schema(AGListViewSchemaMixin, CustomViewSchema):
@@ -158,7 +160,7 @@ class InstructorFileContentView(AGModelAPIView):
     model_manager = ag_models.InstructorFile.objects
 
     def get(self, *args, **kwargs):
-        return SizeFileResponse(self.get_object().file_obj)
+        return serve_file(Path(self.get_object().abspath))
 
     @method_decorator(require_body_params('file_obj'))
     @transaction.atomic()
