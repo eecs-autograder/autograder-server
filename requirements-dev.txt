@@ -16,7 +16,7 @@ django-stubs==1.7.0
     # via
     #   -r requirements-dev.in
     #   djangorestframework-stubs
-django==2.2.18
+django==2.2.20
     # via
     #   -c requirements.txt
     #   django-stubs
