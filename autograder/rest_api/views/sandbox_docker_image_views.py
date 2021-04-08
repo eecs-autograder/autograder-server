@@ -1,5 +1,6 @@
 import tempfile
 import zipfile
+from pathlib import Path
 
 from django.db import transaction
 from drf_composable_permissions.p import P
@@ -236,7 +237,7 @@ class BuildTaskOutputView(ag_views.AGModelAPIView):
 
     def get(self, *args, **kwargs):
         task = self.get_object()
-        return serve_file(task.output_filename)
+        return serve_file(Path(task.output_filename))
 
 
 class CancelBuildTaskView(ag_views.AGModelAPIView):

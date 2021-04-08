@@ -1,7 +1,11 @@
+import tempfile
 import zipfile
+from pathlib import Path
 from unittest import mock
 
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test.utils import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -9,7 +13,6 @@ from rest_framework.test import APIClient
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
-import tempfile
 
 
 class _SetUp(AGViewTestBase):
@@ -268,6 +271,28 @@ class BuildTaskDetailViewTestCase(AGViewTestBase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         self.assertEqual(output, b''.join(response.streaming_content))
+
+    def test_get_task_output_x_accel_headers(self) -> None:
+        task = self._make_global_build_task()
+        with open(task.output_filename, 'wb') as f:
+            # We want to make sure this does NOT get added to the response
+            f.write(b'oniresatonwunroeivbmnoiufaoniremvoinemofnt')
+
+        with override_settings(USE_NGINX_X_ACCEL=True):
+            self.client.force_authenticate(self.superuser)
+            response = self.client.get(reverse('image-build-task-output', kwargs={'pk': task.pk}))
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+            self.assertEqual(b'', response.content)
+            self.assertEqual('application/octet-stream', response['Content-Type'])
+            self.assertEqual(
+                'attachment; filename=' + Path(task.output_filename).name,
+                response['Content-Disposition']
+            )
+            self.assertEqual(
+                f'/protected{task.output_filename[len(settings.MEDIA_ROOT):]}',
+                response['X-Accel-Redirect']
+            )
 
     def test_non_superuser_get_global_task_output_permission_denied(self) -> None:
         task = self._make_global_build_task()

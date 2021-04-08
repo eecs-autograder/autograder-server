@@ -1,10 +1,13 @@
 import tempfile
+from pathlib import Path
 from typing import Optional
 from unittest import mock
 
+from django.conf import settings
 from django.core import exceptions
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_save
+from django.test.utils import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -672,3 +675,48 @@ class DownloadTaskEndpointsTestCase(UnitTestBase):
         self.client.force_authenticate(staff)
         response = self.client.get(url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_get_download_task_result_x_accel_headers(self) -> None:
+        self.client.force_authenticate(obj_build.make_admin_user(self.project.course))
+
+        self.do_get_download_task_result_x_accel_headers_test(
+            reverse('ultimate-submission-files-task', kwargs={'pk': self.project.pk}),
+            'application/zip'
+        )
+        self.do_get_download_task_result_x_accel_headers_test(
+            reverse('all-submission-files-task', kwargs={'pk': self.project.pk}),
+            'application/zip'
+        )
+
+        self.do_get_download_task_result_x_accel_headers_test(
+            reverse('all-submission-scores-task', kwargs={'pk': self.project.pk}),
+            'text/csv'
+        )
+        self.do_get_download_task_result_x_accel_headers_test(
+            reverse('ultimate-submission-scores-task', kwargs={'pk': self.project.pk}),
+            'text/csv'
+        )
+
+    def do_get_download_task_result_x_accel_headers_test(
+        self, create_task_url: str, expected_content_type: str
+    ) -> None:
+        with override_settings(USE_NGINX_X_ACCEL=True):
+            response = self.client.post(create_task_url)
+            self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
+
+            task = ag_models.DownloadTask.objects.get(pk=response.data['pk'])
+            self.assertFalse(task.has_error, msg=task.error_msg)
+            self.assertEqual(100, task.progress)
+
+            response = self.client.get(reverse('download-task-result', kwargs={'pk': task.pk}))
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual(b'', response.content)
+            self.assertEqual(expected_content_type, response['Content-Type'])
+            self.assertEqual(
+                'attachment; filename=' + Path(task.result_filename).name,
+                response['Content-Disposition']
+            )
+            self.assertEqual(
+                f'/protected{task.result_filename[len(settings.MEDIA_ROOT):]}',
+                response['X-Accel-Redirect']
+            )

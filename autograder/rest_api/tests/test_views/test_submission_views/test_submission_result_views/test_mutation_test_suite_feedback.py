@@ -1,11 +1,15 @@
+from pathlib import Path
+
+from django.conf import settings
 from django.http import QueryDict
+from django.test.utils import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-from autograder.core.submission_feedback import MutationTestSuitePreLoader
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core.submission_feedback import MutationTestSuitePreLoader
 from autograder.utils.testing import UnitTestBase
 
 
@@ -285,6 +289,59 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
             'grade_buggy_impls_stderr_size': len(self.buggy_impls_stderr),
         }
         self.assertEqual(expected, response.data)
+
+    def test_get_output_x_accel(self) -> None:
+        self.client.force_authenticate(self.admin)
+
+        self.do_get_output_x_accel_test(
+            self.setup_stdout_base_url,
+            self.mutation_suite_result.setup_result.stdout_filename
+        )
+        self.do_get_output_x_accel_test(
+            self.setup_stderr_base_url,
+            self.mutation_suite_result.setup_result.stderr_filename
+        )
+        self.do_get_output_x_accel_test(
+            self.get_test_names_stdout_base_url,
+            self.mutation_suite_result.get_test_names_result.stdout_filename
+        )
+        self.do_get_output_x_accel_test(
+            self.get_test_names_stderr_base_url,
+            self.mutation_suite_result.get_test_names_result.stderr_filename
+        )
+        self.do_get_output_x_accel_test(
+            self.validity_check_stdout_base_url,
+            self.mutation_suite_result.validity_check_stdout_filename
+        )
+        self.do_get_output_x_accel_test(
+            self.validity_check_stderr_base_url,
+            self.mutation_suite_result.validity_check_stderr_filename
+        )
+        self.do_get_output_x_accel_test(
+            self.buggy_impls_stdout_base_url,
+            self.mutation_suite_result.grade_buggy_impls_stdout_filename
+        )
+        self.do_get_output_x_accel_test(
+            self.buggy_impls_stderr_base_url,
+            self.mutation_suite_result.grade_buggy_impls_stderr_filename
+        )
+
+    def do_get_output_x_accel_test(self, base_url: str, output_file_path: str):
+        with override_settings(USE_NGINX_X_ACCEL=True):
+            url = f'{base_url}?feedback_category={ag_models.FeedbackCategory.max.value}'
+
+            response = self.client.get(url)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual(b'', response.content)
+            self.assertEqual('application/octet-stream', response['Content-Type'])
+            self.assertEqual(
+                'attachment; filename=' + Path(output_file_path).name,
+                response['Content-Disposition']
+            )
+            self.assertEqual(
+                f'/protected{output_file_path[len(settings.MEDIA_ROOT):]}',
+                response['X-Accel-Redirect']
+            )
 
     def do_get_output_test(self, client: APIClient, user, fdbk_category,
                            expected_status, expected_output, base_url):
