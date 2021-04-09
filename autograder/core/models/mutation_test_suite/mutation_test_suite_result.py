@@ -238,7 +238,6 @@ class MutationTestSuiteResult(AutograderModel):
             assert self._mutation_test_suite_result.setup_result is not None
             return Path(self._mutation_test_suite_result.setup_result.stderr_filename)
 
-
         def get_setup_stderr_size(self) -> Optional[int]:
             if not self._show_setup_stderr:
                 return None

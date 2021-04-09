@@ -316,7 +316,6 @@ class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
         })
 
 
-
 def _get_cmd_result_output(
     submission_fdbk: SubmissionResultFeedback,
     cmd_result_pk: int,

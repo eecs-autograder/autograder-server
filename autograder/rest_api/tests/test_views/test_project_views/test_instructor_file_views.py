@@ -213,7 +213,10 @@ class RetrieveUploadedFileContentTestCase(_DetailViewTestSetup):
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertEqual(b'', response.content)
             self.assertEqual('application/octet-stream', response['Content-Type'])
-            self.assertEqual('attachment; filename=' + self.file_.name, response['Content-Disposition'])
+            self.assertEqual(
+                'attachment; filename=' + self.file_.name,
+                response['Content-Disposition']
+            )
             self.assertEqual(
                 f'/protected{self.file_.abspath[len(settings.MEDIA_ROOT):]}',
                 response['X-Accel-Redirect']
