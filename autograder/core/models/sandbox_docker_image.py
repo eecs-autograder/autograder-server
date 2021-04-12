@@ -10,7 +10,6 @@ from django.utils import timezone
 
 import autograder.core.utils as core_ut
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
-from autograder.django_enum import TextChoices
 
 from .ag_model_base import AutograderModel, AutograderModelManager
 from .course import Course
@@ -125,7 +124,7 @@ class _BuildSandboxDockerImageManager(AutograderModelManager['BuildSandboxDocker
         return build_task
 
 
-class BuildImageStatus(TextChoices):
+class BuildImageStatus(models.TextChoices):
     queued = 'queued'
     in_progress = 'in_progress'
     done = 'done'

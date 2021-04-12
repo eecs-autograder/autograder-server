@@ -10,7 +10,6 @@ import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
-from autograder.django_enum import TextChoices
 
 from ..ag_model_base import AutograderModel, AutograderModelManager, DictSerializable
 from ..project import InstructorFile
@@ -94,7 +93,7 @@ class AGTestCommandFeedbackConfig(DictSerializable):
     )
 
 
-class StdinSource(TextChoices):
+class StdinSource(models.TextChoices):
     none = 'none'  # No input to redirect
     text = 'text'
     instructor_file = 'instructor_file'
@@ -102,13 +101,13 @@ class StdinSource(TextChoices):
     setup_stderr = 'setup_stderr'
 
 
-class ExpectedOutputSource(TextChoices):
+class ExpectedOutputSource(models.TextChoices):
     none = 'none'  # Don't check output
     text = 'text'
     instructor_file = 'instructor_file'
 
 
-class ExpectedReturnCode(TextChoices):
+class ExpectedReturnCode(models.TextChoices):
     none = 'none'  # Don't check return code
     zero = 'zero'
     nonzero = 'nonzero'
