@@ -244,9 +244,7 @@ class ValidatedJSONField(Generic[_JSONObjType], pg_fields.JSONField):
 
     def from_db_value(self, value: Any, *args: Any, **kwargs: Any) -> Optional[_JSONObjType]:
         return self.to_python(
-            value
-            # This line is needed instead of "value" when using Django 3.1
-            # super().from_db_value(value, *args, **kwargs)  # type: ignore
+            super().from_db_value(value, *args, **kwargs)  # type: ignore
         )
 
     def get_prep_value(

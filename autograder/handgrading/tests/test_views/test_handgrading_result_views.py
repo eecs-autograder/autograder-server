@@ -5,11 +5,13 @@ from urllib.parse import urlencode
 from django.contrib.auth.models import User
 from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test.utils import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
+import autograder.core.utils as core_ut
 import autograder.handgrading.models as hg_models
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -113,6 +115,21 @@ class RetrieveHandgradingResultTestCase(_SetUp):
                 self.assertIn('Content-Length', response)
                 file_.seek(0)
                 self.assertEqual(file_.read(), b''.join(response.streaming_content))
+
+    def test_get_file_x_accel_headers(self) -> None:
+        with override_settings(USE_NGINX_X_ACCEL=True):
+            self.client.force_authenticate(self.staff)
+
+            file_ = self.submitted_files[0]
+            response = self.client.get(self.get_file_url(file_.name))
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual(b'', response.content)
+            self.assertEqual('application/octet-stream', response['Content-Type'])
+            self.assertEqual('attachment; filename=' + file_.name, response['Content-Disposition'])
+            self.assertEqual(
+                f'/protected/{core_ut.get_submission_relative_dir(self.submission)}/{file_.name}',
+                response['X-Accel-Redirect']
+            )
 
     def test_get_file_not_found(self):
         self.client.force_authenticate(self.staff)

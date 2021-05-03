@@ -1,6 +1,8 @@
 import uuid
 
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test.utils import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -9,7 +11,6 @@ import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core import constants
 from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
-from autograder.utils.testing import UnitTestBase
 
 
 class ListInstructorFilesTestCase(AGViewTestBase):
@@ -196,11 +197,6 @@ class RenameUploadedFileTestCase(_DetailViewTestSetup):
                 self.file_, self.client, user, self.url, {'name': 'steve'})
 
 
-def file_content_url(uploaded_file):
-    return reverse('instructor-file-content',
-                   kwargs={'pk': uploaded_file.pk})
-
-
 class RetrieveUploadedFileContentTestCase(_DetailViewTestSetup):
     def setUp(self):
         super().setUp()
@@ -208,6 +204,23 @@ class RetrieveUploadedFileContentTestCase(_DetailViewTestSetup):
 
     def test_admin_get_content(self):
         self.do_get_content_test(self.client, self.admin, self.url, self.file_content)
+
+    def test_get_content_x_accel_headers(self) -> None:
+        with override_settings(USE_NGINX_X_ACCEL=True):
+            self.client.force_authenticate(self.admin)
+
+            response = self.client.get(self.url)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual(b'', response.content)
+            self.assertEqual('application/octet-stream', response['Content-Type'])
+            self.assertEqual(
+                'attachment; filename=' + self.file_.name,
+                response['Content-Disposition']
+            )
+            self.assertEqual(
+                f'/protected{self.file_.abspath[len(settings.MEDIA_ROOT):]}',
+                response['X-Accel-Redirect']
+            )
 
     def test_staff_get_content(self):
         self.do_get_content_test(self.client, self.staff, self.url, self.file_content)

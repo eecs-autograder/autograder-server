@@ -1,5 +1,4 @@
 import os
-import sys
 
 from .base import *
 
@@ -7,6 +6,13 @@ MEDIA_ROOT += '_dev'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+
+# When true, the function autograder.rest_api.serve_file.serve_file
+# will return a response that uses nginx's X-accel capability
+# https://www.nginx.com/resources/wiki/start/topics/examples/x-accel/
+# Can be overridden by settings the environment variable with the same
+# name to "false" to disable or "true" to enable.
+USE_NGINX_X_ACCEL = os.environ.get('USE_NGINX_X_ACCEL', 'false') == 'true'
 
 INSTALLED_APPS += [
     # Used for testing ag_model_base

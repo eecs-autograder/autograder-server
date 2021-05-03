@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tempfile
 from decimal import Decimal
+from pathlib import Path
 from typing import (
     BinaryIO, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, TypedDict, Union, cast
 )
@@ -606,30 +607,44 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 
     @property
     def setup_stdout(self) -> Optional[BinaryIO]:
+        if (filename := self.setup_stdout_filename) is None:
+            return None
+
+        return open(filename, 'rb')
+
+    @property
+    def setup_stdout_filename(self) -> Path | None:
         if not self._fdbk.show_setup_stdout:
             return None
 
-        return open(self._ag_test_suite_result.setup_stdout_filename, 'rb')
+        return Path(self._ag_test_suite_result.setup_stdout_filename)
 
     def get_setup_stdout_size(self) -> Optional[int]:
-        if not self._fdbk.show_setup_stderr:
+        if not self._fdbk.show_setup_stdout:
             return None
 
         return os.path.getsize(self._ag_test_suite_result.setup_stdout_filename)
 
     @property
     def setup_stdout_truncated(self) -> Optional[bool]:
-        if not self._fdbk.show_setup_stderr:
+        if not self._fdbk.show_setup_stdout:
             return None
 
         return self._ag_test_suite_result.setup_stdout_truncated
 
     @property
     def setup_stderr(self) -> Optional[BinaryIO]:
+        if (filename := self.setup_stderr_filename) is None:
+            return None
+
+        return open(filename, 'rb')
+
+    @property
+    def setup_stderr_filename(self) -> Path | None:
         if not self._fdbk.show_setup_stderr:
             return None
 
-        return open(self._ag_test_suite_result.setup_stderr_filename, 'rb')
+        return Path(self._ag_test_suite_result.setup_stderr_filename)
 
     def get_setup_stderr_size(self) -> Optional[int]:
         if not self._fdbk.show_setup_stderr:
@@ -960,8 +975,15 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def stdout(self) -> Optional[BinaryIO]:
+        if (filename := self.stdout_filename) is not None:
+            return open(filename, 'rb')
+
+        return None
+
+    @property
+    def stdout_filename(self) -> Path | None:
         if self._show_actual_stdout:
-            return open(self._ag_test_command_result.stdout_filename, 'rb')
+            return Path(self._ag_test_command_result.stdout_filename)
 
         return None
 
@@ -1047,8 +1069,15 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def stderr(self) -> Optional[BinaryIO]:
+        if (filename := self.stderr_filename) is not None:
+            return open(filename, 'rb')
+
+        return None
+
+    @property
+    def stderr_filename(self) -> Path | None:
         if self._show_actual_stderr:
-            return open(self._ag_test_command_result.stderr_filename, 'rb')
+            return Path(self._ag_test_command_result.stderr_filename)
 
         return None
 

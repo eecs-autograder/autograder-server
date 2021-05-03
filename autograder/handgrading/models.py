@@ -10,10 +10,9 @@ from autograder.core.models import AutograderModel, Group, Project, Submission
 from autograder.core.models.ag_model_base import (
     AutograderModelManager, DictSerializable, make_min_value_validator, non_empty_str_validator
 )
-from autograder.django_enum import TextChoices
 
 
-class PointsStyle(TextChoices):
+class PointsStyle(models.TextChoices):
     """
     Specifies how handgrading scores should be initialized.
 

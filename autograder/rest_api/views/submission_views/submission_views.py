@@ -18,6 +18,7 @@ from autograder.core.submission_email_receipts import send_submission_received_e
 from autograder.core.submission_feedback import (
     AGTestPreLoader, MutationTestSuitePreLoader, SubmissionResultFeedback
 )
+from autograder.rest_api.serve_file import serve_file
 from autograder.rest_api.schema import (
     AGDetailViewSchemaGenerator, AGListViewSchemaMixin, APITags, CustomViewDict, CustomViewSchema,
     as_content_obj
@@ -25,7 +26,6 @@ from autograder.rest_api.schema import (
 from autograder.rest_api.serialize_ultimate_submission_results import (
     get_submission_data_with_results
 )
-from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView, AGModelDetailView, NestedModelView, convert_django_validation_error,
     require_query_params
@@ -384,7 +384,7 @@ class GetSubmittedFileView(AGModelAPIView):
         submission = self.get_object()
         filename = request.query_params['filename']
         try:
-            return SizeFileResponse(submission.get_file(filename))
+            return serve_file(submission.get_file_abspath(filename))
         except ObjectDoesNotExist:
             return response.Response('File "{}" not found'.format(filename),
                                      status=status.HTTP_404_NOT_FOUND)

@@ -1,6 +1,9 @@
 import datetime
 import json
+from pathlib import Path
 
+from django.conf import settings
+from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -13,7 +16,6 @@ from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import
 from autograder.utils.testing import UnitTestBase
 
 from .get_output_and_diff_test_urls import get_output_and_diff_test_urls, make_result_output_url
-
 
 # Note: Tests that involve requesting different feedback levels and
 # making sure the right data is returned are largely handled by
@@ -43,7 +45,7 @@ class _SetUp(UnitTestBase):
 
         self.student_group_normal_submission = obj_build.make_finished_submission(
             group=self.student_group1)
-        self.normal_submission_result = obj_build.make_correct_ag_test_command_result(
+        self.student_cmd_result = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.student_group_normal_submission)
         self.student_group_normal_submission = update_denormalized_ag_test_results(
             self.student_group_normal_submission.pk)
@@ -53,7 +55,7 @@ class _SetUp(UnitTestBase):
         self.staff = staff_group.members.first()
 
         self.staff_submission = obj_build.make_finished_submission(group=staff_group)
-        self.staff_result = obj_build.make_correct_ag_test_command_result(
+        self.staff_cmd_result = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_submission)
         self.staff_submission = update_denormalized_ag_test_results(self.staff_submission.pk)
 
@@ -66,7 +68,7 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
 
         self.client.force_authenticate(self.student1)
 
-        suite_res = self.normal_submission_result.ag_test_case_result.ag_test_suite_result
+        suite_res = self.student_cmd_result.ag_test_case_result.ag_test_suite_result
         self._do_suite_result_output_test(self.client, suite_res.submission, suite_res,
                                           ag_models.FeedbackCategory.normal)
 
@@ -77,7 +79,7 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
 
         self.client.force_authenticate(self.student1)
 
-        suite_res = self.normal_submission_result.ag_test_case_result.ag_test_suite_result
+        suite_res = self.student_cmd_result.ag_test_case_result.ag_test_suite_result
         self._do_suite_result_output_test(self.client, suite_res.submission, suite_res,
                                           ag_models.FeedbackCategory.normal)
 
@@ -88,14 +90,14 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
 
         self.client.force_authenticate(self.student1)
 
-        suite_res = self.normal_submission_result.ag_test_case_result.ag_test_suite_result
+        suite_res = self.student_cmd_result.ag_test_case_result.ag_test_suite_result
         self._do_suite_result_output_test(self.client, suite_res.submission, suite_res,
                                           ag_models.FeedbackCategory.normal)
 
     def test_suite_result_output_requested_suite_doesnt_exist_404(self):
         self.client.force_authenticate(self.staff)
 
-        suite_result = self.staff_result.ag_test_case_result.ag_test_suite_result
+        suite_result = self.staff_cmd_result.ag_test_case_result.ag_test_suite_result
 
         with open(suite_result.setup_stdout_filename, 'w') as f:
             f.write('weee')
@@ -175,21 +177,21 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group_normal_submission,
-            self.normal_submission_result, ag_models.FeedbackCategory.normal)
+            self.student_cmd_result, ag_models.FeedbackCategory.normal)
 
     def test_cmd_result_output_or_diff_requested_on_cmd_in_not_visible_case(self):
         self.ag_test_case.validate_and_update(normal_fdbk_config={'visible': False})
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group_normal_submission,
-            self.normal_submission_result, ag_models.FeedbackCategory.normal)
+            self.student_cmd_result, ag_models.FeedbackCategory.normal)
 
     def test_cmd_result_output_or_diff_requested_on_not_visible_cmd(self):
         self.ag_test_cmd.validate_and_update(normal_fdbk_config={'visible': False})
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group_normal_submission,
-            self.normal_submission_result, ag_models.FeedbackCategory.normal)
+            self.student_cmd_result, ag_models.FeedbackCategory.normal)
 
     def test_cmd_result_output_or_diff_requested_individual_cmds_not_shown(self):
         self.ag_test_case.validate_and_update(
@@ -197,14 +199,14 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group_normal_submission,
-            self.normal_submission_result, ag_models.FeedbackCategory.normal)
+            self.student_cmd_result, ag_models.FeedbackCategory.normal)
 
     def test_cmd_result_output_or_diff_requested_individual_cases_not_shown(self):
         self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_individual_tests': False})
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group_normal_submission,
-            self.normal_submission_result, ag_models.FeedbackCategory.normal)
+            self.student_cmd_result, ag_models.FeedbackCategory.normal)
 
     def test_cmd_diff_with_non_utf_chars(self):
         non_utf_bytes = b'\x80 and some other stuff just because\n'
@@ -215,15 +217,15 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
             expected_stderr_source=ag_models.ExpectedOutputSource.text,
             expected_stderr_text=output,
         )
-        with open(self.staff_result.stdout_filename, 'wb') as f:
+        with open(self.staff_cmd_result.stdout_filename, 'wb') as f:
             f.write(non_utf_bytes)
-        with open(self.staff_result.stderr_filename, 'wb') as f:
+        with open(self.staff_cmd_result.stderr_filename, 'wb') as f:
             f.write(non_utf_bytes)
 
         self.client.force_authenticate(self.staff)
         url = (reverse('ag-test-cmd-result-stdout-diff',
                        kwargs={'pk': self.staff_submission.pk,
-                               'result_pk': self.staff_result.pk})
+                               'result_pk': self.staff_cmd_result.pk})
                + '?feedback_category=max')
 
         expected_diff = ['- ' + output, '+ ' + non_utf_bytes.decode('utf-8', 'surrogateescape')]
@@ -233,7 +235,7 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
 
         url = (reverse('ag-test-cmd-result-stderr-diff',
                        kwargs={'pk': self.staff_submission.pk,
-                               'result_pk': self.staff_result.pk})
+                               'result_pk': self.staff_cmd_result.pk})
                + '?feedback_category=max')
         response = self.client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -243,7 +245,7 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         size_url = make_result_output_url(
             'ag-test-cmd-result-output-size',
             self.staff_submission,
-            self.staff_result,
+            self.staff_cmd_result,
             ag_models.FeedbackCategory.max)
         response = self.client.get(size_url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -251,7 +253,7 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
     def test_cmd_result_output_or_diff_requested_cmd_doesnt_exist_404(self):
         urls_and_field_names = get_output_and_diff_test_urls(
             self.staff_submission,
-            self.staff_result,
+            self.staff_cmd_result,
             ag_models.FeedbackCategory.max)
 
         self.ag_test_cmd.delete()
@@ -264,7 +266,7 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         size_url = make_result_output_url(
             'ag-test-cmd-result-output-size',
             self.staff_submission,
-            self.staff_result,
+            self.staff_cmd_result,
             ag_models.FeedbackCategory.max)
 
         response = self.client.get(size_url)
@@ -286,3 +288,62 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         response = client.get(size_url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertIsNone(response.data)
+
+
+class OutputWithXAccelTestCase(_SetUp):
+    def test_get_output_with_x_accel(self) -> None:
+        self.client.force_authenticate(obj_build.make_admin_user(self.course))
+
+        suite_result = self.student_cmd_result.ag_test_case_result.ag_test_suite_result
+        # Make sure that the file content is NOT sent with the response
+        with open(suite_result.setup_stdout_filename, 'w') as f:
+            f.write('adkjfaksdjf;akjsdf;')
+        with open(suite_result.setup_stderr_filename, 'w') as f:
+            f.write('qewiruqpewpuir')
+
+        query_str = f'?feedback_category={ag_models.FeedbackCategory.max.value}'
+
+        url = reverse(
+            'ag-test-suite-result-stdout',
+            kwargs={'pk': self.student_group_normal_submission.pk, 'result_pk': suite_result.pk}
+        ) + query_str
+        self.do_get_output_x_accel_test(url, suite_result.setup_stdout_filename)
+
+        url = reverse(
+            'ag-test-suite-result-stderr',
+            kwargs={'pk': self.student_group_normal_submission.pk, 'result_pk': suite_result.pk}
+        ) + query_str
+        self.do_get_output_x_accel_test(url, suite_result.setup_stderr_filename)
+
+        url = reverse(
+            'ag-test-cmd-result-stdout',
+            kwargs={
+                'pk': self.student_group_normal_submission.pk,
+                'result_pk': self.student_cmd_result.pk
+            }
+        ) + query_str
+        self.do_get_output_x_accel_test(url, self.student_cmd_result.stdout_filename)
+
+        url = reverse(
+            'ag-test-cmd-result-stderr',
+            kwargs={
+                'pk': self.student_group_normal_submission.pk,
+                'result_pk': self.student_cmd_result.pk
+            }
+        ) + query_str
+        self.do_get_output_x_accel_test(url, self.student_cmd_result.stderr_filename)
+
+    def do_get_output_x_accel_test(self, url: str, output_filename: str) -> None:
+        with override_settings(USE_NGINX_X_ACCEL=True):
+            response = self.client.get(url)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual(b'', response.content)
+            self.assertEqual('application/octet-stream', response['Content-Type'])
+            self.assertEqual(
+                'attachment; filename=' + Path(output_filename).name,
+                response['Content-Disposition']
+            )
+            self.assertEqual(
+                f'/protected{output_filename[len(settings.MEDIA_ROOT):]}',
+                response['X-Accel-Redirect']
+            )

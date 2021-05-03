@@ -6,8 +6,9 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db import transaction
 from django.db.models import Prefetch
+from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from rest_framework import exceptions, mixins, permissions, response, status
+from rest_framework import exceptions, response, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import BasePermission
 
@@ -16,15 +17,15 @@ import autograder.handgrading.models as hg_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
-from autograder.rest_api.schema import (AGPatchViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags,
-                                        CustomViewDict, CustomViewSchema, as_content_obj,
-                                        as_paginated_content_obj, as_schema_ref)
-from autograder.rest_api.size_file_response import SizeFileResponse
-from autograder.rest_api.views.ag_model_views import (AGModelAPIView, NestedModelView,
-                                                      convert_django_validation_error,
-                                                      handle_object_does_not_exist_404,
-                                                      require_query_params)
-from django.utils.decorators import method_decorator
+from autograder.rest_api.schema import (
+    AGPatchViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags, CustomViewDict, CustomViewSchema,
+    as_content_obj, as_paginated_content_obj, as_schema_ref
+)
+from autograder.rest_api.serve_file import serve_file
+from autograder.rest_api.views.ag_model_views import (
+    AGModelAPIView, NestedModelView, convert_django_validation_error,
+    handle_object_does_not_exist_404, require_query_params
+)
 
 is_admin = ag_permissions.is_admin(lambda group: group.project.course)
 is_staff = ag_permissions.is_staff(lambda group: group.project.course)
@@ -191,7 +192,7 @@ class HandgradingResultFileContentView(NestedModelView):
     def get(self, request, *args, **kwargs):
         group: ag_models.Group = self.get_object()
         filename = request.query_params['filename']
-        return SizeFileResponse(group.handgrading_result.submission.get_file(filename))
+        return serve_file(group.handgrading_result.submission.get_file_abspath(filename))
 
 
 class HandgradingResultHasCorrectSubmissionView(NestedModelView):

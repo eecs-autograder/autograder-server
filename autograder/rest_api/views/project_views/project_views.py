@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Optional
 
 from django.db import transaction
@@ -18,7 +19,7 @@ from autograder.rest_api.schema import (
     AGDetailViewSchemaGenerator, AGListCreateViewSchemaGenerator, APITags, CustomViewSchema,
     as_content_obj
 )
-from autograder.rest_api.size_file_response import SizeFileResponse
+from autograder.rest_api.serve_file import serve_file
 from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView, AGModelDetailView, NestedModelView, convert_django_validation_error,
     handle_object_does_not_exist_404
@@ -335,7 +336,7 @@ class DownloadTaskResultView(AGModelAPIView):
                                      status=status.HTTP_400_BAD_REQUEST)
 
         content_type = self._get_content_type(task.download_type)
-        return SizeFileResponse(open(task.result_filename, 'rb'), content_type=content_type)
+        return serve_file(Path(task.result_filename), content_type=content_type)
 
     def _get_content_type(self, download_type: ag_models.DownloadType):
         if (download_type == ag_models.DownloadType.all_scores

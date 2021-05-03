@@ -2,7 +2,7 @@
 # Accessed Dec. 1, 2017
 
 from django.utils.deprecation import MiddlewareMixin
-from django.http import HttpResponse, FileResponse, StreamingHttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 import json
 
 

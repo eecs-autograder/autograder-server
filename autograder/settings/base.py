@@ -5,8 +5,6 @@ Django settings for autograder project.
 import os
 import sys
 
-from django.utils.crypto import get_random_string
-
 VERSION = '4.2.3'
 
 # This is the autograder-server directory
