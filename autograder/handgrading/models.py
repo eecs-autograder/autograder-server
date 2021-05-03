@@ -11,6 +11,7 @@ from autograder.core.models.ag_model_base import (
     AutograderModelManager, DictSerializable, make_min_value_validator, non_empty_str_validator
 )
 
+
 class PointsStyle(models.TextChoices):
     """
     Specifies how handgrading scores should be initialized.
