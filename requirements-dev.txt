@@ -72,5 +72,5 @@ uritemplate==3.0.1
     # via
     #   -c requirements.txt
     #   coreapi
-urllib3==1.26.3
+urllib3==1.26.4
     # via requests
