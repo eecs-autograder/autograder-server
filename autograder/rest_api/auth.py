@@ -1,13 +1,11 @@
 import json
+from urllib.parse import urlparse, urlunparse
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.urls import reverse
-
-from rest_framework.authentication import BaseAuthentication, TokenAuthentication
-
 from oauth2client import client
-
+from rest_framework.authentication import BaseAuthentication, TokenAuthentication
 
 GOOGLE_API_SCOPES = [
     'openid',
@@ -32,6 +30,10 @@ class OAuth2RedirectTokenAuth(TokenAuthentication):
         assert self.scopes is not None, 'Derived classes must set the "scopes" attr.'
 
         redirect_uri = request.build_absolute_uri(reverse('oauth2callback'))
+        if not settings.DEBUG:
+            parsed = urlparse(redirect_uri)
+            redirect_uri = urlunparse(('https', *parsed[1:]))
+
         flow = client.flow_from_clientsecrets(
             settings.OAUTH2_SECRETS_PATH,
             scope=self.scopes,
