@@ -5,7 +5,9 @@ Django settings for autograder project.
 import os
 import sys
 
-VERSION = '4.2.3'
+from django.utils.crypto import get_random_string
+
+VERSION = '4.3.1'
 
 # This is the autograder-server directory
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
