@@ -82,15 +82,6 @@ class CreateInstructorFileTestCase(AGViewTestBase):
         self.assertEqual(self.file_obj.name, loaded.name)
         self.assertEqual(self.file_obj.read(), loaded.file_obj.read())
 
-    def test_admin_create_uploaded_file_invalid_settings(self):
-        bad_file = SimpleUploadedFile('..', b'waaaario')
-        self.assertEqual(0, self.project.instructor_files.count())
-        self.client.force_authenticate(obj_build.make_admin_user(self.course))
-        response = self.client.post(
-            get_instructor_files_url(self.project), {'file_obj': bad_file}, format='multipart')
-        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(0, self.project.instructor_files.count())
-
     def test_invalid_create_too_large_uploaded_file(self):
         too_big_file = SimpleUploadedFile('spam', b'a' * (constants.MAX_INSTRUCTOR_FILE_SIZE + 1))
         self.assertEqual(0, self.project.instructor_files.count())

@@ -211,7 +211,7 @@ _JSONObjType = TypeVar('_JSONObjType', bound='DictSerializable')
 # django-stubs type stubs for JSONField are incomplete.
 # Once they are fully-implemented, try to remove the type: ignore
 # comments.
-class ValidatedJSONField(Generic[_JSONObjType], pg_fields.JSONField):
+class ValidatedJSONField(Generic[_JSONObjType], models.JSONField):
     """
     This field uses the Postgres JSON field, ToDictMixin, and
     FromDictMixin to validate and store serializable Python objects

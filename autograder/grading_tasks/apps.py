@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class GradingTasksConfig(AppConfig):
-    name = 'grading_tasks'
+    name = 'autograder.grading_tasks'

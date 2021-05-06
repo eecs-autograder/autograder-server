@@ -276,18 +276,6 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             )
         self.assertIn('image', cm.exception.message_dict)
 
-    def test_error_illegal_filename(self) -> None:
-        bad_filenames = ['..', '.', '']
-        for name in bad_filenames:
-            with self.assertRaises(exceptions.ValidationError, msg=name):
-                ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
-                    files=[
-                        SimpleUploadedFile('Dockerfile', b'hi'),
-                        SimpleUploadedFile(name, b'bad')
-                    ],
-                    course=self.course,
-                )
-
     def test_error_no_dockerfile(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(

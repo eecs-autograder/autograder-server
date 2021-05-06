@@ -137,7 +137,7 @@ class Group(ag_model_base.AutograderModel):
     bonus_submissions_used = models.IntegerField(
         blank=True, default=0, validators=[MinValueValidator(0)])
 
-    late_days_used = pg_fields.JSONField(
+    late_days_used = models.JSONField(
         default=dict, blank=True,
         help_text=r"""Keeps track of how many late days each user in this
             group has used.

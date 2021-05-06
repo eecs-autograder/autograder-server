@@ -10,12 +10,6 @@ from autograder.core import constants
 from autograder.core.models.project.instructor_file import InstructorFile
 from autograder.utils.testing import UnitTestBase
 
-_illegal_filenames = [
-    '..',
-    '',
-    '.'
-]
-
 
 class _SetUp(UnitTestBase):
     def setUp(self):
@@ -27,6 +21,10 @@ class _SetUp(UnitTestBase):
             b'contents more contents.')
 
 
+# Note: Django 3.2 raises SuspiciousFileOperation when trying to create
+# an UploadedFile (or any of its subclasses). Therefore, we no longer
+# need to (or can) test that we throw a ValidationError if a filename
+# is '..', '.', or '' when *creating* the file.
 class CreateInstuctorFileTestCase(_SetUp):
     def test_valid_create(self):
         instructor_file = InstructorFile.objects.validate_and_create(
@@ -59,17 +57,6 @@ class CreateInstuctorFileTestCase(_SetUp):
             file_obj=self.file_obj)
 
         self.assertEqual(new_filename, instructor_file.name)
-
-    def test_exception_illegal_filenames(self):
-        for filename in _illegal_filenames:
-            self.file_obj.name = filename
-            with self.assertRaises(exceptions.ValidationError,
-                                   msg='Filename: ' + filename) as cm:
-                InstructorFile.objects.validate_and_create(
-                    project=self.project,
-                    file_obj=self.file_obj)
-
-            self.assertIn('file_obj', cm.exception.message_dict)
 
     def test_error_file_too_big(self):
         too_big = SimpleUploadedFile('wee', b'a' * (constants.MAX_INSTRUCTOR_FILE_SIZE + 1))
@@ -132,7 +119,7 @@ class RenameInstructorFileTestCase(_SetUp):
             self.assertTrue(os.path.isfile(expected_new_name))
 
     def test_error_illegal_filenames(self):
-        for filename in _illegal_filenames:
+        for filename in ['', '.', '..']:
             with self.assertRaises(exceptions.ValidationError,
                                    msg='Filename: ' + filename) as cm:
                 self.instructor_file.rename(filename)

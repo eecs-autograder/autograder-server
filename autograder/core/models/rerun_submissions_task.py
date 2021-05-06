@@ -1,6 +1,6 @@
 from typing import AbstractSet, Any, Dict, List, Union, cast
 
-from django.contrib.postgres.fields import ArrayField, JSONField
+from django.contrib.postgres.fields import ArrayField
 from django.core import exceptions
 from django.db import models
 
@@ -37,7 +37,7 @@ class RerunSubmissionsTask(Task):
                      to the specified project should be rerun. Otherwise,
                      only the AGTestSuites specified in ag_test_suite_data should
                      be rerun.""")
-    ag_test_suite_data = JSONField(
+    ag_test_suite_data = models.JSONField(
         blank=True, default=dict,
         help_text="""When rerun_all_ag_test_suites is False, specifies which
                      AGTestSuites should be rerun and which AGTestCases within

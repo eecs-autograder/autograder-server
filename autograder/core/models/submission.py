@@ -217,7 +217,7 @@ class Submission(ag_model_base.AutograderModel):
         default=list, blank=True,
         help_text="""The names of files that were discarded when this Submission was created.""")
 
-    missing_files = pg_fields.JSONField(
+    missing_files = models.JSONField(
         default=dict, blank=True,
         help_text="""Stores missing filenames and the additional number
             of files needed to satisfy a file pattern requirement.
@@ -279,7 +279,7 @@ class Submission(ag_model_base.AutograderModel):
         )
     )
 
-    denormalized_ag_test_results = pg_fields.JSONField(
+    denormalized_ag_test_results = models.JSONField(
         default=dict, blank=True,
         help_text="""Stores denormalized AG test results in order to avoid
                      expensive joins when getting submission result feedback.

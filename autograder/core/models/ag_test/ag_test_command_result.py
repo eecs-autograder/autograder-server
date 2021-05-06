@@ -32,9 +32,9 @@ class AGTestCommandResult(AGCommandResultBase):
                      A value of None indicates that this AGTestCommandResult
                      is the result of an AGTestSuite's setup command.''')
 
-    return_code_correct = models.NullBooleanField(null=True, default=None)
-    stdout_correct = models.NullBooleanField(null=True, default=None)
-    stderr_correct = models.NullBooleanField(null=True, default=None)
+    return_code_correct = models.BooleanField(blank=True, null=True, default=None)
+    stdout_correct = models.BooleanField(blank=True, null=True, default=None)
+    stderr_correct = models.BooleanField(blank=True, null=True, default=None)
 
     @property
     def stdout_filename(self) -> str:
