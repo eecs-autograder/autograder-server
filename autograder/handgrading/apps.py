@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class HandgradingConfig(AppConfig):
-    name = 'handgrading'
+    name = 'autograder.handgrading'

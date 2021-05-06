@@ -12,6 +12,7 @@ from typing import (
 import django.contrib.postgres.fields as pg_fields
 from django.contrib.auth.models import User
 from django.core.exceptions import FieldDoesNotExist
+from django.db import models
 from django.db.models import Field, Model, fields
 from django.db.models.fields.related import RelatedField
 from django.db.models.fields.reverse_related import ForeignObjectRel
@@ -472,6 +473,7 @@ _FIELD_TYPES: Dict[Type[Field[object, object]], SchemaObject] = {
 
     TimeZoneField: {'type': 'string', 'format': 'timezone'},
 
+    models.JSONField: {'type': 'object'},
     pg_fields.JSONField: {'type': 'object'},
 }
 

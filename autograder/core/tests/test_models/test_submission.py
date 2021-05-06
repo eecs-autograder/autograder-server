@@ -190,17 +190,6 @@ class SubmissionTestCase(UnitTestBase):
 
         self._do_files_discarded_test(files, duplicate_files)
 
-    def test_invalid_filenames(self):
-        bad_files = [
-            SimpleUploadedFile('..', b'blah'),
-            SimpleUploadedFile('.', b'merp'),
-            SimpleUploadedFile('', b'cheeese')
-        ]
-        ag_models.ExpectedStudentFile.objects.validate_and_create(
-            project=self.project, pattern='*', max_num_matches=10)
-
-        self._do_files_discarded_test([SimpleUploadedFile('test_spam.cpp', b'cheeese')], bad_files)
-
     def _do_files_discarded_test(self, files, files_to_discard):
         submission = ag_models.Submission.objects.validate_and_create(
             group=self.group,

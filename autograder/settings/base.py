@@ -244,4 +244,7 @@ SANDBOX_IMAGE_REGISTRY_HOST = os.environ.get(
     'SANDBOX_IMAGE_REGISTRY_HOST', '127.0.0.1')
 SANDBOX_IMAGE_REGISTRY_PORT = os.environ.get('SANDBOX_IMAGE_REGISTRY_PORT', '5001')
 
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 from autograder.settings.celery_settings import *  # noqa
