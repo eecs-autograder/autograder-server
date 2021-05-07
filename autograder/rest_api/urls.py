@@ -1,12 +1,31 @@
-from django.conf import settings
-from django.conf.urls import include, url
+from pathlib import Path
+
+from django.http.request import HttpRequest
+from django.http.response import FileResponse, HttpResponse
+from django.shortcuts import render
 from django.urls import path
-from rest_framework import permissions
-from rest_framework.schemas import get_schema_view
+from django.urls.conf import re_path
 
 from autograder.rest_api import views
 
+
+def api_docs_view(request: HttpRequest) -> HttpResponse:
+    return render(request, 'swagger_ui.html')
+
+
+def api_docs_view_redoc(request: HttpRequest) -> HttpResponse:
+    return render(request, 'redoc.html')
+
+
+def api_schema_yml_view(request: HttpRequest) -> FileResponse:
+    return FileResponse(open(Path(__file__).resolve().parent / 'schema' / 'schema.yml', 'rb'))
+
+
 urlpatterns = [
+    re_path('docs/?$', api_docs_view, name='api-docs'),
+    re_path('docs/redoc/?$', api_docs_view_redoc, name='api-docs-redoc'),
+    path('docs/schema.yml', api_schema_yml_view, name='api-schema-yml'),
+
     path('oauth2callback/', views.oauth2_callback, name='oauth2callback'),
     path('users/current/', views.CurrentUserView.as_view(), name='current-user'),
     path('users/current/can_create_courses/', views.CurrentUserCanCreateCoursesView.as_view(),
