@@ -2,6 +2,7 @@ import datetime
 import os
 from typing import Any, Dict
 
+import pytz
 from django.core import exceptions, validators
 from django.db import models
 from timezone_field import TimeZoneField  # type: ignore
@@ -154,7 +155,11 @@ class Project(AutograderModel):
     submission_limit_reset_timezone = TimeZoneField(
         default='UTC',
         help_text="""The timezone to use when computing how many
-            submissions a group has made in a 24 hour period.""")
+            submissions a group has made in a 24 hour period.""",
+        # See https://stackoverflow.com/questions/50270711/
+        #       django-timezone-fields-dont-accept-all-pytz-timezones
+        choices=[(tz, tz) for tz in pytz.all_timezones]
+    )
 
     num_bonus_submissions = models.IntegerField(
         default=0, validators=[validators.MinValueValidator(0)])
