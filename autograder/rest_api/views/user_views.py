@@ -1,26 +1,28 @@
-from abc import abstractclassmethod
-from autograder.rest_api.schema.utils import stderr
-from autograder.rest_api.schema.openapi_types import SchemaObject
-from typing import Dict, List, Mapping, Sequence
+from typing import Dict, List, Sequence
 
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-from rest_framework import decorators, mixins, permissions, response
+from rest_framework import permissions, response, status
+from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
-from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator, APIClassType, APITags,
-                                        ContentType, CustomViewSchema,
-                                        MediaTypeObject, ParameterObject, as_array_content_obj)
+from autograder.rest_api.schema import (
+    AGDetailViewSchemaGenerator, APIClassType, APITags, ContentType, CustomViewSchema,
+    ParameterObject, as_array_content_obj
+)
+from autograder.rest_api.schema.openapi_types import SchemaObject
+from autograder.rest_api.schema.utils import stderr
+from autograder.rest_api.schema.view_schema_generators import AGViewSchemaGenerator
 from autograder.rest_api.serialize_user import serialize_user
-from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
-                                                      AlwaysIsAuthenticatedMixin, NestedModelView,
-                                                      require_body_params, require_query_params)
+from autograder.rest_api.views.ag_model_views import (
+    AGModelAPIView, AGModelDetailView, AlwaysIsAuthenticatedMixin, NestedModelView,
+    require_body_params, require_query_params
+)
 
 
 class _Permissions(permissions.BasePermission):
@@ -40,6 +42,25 @@ class CurrentUserView(AGModelAPIView):
 
     def get(self, *args, **kwargs):
         return response.Response(serialize_user(self.request.user))
+
+
+class RevokeCurrentUserAPITokenView(AGModelAPIView):
+    schema = AGViewSchemaGenerator(
+        tags=[APITags.users],
+        operation_id_overrides={'DELETE': 'revokeCurrentUserAPIToken'}
+    )
+
+    def delete(self, *args, **kwargs):
+        """
+        Revoke the current user's API token.
+        """
+        # Note: In order for this request to be processed,
+        # the user must be authenticated, which means they must
+        # have an API token. Therefore we do not need to handle any
+        # ObjectDoesNotExist exceptions.
+        token = Token.objects.get(user=self.request.user)
+        token.delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class UserDetailView(AGModelDetailView):

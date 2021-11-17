@@ -8411,6 +8411,16 @@ paths:
           description: The build task has been started.
       tags:
       - sandbox_docker_images
+  /api/users/current/revoke_api_token/:
+    delete:
+      operationId: revokeCurrentUserAPIToken
+      description: Revoke the current user's API token.
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - users
   /api/projects/{id}/results_cache/:
     delete:
       operationId: clearSubmissionResultsCache
