@@ -1,15 +1,14 @@
-import itertools
-
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import Permission, User
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.utils.testing import UnitTestBase
-from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 from autograder.rest_api.serialize_user import serialize_user
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
+from autograder.utils.testing import UnitTestBase
 
 
 class GetUserTestCase(AGViewTestBase):
@@ -29,6 +28,22 @@ class GetUserTestCase(AGViewTestBase):
     def test_other_get_user_permission_denied(self):
         other_user = obj_build.make_user()
         self.do_permission_denied_get_test(self.client, other_user, user_url(self.user))
+
+
+class RevokeCurrentUserAPIToken(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.user = obj_build.make_user()
+
+    def test_revoke_current_user_api_token(self) -> None:
+        Token.objects.create(user=self.user)
+        self.assertTrue(Token.objects.filter(user=self.user).exists())
+
+        self.client.force_authenticate(self.user)
+        response = self.client.delete(reverse('revoke-api-token'))
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+        self.assertFalse(Token.objects.filter(user=self.user).exists())
 
 
 class UsersCourseViewTestCase(AGViewTestBase):

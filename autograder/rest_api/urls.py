@@ -28,6 +28,8 @@ urlpatterns = [
 
     path('oauth2callback/', views.oauth2_callback, name='oauth2callback'),
     path('users/current/', views.CurrentUserView.as_view(), name='current-user'),
+    path('users/current/revoke_api_token/', views.RevokeCurrentUserAPITokenView.as_view(),
+         name='revoke-api-token'),
     path('users/current/can_create_courses/', views.CurrentUserCanCreateCoursesView.as_view(),
          name='user-can-create-courses'),
     path('users/<int:pk>/', views.UserDetailView.as_view(), name='user-detail'),

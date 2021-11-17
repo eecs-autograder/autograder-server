@@ -63,4 +63,5 @@ from .user_views import (CoursesIsAdminForView, CoursesIsEnrolledInView,
                          CoursesIsHandgraderForView, CoursesIsStaffForView,
                          CurrentUserCanCreateCoursesView, CurrentUserView,
                          GroupInvitationsReceivedView, GroupInvitationsSentView,
-                         GroupsIsMemberOfView, UserDetailView, UserLateDaysView)
+                         GroupsIsMemberOfView, RevokeCurrentUserAPITokenView,
+                         UserDetailView, UserLateDaysView)
