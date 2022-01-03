@@ -27,7 +27,27 @@ class AGSchemaGenerator(SchemaGenerator):
         super().__init__(
             title='Autograder.io API',
             url=url,
-            description=description,
+            description='''
+[View docs with ReDoc](/api/docs/redoc)
+
+[View docs with Swagger](/api/docs)
+
+### Authenticating
+To obtain an API token linked to your account, visit
+[https://autograder.io/web/\\_\\_apitoken\\_\\_](https://autograder.io/web/__apitoken__).
+After you've logged in, you will automatically be prompted to download
+a text file containing the token. If you are using a custom
+deployment of autograder.io, replace "autograder.io" in the
+URL with the appropriate domain.
+
+When sending requests to the API, include the `Authorization`
+header with value `Token {your token}`, where `{your token}`
+should be replaced with the token string in the file you downloaded.
+
+If your token becomes compromised, you can revoke it
+by sending a DELETE request to the `/api/users/current/revoke_api_token/`
+endpoint (with your token included in the "Authorization" header as before).
+            ''',
             patterns=patterns,
             urlconf=urlconf,
             version=settings.VERSION,
