@@ -49,6 +49,7 @@ class DownloadTaskTestCase(UnitTestBase):
             'download_type',
             'result_filename',
             'progress',
+            'include_pending_extensions',
             'error_msg',
             'created_at',
         ]

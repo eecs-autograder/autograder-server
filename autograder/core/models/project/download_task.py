@@ -18,6 +18,11 @@ class DownloadTask(Task):
 
     project = models.ForeignKey(Project, related_name='download_tasks', on_delete=models.CASCADE)
     download_type = models.TextField(choices=DownloadType.choices)
+    include_pending_extensions = models.BooleanField(
+        default=False, help_text='''Applies only to "final_graded_submission_scores" downloads,
+            ignored otherwise. When True, students with pending extensions will be
+            included in final_graded_submission_scores download CSV files.'''
+    )
     result_filename = models.TextField(blank=True)
 
     SERIALIZABLE_FIELDS = (
@@ -26,6 +31,7 @@ class DownloadTask(Task):
         'download_type',
         'result_filename',
         'progress',
+        'include_pending_extensions',
         'error_msg',
         'created_at',
     )
@@ -33,5 +39,6 @@ class DownloadTask(Task):
     EDITABLE_FIELDS = (
         'result_filename',
         'progress',
+        'include_pending_extensions',
         'error_msg',
     )

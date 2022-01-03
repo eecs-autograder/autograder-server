@@ -1,10 +1,8 @@
 import datetime
-import json
 from typing import Optional
 from urllib.parse import urlencode
 
 from django.contrib.auth.models import User
-from django.core.serializers.json import DjangoJSONEncoder
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -337,6 +335,26 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         self.client.force_authenticate(admin)
 
         response = self.client.get(self.base_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual(expected, response.data['results'])
+
+    def test_get_results_group_has_extension_include_pending_extensions_true(self):
+        student_group, student_submission = self._make_group_with_submissions(
+            2, extended_due_date=timezone.now() + datetime.timedelta(days=1))
+
+        expected = [
+            self._make_result_content_for_user(
+                student_group.member_names[0], student_group,
+                student_submission, points_only=True),
+            self._make_result_content_for_user(
+                student_group.member_names[1], student_group,
+                student_submission, points_only=True),
+        ]
+
+        admin = obj_build.make_admin_user(self.course)
+        self.client.force_authenticate(admin)
+
+        response = self.client.get(self.base_url + '?include_pending_extensions=true')
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertSequenceEqual(expected, response.data['results'])
 
