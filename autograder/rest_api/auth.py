@@ -34,9 +34,10 @@ class OAuth2RedirectTokenAuth(TokenAuthentication):
 
     def authenticate(self, request: Request) -> Optional[Tuple[User, Token]]:
         # Log which user sent the request.
-        user, token = super().authenticate(request)
-        logger.info(f'{user} {request.method} {request.path}')
-        return (user, token)
+        result = super().authenticate(request)
+        if result is not None:
+            logger.info(f'{result[0]} {request.method} {request.path}')
+        return result
 
     def authenticate_header(self, request):
         assert self.scopes is not None, 'Derived classes must set the "scopes" attr.'
