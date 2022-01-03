@@ -1,4 +1,6 @@
 import json
+import logging
+from typing import Optional, Tuple
 from urllib.parse import urlparse, urlunparse
 
 from django.conf import settings
@@ -6,6 +8,10 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from oauth2client import client
 from rest_framework.authentication import BaseAuthentication, TokenAuthentication
+from rest_framework.authtoken.models import Token
+from rest_framework.request import Request
+
+logger = logging.getLogger(__name__)
 
 GOOGLE_API_SCOPES = [
     'openid',
@@ -25,6 +31,13 @@ AZURE_API_SCOPES = [
 
 class OAuth2RedirectTokenAuth(TokenAuthentication):
     scopes = None
+
+    def authenticate(self, request: Request) -> Optional[Tuple[User, Token]]:
+        # Log which user sent the request.
+        result = super().authenticate(request)
+        if result is not None:
+            logger.info(f'{result[0]} {request.method} {request.path}')
+        return result
 
     def authenticate_header(self, request):
         assert self.scopes is not None, 'Derived classes must set the "scopes" attr.'
