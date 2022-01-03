@@ -215,8 +215,12 @@ def _make_ultimate_submission_scores_csv(task: ag_models.DownloadTask,
     if hasattr(task.project, 'handgrading_rubric'):
         project_has_handgrading = True
 
-    results = serialize_ultimate_submission_results(submission_fdbks, full_results=True,
-                                                    include_handgrading=project_has_handgrading)
+    results = serialize_ultimate_submission_results(
+        submission_fdbks,
+        full_results=True,
+        include_handgrading=project_has_handgrading,
+        include_pending_extensions=task.include_pending_extensions,
+    )
 
     with open(dest_filename, 'w', newline='') as csv_file:
         headers = [

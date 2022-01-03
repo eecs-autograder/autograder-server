@@ -5979,6 +5979,18 @@ paths:
           - 'true'
           - 'false'
           default: 'false'
+      - name: include_pending_extensions
+        in: query
+        description: "When \"false\", the \"ultimate_submission\" field\n        \
+          \                will be set to null for students who have a pending extension.\n\
+          \                        Set to \"true\" to include those submission results.\n\
+          \                        Defaults to \"false\"."
+        schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+          default: 'false'
       - $ref: '#/components/parameters/includeStaff'
       responses:
         '200':
@@ -9377,6 +9389,13 @@ components:
           description: A percentage indicating how close the task is to completion.
           nullable: false
           type: integer
+        include_pending_extensions:
+          description: "Applies only to \"final_graded_submission_scores\" downloads,\n\
+            \            ignored otherwise. When True, students with pending extensions\
+            \ will be\n            included in final_graded_submission_scores download\
+            \ CSV files."
+          nullable: false
+          type: boolean
         error_msg:
           description: ''
           nullable: false

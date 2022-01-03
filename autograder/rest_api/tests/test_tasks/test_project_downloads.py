@@ -5,7 +5,7 @@ import os
 import tempfile
 import zipfile
 from collections import OrderedDict
-from typing import Iterator, BinaryIO
+from typing import Iterator, BinaryIO, Optional
 from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -406,6 +406,48 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
         self.student_group.validate_and_update(extended_due_date=student_extension)
 
         self.do_ultimate_submission_scores_csv_test(self.url, [])
+
+    def test_group_has_extension_not_past_include_pending_extensions_true(self):
+        student_extension = timezone.now() + datetime.timedelta(days=2)
+        self.student_group.validate_and_update(extended_due_date=student_extension)
+
+        self.student_submission.timestamp = student_extension - datetime.timedelta(days=2)
+        self.student_submission.save()
+
+        expected = [
+            OrderedDict({
+                'Username': self.student_group.member_names[0],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': str(student_extension),
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                # These point values are the same as the totals because its the only test case
+                f'{self.ag_test_suite.name} Total': str(self.student_result_fdbk.total_points),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
+            }),
+            OrderedDict({
+                'Username': self.student_group.member_names[1],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': str(student_extension),
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                f'{self.ag_test_suite.name} Total': (str(self.student_result_fdbk.total_points)),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
+            })
+        ]
+
+        self.do_ultimate_submission_scores_csv_test(
+            self.url + '?include_pending_extensions=true', expected)
 
     def test_include_staff(self):
         expected = [

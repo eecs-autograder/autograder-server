@@ -249,9 +249,13 @@ class _DownloadViewBase(AGModelAPIView):
         with transaction.atomic():
             project = self.get_object()  # type: ag_models.Project
             include_staff = self.request.query_params.get('include_staff', None) == 'true'
+            include_pending_extensions = (
+                self.request.query_params.get('include_pending_extensions', None) == 'true')
             task = ag_models.DownloadTask.objects.validate_and_create(
-                project=project, creator=self.request.user,
-                download_type=self.download_type)
+                project=project,
+                creator=self.request.user,
+                download_type=self.download_type,
+                include_pending_extensions=include_pending_extensions)
 
         from autograder.celery import app
         self.celery_task_func.apply_async(

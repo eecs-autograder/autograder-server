@@ -63,6 +63,20 @@ class AllUltimateSubmissionResults(AGModelAPIView):
                         'default': 'false',
                     }
                 },
+                {
+                    'name': 'include_pending_extensions',
+                    'in': 'query',
+                    'description': '''When "false", the "ultimate_submission" field
+                        will be set to null for students who have a pending extension.
+                        Set to "true" to include those submission results.
+                        Defaults to "false".
+                    '''.strip(),
+                    'schema': {
+                        'type': 'string',
+                        'enum': ['true', 'false'],
+                        'default': 'false',
+                    }
+                },
                 {'$ref': '#/components/parameters/includeStaff'}
             ],
             'responses': {
@@ -129,7 +143,10 @@ class AllUltimateSubmissionResults(AGModelAPIView):
         ultimate_submissions = get_ultimate_submissions(
             project, filter_groups=page, ag_test_preloader=ag_test_preloader)
 
+        include_pending_extensions = (
+            self.request.query_params.get('include_pending_extensions') == 'true')
         results = serialize_ultimate_submission_results(
-            ultimate_submissions, full_results=full_results)
+            ultimate_submissions, full_results=full_results,
+            include_pending_extensions=include_pending_extensions)
 
         return paginator.get_paginated_response(results)

@@ -9,19 +9,26 @@ from autograder.core.models.get_ultimate_submissions import get_ultimate_submiss
 from autograder.core.submission_feedback import SubmissionResultFeedback
 
 
-def serialize_ultimate_submission_results(ultimate_submissions: Iterable[SubmissionResultFeedback],
-                                          *, full_results: bool,
-                                          include_handgrading: bool = False) -> List[dict]:
+def serialize_ultimate_submission_results(
+    ultimate_submissions: Iterable[SubmissionResultFeedback],
+    *, full_results: bool,
+    include_handgrading: bool = False,
+    include_pending_extensions: bool = False,
+) -> List[dict]:
     """
     Returns serialized ultimate submission data for each user in the
     groups linked to ultimate_submissions.
     This function also accounts for submissions that don't count for
-    a partecular user due to late day usage.
+    a particular user due to late day usage.
 
     :param ultimate_submissions:
     :param full_results: Whether to include information about individual
         test cases.
     :param include_handgrading:
+    :param include_pending_extensions: If this argument is False (the default),
+        students with pending extensions will have their "ultimate_submission" key
+        set to None in the returned data. Set to True to include these students'
+        ultimate submission data in the results.
     :return: [
         {
             "username": <username>,
@@ -49,7 +56,9 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
     for submission_fdbk in ultimate_submissions:
         submission = submission_fdbk.submission
         group = submission.group
-        if group.extended_due_date is not None and group.extended_due_date > timezone.now():
+        if (not include_pending_extensions
+                and group.extended_due_date is not None
+                and group.extended_due_date > timezone.now()):
             submission_data = None
         else:
             submission_data = get_submission_data_with_results(

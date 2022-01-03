@@ -180,6 +180,79 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
         )
         self.assertEqual(expected, actual)
 
+    def test_group_has_extension_include_pending_extensions_true(self):
+        group_with_future_extension = obj_build.make_group(
+            num_members=2,
+            project=self.project, extended_due_date=timezone.now() + datetime.timedelta(days=1))
+        extension_submission = obj_build.make_finished_submission(group_with_future_extension)
+        extension_submission = self._add_results_to_submission(
+            extension_submission, results_correct=True)
+
+        group = obj_build.make_group(project=self.project)
+        submission = obj_build.make_finished_submission(group)
+        submission = self._add_results_to_submission(submission, results_correct=False)
+        submission_fdbk = SubmissionResultFeedback(
+            submission, ag_models.FeedbackCategory.max, self.ag_test_preloader)
+        self.assertEqual(0, submission_fdbk.total_points)
+        self.assertNotEqual(0, submission_fdbk.total_points_possible)
+
+        extension_submission_fdbk = SubmissionResultFeedback(
+            extension_submission, ag_models.FeedbackCategory.max, self.ag_test_preloader)
+
+        expected = [
+            {
+                'username': group_with_future_extension.member_names[0],
+                'group': group_with_future_extension.to_dict(),
+                'ultimate_submission': {
+                    'results': {
+                        'total_points': two_decimal_place_string(
+                            extension_submission_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            extension_submission_fdbk.total_points_possible
+                        )
+                    },
+                    **extension_submission.to_dict()
+                }
+            },
+            {
+                'username': group_with_future_extension.member_names[1],
+                'group': group_with_future_extension.to_dict(),
+                'ultimate_submission': {
+                    'results': {
+                        'total_points': two_decimal_place_string(
+                            extension_submission_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            extension_submission_fdbk.total_points_possible
+                        )
+                    },
+                    **extension_submission.to_dict()
+                }
+            },
+
+            {
+                'username': group.member_names[0],
+                'group': group.to_dict(),
+                'ultimate_submission': {
+                    'results': {
+                        'total_points': two_decimal_place_string(submission_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            submission_fdbk.total_points_possible)
+                    },
+                    **submission.to_dict()
+                }
+            }
+        ]
+
+        actual = serialize_ultimate_submission_results(
+            [SubmissionResultFeedback(extension_submission, ag_models.FeedbackCategory.max,
+                                      self.ag_test_preloader),
+             SubmissionResultFeedback(submission, ag_models.FeedbackCategory.max,
+                                      self.ag_test_preloader)],
+            full_results=False,
+            include_pending_extensions=True
+        )
+        self.assertEqual(expected, actual)
+
     def test_group_has_user_most_recent_doesnt_count_for(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)

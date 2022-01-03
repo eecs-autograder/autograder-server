@@ -17,7 +17,6 @@ def serve_file(path: Path, content_type: str = 'application/octet-stream') -> Ht
     (when DEBUG is False. This allows us to run our existing unit tests
     unchanged (since the unit tests don't use a live server or nginx).
     """
-
     if settings.USE_NGINX_X_ACCEL:
         assert path.is_absolute()
         response = HttpResponse()
