@@ -2,6 +2,17 @@ openapi: 3.0.2
 info:
   title: Autograder.io API
   version: 4.3.1
+  description: "\n[View docs with ReDoc](/api/docs/redoc)\n\n[View docs with Swagger](/api/docs)\n\
+    \n### Authenticating\nTo obtain an API token linked to your account, visit\n[https://autograder.io/web/\\\
+    _\\_apitoken\\_\\_](https://autograder.io/web/__apitoken__).\nAfter you've logged\
+    \ in, you will automatically be prompted to download\na text file containing the\
+    \ token. If you are using a custom\ndeployment of autograder.io, replace \"autograder.io\"\
+    \ in the\nURL with the appropriate domain.\n\nWhen sending requests to the API,\
+    \ include the `Authorization`\nheader with value `Token {your token}`, where `{your\
+    \ token}`\nshould be replaced with the token string in the file you downloaded.\n\
+    \nIf your token becomes compromised, you can revoke it\nby sending a DELETE request\
+    \ to the `/api/users/current/revoke_api_token/`\nendpoint (with your token included\
+    \ in the \"Authorization\" header as before).\n            "
 paths:
   /api/users/current/:
     get:
