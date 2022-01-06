@@ -1,5 +1,5 @@
 autograder-sandbox
-celery<5.0.0
+celery<6.0.0
 django-extensions
 django-redis
 django-timezone-field
