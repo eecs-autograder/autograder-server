@@ -20,18 +20,18 @@ celery==4.4.7
     # via -r requirements.in
 decorator==4.4.2
     # via ipython
+django==3.2.12
+    # via
+    #   -r requirements.in
+    #   django-redis
+    #   django-timezone-field
+    #   djangorestframework
 django-extensions==3.1.1
     # via -r requirements.in
 django-redis==4.12.1
     # via -r requirements.in
 django-timezone-field==4.2.1
     # via -r requirements.in
-django==3.2.2
-    # via
-    #   -r requirements.in
-    #   django-redis
-    #   django-timezone-field
-    #   djangorestframework
 djangorestframework==3.12.2
     # via -r requirements.in
 drf-composable-permissions==0.1.1
@@ -42,10 +42,10 @@ httplib2==0.19.0
     # via oauth2client
 inflection==0.5.1
     # via openapi
-ipython-genutils==0.2.0
-    # via traitlets
 ipython==7.20.0
     # via -r requirements.in
+ipython-genutils==0.2.0
+    # via traitlets
 jedi==0.18.0
     # via ipython
 jsonschema==3.2.0
@@ -68,13 +68,13 @@ psycopg2==2.8.6
     # via -r requirements.in
 ptyprocess==0.7.0
     # via pexpect
-pyasn1-modules==0.2.8
-    # via oauth2client
 pyasn1==0.4.8
     # via
     #   oauth2client
     #   pyasn1-modules
     #   rsa
+pyasn1-modules==0.2.8
+    # via oauth2client
 pygments==2.7.4
     # via ipython
 pyparsing==2.4.7
