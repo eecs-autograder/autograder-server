@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import os
 import shutil
-from typing import IO, Any, AnyStr, BinaryIO, Dict, Literal, TextIO, Tuple, cast, overload
+from typing import IO, Any, AnyStr, BinaryIO, Dict, Literal, TextIO, Tuple, overload
 
-from django.conf import settings
 from django.core import exceptions
 from django.db import models, transaction
-from django.db.models.fields.files import FieldFile
+from django.db.models.fields.files import File
 
 import autograder.core.constants as const
 import autograder.core.utils as core_ut
@@ -17,36 +16,32 @@ from ..ag_model_base import AutograderModel, AutograderModelManager
 from .project import Project
 
 
+# Remove in v5
 def _get_project_file_upload_to_path(instance: InstructorFile, filename: str) -> str:
     return os.path.join(core_ut.get_project_files_relative_dir(instance.project), filename)
 
 
-def _validate_filename(file_obj: FieldFile) -> None:
+# Remove in v5
+def _validate_filename(file_obj: File) -> None:
     core_ut.check_filename(file_obj.name)
 
 
 class InstructorFileManager(AutograderModelManager['InstructorFile']):
-    def validate_and_create(self, **kwargs: object) -> InstructorFile:
-        # Custom validation that we want to run only when the file
-        # is created.
-        if 'file_obj' in kwargs and 'project' in kwargs:
-            file_obj = cast(FieldFile, kwargs['file_obj'])
-            if file_obj.size > const.MAX_INSTRUCTOR_FILE_SIZE:
-                raise exceptions.ValidationError(
-                    {'content': 'Project files cannot be bigger than {} bytes'.format(
-                        const.MAX_INSTRUCTOR_FILE_SIZE)})
-            project = cast(Project, kwargs['project'])
+    def validate_and_create(self, *, file_obj: File, project: Project) -> InstructorFile:
+        if file_obj.size > const.MAX_INSTRUCTOR_FILE_SIZE:
+            raise exceptions.ValidationError(
+                {'content': 'Instructor files cannot be bigger than {} bytes'.format(
+                    const.MAX_INSTRUCTOR_FILE_SIZE)})
 
-            file_exists = utils.find_if(
-                project.instructor_files.all(),
-                lambda uploaded: uploaded.name == file_obj.name)
-            if file_exists:
-                raise exceptions.ValidationError(
-                    {'filename': 'File {} already exists'.format(file_obj.name)})
+        filename = os.path.basename(file_obj.name)
+        core_ut.check_filename(filename)
 
-            kwargs['name'] = file_obj.name
+        with transaction.atomic():
+            instructor_file = super().validate_and_create(name=filename, project=project)
+            with open(instructor_file.abspath, 'wb') as dest:
+                shutil.copyfileobj(file_obj.file, dest)
 
-        return super().validate_and_create(**kwargs)
+            return instructor_file
 
 
 class InstructorFile(AutograderModel):
@@ -69,11 +64,12 @@ class InstructorFile(AutograderModel):
     )
 
     project = models.ForeignKey(Project, related_name='instructor_files', on_delete=models.CASCADE)
-    file_obj = models.FileField(
-        upload_to=_get_project_file_upload_to_path,
-        validators=[_validate_filename],
-        max_length=const.MAX_CHAR_FIELD_LEN * 2)
     name = models.TextField()
+    # Remove in v5
+    _remove_in_v5_file_obj = models.FileField(
+        upload_to=_get_project_file_upload_to_path,
+        max_length=const.MAX_CHAR_FIELD_LEN * 2,
+        blank=True, null=True)
 
     def rename(self, new_name: str) -> None:
         """
@@ -97,22 +93,27 @@ class InstructorFile(AutograderModel):
                 {'filename': 'File {} already exists'.format(new_name)})
 
         old_abspath = self.abspath
-        self.file_obj.name = _get_project_file_upload_to_path(self, new_name)
-        new_abspath = self.abspath
-
-        shutil.move(old_abspath, new_abspath)
         self.name = new_name
+        new_abspath = self.abspath
+        # NOTE: We use copy instead of move because we don't actually have
+        # to delete the old file from the filesystem (move over a network
+        # does a copy and then a delete).
+        # This helps us guarantee the atomicity of this operation. This works
+        # because creating and renaming a file can simply overwrite the
+        # file in the filesystem if the name ever gets re-used.
+        shutil.copy(old_abspath, new_abspath)
+
         self.save()
 
     @property
     def abspath(self) -> str:
-        return os.path.join(settings.MEDIA_ROOT, self.file_obj.name)
+        return os.path.join(core_ut.get_project_files_dir(self.project), self.name)
 
     @property
     def size(self) -> int:
-        return cast(FieldFile, self.file_obj).size
+        return os.path.getsize(self.abspath)
 
-    @transaction.atomic()
+    @transaction.atomic
     def delete(self, *args: Any, **kwargs: Any) -> Tuple[int, Dict[str, int]]:
         from ..ag_test.ag_test_command import AGTestCommand, ExpectedOutputSource, StdinSource
 
@@ -131,9 +132,11 @@ class InstructorFile(AutograderModel):
             expected_stderr_instructor_file=self,
         ).update(expected_stderr_source=ExpectedOutputSource.none)
 
-        file_path = self.abspath
         return_val = super().delete(*args, **kwargs)
-        os.remove(file_path)
+        # NOTE: We don't actually have to delete the file from the filesystem.
+        # This helps us guarantee the atomicity of this operation. This works
+        # because creating and renaming a file can simply overwrite the
+        # file in the filesystem if the name ever gets re-used.
 
         return return_val
 
