@@ -37,10 +37,6 @@ class HandgradingResultsPublished(BasePermission):
     def has_object_permission(self, request, view, group: ag_models.Group):
         return group.project.handgrading_rubric.show_grades_and_rubric_to_students
 
-class HandgradingAllRubricReleased(BasePermission):
-    def has_object_permission(self, request, view, group: ag_models.Group):
-        return not group.project.handgrading_rubric.show_only_applied_rubric_to_students
-
 
 student_permission = (
     P(ag_permissions.IsReadOnly)
@@ -92,15 +88,14 @@ class HandgradingResultView(NestedModelView):
         result: dict = group.handgrading_result.to_dict()
 
         # Only filter the output if the user doesn't have privilege
-        # Can be changed to is_student, if the permission does not inherit (i.e. if admin/staff are not considered student)
-        can_access_all_rubrics = (
-            P(HandgradingAllRubricReleased)
-            | P(is_admin)
-            | P(is_staff)
-            | P(is_handgrader)
+        course = group.project.course
+        show_only_applied_rubric = (
+            group.project.handgrading_rubric.show_only_applied_rubric_to_students
+            and not course.is_staff(request.user)  # Admins count as staff
+            and not course.is_handgrader(request.user)
         )
 
-        if not can_access_all_rubrics.has_object_permission(request, self, group):
+        if show_only_applied_rubric:
             # Collect ID of applied Annotations and Checkboxes
             applied_anno = {a["annotation"]["pk"] for a in result["applied_annotations"]}
             applied_check = {c["pk"] for c in result["criterion_results"] if c["selected"]}
