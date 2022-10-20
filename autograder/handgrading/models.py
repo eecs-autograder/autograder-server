@@ -58,6 +58,10 @@ class HandgradingRubric(AutograderModel):
         help_text='''Whether students can see their handgrading scores,
                      including information from the rubric.''')
 
+    show_only_applied_rubric_to_students = models.BooleanField(
+        default=False, blank=True,
+        help_text='''Whether students can see rubric items that were not applied to their submission.''')
+
     handgraders_can_leave_comments = models.BooleanField(
         default=False, blank=True,
         help_text='''Whether handgraders can add comments to a HandgradingResult.''')
@@ -86,6 +90,7 @@ class HandgradingRubric(AutograderModel):
                            'points_style',
                            'max_points',
                            'show_grades_and_rubric_to_students',
+                           'show_only_applied_rubric_to_students',
                            'handgraders_can_leave_comments',
                            'handgraders_can_adjust_points',
 
@@ -95,6 +100,7 @@ class HandgradingRubric(AutograderModel):
     EDITABLE_FIELDS = ('points_style',
                        'max_points',
                        'show_grades_and_rubric_to_students',
+                       'show_only_applied_rubric_to_students',
                        'handgraders_can_leave_comments',
                        'handgraders_can_adjust_points',)
 

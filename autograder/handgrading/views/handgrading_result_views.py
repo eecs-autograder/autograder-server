@@ -37,6 +37,10 @@ class HandgradingResultsPublished(BasePermission):
     def has_object_permission(self, request, view, group: ag_models.Group):
         return group.project.handgrading_rubric.show_grades_and_rubric_to_students
 
+class HandgradingAllRubricReleased(BasePermission):
+    def has_object_permission(self, request, view, group: ag_models.Group):
+        return not group.project.handgrading_rubric.show_only_applied_rubric_to_students
+
 
 student_permission = (
     P(ag_permissions.IsReadOnly)
@@ -87,20 +91,30 @@ class HandgradingResultView(NestedModelView):
         group: ag_models.Group = self.get_object()
         result: dict = group.handgrading_result.to_dict()
 
-        # Collect ID of applied Annotations and Checkboxes
-        applied_anno = {a["annotation"]["pk"] for a in result["applied_annotations"]}
-        applied_check = {c["pk"] for c in result["criterion_results"] if c["selected"]}
+        # Only filter the output if the user doesn't have privilege
+        # Can be changed to is_student, if the permission does not inherit (i.e. if admin/staff are not considered student)
+        can_access_all_rubrics = (
+            P(HandgradingAllRubricReleased)
+            | P(is_admin)
+            | P(is_staff)
+            | P(is_handgrader)
+        )
 
-        # Filter out all unapplied Annotations and Checkboxes from output
-        result["handgrading_rubric"]["annotations"] = filter(
-            lambda a: a["pk"] in applied_anno, result["handgrading_rubric"]["annotations"]
-        )
-        result["handgrading_rubric"]["criteria"] = filter(
-            lambda c: c["pk"] in applied_check, result["handgrading_rubric"]["criteria"]
-        )
-        result["criterion_results"] = filter(
-            lambda c: c["pk"] in applied_check, result["criterion_results"]
-        )
+        if not can_access_all_rubrics.has_object_permission(request, self, group):
+            # Collect ID of applied Annotations and Checkboxes
+            applied_anno = {a["annotation"]["pk"] for a in result["applied_annotations"]}
+            applied_check = {c["pk"] for c in result["criterion_results"] if c["selected"]}
+
+            # Filter out all unapplied Annotations and Checkboxes from output
+            result["handgrading_rubric"]["annotations"] = filter(
+                lambda a: a["pk"] in applied_anno, result["handgrading_rubric"]["annotations"]
+            )
+            result["handgrading_rubric"]["criteria"] = filter(
+                lambda c: c["pk"] in applied_check, result["handgrading_rubric"]["criteria"]
+            )
+            result["criterion_results"] = filter(
+                lambda c: c["pk"] in applied_check, result["criterion_results"]
+            )
 
         return response.Response(result)
 
