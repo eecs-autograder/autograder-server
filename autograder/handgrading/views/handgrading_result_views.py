@@ -98,18 +98,18 @@ class HandgradingResultView(NestedModelView):
         if show_only_applied_rubric:
             # Collect ID of applied Annotations and Checkboxes
             applied_anno = {a["annotation"]["pk"] for a in result["applied_annotations"]}
-            applied_check = {c["pk"] for c in result["criterion_results"] if c["selected"]}
+            applied_check = {c["criterion"]["pk"] for c in result["criterion_results"] if c["selected"]}
 
             # Filter out all unapplied Annotations and Checkboxes from output
-            result["handgrading_rubric"]["annotations"] = filter(
+            result["handgrading_rubric"]["annotations"] = list(filter(
                 lambda a: a["pk"] in applied_anno, result["handgrading_rubric"]["annotations"]
-            )
-            result["handgrading_rubric"]["criteria"] = filter(
+            ))
+            result["handgrading_rubric"]["criteria"] = list(filter(
                 lambda c: c["pk"] in applied_check, result["handgrading_rubric"]["criteria"]
-            )
-            result["criterion_results"] = filter(
-                lambda c: c["pk"] in applied_check, result["criterion_results"]
-            )
+            ))
+            result["criterion_results"] = list(filter(
+                lambda c: c["criterion"]["pk"] in applied_check, result["criterion_results"]
+            ))
 
         return response.Response(result)
 
