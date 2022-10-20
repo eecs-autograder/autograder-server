@@ -22,6 +22,7 @@ class HandgradingRubricTestCase(UnitTestBase):
         self.assertEqual(handgrading_models.PointsStyle.start_at_zero_and_add, rubric.points_style)
         self.assertIsNone(rubric.max_points)
         self.assertFalse(rubric.show_grades_and_rubric_to_students)
+        self.assertFalse(rubric.show_only_applied_rubric_to_students)
         self.assertFalse(rubric.handgraders_can_leave_comments)
         self.assertFalse(rubric.handgraders_can_adjust_points)
 
@@ -30,6 +31,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
             "max_points": 25,
             "show_grades_and_rubric_to_students": True,
+            "show_only_applied_rubric_to_students": True,
             "handgraders_can_leave_comments": True,
             "handgraders_can_adjust_points": True,
             "project": self.project
@@ -80,6 +82,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             'points_style',
             'max_points',
             'show_grades_and_rubric_to_students',
+            'show_only_applied_rubric_to_students',
             'handgraders_can_leave_comments',
             'handgraders_can_adjust_points',
 
@@ -107,6 +110,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             'points_style',
             'max_points',
             'show_grades_and_rubric_to_students',
+            'show_only_applied_rubric_to_students',
             'handgraders_can_leave_comments',
             'handgraders_can_adjust_points',
 

@@ -193,6 +193,127 @@ class RetrieveHandgradingResultTestCase(_SetUp):
             kwargs={'group_pk': self.submission.group.pk}
         ) + '?filename={}'.format(filename)
 
+class HideUnappliedHandgradingTestCase(_SetUp):
+    def setUp(self):
+        super().setUp()
+
+        self.project.validate_and_update(visible_to_students=True)
+        self.handgrading_rubric.validate_and_update(
+            show_grades_and_rubric_to_students=True
+        )
+        self.handgrading_rubric.validate_and_update(
+            show_only_applied_rubric_to_students=True
+        )
+
+        self.handgrading_result = (
+            hg_models.HandgradingResult.objects.validate_and_create(
+                submission=self.submission,
+                group=self.submission.group,
+                handgrading_rubric=self.handgrading_rubric,
+            )
+        )  # type: hg_models.HandgradingResult
+
+        for pt in range(3):
+            applied = pt % 2 == 0  # So, 0, 2 are applied, 1 is not
+
+            hg_models.CriterionResult.objects.validate_and_create(
+                selected=applied,
+                criterion=hg_models.Criterion.objects.validate_and_create(
+                    short_description=f"C-POSITIVE-{pt}",
+                    points=pt,
+                    handgrading_rubric=self.handgrading_rubric,
+                ),
+                handgrading_result=self.handgrading_result,
+            )
+
+            hg_models.CriterionResult.objects.validate_and_create(
+                selected=applied,
+                criterion=hg_models.Criterion.objects.validate_and_create(
+                    short_description=f"C-NEGATIVE-{pt}",
+                    points=-pt,
+                    handgrading_rubric=self.handgrading_rubric,
+                ),
+                handgrading_result=self.handgrading_result,
+            )
+
+            anno = hg_models.Annotation.objects.validate_and_create(
+                deduction=-pt,
+                short_description=f"A-NEGATIVE-{pt}",
+                handgrading_rubric=self.handgrading_rubric,
+            )
+
+            if applied:
+                hg_models.AppliedAnnotation.objects.validate_and_create(
+                    annotation=anno,
+                    handgrading_result=self.handgrading_result,
+                    location={
+                        "first_line": 0,
+                        "last_line": 1,
+                        "filename": self.submitted_files[pt].name,
+                    },
+                )
+
+        criterion_order = self.handgrading_rubric.get_criterion_order()[::-1]
+        self.handgrading_rubric.set_criterion_order(criterion_order)
+
+    def test_staff_or_handgrader_can_always_retrieve_all(self):
+        self.assertTrue(self.handgrading_rubric.show_grades_and_rubric_to_students)
+        self.assertTrue(self.handgrading_rubric.show_only_applied_rubric_to_students)
+
+        for user in self.handgrader, self.staff, self.admin:
+            self.client.force_authenticate(user)
+
+            response = self.client.get(self.url)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual(self.handgrading_result.to_dict(), response.data)
+
+    def test_student_can_only_retrieve_applied(self):
+        self.assertTrue(self.handgrading_rubric.show_grades_and_rubric_to_students)
+        self.assertTrue(self.handgrading_rubric.show_only_applied_rubric_to_students)
+
+        self.client.force_authenticate(self.student)
+
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertNotEqual(self.handgrading_result.to_dict(), response.data)
+
+        EXPECTED_CRITERIA = {
+            "C-POSITIVE-0",
+            "C-POSITIVE-2",
+            "C-NEGATIVE-0",
+            "C-NEGATIVE-2",
+        }
+        EXPECTED_ANNOTATIONS = {"A-NEGATIVE-0", "A-NEGATIVE-2"}
+
+        # Check all rubrics in the response
+        self.assertEqual(
+            EXPECTED_ANNOTATIONS,
+            {
+                a["short_description"]
+                for a in response.data["handgrading_rubric"]["annotations"]
+            },
+        )
+        self.assertEqual(
+            EXPECTED_ANNOTATIONS,
+            {
+                a["annotation"]["short_description"]
+                for a in response.data["applied_annotations"]
+            },
+        )
+        self.assertEqual(
+            EXPECTED_CRITERIA,
+            {
+                c["short_description"]
+                for c in response.data["handgrading_rubric"]["criteria"]
+            },
+        )
+        self.assertEqual(
+            EXPECTED_CRITERIA,
+            {
+                c["criterion"]["short_description"]
+                for c in response.data["criterion_results"]
+            },
+        )
 
 class HasCorrectSubmissionTestCase(_SetUp):
     def setUp(self):
