@@ -6671,6 +6671,11 @@ paths:
                   nullable: false
                   readOnly: false
                   type: boolean
+                show_only_applied_rubric_to_students:
+                  description: "Whether students can see rubric items that were not applied to their submission."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
                 handgraders_can_leave_comments:
                   description: Whether handgraders can add comments to a HandgradingResult.
                   nullable: false

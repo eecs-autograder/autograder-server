@@ -85,7 +85,33 @@ class HandgradingResultView(NestedModelView):
     @handle_object_does_not_exist_404
     def get(self, request, *args, **kwargs):
         group: ag_models.Group = self.get_object()
-        return response.Response(group.handgrading_result.to_dict())
+        result: dict = group.handgrading_result.to_dict()
+
+        # Only filter the output if the user doesn't have privilege
+        course = group.project.course
+        show_only_applied_rubric = (
+            group.project.handgrading_rubric.show_only_applied_rubric_to_students
+            and not course.is_staff(request.user)  # Admins count as staff
+            and not course.is_handgrader(request.user)
+        )
+
+        if show_only_applied_rubric:
+            # Collect ID of applied Annotations and Checkboxes
+            applied_anno = {a["annotation"]["pk"] for a in result["applied_annotations"]}
+            applied_check = {c["criterion"]["pk"] for c in result["criterion_results"] if c["selected"]}
+
+            # Filter out all unapplied Annotations and Checkboxes from output
+            result["handgrading_rubric"]["annotations"] = list(filter(
+                lambda a: a["pk"] in applied_anno, result["handgrading_rubric"]["annotations"]
+            ))
+            result["handgrading_rubric"]["criteria"] = list(filter(
+                lambda c: c["pk"] in applied_check, result["handgrading_rubric"]["criteria"]
+            ))
+            result["criterion_results"] = list(filter(
+                lambda c: c["criterion"]["pk"] in applied_check, result["criterion_results"]
+            ))
+
+        return response.Response(result)
 
     @transaction.atomic()
     def post(self, *args, **kwargs):
