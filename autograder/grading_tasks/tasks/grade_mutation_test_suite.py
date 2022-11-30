@@ -3,7 +3,7 @@ import tempfile
 import traceback
 import uuid
 from io import FileIO
-from typing import List
+from typing import List, Tuple
 
 import celery
 from autograder_sandbox import AutograderSandbox
@@ -88,14 +88,15 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
         else:
             student_tests = (
                 get_test_names_result.stdout.read().decode(errors='backslashreplace').split())
-        discarded_tests = []
+
+        discarded_tests: List[str] = []
         if len(student_tests) > mutation_test_suite.max_num_student_tests:
             discarded_tests = student_tests[mutation_test_suite.max_num_student_tests:]
             student_tests = student_tests[:mutation_test_suite.max_num_student_tests]
 
-        valid_tests = []
-        invalid_tests = []
-        timed_out_tests = []
+        valid_tests: List[str] = []
+        invalid_tests: List[str] = []
+        timed_out_tests: List[str] = []
 
         validity_check_stdout = tempfile.TemporaryFile()
         validity_check_stderr = tempfile.TemporaryFile()
@@ -120,28 +121,22 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
             if validity_run_result.timed_out:
                 timed_out_tests.append(test)
 
-        exposed_bugs = []
-
-        buggy_impls_stdout = tempfile.TemporaryFile()
-        buggy_impls_stderr = tempfile.TemporaryFile()
-        for bug in mutation_test_suite.buggy_impl_names:
-            for valid_test in valid_tests:
-                grade_cmd = mutation_test_suite.grade_buggy_impl_command
-                concrete_cmd = grade_cmd.cmd.replace(
-                    ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, valid_test
-                ).replace(ag_models.MutationTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
-
-                buggy_impl_run_result = run_ag_command(grade_cmd, sandbox,
-                                                       cmd_str_override=concrete_cmd)
-                line = '\n----- Bug "{}" with Test "{}" -----\n'.format(bug, valid_test).encode()
-                buggy_impls_stdout.write(line)
-                buggy_impls_stderr.write(line)
-                shutil.copyfileobj(buggy_impl_run_result.stdout, buggy_impls_stdout)
-                shutil.copyfileobj(buggy_impl_run_result.stderr, buggy_impls_stderr)
-
-                if buggy_impl_run_result.return_code != 0:
-                    exposed_bugs.append(bug)
-                    break
+        run_individual_tests = (
+            ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER
+            in mutation_test_suite.grade_buggy_impl_command.cmd
+        )
+        if run_individual_tests:
+            exposed_bugs, buggy_impls_stdout, buggy_impls_stderr = (
+                _run_individual_tests_against_mutants(
+                    sandbox, mutation_test_suite, valid_tests
+                )
+            )
+        else:
+            exposed_bugs, buggy_impls_stdout, buggy_impls_stderr = (
+                _run_test_batches_against_mutants(
+                    sandbox, mutation_test_suite, valid_tests
+                )
+            )
 
         _save_results(mutation_test_suite, submission,
                       setup_run_result,
@@ -151,6 +146,67 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
                       validity_check_stderr=validity_check_stderr,
                       buggy_impls_stdout=buggy_impls_stdout,
                       buggy_impls_stderr=buggy_impls_stderr)
+
+
+def _run_individual_tests_against_mutants(
+    sandbox: AutograderSandbox,
+    mutation_test_suite: ag_models.MutationTestSuite,
+    valid_tests: List[str],
+) -> Tuple[List[str], tempfile.TemporaryFile, tempfile.TemporaryFile]:
+    exposed_bugs: List[str] = []
+    buggy_impls_stdout = tempfile.TemporaryFile()
+    buggy_impls_stderr = tempfile.TemporaryFile()
+    for bug in mutation_test_suite.buggy_impl_names:
+        for valid_test in valid_tests:
+            cmd_str = mutation_test_suite.grade_buggy_impl_command.cmd.replace(
+                ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, valid_test
+            ).replace(ag_models.MutationTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
+
+            buggy_impl_run_result = run_ag_command(
+                mutation_test_suite.grade_buggy_impl_command,
+                sandbox,
+                cmd_str_override=cmd_str
+            )
+            line = '\n----- Bug "{}" with Test "{}" -----\n'.format(bug, valid_test).encode()
+            buggy_impls_stdout.write(line)
+            buggy_impls_stderr.write(line)
+            shutil.copyfileobj(buggy_impl_run_result.stdout, buggy_impls_stdout)
+            shutil.copyfileobj(buggy_impl_run_result.stderr, buggy_impls_stderr)
+
+            if buggy_impl_run_result.return_code != 0:
+                exposed_bugs.append(bug)
+                break
+
+    return exposed_bugs, buggy_impls_stdout, buggy_impls_stderr
+
+
+def _run_test_batches_against_mutants(
+    sandbox: AutograderSandbox,
+    mutation_test_suite: ag_models.MutationTestSuite,
+    valid_tests: List[str],
+) -> Tuple[List[str], tempfile.TemporaryFile, tempfile.TemporaryFile]:
+    exposed_bugs: List[str] = []
+    buggy_impls_stdout = tempfile.TemporaryFile()
+    buggy_impls_stderr = tempfile.TemporaryFile()
+    for bug in mutation_test_suite.buggy_impl_names:
+        cmd_str = mutation_test_suite.grade_buggy_impl_command.cmd.replace(
+            ag_models.MutationTestSuite.ALL_STUDENT_TEST_NAMES_PLACEHOLDER,
+            ' '.join([f'"{test_name}"' for test_name in valid_tests])
+        ).replace(ag_models.MutationTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
+
+        buggy_impl_run_result = run_ag_command(
+            mutation_test_suite.grade_buggy_impl_command, sandbox, cmd_str_override=cmd_str)
+
+        line = f'\n----- Bug "{bug}" with all_valid_tests -----\n'.encode()
+        buggy_impls_stdout.write(line)
+        buggy_impls_stderr.write(line)
+        shutil.copyfileobj(buggy_impl_run_result.stdout, buggy_impls_stdout)
+        shutil.copyfileobj(buggy_impl_run_result.stderr, buggy_impls_stderr)
+
+        if buggy_impl_run_result.return_code != 0:
+            exposed_bugs.append(bug)
+
+    return exposed_bugs, buggy_impls_stdout, buggy_impls_stderr
 
 
 @retry_should_recover

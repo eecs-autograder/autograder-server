@@ -4,6 +4,7 @@ CXXFLAGS = -Wall -Werror -pedantic -O1 --std=c++11 -c
 # Set these at the command line when running the buggy_impl target
 student_test =
 bug_name =
+student_test_batch =
 
 LD = g++
 LDFLAGS = -Wall
@@ -29,6 +30,10 @@ get_test_names:
 buggy_impl: CPPFLAGS += -D$(bug_name)
 buggy_impl: student_tests_bug_$(bug_name).exe
 	./student_tests_bug_$(bug_name).exe $(student_test)
+
+buggy_impl_batch: CPPFLAGS += -D$(bug_name)
+buggy_impl_batch: student_tests_bug_$(bug_name).exe
+	./student_tests_bug_$(bug_name).exe $(student_test_batch)
 
 .SECONDARY:
 

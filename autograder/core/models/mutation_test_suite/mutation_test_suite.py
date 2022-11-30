@@ -216,7 +216,9 @@ class MutationTestSuite(AutograderModel):
         default=new_make_default_get_student_test_names_cmd,
         help_text="""
             This required command should print out a list of student
-             test case names. If test_name_discovery_whitespace_handling is set to
+             test case names. The test case names should not be wrapped
+             in quotes, even if the test names contain spaces.
+             If test_name_discovery_whitespace_handling is set to
              'any_whitespace', the output of this command will be parsed using
              Python's str.split(). If set to 'newline', the output will
              be parsed using Python's str.splitlines(), and leading and trailing
