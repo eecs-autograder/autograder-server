@@ -1,9 +1,7 @@
 import decimal
 
 from django.core import exceptions
-from django.db import IntegrityError
 
-from autograder.core import constants
 from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -143,6 +141,19 @@ class MutationTestSuiteTestCase(UnitTestBase):
                 self.assertSequenceEqual(value, getattr(mutation_suite, key))
             else:
                 self.assertEqual(value, getattr(mutation_suite, key))
+
+    def test_all_student_tests_placeholder(self) -> None:
+        mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
+            name=self.name, project=self.project,
+            grade_buggy_impl_command={
+                'cmd': 'python3 grade.py ${buggy_impl_name} ${all_valid_test_names}'
+            },
+        )  # type: ag_models.MutationTestSuite
+
+        self.assertEqual(
+            'python3 grade.py ${buggy_impl_name} ${all_valid_test_names}',
+            mutation_suite.grade_buggy_impl_command.cmd
+        )
 
     def test_valid_float_points_per_exposed_bug(self):
         mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(

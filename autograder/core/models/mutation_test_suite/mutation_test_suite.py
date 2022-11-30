@@ -168,6 +168,7 @@ class MutationTestSuite(AutograderModel):
         order_with_respect_to = 'project'
 
     STUDENT_TEST_NAME_PLACEHOLDER = r'${student_test_name}'
+    ALL_STUDENT_TEST_NAMES_PLACEHOLDER = r'${all_valid_test_names}'
     BUGGY_IMPL_NAME_PLACEHOLDER = r'${buggy_impl_name}'
 
     name = models.CharField(
@@ -245,16 +246,31 @@ class MutationTestSuite(AutograderModel):
     grade_buggy_impl_command = ag_fields.ValidatedJSONField(
         Command,
         default=new_make_default_grade_buggy_impl_command,
-        help_text="""
-            This command will be run once for every (buggy implementation, valid test) pair.
+        help_text=f"""
+            This command will be run at least once for every buggy implementation.
             A nonzero exit status indicates that the valid student tests exposed the
             buggy impl, whereas an exit status of zero indicates that the student
             tests did not expose the buggy impl.
-            This command must contain the placeholders {0} and {1}. The placeholder
-            {0} will be replaced with the name of a valid student test case.
-            The placeholder {1} will be replaced with the name of
+
+            This command must contain the placeholders {BUGGY_IMPL_NAME_PLACEHOLDER}
+            and one of {STUDENT_TEST_NAME_PLACEHOLDER} or {ALL_STUDENT_TEST_NAMES_PLACEHOLDER}.
+            The placeholder {BUGGY_IMPL_NAME_PLACEHOLDER} will be replaced with the name of
             the buggy impl that the student test is being run against.
-        """.format(STUDENT_TEST_NAME_PLACEHOLDER, BUGGY_IMPL_NAME_PLACEHOLDER)
+            If the placeholder {STUDENT_TEST_NAME_PLACEHOLDER} is present,
+            it will be replaced with the name of a single valid student test case,
+            and the command will be run once for every (buggy implementation, valid test) pair.
+            If the placeholder {ALL_STUDENT_TEST_NAMES_PLACEHOLDER} is present,
+            it will be replaced with the individually-quoted names of all valid
+            student tests, and the command will be run once for each buggy implementation.
+
+            This latter approach can potentially reduce the runtime (e.g., by
+            reducing the number of times an interpreter is invoked).
+            Note that you may need to specify a higher time limit with this strategy--for
+            example, if each individual test takes 1 second to run and running
+            10 tests at once takes 10 seconds, the time limit will need to be
+            more than 10 seconds, otherwise buggy impls could be erroneously
+            marked as exposed due to the tests exceeding a low time limit.
+        """
     )
 
     points_per_exposed_bug = models.DecimalField(
@@ -356,10 +372,16 @@ class MutationTestSuite(AutograderModel):
                 'Validity check command missing placeholder "{}"'.format(
                     self.STUDENT_TEST_NAME_PLACEHOLDER))
 
-        if self.STUDENT_TEST_NAME_PLACEHOLDER not in self.grade_buggy_impl_command.cmd:
+        contains_one_test_placeholder = (
+            self.STUDENT_TEST_NAME_PLACEHOLDER in self.grade_buggy_impl_command.cmd)
+        contains_all_tests_placeholder = (
+            self.ALL_STUDENT_TEST_NAMES_PLACEHOLDER in self.grade_buggy_impl_command.cmd)
+        if not (contains_one_test_placeholder or contains_all_tests_placeholder):
             errors['grade_buggy_impl_command'] = (
-                'Grade buggy impl command missing placeholder "{}"'.format(
-                    self.STUDENT_TEST_NAME_PLACEHOLDER))
+                'Grade buggy impl command must include one of the following placeholders: '
+                f'"{self.STUDENT_TEST_NAME_PLACEHOLDER}", '
+                f'"{self.ALL_STUDENT_TEST_NAMES_PLACEHOLDER}"'
+            )
 
         if self.BUGGY_IMPL_NAME_PLACEHOLDER not in self.grade_buggy_impl_command.cmd:
             errors['grade_buggy_impl_command'] = (
