@@ -60,7 +60,8 @@ class HandgradingRubric(AutograderModel):
 
     show_only_applied_rubric_to_students = models.BooleanField(
         default=False, blank=True,
-        help_text='''Whether students can see rubric items that were not applied to their submission.''')
+        help_text='''Whether students can see rubric items that
+                     were not applied to their submission.''')
 
     handgraders_can_leave_comments = models.BooleanField(
         default=False, blank=True,
