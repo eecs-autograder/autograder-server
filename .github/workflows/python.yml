@@ -19,9 +19,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install pip-tools
-          pip-sync requirements-dev.txt
+          pip-sync requirements.txt requirements-dev.txt
+          python3 generate_secrets.py
       - name: Lint with pycdestyle, pydocstyle, and mypy
         run: |
           pycodestyle autograder
           pydocstyle autograder
           ./run_mypy.sh
+          python3 manage.py makemigrations --check
+          python3 manage.py generateschema --generator_class autograder.rest_api.schema.AGSchemaGenerator | diff -q - autograder/rest_api/schema/schema.yml
