@@ -12,11 +12,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 
 import autograder.core.models as ag_models
-from autograder.core import constants
-from autograder.utils.retry import retry_ag_test_cmd, retry_should_recover
+from autograder.utils.retry import retry_should_recover
 
-from .utils import (
-    add_files_to_sandbox, mark_submission_as_error, run_ag_test_command, run_ag_command)
+from .utils import add_files_to_sandbox, mark_submission_as_error, run_ag_command
 
 
 @celery.shared_task(max_retries=1, acks_late=True)
@@ -82,8 +80,14 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
                           get_test_names_run_result=get_test_names_result)
             return
 
-        student_tests = (
-            get_test_names_result.stdout.read().decode(errors='backslashreplace').split())
+        if mutation_test_suite.test_name_discovery_whitespace_handling == 'newline':
+            student_tests = ([
+                line.strip() for line in
+                get_test_names_result.stdout.read().decode(errors='backslashreplace').splitlines()
+            ])
+        else:
+            student_tests = (
+                get_test_names_result.stdout.read().decode(errors='backslashreplace').split())
         discarded_tests = []
         if len(student_tests) > mutation_test_suite.max_num_student_tests:
             discarded_tests = student_tests[mutation_test_suite.max_num_student_tests:]

@@ -214,10 +214,18 @@ class MutationTestSuite(AutograderModel):
     get_student_test_names_command = ag_fields.ValidatedJSONField(
         Command,
         default=new_make_default_get_student_test_names_cmd,
-        help_text="""This required command should print out a whitespace-separated
-                     list of detected student names. The output of this command will
-                     be parsed using Python's str.split()."""
+        help_text="""
+            This required command should print out a list of student
+             test case names. If test_name_discovery_whitespace_handling is set to
+             'any_whitespace', the output of this command will be parsed using
+             Python's str.split(). If set to 'newline', the output will
+             be parsed using Python's str.splitlines(), and leading and trailing
+             whitespace will be stripped from each line.
+        """.strip()
     )
+    test_name_discovery_whitespace_handling = models.CharField(
+        max_length=20, choices=[('newline', 'newline'), ('any_whitespace', 'any_whitespace')],
+        blank=True, default='any_whitespace')
 
     DEFAULT_STUDENT_TEST_MAX = 25
     MAX_STUDENT_TEST_MAX = 50
@@ -270,7 +278,7 @@ class MutationTestSuite(AutograderModel):
             10 tests at once takes 10 seconds, the time limit will need to be
             more than 10 seconds, otherwise buggy impls could be erroneously
             marked as exposed due to the tests exceeding a low time limit.
-        """
+        """.strip()
     )
 
     points_per_exposed_bug = models.DecimalField(
@@ -404,6 +412,7 @@ class MutationTestSuite(AutograderModel):
         'use_setup_command',
         'setup_command',
         'get_student_test_names_command',
+        'test_name_discovery_whitespace_handling',
         'max_num_student_tests',
         'student_test_validity_check_command',
         'grade_buggy_impl_command',
@@ -434,6 +443,7 @@ class MutationTestSuite(AutograderModel):
         'use_setup_command',
         'setup_command',
         'get_student_test_names_command',
+        'test_name_discovery_whitespace_handling',
         'max_num_student_tests',
         'student_test_validity_check_command',
         'grade_buggy_impl_command',

@@ -31,6 +31,7 @@ class MutationTestSuiteTestCase(UnitTestBase):
                               ag_models.Command)
         self.assertEqual(ag_models.MutationTestSuite.DEFAULT_STUDENT_TEST_MAX,
                          mutation_suite.max_num_student_tests)
+        self.assertEqual('any_whitespace', mutation_suite.test_name_discovery_whitespace_handling)
 
         self.assertIsInstance(mutation_suite.student_test_validity_check_command,
                               ag_models.Command)
@@ -89,6 +90,7 @@ class MutationTestSuiteTestCase(UnitTestBase):
             'buggy_impl_names': ['spam', 'egg', 'sausage', 'waaaaluigi'],
             'setup_command': {'cmd': 'g++ some_stuff.cpp'},
             'get_student_test_names_command': {'cmd': 'ls test_*.cpp'},
+            'test_name_discovery_whitespace_handling': 'newline',
             'max_num_student_tests': 30,
 
             'student_test_validity_check_command': {
@@ -310,6 +312,7 @@ class MutationTestSuiteTestCase(UnitTestBase):
             'use_setup_command',
             'setup_command',
             'get_student_test_names_command',
+            'test_name_discovery_whitespace_handling',
             'max_num_student_tests',
 
             'student_test_validity_check_command',
