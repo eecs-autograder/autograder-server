@@ -47,3 +47,4 @@ jobs:
           ./run_mypy.sh
           python3 manage.py makemigrations --check
           python3 manage.py generateschema --generator_class autograder.rest_api.schema.AGSchemaGenerator | diff -q - autograder/rest_api/schema/schema.yml
+          python3 manage.py test -k EECS280StyleMutationTestGradingIntegrationTestCase.test_run_student_tests_in_batch
