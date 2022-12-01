@@ -3,7 +3,7 @@ name: Python package
 on: [push]
 
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
