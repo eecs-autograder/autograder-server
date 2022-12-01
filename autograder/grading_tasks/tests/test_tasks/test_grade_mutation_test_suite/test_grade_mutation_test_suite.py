@@ -122,38 +122,38 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
     def _print_mutation_result_output(self, result: ag_models.MutationTestSuiteResult) -> None:
         with open(result.get_test_names_result.stdout_filename) as f:
             print('get_test_names_result.stdout_filename')
-            print(f.read())
+            print(f.read(), flush=True)
         with open(result.get_test_names_result.stderr_filename) as f:
             print('get_test_names_result.stderr_filename')
-            print(f.read())
+            print(f.read(), flush=True)
 
         with open(result.setup_result.stdout_filename) as f:
             print('setup_result stdout')
-            print(f.read())
+            print(f.read(), flush=True)
         with open(result.setup_result.stderr_filename) as f:
             print('setup_result stderr')
-            print(f.read())
+            print(f.read(), flush=True)
 
         with open(result.get_test_names_result.stdout_filename) as f:
             print('get_test_names_result stdout')
-            print(f.read())
+            print(f.read(), flush=True)
         with open(result.get_test_names_result.stderr_filename) as f:
             print('get_test_names_result stderr')
-            print(f.read())
+            print(f.read(), flush=True)
 
         with open(result.validity_check_stdout_filename) as f:
             print('open_validity_check_stdout')
-            print(f.read())
+            print(f.read(), flush=True)
         with open(result.validity_check_stderr_filename) as f:
             print('open_validity_check_stderr')
-            print(f.read())
+            print(f.read(), flush=True)
 
         with open(result.grade_buggy_impls_stdout_filename) as f:
             print('open_grade_buggy_impls_stdout')
-            print(f.read())
+            print(f.read(), flush=True)
         with open(result.grade_buggy_impls_stderr_filename) as f:
             print('open_grade_buggy_impls_stderr')
-            print(f.read())
+            print(f.read(), flush=True)
 
     def test_grade_deferred(self, *args):
         self.mutation_suite.validate_and_update(deferred=True)
