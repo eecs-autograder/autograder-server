@@ -10,7 +10,7 @@ and testing the server code.
 ## System Requirements
 
 **Supported Operating Systems:**
-- Ubuntu 16.04
+- Ubuntu 18.04 or later
 
 It may be possible to run the server tests on OSX.
 If you decide to try this, you're on your own.
@@ -30,7 +30,7 @@ Ubuntu: https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-c
 
 ## Install Postgres
 ```
-sudo apt-get install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5 postgresql-server-dev-9.5
+sudo apt-get install postgresql-13 postgresql-client-13 postgresql-contrib-13 postgresql-server-dev-13
 ```
 Set a password for the 'postgres' user.
 ```
