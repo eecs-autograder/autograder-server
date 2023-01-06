@@ -1,4 +1,3 @@
-from autograder.core.models import submission
 from unittest import mock
 
 from django.conf import settings
@@ -289,6 +288,7 @@ void file2() {
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual('weee', open(res.stdout_filename).read())
 
+    @tag('fix_on_ci')
     def test_network_access_allowed_in_suite(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, allow_network_access=True)
         case1 = obj_build.make_ag_test_case(suite1)

@@ -393,6 +393,7 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
             mutation_test_suite=mutation_suite)
         self.assertEqual(0, result.setup_result.return_code)
 
+    @tag('fix_on_ci')
     def test_network_access_allowed(self, *args):
         mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suito',
