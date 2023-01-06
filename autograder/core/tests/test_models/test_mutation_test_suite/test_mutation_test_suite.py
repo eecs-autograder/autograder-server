@@ -1,9 +1,7 @@
 import decimal
 
 from django.core import exceptions
-from django.db import IntegrityError
 
-from autograder.core import constants
 from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -33,6 +31,7 @@ class MutationTestSuiteTestCase(UnitTestBase):
                               ag_models.Command)
         self.assertEqual(ag_models.MutationTestSuite.DEFAULT_STUDENT_TEST_MAX,
                          mutation_suite.max_num_student_tests)
+        self.assertEqual('any_whitespace', mutation_suite.test_name_discovery_whitespace_handling)
 
         self.assertIsInstance(mutation_suite.student_test_validity_check_command,
                               ag_models.Command)
@@ -91,6 +90,7 @@ class MutationTestSuiteTestCase(UnitTestBase):
             'buggy_impl_names': ['spam', 'egg', 'sausage', 'waaaaluigi'],
             'setup_command': {'cmd': 'g++ some_stuff.cpp'},
             'get_student_test_names_command': {'cmd': 'ls test_*.cpp'},
+            'test_name_discovery_whitespace_handling': 'newline',
             'max_num_student_tests': 30,
 
             'student_test_validity_check_command': {
@@ -143,6 +143,19 @@ class MutationTestSuiteTestCase(UnitTestBase):
                 self.assertSequenceEqual(value, getattr(mutation_suite, key))
             else:
                 self.assertEqual(value, getattr(mutation_suite, key))
+
+    def test_all_student_tests_placeholder(self) -> None:
+        mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
+            name=self.name, project=self.project,
+            grade_buggy_impl_command={
+                'cmd': 'python3 grade.py ${buggy_impl_name} ${all_valid_test_names}'
+            },
+        )  # type: ag_models.MutationTestSuite
+
+        self.assertEqual(
+            'python3 grade.py ${buggy_impl_name} ${all_valid_test_names}',
+            mutation_suite.grade_buggy_impl_command.cmd
+        )
 
     def test_valid_float_points_per_exposed_bug(self):
         mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
@@ -299,6 +312,7 @@ class MutationTestSuiteTestCase(UnitTestBase):
             'use_setup_command',
             'setup_command',
             'get_student_test_names_command',
+            'test_name_discovery_whitespace_handling',
             'max_num_student_tests',
 
             'student_test_validity_check_command',

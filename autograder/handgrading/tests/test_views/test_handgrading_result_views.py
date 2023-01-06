@@ -193,6 +193,7 @@ class RetrieveHandgradingResultTestCase(_SetUp):
             kwargs={'group_pk': self.submission.group.pk}
         ) + '?filename={}'.format(filename)
 
+
 class HideUnappliedHandgradingTestCase(_SetUp):
     def setUp(self):
         super().setUp()
@@ -314,6 +315,7 @@ class HideUnappliedHandgradingTestCase(_SetUp):
                 for c in response.data["criterion_results"]
             },
         )
+
 
 class HasCorrectSubmissionTestCase(_SetUp):
     def setUp(self):

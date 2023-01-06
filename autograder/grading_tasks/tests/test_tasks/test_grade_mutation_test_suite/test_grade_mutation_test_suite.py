@@ -92,40 +92,68 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
 
         self.assertEqual(0, result.get_test_names_result.return_code)
 
+        self._print_mutation_result_output(result)
+
+    def test_run_student_tests_in_batch(self, *args) -> None:
+        self.mutation_suite.validate_and_update(
+            grade_buggy_impl_command={
+                'cmd': ("make student_test_batch='${all_valid_test_names}' "
+                        "bug_name=${buggy_impl_name} buggy_impl_batch"),
+            }
+        )
+        tasks.grade_submission_task(self.submission.pk)
+
+        result = ag_models.MutationTestSuiteResult.objects.get(
+            mutation_test_suite=self.mutation_suite)
+
+        self.assertEqual(0, result.setup_result.return_code)
+
+        print(result.student_tests)
+        print(result.invalid_tests)
+        self._print_mutation_result_output(result)
+
+        self.assertCountEqual(self.all_tests, result.student_tests)
+        self.assertCountEqual(self.invalid_tests, result.invalid_tests)
+        self.assertCountEqual(self.timeout_tests, result.timed_out_tests)
+        self.assertCountEqual(self.bugs_exposed, result.bugs_exposed)
+
+        self.assertEqual(0, result.get_test_names_result.return_code)
+
+    def _print_mutation_result_output(self, result: ag_models.MutationTestSuiteResult) -> None:
         with open(result.get_test_names_result.stdout_filename) as f:
             print('get_test_names_result.stdout_filename')
-            print(f.read())
+            print(f.read(), flush=True)
         with open(result.get_test_names_result.stderr_filename) as f:
             print('get_test_names_result.stderr_filename')
-            print(f.read())
+            print(f.read(), flush=True)
 
         with open(result.setup_result.stdout_filename) as f:
             print('setup_result stdout')
-            print(f.read())
+            print(f.read(), flush=True)
         with open(result.setup_result.stderr_filename) as f:
             print('setup_result stderr')
-            print(f.read())
+            print(f.read(), flush=True)
 
         with open(result.get_test_names_result.stdout_filename) as f:
             print('get_test_names_result stdout')
-            print(f.read())
+            print(f.read(), flush=True)
         with open(result.get_test_names_result.stderr_filename) as f:
             print('get_test_names_result stderr')
-            print(f.read())
+            print(f.read(), flush=True)
 
         with open(result.validity_check_stdout_filename) as f:
             print('open_validity_check_stdout')
-            print(f.read())
+            print(f.read(), flush=True)
         with open(result.validity_check_stderr_filename) as f:
             print('open_validity_check_stderr')
-            print(f.read())
+            print(f.read(), flush=True)
 
         with open(result.grade_buggy_impls_stdout_filename) as f:
             print('open_grade_buggy_impls_stdout')
-            print(f.read())
+            print(f.read(), flush=True)
         with open(result.grade_buggy_impls_stderr_filename) as f:
             print('open_grade_buggy_impls_stderr')
-            print(f.read())
+            print(f.read(), flush=True)
 
     def test_grade_deferred(self, *args):
         self.mutation_suite.validate_and_update(deferred=True)
@@ -365,6 +393,7 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
             mutation_test_suite=mutation_suite)
         self.assertEqual(0, result.setup_result.return_code)
 
+    @tag('fix_on_ci')
     def test_network_access_allowed(self, *args):
         mutation_suite = ag_models.MutationTestSuite.objects.validate_and_create(
             name='suito',

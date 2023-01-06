@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: Autograder.io API
-  version: 4.3.1
+  version: 4.4.0
   description: "\n[View docs with ReDoc](/api/docs/redoc)\n\n[View docs with Swagger](/api/docs)\n\
     \n### Authenticating\nTo obtain an API token linked to your account, visit\n[https://autograder.io/web/\\\
     _\\_apitoken\\_\\_](https://autograder.io/web/__apitoken__).\nAfter you've logged\
@@ -5322,14 +5322,27 @@ paths:
                   allOf:
                   - $ref: '#/components/schemas/Command'
                 get_student_test_names_command:
-                  description: "This required command should print out a whitespace-separated\n\
-                    \                     list of detected student names. The output\
-                    \ of this command will\n                     be parsed using Python's\
-                    \ str.split()."
+                  description: "This required command should print out a list of student\n\
+                    \             test case names. The test case names should not\
+                    \ be wrapped\n             in quotes, even if the test names contain\
+                    \ spaces.\n             If test_name_discovery_whitespace_handling\
+                    \ is set to\n             'any_whitespace', the output of this\
+                    \ command will be parsed using\n             Python's str.split().\
+                    \ If set to 'newline', the output will\n             be parsed\
+                    \ using Python's str.splitlines(), and leading and trailing\n\
+                    \             whitespace will be stripped from each line."
                   nullable: false
                   readOnly: false
                   allOf:
                   - $ref: '#/components/schemas/Command'
+                test_name_discovery_whitespace_handling:
+                  description: ''
+                  nullable: false
+                  readOnly: false
+                  enum:
+                  - newline
+                  - any_whitespace
+                  type: string
                 max_num_student_tests:
                   description: "The maximum number of test cases students are allowed\
                     \ to submit.\n                     If more than this many tests\
@@ -5354,17 +5367,32 @@ paths:
                   allOf:
                   - $ref: '#/components/schemas/Command'
                 grade_buggy_impl_command:
-                  description: "This command will be run once for every (buggy implementation,\
-                    \ valid test) pair.\n            A nonzero exit status indicates\
+                  description: "This command will be run at least once for every buggy\
+                    \ implementation.\n            A nonzero exit status indicates\
                     \ that the valid student tests exposed the\n            buggy\
                     \ impl, whereas an exit status of zero indicates that the student\n\
-                    \            tests did not expose the buggy impl.\n          \
-                    \  This command must contain the placeholders ${student_test_name}\
-                    \ and ${buggy_impl_name}. The placeholder\n            ${student_test_name}\
-                    \ will be replaced with the name of a valid student test case.\n\
+                    \            tests did not expose the buggy impl.\n\n        \
+                    \    This command must contain the placeholders ${buggy_impl_name}\n\
+                    \            and one of ${student_test_name} or ${all_valid_test_names}.\n\
                     \            The placeholder ${buggy_impl_name} will be replaced\
                     \ with the name of\n            the buggy impl that the student\
-                    \ test is being run against."
+                    \ test is being run against.\n            If the placeholder ${student_test_name}\
+                    \ is present,\n            it will be replaced with the name of\
+                    \ a single valid student test case,\n            and the command\
+                    \ will be run once for every (buggy implementation, valid test)\
+                    \ pair.\n            If the placeholder ${all_valid_test_names}\
+                    \ is present,\n            it will be replaced with the individually-quoted\
+                    \ names of all valid\n            student tests, and the command\
+                    \ will be run once for each buggy implementation.\n\n        \
+                    \    This latter approach can potentially reduce the runtime (e.g.,\
+                    \ by\n            reducing the number of times an interpreter\
+                    \ is invoked).\n            Note that you may need to specify\
+                    \ a higher time limit with this strategy--for\n            example,\
+                    \ if each individual test takes 1 second to run and running\n\
+                    \            10 tests at once takes 10 seconds, the time limit\
+                    \ will need to be\n            more than 10 seconds, otherwise\
+                    \ buggy impls could be erroneously\n            marked as exposed\
+                    \ due to the tests exceeding a low time limit."
                   nullable: false
                   readOnly: false
                   allOf:
@@ -5604,14 +5632,27 @@ paths:
                   allOf:
                   - $ref: '#/components/schemas/Command'
                 get_student_test_names_command:
-                  description: "This required command should print out a whitespace-separated\n\
-                    \                     list of detected student names. The output\
-                    \ of this command will\n                     be parsed using Python's\
-                    \ str.split()."
+                  description: "This required command should print out a list of student\n\
+                    \             test case names. The test case names should not\
+                    \ be wrapped\n             in quotes, even if the test names contain\
+                    \ spaces.\n             If test_name_discovery_whitespace_handling\
+                    \ is set to\n             'any_whitespace', the output of this\
+                    \ command will be parsed using\n             Python's str.split().\
+                    \ If set to 'newline', the output will\n             be parsed\
+                    \ using Python's str.splitlines(), and leading and trailing\n\
+                    \             whitespace will be stripped from each line."
                   nullable: false
                   readOnly: false
                   allOf:
                   - $ref: '#/components/schemas/Command'
+                test_name_discovery_whitespace_handling:
+                  description: ''
+                  nullable: false
+                  readOnly: false
+                  enum:
+                  - newline
+                  - any_whitespace
+                  type: string
                 max_num_student_tests:
                   description: "The maximum number of test cases students are allowed\
                     \ to submit.\n                     If more than this many tests\
@@ -5636,17 +5677,32 @@ paths:
                   allOf:
                   - $ref: '#/components/schemas/Command'
                 grade_buggy_impl_command:
-                  description: "This command will be run once for every (buggy implementation,\
-                    \ valid test) pair.\n            A nonzero exit status indicates\
+                  description: "This command will be run at least once for every buggy\
+                    \ implementation.\n            A nonzero exit status indicates\
                     \ that the valid student tests exposed the\n            buggy\
                     \ impl, whereas an exit status of zero indicates that the student\n\
-                    \            tests did not expose the buggy impl.\n          \
-                    \  This command must contain the placeholders ${student_test_name}\
-                    \ and ${buggy_impl_name}. The placeholder\n            ${student_test_name}\
-                    \ will be replaced with the name of a valid student test case.\n\
+                    \            tests did not expose the buggy impl.\n\n        \
+                    \    This command must contain the placeholders ${buggy_impl_name}\n\
+                    \            and one of ${student_test_name} or ${all_valid_test_names}.\n\
                     \            The placeholder ${buggy_impl_name} will be replaced\
                     \ with the name of\n            the buggy impl that the student\
-                    \ test is being run against."
+                    \ test is being run against.\n            If the placeholder ${student_test_name}\
+                    \ is present,\n            it will be replaced with the name of\
+                    \ a single valid student test case,\n            and the command\
+                    \ will be run once for every (buggy implementation, valid test)\
+                    \ pair.\n            If the placeholder ${all_valid_test_names}\
+                    \ is present,\n            it will be replaced with the individually-quoted\
+                    \ names of all valid\n            student tests, and the command\
+                    \ will be run once for each buggy implementation.\n\n        \
+                    \    This latter approach can potentially reduce the runtime (e.g.,\
+                    \ by\n            reducing the number of times an interpreter\
+                    \ is invoked).\n            Note that you may need to specify\
+                    \ a higher time limit with this strategy--for\n            example,\
+                    \ if each individual test takes 1 second to run and running\n\
+                    \            10 tests at once takes 10 seconds, the time limit\
+                    \ will need to be\n            more than 10 seconds, otherwise\
+                    \ buggy impls could be erroneously\n            marked as exposed\
+                    \ due to the tests exceeding a low time limit."
                   nullable: false
                   readOnly: false
                   allOf:
@@ -6672,7 +6728,8 @@ paths:
                   readOnly: false
                   type: boolean
                 show_only_applied_rubric_to_students:
-                  description: "Whether students can see rubric items that were not applied to their submission."
+                  description: "Whether students can see rubric items that\n     \
+                    \                were not applied to their submission."
                   nullable: false
                   readOnly: false
                   type: boolean
@@ -6786,6 +6843,12 @@ paths:
                 show_grades_and_rubric_to_students:
                   description: "Whether students can see their handgrading scores,\n\
                     \                     including information from the rubric."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                show_only_applied_rubric_to_students:
+                  description: "Whether students can see rubric items that\n     \
+                    \                were not applied to their submission."
                   nullable: false
                   readOnly: false
                   type: boolean
@@ -10471,12 +10534,24 @@ components:
           allOf:
           - $ref: '#/components/schemas/Command'
         get_student_test_names_command:
-          description: "This required command should print out a whitespace-separated\n\
-            \                     list of detected student names. The output of this\
-            \ command will\n                     be parsed using Python's str.split()."
+          description: "This required command should print out a list of student\n\
+            \             test case names. The test case names should not be wrapped\n\
+            \             in quotes, even if the test names contain spaces.\n    \
+            \         If test_name_discovery_whitespace_handling is set to\n     \
+            \        'any_whitespace', the output of this command will be parsed using\n\
+            \             Python's str.split(). If set to 'newline', the output will\n\
+            \             be parsed using Python's str.splitlines(), and leading and\
+            \ trailing\n             whitespace will be stripped from each line."
           nullable: false
           allOf:
           - $ref: '#/components/schemas/Command'
+        test_name_discovery_whitespace_handling:
+          description: ''
+          nullable: false
+          enum:
+          - newline
+          - any_whitespace
+          type: string
         max_num_student_tests:
           description: "The maximum number of test cases students are allowed to submit.\n\
             \                     If more than this many tests are discovered by the\n\
@@ -10497,16 +10572,29 @@ components:
           allOf:
           - $ref: '#/components/schemas/Command'
         grade_buggy_impl_command:
-          description: "This command will be run once for every (buggy implementation,\
-            \ valid test) pair.\n            A nonzero exit status indicates that\
-            \ the valid student tests exposed the\n            buggy impl, whereas\
-            \ an exit status of zero indicates that the student\n            tests\
-            \ did not expose the buggy impl.\n            This command must contain\
-            \ the placeholders ${student_test_name} and ${buggy_impl_name}. The placeholder\n\
-            \            ${student_test_name} will be replaced with the name of a\
-            \ valid student test case.\n            The placeholder ${buggy_impl_name}\
-            \ will be replaced with the name of\n            the buggy impl that the\
-            \ student test is being run against."
+          description: "This command will be run at least once for every buggy implementation.\n\
+            \            A nonzero exit status indicates that the valid student tests\
+            \ exposed the\n            buggy impl, whereas an exit status of zero\
+            \ indicates that the student\n            tests did not expose the buggy\
+            \ impl.\n\n            This command must contain the placeholders ${buggy_impl_name}\n\
+            \            and one of ${student_test_name} or ${all_valid_test_names}.\n\
+            \            The placeholder ${buggy_impl_name} will be replaced with\
+            \ the name of\n            the buggy impl that the student test is being\
+            \ run against.\n            If the placeholder ${student_test_name} is\
+            \ present,\n            it will be replaced with the name of a single\
+            \ valid student test case,\n            and the command will be run once\
+            \ for every (buggy implementation, valid test) pair.\n            If the\
+            \ placeholder ${all_valid_test_names} is present,\n            it will\
+            \ be replaced with the individually-quoted names of all valid\n      \
+            \      student tests, and the command will be run once for each buggy\
+            \ implementation.\n\n            This latter approach can potentially\
+            \ reduce the runtime (e.g., by\n            reducing the number of times\
+            \ an interpreter is invoked).\n            Note that you may need to specify\
+            \ a higher time limit with this strategy--for\n            example, if\
+            \ each individual test takes 1 second to run and running\n           \
+            \ 10 tests at once takes 10 seconds, the time limit will need to be\n\
+            \            more than 10 seconds, otherwise buggy impls could be erroneously\n\
+            \            marked as exposed due to the tests exceeding a low time limit."
           nullable: false
           allOf:
           - $ref: '#/components/schemas/Command'
@@ -10822,6 +10910,11 @@ components:
         show_grades_and_rubric_to_students:
           description: "Whether students can see their handgrading scores,\n     \
             \                including information from the rubric."
+          nullable: false
+          type: boolean
+        show_only_applied_rubric_to_students:
+          description: "Whether students can see rubric items that\n             \
+            \        were not applied to their submission."
           nullable: false
           type: boolean
         handgraders_can_leave_comments:
