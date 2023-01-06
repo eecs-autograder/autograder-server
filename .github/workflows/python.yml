@@ -6,6 +6,10 @@ jobs:
   lint:
     runs-on: ubuntu-18.04
 
+    strategy:
+      matrix:
+        python-version: ["3.8"]
+
     services:  # Required for checking migrations and schema
       postgres:
         image: postgres:13
