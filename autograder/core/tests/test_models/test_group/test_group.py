@@ -3,10 +3,10 @@ import os
 import random
 from unittest import mock
 
+import pytz
 from django.contrib.auth.models import User
 from django.core import exceptions
 from django.utils import timezone
-import pytz
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
