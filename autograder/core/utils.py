@@ -8,7 +8,11 @@ import subprocess
 import typing
 from typing import List, Tuple, Type, TypeVar, cast
 
-import pytz
+try:
+    import zoneinfo
+except ImportError:
+    from backports import zoneinfo
+
 from django.conf import settings
 from django.core import exceptions
 from django.utils import timezone
@@ -17,8 +21,8 @@ from . import constants as const
 
 if typing.TYPE_CHECKING:
     from .models.course import Course
-    from .models.project import Project
     from .models.group import Group
+    from .models.project import Project
     from .models.submission import Submission
 
 
@@ -85,11 +89,14 @@ def get_24_hour_period(
     start_datetime = timezone.datetime.combine(
         start_date, start_time)
     start_datetime = start_datetime.replace(
-        tzinfo=contains_datetime.tzinfo)
+        tzinfo=zoneinfo.ZoneInfo(str(contains_datetime.tzinfo)))
     end_datetime = start_datetime + timezone.timedelta(days=1)
 
     if convert_result_to_utc:
-        return start_datetime.astimezone(pytz.UTC), end_datetime.astimezone(pytz.UTC)
+        return (
+            start_datetime.astimezone(zoneinfo.ZoneInfo('UTC')),
+            end_datetime.astimezone(zoneinfo.ZoneInfo('UTC'))
+        )
 
     return start_datetime, end_datetime
 

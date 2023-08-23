@@ -2,10 +2,13 @@ import datetime
 import os
 from typing import Any, Dict
 
-import pytz
+try:
+    import zoneinfo
+except ImportError:
+    from backports import zoneinfo
+
 from django.core import exceptions, validators
 from django.db import models
-from timezone_field import TimeZoneField  # type: ignore
 
 import autograder.core.utils as core_ut
 from autograder.core.constants import MAX_CHAR_FIELD_LEN
@@ -152,13 +155,11 @@ class Project(AutograderModel):
             hour period during which submissions should be counted
             towards the daily limit. Defaults to 00:00:00.""")
 
-    submission_limit_reset_timezone = TimeZoneField(
+    submission_limit_reset_timezone = models.TextField(
         default='UTC',
-        help_text="""The timezone to use when computing how many
-            submissions a group has made in a 24 hour period.""",
-        # See https://stackoverflow.com/questions/50270711/
-        #       django-timezone-fields-dont-accept-all-pytz-timezones
-        choices=[(tz, tz) for tz in pytz.all_timezones]
+        help_text="""A string representing the timezone to use when computing
+            how many submissions a group has made in a 24 hour period.""",
+        choices=[(tz, tz) for tz in zoneinfo.available_timezones()]
     )
 
     num_bonus_submissions = models.IntegerField(

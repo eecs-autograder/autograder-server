@@ -14,6 +14,8 @@ autograder-sandbox==5.0.1
     # via -r requirements.in
 backcall==0.2.0
     # via ipython
+backports.zoneinfo==0.2.1
+    # via -r requirements.in
 billiard==3.6.3.0
     # via celery
 celery==4.4.7

@@ -1,10 +1,12 @@
 import datetime
 import os
 import random
+from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core import exceptions
 from django.utils import timezone
+import pytz
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
@@ -135,6 +137,47 @@ class GroupTestCase(_SetUp):
         group.refresh_from_db()
         self.assertEqual(num_submissions, group.num_submissions)
         self.assertEqual(num_submissions, group.num_submits_towards_limit)
+
+    def test_num_submits_towards_limit_dst_edge_case(self):
+        reset_timezone = 'US/Eastern'
+        submissions_per_day = 3
+        self.project.validate_and_update(
+            submission_limit_reset_time=datetime.time(0, 0, 0),
+            submission_limit_reset_timezone=reset_timezone,
+            submission_limit_per_day=submissions_per_day
+        )
+
+        group = ag_models.Group.objects.validate_and_create(
+            members=self.student_users,
+            project=self.project)
+
+        current_time = datetime.datetime(2022, 3, 13, 11, tzinfo=pytz.timezone('UTC'))
+
+        with mock.patch('autograder.core.models.group.group.timezone.now',
+                        new=lambda: current_time):
+            self.assertEqual(0, group.num_submits_towards_limit)
+            for i in range(submissions_per_day):
+                ag_models.Submission.objects.validate_and_create(submitted_files=[], group=group)
+
+            self.assertEqual(submissions_per_day, group.num_submits_towards_limit)
+
+        # Still a few hours before the reset time
+        current_time = datetime.datetime(2022, 3, 14, 1, tzinfo=pytz.timezone('UTC'))
+        with mock.patch('autograder.core.models.group.group.timezone.now',
+                        new=lambda: current_time):
+            self.assertEqual(submissions_per_day, group.num_submits_towards_limit)
+
+        # 30 min before the reset time
+        current_time = datetime.datetime(2022, 3, 14, 3, 30, tzinfo=pytz.timezone('UTC'))
+        with mock.patch('autograder.core.models.group.group.timezone.now',
+                        new=lambda: current_time):
+            self.assertEqual(submissions_per_day, group.num_submits_towards_limit)
+
+        # 30 min after the reset time (which is at UTC 4:00 instead of 5:00 because of DST)
+        current_time = datetime.datetime(2022, 3, 14, 4, 30, tzinfo=pytz.timezone('UTC'))
+        with mock.patch('autograder.core.models.group.group.timezone.now',
+                        new=lambda: current_time):
+            self.assertEqual(0, group.num_submits_towards_limit)
 
     def test_bonus_submission_counts_towards_limit(self):
         self.project.validate_and_update(
