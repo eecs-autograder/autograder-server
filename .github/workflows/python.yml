@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   lint:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
 
     strategy:
       matrix:
@@ -50,7 +50,7 @@ jobs:
           python3 manage.py generateschema --generator_class autograder.rest_api.schema.AGSchemaGenerator | diff -q - autograder/rest_api/schema/schema.yml
 
   test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         python-version: ["3.8"]
