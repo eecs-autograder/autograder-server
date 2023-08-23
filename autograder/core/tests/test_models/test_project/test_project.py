@@ -44,7 +44,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertEqual(True, new_project.allow_submissions_past_limit)
         self.assertEqual(datetime.time(),
                          new_project.submission_limit_reset_time)
-        self.assertEqual(timezone.pytz.UTC, new_project.submission_limit_reset_timezone)
+        self.assertEqual('UTC', new_project.submission_limit_reset_timezone)
         self.assertEqual(0, new_project.num_bonus_submissions)
 
         self.assertIsNone(new_project.total_submission_limit)
@@ -85,6 +85,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'groups_combine_daily_submissions': True,
             'allow_submissions_past_limit': False,
             'submission_limit_reset_time': reset_time,
+            'submission_limit_reset_timezone': 'America/Chicago',
             'num_bonus_submissions': 3,
 
             'allow_late_days': True,
@@ -98,11 +99,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'honor_pledge_text': 'Some honorable text',
         }
 
-        reset_timezone = 'America/Chicago'
-        new_project = ag_models.Project.objects.validate_and_create(
-            submission_limit_reset_timezone=reset_timezone,
-            **kwargs
-        )
+        new_project = ag_models.Project.objects.validate_and_create(**kwargs)
 
         kwargs['closing_time'] = kwargs['closing_time'].replace(second=0, microsecond=0)
         kwargs['soft_closing_time'] = kwargs['soft_closing_time'].replace(second=0, microsecond=0)
@@ -110,9 +107,6 @@ class ProjectMiscTestCase(UnitTestBase):
 
         for field_name, value in kwargs.items():
             self.assertEqual(value, getattr(new_project, field_name), msg=field_name)
-
-        self.assertEqual(timezone.pytz.timezone(reset_timezone),
-                         new_project.submission_limit_reset_timezone)
 
     def test_has_handgrading_rubric(self):
         project: ag_models.Project = ag_models.Project.objects.validate_and_create(

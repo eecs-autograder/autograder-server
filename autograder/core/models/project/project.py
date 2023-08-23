@@ -261,11 +261,11 @@ class Project(AutograderModel):
         """
         return hasattr(self, 'handgrading_rubric')
 
-    def to_dict(self) -> Dict[str, object]:
-        result = super().to_dict()
-        result['submission_limit_reset_timezone'] = (
-            self.submission_limit_reset_timezone.tzname(None))
-        return result
+    # def to_dict(self) -> Dict[str, object]:
+    #     result = super().to_dict()
+    #     result['submission_limit_reset_timezone'] = (
+    #         self.submission_limit_reset_timezone.tzname(None))
+    #     return result
 
     SERIALIZABLE_FIELDS = (
         'pk',
