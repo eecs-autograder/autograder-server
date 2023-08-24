@@ -242,7 +242,7 @@ class CancelBuildSandboxDockerImageTestCase(TransactionUnitTestBase):
 def _make_dockerfile_with_sleep(sleep_time: int):
     return SimpleUploadedFile(
         'Dockerfile',
-        f'''FROM jameslp/ag-ubuntu-16:1
+        f'''FROM eecs-autograder/ubuntu20:latest
 RUN sleep {sleep_time}
         '''.encode(),
     )
