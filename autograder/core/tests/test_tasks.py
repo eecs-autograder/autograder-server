@@ -6,6 +6,7 @@ from unittest import mock
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import tag
 
 import autograder.core.models as ag_models
 from autograder.core.tasks import build_sandbox_docker_image
@@ -214,6 +215,7 @@ RUN false
             self.assertIn('I am error', task.internal_error_msg)
 
 
+@tag('fix_on_ci')
 @mock.patch('autograder.core.tasks.push_image')
 @mock.patch('autograder.utils.retry.sleep', new=mock.Mock())
 class CancelBuildSandboxDockerImageTestCase(TransactionUnitTestBase):
@@ -242,7 +244,7 @@ class CancelBuildSandboxDockerImageTestCase(TransactionUnitTestBase):
 def _make_dockerfile_with_sleep(sleep_time: int):
     return SimpleUploadedFile(
         'Dockerfile',
-        f'''FROM eecs-autograder/ubuntu20:latest
+        f'''FROM jameslp/ag-ubuntu-16:1
 RUN sleep {sleep_time}
         '''.encode(),
     )
