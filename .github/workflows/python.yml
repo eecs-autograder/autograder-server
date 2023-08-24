@@ -86,6 +86,6 @@ jobs:
           python -m pip install pip-tools
           pip-sync requirements.txt requirements-dev.txt
           python3 generate_secrets.py
-      - name: Lint with pycdestyle, pydocstyle, and mypy
+      - name: Run tests
         run: |
           python3 manage.py test -v2 --exclude-tag fix_on_ci
