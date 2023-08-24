@@ -518,6 +518,10 @@ class SubmissionTimingView(views.APIView):
     api_tags = [APITags.submissions]
 
     def get(self, *args, **kwargs):
+        """
+        Superusers only. Load information about how long submissions
+        spent in the queue or being graded.
+        """
         since = self.request.query_params.get('since', timezone.now() - timezone.timedelta(days=1))
         until = self.request.query_params.get('until', timezone.now())
         queryset = ag_models.Submission.objects.filter(

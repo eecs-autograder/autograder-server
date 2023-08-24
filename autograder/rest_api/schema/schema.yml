@@ -3560,7 +3560,9 @@ paths:
   /api/submission_timings/:
     get:
       operationId: listSubmissionTimings
-      description: ''
+      description: 'Superusers only. Load information about how long submissions
+
+        spent in the queue or being graded.'
       parameters:
       - name: since
         in: query
