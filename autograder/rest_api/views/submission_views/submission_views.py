@@ -453,14 +453,6 @@ _SUBMISSION_TIMING_SCHEMA = {
         'error_msg': {'type': 'string'},
         'grading_start_time': {'type': 'string', 'format': 'datetime'},
         'non_deferred_grading_end_time': {'type': 'string', 'format': 'datetime'},
-        '_time_spent_in_queue': {
-            'type': 'integer',
-            'description': 'Time spent in queue in minutes'
-        },
-        '_time_spent_grading_non_deferred': {
-            'type': 'integer',
-            'description': 'Time spent grading non-deferred tests in minutes'
-        }
     }
 }
 _SUBMISSION_TIMING_FIELDS = list(_SUBMISSION_TIMING_SCHEMA['properties'])
@@ -530,10 +522,11 @@ class SubmissionTimingView(views.APIView):
 
         paginator = SubmissionTimingPaginator()
         page = paginator.paginate_queryset(queryset=queryset, request=self.request, view=self)
+        assert page is not None
 
         results = []
         for submission in page:
-            data = {field: submission[field] for field in _SUBMISSION_TIMING_FIELDS}
+            data = {field: getattr(submission, field) for field in _SUBMISSION_TIMING_FIELDS}
             results.append(data)
 
         return paginator.get_paginated_response(results)
