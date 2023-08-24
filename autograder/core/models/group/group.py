@@ -3,10 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Iterable, List, cast
 
-try:
-    import zoneinfo
-except ImportError:
-    from backports import zoneinfo
+from backports import zoneinfo
 
 import django.contrib.postgres.fields as pg_fields
 from django.contrib.auth.models import User

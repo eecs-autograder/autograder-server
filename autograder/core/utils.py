@@ -8,10 +8,7 @@ import subprocess
 import typing
 from typing import List, Tuple, Type, TypeVar, cast
 
-try:
-    import zoneinfo
-except ImportError:
-    from backports import zoneinfo
+from backports import zoneinfo
 
 from django.conf import settings
 from django.core import exceptions
