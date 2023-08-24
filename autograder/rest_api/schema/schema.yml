@@ -3557,6 +3557,88 @@ paths:
           description: The file content.
       tags:
       - submissions
+  /api/submission_timings/:
+    get:
+      operationId: listSubmissionTimings
+      description: ''
+      parameters:
+      - name: since
+        in: query
+        description: Return all submissions created after this time. Defaults to 24
+          hours before the current time
+        schema:
+          type: string
+          format: date-time
+      - name: until
+        in: query
+        description: Return all submissions created before this time. Defaults to
+          the current time
+        schema:
+          type: string
+          format: date-time
+      - $ref: '#/components/parameters/page'
+      - name: page_size
+        in: query
+        description: The page size. Maximum value is 1000
+        schema:
+          type: integer
+          default: 500
+          maximum: 1000
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  next:
+                    type: string
+                    format: url
+                  previous:
+                    type: string
+                    format: url
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        project_id:
+                          type: integer
+                        timestamp:
+                          type: string
+                          format: datetime
+                        submitter:
+                          type: strength
+                        status:
+                          type: string
+                          enum:
+                          - received
+                          - queued
+                          - being_graded
+                          - waiting_for_deferred
+                          - finished_grading
+                          - removed_from_queue
+                          - rejected
+                          - error
+                        error_msg:
+                          type: string
+                        grading_start_time:
+                          type: string
+                          format: datetime
+                        non_deferred_grading_end_time:
+                          type: string
+                          format: datetime
+                        _time_spent_in_queue:
+                          type: integer
+                          description: Time spent in queue in minutes
+                        _time_spent_grading_non_deferred:
+                          type: integer
+                          description: Time spent grading non-deferred tests in minutes
+      tags:
+      - submissions
   /api/sandbox_docker_images/:
     get:
       operationId: listGlobalSandboxDockerImages

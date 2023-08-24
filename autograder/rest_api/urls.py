@@ -143,6 +143,8 @@ urlpatterns = [
          name='submission-file'),
     path('submissions/<int:pk>/remove_from_queue/', views.RemoveSubmissionFromQueueView.as_view(),
          name='remove-submission-from-queue'),
+    path('submission_timings/', views.SubmissionTimingView.as_view(),
+         name='submission-timings-view'),
 
     path('sandbox_docker_images/', views.ListCreateGlobalSandboxDockerImageView.as_view(),
          name='global-sandbox-images'),
