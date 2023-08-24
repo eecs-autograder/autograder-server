@@ -622,4 +622,4 @@ _NonRefType = TypeVar('_NonRefType', bound=Mapping[str, object])
 
 def assert_not_ref(obj: OrRef[_NonRefType]) -> _NonRefType:
     assert '$ref' not in obj, obj
-    return cast(_NonRefType, obj)
+    return obj

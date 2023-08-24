@@ -170,7 +170,9 @@ class Group(ag_model_base.AutograderModel):
         start_datetime, end_datetime = core_ut.get_24_hour_period(
             self.project.submission_limit_reset_time,
             timezone.now().astimezone(
-                zoneinfo.ZoneInfo(self.project.submission_limit_reset_timezone)))
+                zoneinfo.ZoneInfo(self.project.submission_limit_reset_timezone)  # type: ignore
+            )
+        )
 
         def _is_towards_limit(submission: Submission) -> bool:
             return (start_datetime <= submission.timestamp < end_datetime
