@@ -1,17 +1,17 @@
+import datetime
 import os
 import tempfile
 
-from django.test import SimpleTestCase
+import pytz
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.test import SimpleTestCase
 
 import autograder.core.models as ag_models
-
-from autograder.utils.testing import UnitTestBase
-from autograder.core import constants
 import autograder.core.utils as core_ut
-
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core import constants
+from autograder.utils.testing import UnitTestBase
 
 
 class DiffTestCase(SimpleTestCase):
@@ -161,6 +161,29 @@ cheese\r
                                   ignore_whitespace_changes=True,
                                   ignore_blank_lines=True)
         self.assertTrue(result.diff_pass)
+
+
+class Get24HourPeriodTestCase(SimpleTestCase):
+    def test_dst_start(self):
+        # Make sure that our date computations work correctly
+        # on the first day of daylight savings time.
+        reset_time = datetime.time(0, 0, 0)
+        reset_timezone = pytz.timezone('US/Eastern')
+        # Set up the current time the same way as in
+        # Group.num_submits_towards_limit
+        current_time = datetime.datetime(
+            2022, 3, 13, 11, tzinfo=pytz.timezone('UTC')
+        ).astimezone(reset_timezone)
+
+        start, end = core_ut.get_24_hour_period(reset_time, current_time)
+        self.assertEqual(
+            datetime.datetime(2022, 3, 13, 5, tzinfo=pytz.timezone('UTC')),
+            start
+        )
+        self.assertEqual(
+            datetime.datetime(2022, 3, 14, 4, tzinfo=pytz.timezone('UTC')),
+            end
+        )
 
 
 class CheckFilenameTest(SimpleTestCase):

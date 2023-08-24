@@ -365,10 +365,7 @@ class CustomViewSchema(AGViewSchemaGenerator):
                 'required': True, **method_data['request']
             })
             if 'requestBody' in result:
-                # mypy this appears to have a false positive here
-                # See if type checking works with dict union in Python 3.9?
-                # See https://github.com/python/mypy/issues/9335 for updates
-                result['requestBody'].update(updates)  # type: ignore
+                result['requestBody'].update(updates)
             else:
                 result['requestBody'] = updates
 

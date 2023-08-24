@@ -8,7 +8,8 @@ import subprocess
 import typing
 from typing import List, Tuple, Type, TypeVar, cast
 
-import pytz
+from backports import zoneinfo
+
 from django.conf import settings
 from django.core import exceptions
 from django.utils import timezone
@@ -17,8 +18,8 @@ from . import constants as const
 
 if typing.TYPE_CHECKING:
     from .models.course import Course
-    from .models.project import Project
     from .models.group import Group
+    from .models.project import Project
     from .models.submission import Submission
 
 
@@ -85,11 +86,15 @@ def get_24_hour_period(
     start_datetime = timezone.datetime.combine(
         start_date, start_time)
     start_datetime = start_datetime.replace(
-        tzinfo=contains_datetime.tzinfo)
+        tzinfo=zoneinfo.ZoneInfo(str(contains_datetime.tzinfo))  # type: ignore
+    )
     end_datetime = start_datetime + timezone.timedelta(days=1)
 
     if convert_result_to_utc:
-        return start_datetime.astimezone(pytz.UTC), end_datetime.astimezone(pytz.UTC)
+        return (
+            start_datetime.astimezone(zoneinfo.ZoneInfo('UTC')),  # type: ignore
+            end_datetime.astimezone(zoneinfo.ZoneInfo('UTC'))  # type: ignore
+        )
 
     return start_datetime, end_datetime
 
@@ -261,8 +266,8 @@ class OrderedEnum(enum.Enum):
         obj = object.__new__(cls)
         obj._value_ = value
         # OrderedEnum values are ordered by _weight.
-        obj._weight = len(cls.__members__)
-        return cast(_OrderedEnumDerived, obj)
+        obj._weight = len(cls.__members__)  # type: ignore
+        return obj
 
     # Comparators adopted from https://docs.python.org/3.5/library/enum.html#orderedenum
     def __ge__(self, other: OrderedEnum) -> bool:
@@ -290,9 +295,9 @@ class OrderedEnum(enum.Enum):
         return NotImplemented
 
     @classmethod
-    def get_min(cls) -> _OrderedEnumDerived:
+    def get_min(cls: Type[_OrderedEnumDerived]) -> _OrderedEnumDerived:
         return list(cls)[0]
 
     @classmethod
-    def get_max(cls) -> _OrderedEnumDerived:
+    def get_max(cls: Type[_OrderedEnumDerived]) -> _OrderedEnumDerived:
         return list(cls)[-1]
