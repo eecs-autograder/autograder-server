@@ -1095,8 +1095,9 @@ paths:
                   type: string
                   format: time
                 submission_limit_reset_timezone:
-                  description: "The timezone to use when computing how many\n    \
-                    \        submissions a group has made in a 24 hour period."
+                  description: "A string representing the timezone to use when computing\n\
+                    \            how many submissions a group has made in a 24 hour\
+                    \ period."
                   nullable: false
                   readOnly: false
                   enum:
@@ -1195,6 +1196,7 @@ paths:
                   - America/Cayman
                   - America/Chicago
                   - America/Chihuahua
+                  - America/Ciudad_Juarez
                   - America/Coral_Harbour
                   - America/Cordoba
                   - America/Costa_Rica
@@ -1365,6 +1367,7 @@ paths:
                   - Asia/Dushanbe
                   - Asia/Famagusta
                   - Asia/Gaza
+                  - Asia/Hanoi
                   - Asia/Harbin
                   - Asia/Hebron
                   - Asia/Ho_Chi_Minh
@@ -1549,6 +1552,7 @@ paths:
                   - Europe/Kaliningrad
                   - Europe/Kiev
                   - Europe/Kirov
+                  - Europe/Kyiv
                   - Europe/Lisbon
                   - Europe/Ljubljana
                   - Europe/London
@@ -1588,6 +1592,7 @@ paths:
                   - Europe/Zagreb
                   - Europe/Zaporozhye
                   - Europe/Zurich
+                  - Factory
                   - GB
                   - GB-Eire
                   - GMT
@@ -1643,6 +1648,7 @@ paths:
                   - Pacific/Guam
                   - Pacific/Honolulu
                   - Pacific/Johnston
+                  - Pacific/Kanton
                   - Pacific/Kiritimati
                   - Pacific/Kosrae
                   - Pacific/Kwajalein
@@ -1693,8 +1699,8 @@ paths:
                   - W-SU
                   - WET
                   - Zulu
+                  - localtime
                   type: string
-                  format: timezone
                 num_bonus_submissions:
                   description: ''
                   nullable: false
@@ -1944,8 +1950,9 @@ paths:
                   type: string
                   format: time
                 submission_limit_reset_timezone:
-                  description: "The timezone to use when computing how many\n    \
-                    \        submissions a group has made in a 24 hour period."
+                  description: "A string representing the timezone to use when computing\n\
+                    \            how many submissions a group has made in a 24 hour\
+                    \ period."
                   nullable: false
                   readOnly: false
                   enum:
@@ -2044,6 +2051,7 @@ paths:
                   - America/Cayman
                   - America/Chicago
                   - America/Chihuahua
+                  - America/Ciudad_Juarez
                   - America/Coral_Harbour
                   - America/Cordoba
                   - America/Costa_Rica
@@ -2214,6 +2222,7 @@ paths:
                   - Asia/Dushanbe
                   - Asia/Famagusta
                   - Asia/Gaza
+                  - Asia/Hanoi
                   - Asia/Harbin
                   - Asia/Hebron
                   - Asia/Ho_Chi_Minh
@@ -2398,6 +2407,7 @@ paths:
                   - Europe/Kaliningrad
                   - Europe/Kiev
                   - Europe/Kirov
+                  - Europe/Kyiv
                   - Europe/Lisbon
                   - Europe/Ljubljana
                   - Europe/London
@@ -2437,6 +2447,7 @@ paths:
                   - Europe/Zagreb
                   - Europe/Zaporozhye
                   - Europe/Zurich
+                  - Factory
                   - GB
                   - GB-Eire
                   - GMT
@@ -2492,6 +2503,7 @@ paths:
                   - Pacific/Guam
                   - Pacific/Honolulu
                   - Pacific/Johnston
+                  - Pacific/Kanton
                   - Pacific/Kiritimati
                   - Pacific/Kosrae
                   - Pacific/Kwajalein
@@ -2542,8 +2554,8 @@ paths:
                   - W-SU
                   - WET
                   - Zulu
+                  - localtime
                   type: string
-                  format: timezone
                 num_bonus_submissions:
                   description: ''
                   nullable: false
@@ -8711,8 +8723,8 @@ components:
           type: string
           format: time
         submission_limit_reset_timezone:
-          description: "The timezone to use when computing how many\n            submissions\
-            \ a group has made in a 24 hour period."
+          description: "A string representing the timezone to use when computing\n\
+            \            how many submissions a group has made in a 24 hour period."
           nullable: false
           enum:
           - Africa/Abidjan
@@ -8810,6 +8822,7 @@ components:
           - America/Cayman
           - America/Chicago
           - America/Chihuahua
+          - America/Ciudad_Juarez
           - America/Coral_Harbour
           - America/Cordoba
           - America/Costa_Rica
@@ -8980,6 +8993,7 @@ components:
           - Asia/Dushanbe
           - Asia/Famagusta
           - Asia/Gaza
+          - Asia/Hanoi
           - Asia/Harbin
           - Asia/Hebron
           - Asia/Ho_Chi_Minh
@@ -9164,6 +9178,7 @@ components:
           - Europe/Kaliningrad
           - Europe/Kiev
           - Europe/Kirov
+          - Europe/Kyiv
           - Europe/Lisbon
           - Europe/Ljubljana
           - Europe/London
@@ -9203,6 +9218,7 @@ components:
           - Europe/Zagreb
           - Europe/Zaporozhye
           - Europe/Zurich
+          - Factory
           - GB
           - GB-Eire
           - GMT
@@ -9258,6 +9274,7 @@ components:
           - Pacific/Guam
           - Pacific/Honolulu
           - Pacific/Johnston
+          - Pacific/Kanton
           - Pacific/Kiritimati
           - Pacific/Kosrae
           - Pacific/Kwajalein
@@ -9308,8 +9325,8 @@ components:
           - W-SU
           - WET
           - Zulu
+          - localtime
           type: string
-          format: timezone
         num_bonus_submissions:
           description: ''
           nullable: false

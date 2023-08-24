@@ -159,7 +159,7 @@ class Project(AutograderModel):
         default='UTC',
         help_text="""A string representing the timezone to use when computing
             how many submissions a group has made in a 24 hour period.""",
-        choices=[(tz, tz) for tz in zoneinfo.available_timezones()]
+        choices=[(tz, tz) for tz in sorted(zoneinfo.available_timezones())]
     )
 
     num_bonus_submissions = models.IntegerField(
