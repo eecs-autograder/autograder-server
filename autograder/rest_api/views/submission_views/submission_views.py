@@ -9,7 +9,7 @@ from django.db.models import F
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from rest_framework import exceptions, response, status
+from rest_framework import exceptions, request, pagination, permissions, response, status, views
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
@@ -21,7 +21,7 @@ from autograder.core.submission_feedback import (
 from autograder.rest_api.serve_file import serve_file
 from autograder.rest_api.schema import (
     AGDetailViewSchemaGenerator, AGListViewSchemaMixin, APITags, CustomViewDict, CustomViewSchema,
-    as_content_obj
+    as_content_obj, as_paginated_content_obj
 )
 from autograder.rest_api.serialize_ultimate_submission_results import (
     get_submission_data_with_results
@@ -430,3 +430,103 @@ class RemoveSubmissionFromQueueView(AGModelAPIView):
         submission.save()
 
         return response.Response(submission.to_dict(), status.HTTP_200_OK)
+
+
+class SubmissionTimingPermission(permissions.BasePermission):
+    def has_permission(self, request: request.Request, view):
+        return request.user.is_superuser
+
+
+class SubmissionTimingPaginator(pagination.PageNumberPagination):
+    page_size = 500
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
+
+_SUBMISSION_TIMING_SCHEMA = {
+    'type': 'object',
+    'properties': {
+        'project_id': {'type': 'integer'},
+        'timestamp': {'type': 'string', 'format': 'datetime'},
+        'submitter': {'type': 'strength'},
+        'status': {'type': 'string', 'enum': ag_models.Submission.GradingStatus.values},
+        'error_msg': {'type': 'string'},
+        'grading_start_time': {'type': 'string', 'format': 'datetime'},
+        'non_deferred_grading_end_time': {'type': 'string', 'format': 'datetime'},
+    }
+}
+_SUBMISSION_TIMING_FIELDS = list(_SUBMISSION_TIMING_SCHEMA['properties'])
+
+
+class SubmissionTimingView(views.APIView):
+    schema = CustomViewSchema([APITags.submissions], {
+        'GET': {
+            'operation_id': 'listSubmissionTimings',
+            'parameters': [
+                {
+                    'name': 'since',
+                    'in': 'query',
+                    'description': 'Return all submissions created after this time. '
+                                   'Defaults to 24 hours before the current time',
+                    'schema': {
+                        'type': 'string',
+                        'format': 'date-time',
+                    }
+                },
+                {
+                    'name': 'until',
+                    'in': 'query',
+                    'description': 'Return all submissions created before this time. '
+                                   'Defaults to the current time',
+                    'schema': {
+                        'type': 'string',
+                        'format': 'date-time',
+                    }
+                },
+                {'$ref': '#/components/parameters/page'},
+                {
+                    'name': 'page_size',
+                    'in': 'query',
+                    'description': 'The page size. Maximum value is {}'.format(
+                        SubmissionTimingPaginator.max_page_size),
+                    'schema': {
+                        'type': 'integer',
+                        'default': SubmissionTimingPaginator.page_size,
+                        'maximum': SubmissionTimingPaginator.max_page_size,
+                    }
+                },
+            ],
+            'responses': {
+                '200': {
+                    'description': '',
+                    'content': as_paginated_content_obj(_SUBMISSION_TIMING_SCHEMA)
+                }
+            }
+        }
+    })
+
+    permission_classes = [SubmissionTimingPermission]
+
+    api_tags = [APITags.submissions]
+
+    def get(self, *args, **kwargs):
+        """
+        Superusers only. Load information about how long submissions
+        spent in the queue or being graded.
+        """
+        since = self.request.query_params.get('since', timezone.now() - timezone.timedelta(days=1))
+        until = self.request.query_params.get('until', timezone.now())
+        queryset = ag_models.Submission.objects.filter(
+            timestamp__gte=since, timestamp__lte=until
+        ).only(*_SUBMISSION_TIMING_FIELDS)
+
+        paginator = SubmissionTimingPaginator()
+        page = paginator.paginate_queryset(queryset=queryset, request=self.request, view=self)
+        assert page is not None
+
+        results = []
+        for submission in page:
+            data = {field: getattr(submission, field) for field in _SUBMISSION_TIMING_FIELDS}
+            results.append(data)
+
+        return paginator.get_paginated_response(results)

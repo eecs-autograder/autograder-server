@@ -3,6 +3,7 @@ import os
 import random
 from typing import Iterable, List, Optional
 from unittest import mock
+from urllib.parse import urlencode
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -1829,3 +1830,51 @@ def file_url(submission, filename):
     query_params.update({'filename': filename})
     return (reverse('submission-file', kwargs={'pk': submission.pk})
             + '?' + query_params.urlencode())
+
+
+class SubmissionTimingViewTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+    def test_submission_query(self):
+        self.now = timezone.now()
+        for i in range(1, 61):
+            timestamp = self.now - timezone.timedelta(minutes=i)
+            obj_build.make_submission(
+                timestamp=timestamp,
+                grading_start_time=timestamp + timezone.timedelta(minutes=2),
+                non_deferred_grading_end_time=timestamp + timezone.timedelta(minutes=10),
+            )
+
+        obj_build.make_submission(timestamp=self.now - timezone.timedelta(hours=25))
+
+        superuser = obj_build.make_user(superuser=True)
+        self.client.force_authenticate(superuser)
+
+        # "until" to defaults to the current time, "since" defaults to 24 hours ago
+        response = self.client.get(reverse('submission-timings-view'))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(60, len(response.data['results']))
+        self.assertIn('grading_start_time', response.data['results'][0])
+        self.assertIsNotNone(response.data['results'][0]['grading_start_time'])
+        self.assertIn('non_deferred_grading_end_time', response.data['results'][0])
+        self.assertIsNotNone(response.data['results'][0]['non_deferred_grading_end_time'])
+
+        response = self.client.get(reverse('submission-timings-view') + '?' + urlencode({
+            'since': str(self.now - timezone.timedelta(minutes=9))
+        }))
+        self.assertEqual(9, len(response.data['results']))
+
+        response = self.client.get(reverse('submission-timings-view') + '?' + urlencode({
+            'since': str(self.now - timezone.timedelta(minutes=15)),
+            'until': str(self.now - timezone.timedelta(minutes=8))
+        }))
+        self.assertEqual(8, len(response.data['results']))
+
+    def test_non_superuser_permission_denied(self) -> None:
+        course = obj_build.make_course()
+        admin = obj_build.make_admin_user(course)
+        self.client.force_authenticate(admin)
+        response = self.client.get(reverse('submission-timings-view'))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)

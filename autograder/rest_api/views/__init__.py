@@ -58,7 +58,8 @@ from .submission_views.submission_result_views import (
 from .submission_views.submission_views import (GetSubmittedFileView, ListCreateSubmissionView,
                                                 ListSubmissionsWithResults,
                                                 RemoveSubmissionFromQueueView,
-                                                SubmissionDetailView)
+                                                SubmissionDetailView,
+                                                SubmissionTimingView)
 from .user_views import (CoursesIsAdminForView, CoursesIsEnrolledInView,
                          CoursesIsHandgraderForView, CoursesIsStaffForView,
                          CurrentUserCanCreateCoursesView, CurrentUserView,
