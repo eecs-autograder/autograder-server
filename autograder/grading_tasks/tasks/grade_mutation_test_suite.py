@@ -6,7 +6,7 @@ from io import FileIO
 from typing import List, Tuple
 
 import celery
-from autograder_sandbox import AutograderSandbox
+from autograder_sandbox import AutograderSandbox, SandboxNotDestroyed
 from autograder_sandbox.autograder_sandbox import CompletedCommand
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
@@ -50,102 +50,108 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
         docker_image=mutation_test_suite.sandbox_docker_image.tag)
     print(mutation_test_suite.sandbox_docker_image.to_dict())
     print(sandbox.docker_image)
-    with sandbox:
-        add_files_to_sandbox(sandbox, mutation_test_suite, submission)
+    try:
+        with sandbox:
+            add_files_to_sandbox(sandbox, mutation_test_suite, submission)
 
-        if mutation_test_suite.use_setup_command:
-            print('Running setup for', mutation_test_suite.name)
-            setup_run_result = run_ag_command(mutation_test_suite.setup_command, sandbox)
-            if setup_run_result.return_code != 0:
-                _save_results(mutation_test_suite, submission, setup_run_result,
-                              student_tests=[],
-                              discarded_tests=[],
-                              invalid_tests=[],
-                              timed_out_tests=[],
-                              bugs_exposed=[])
-                return
-        else:
-            setup_run_result = None
-
-        get_test_names_result = run_ag_command(
-            mutation_test_suite.get_student_test_names_command, sandbox)
-
-        if get_test_names_result.return_code != 0:
-            _save_results(mutation_test_suite, submission, setup_run_result,
-                          student_tests=[],
-                          discarded_tests=[],
-                          invalid_tests=[],
-                          timed_out_tests=[],
-                          bugs_exposed=[],
-                          get_test_names_run_result=get_test_names_result)
-            return
-
-        if mutation_test_suite.test_name_discovery_whitespace_handling == 'newline':
-            student_tests = ([
-                line.strip() for line in
-                get_test_names_result.stdout.read().decode(errors='backslashreplace').splitlines()
-            ])
-        else:
-            student_tests = (
-                get_test_names_result.stdout.read().decode(errors='backslashreplace').split())
-
-        discarded_tests: List[str] = []
-        if len(student_tests) > mutation_test_suite.max_num_student_tests:
-            discarded_tests = student_tests[mutation_test_suite.max_num_student_tests:]
-            student_tests = student_tests[:mutation_test_suite.max_num_student_tests]
-
-        valid_tests: List[str] = []
-        invalid_tests: List[str] = []
-        timed_out_tests: List[str] = []
-
-        validity_check_stdout = tempfile.TemporaryFile()
-        validity_check_stderr = tempfile.TemporaryFile()
-        for test in student_tests:
-            validity_cmd = mutation_test_suite.student_test_validity_check_command
-            concrete_cmd = validity_cmd.cmd.replace(
-                ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, test)
-
-            validity_run_result = run_ag_command(validity_cmd, sandbox,
-                                                 cmd_str_override=concrete_cmd)
-            line = '\n------ {} ------\n'.format(test).encode()
-            validity_check_stdout.write(line)
-            validity_check_stderr.write(line)
-            shutil.copyfileobj(validity_run_result.stdout, validity_check_stdout)
-            shutil.copyfileobj(validity_run_result.stderr, validity_check_stderr)
-
-            if validity_run_result.return_code == 0:
-                valid_tests.append(test)
+            if mutation_test_suite.use_setup_command:
+                print('Running setup for', mutation_test_suite.name)
+                setup_run_result = run_ag_command(mutation_test_suite.setup_command, sandbox)
+                if setup_run_result.return_code != 0:
+                    _save_results(mutation_test_suite, submission, setup_run_result,
+                                student_tests=[],
+                                discarded_tests=[],
+                                invalid_tests=[],
+                                timed_out_tests=[],
+                                bugs_exposed=[])
+                    return
             else:
-                invalid_tests.append(test)
+                setup_run_result = None
 
-            if validity_run_result.timed_out:
-                timed_out_tests.append(test)
+            get_test_names_result = run_ag_command(
+                mutation_test_suite.get_student_test_names_command, sandbox)
 
-        run_individual_tests = (
-            ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER
-            in mutation_test_suite.grade_buggy_impl_command.cmd
-        )
-        if run_individual_tests:
-            exposed_bugs, buggy_impls_stdout, buggy_impls_stderr = (
-                _run_individual_tests_against_mutants(
-                    sandbox, mutation_test_suite, valid_tests
-                )
+            if get_test_names_result.return_code != 0:
+                _save_results(mutation_test_suite, submission, setup_run_result,
+                            student_tests=[],
+                            discarded_tests=[],
+                            invalid_tests=[],
+                            timed_out_tests=[],
+                            bugs_exposed=[],
+                            get_test_names_run_result=get_test_names_result)
+                return
+
+            if mutation_test_suite.test_name_discovery_whitespace_handling == 'newline':
+                student_tests = ([
+                    line.strip() for line in
+                    get_test_names_result.stdout.read().decode(
+                        errors='backslashreplace').splitlines()
+                ])
+            else:
+                student_tests = (
+                    get_test_names_result.stdout.read().decode(errors='backslashreplace').split())
+
+            discarded_tests: List[str] = []
+            if len(student_tests) > mutation_test_suite.max_num_student_tests:
+                discarded_tests = student_tests[mutation_test_suite.max_num_student_tests:]
+                student_tests = student_tests[:mutation_test_suite.max_num_student_tests]
+
+            valid_tests: List[str] = []
+            invalid_tests: List[str] = []
+            timed_out_tests: List[str] = []
+
+            validity_check_stdout = tempfile.TemporaryFile()
+            validity_check_stderr = tempfile.TemporaryFile()
+            for test in student_tests:
+                validity_cmd = mutation_test_suite.student_test_validity_check_command
+                concrete_cmd = validity_cmd.cmd.replace(
+                    ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, test)
+
+                validity_run_result = run_ag_command(validity_cmd, sandbox,
+                                                     cmd_str_override=concrete_cmd)
+                line = '\n------ {} ------\n'.format(test).encode()
+                validity_check_stdout.write(line)
+                validity_check_stderr.write(line)
+                shutil.copyfileobj(validity_run_result.stdout, validity_check_stdout)
+                shutil.copyfileobj(validity_run_result.stderr, validity_check_stderr)
+
+                if validity_run_result.return_code == 0:
+                    valid_tests.append(test)
+                else:
+                    invalid_tests.append(test)
+
+                if validity_run_result.timed_out:
+                    timed_out_tests.append(test)
+
+            run_individual_tests = (
+                ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER
+                in mutation_test_suite.grade_buggy_impl_command.cmd
             )
-        else:
-            exposed_bugs, buggy_impls_stdout, buggy_impls_stderr = (
-                _run_test_batches_against_mutants(
-                    sandbox, mutation_test_suite, valid_tests
+            if run_individual_tests:
+                exposed_bugs, buggy_impls_stdout, buggy_impls_stderr = (
+                    _run_individual_tests_against_mutants(
+                        sandbox, mutation_test_suite, valid_tests
+                    )
                 )
-            )
+            else:
+                exposed_bugs, buggy_impls_stdout, buggy_impls_stderr = (
+                    _run_test_batches_against_mutants(
+                        sandbox, mutation_test_suite, valid_tests
+                    )
+                )
 
-        _save_results(mutation_test_suite, submission,
-                      setup_run_result,
-                      student_tests, discarded_tests, invalid_tests, timed_out_tests, exposed_bugs,
-                      get_test_names_run_result=get_test_names_result,
-                      validity_check_stdout=validity_check_stdout,
-                      validity_check_stderr=validity_check_stderr,
-                      buggy_impls_stdout=buggy_impls_stdout,
-                      buggy_impls_stderr=buggy_impls_stderr)
+            _save_results(mutation_test_suite, submission,
+                        setup_run_result,
+                        student_tests, discarded_tests,
+                        invalid_tests, timed_out_tests, exposed_bugs,
+                        get_test_names_run_result=get_test_names_result,
+                        validity_check_stdout=validity_check_stdout,
+                        validity_check_stderr=validity_check_stderr,
+                        buggy_impls_stdout=buggy_impls_stdout,
+                        buggy_impls_stderr=buggy_impls_stderr)
+    except SandboxNotDestroyed:
+        # This is a non-critical error.
+        pass
 
 
 def _run_individual_tests_against_mutants(
