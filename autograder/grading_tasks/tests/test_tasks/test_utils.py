@@ -191,9 +191,10 @@ class RunCommandTestCase(UnitTestBase):
             result = tasks.run_ag_command(spawns_extra, sandbox)
             self.assertTrue(result.timed_out)
             print(result.stdout.read())
-            stderr = result.stderr.read()
+            stderr = result.stderr.read().decode()
             print(stderr)
-            self.assertIn('No child processes', stderr.decode())
+            self.assertIn('fork: retry', stderr)
+            self.assertIn('Resource temporarily unavailable', stderr)
 
     def test_shell_output_redirection(self):
         with AutograderSandbox() as sandbox:
