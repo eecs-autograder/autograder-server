@@ -179,6 +179,10 @@ EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 25))
 
 EMAIL_FROM_ADDR = os.environ.get('EMAIL_FROM_ADDR', 'admin@autograder.io')
 
+# A whitespace-separated list of email addresses to send certain
+# critical error notifications to.
+ERROR_NOTIFICATION_EMAIL_ADDRS = os.environ.get('ERROR_NOTIFICATION_EMAIL_ADDRS', '').split()
+
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
     'SECURITY_DEFINITIONS': {

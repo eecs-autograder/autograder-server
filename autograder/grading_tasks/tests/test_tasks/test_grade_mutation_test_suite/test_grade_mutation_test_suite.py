@@ -1,15 +1,17 @@
 import os
 from unittest import mock
 
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import tag
+from django.test import override_settings, tag
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core import constants
 from autograder.grading_tasks import tasks
 from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
-from autograder_sandbox.autograder_sandbox import AutograderSandbox, CompletedCommand
+from autograder_sandbox import AutograderSandbox, SandboxNotStopped, SandboxNotDestroyed
+from autograder_sandbox.autograder_sandbox import CompletedCommand
 import tempfile
 
 
@@ -531,3 +533,50 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
         tasks.grade_deferred_mutation_test_suite(suite.pk, submission.pk)
         tasks.grade_mutation_test_suite_impl(suite, submission)
         sleep_mock.assert_not_called()
+
+
+@mock.patch('autograder.utils.retry.sleep')
+class GradeMutationTestSuiteTeardownErrorHandlingTestCase(TransactionUnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.submission = obj_build.make_submission()
+        self.project = self.submission.group.project
+        self.mutation_test_suite = obj_build.make_mutation_test_suite(
+            self.project, use_setup_command=True, setup_command={'cmd': 'echo "Hello"'}
+        )
+
+    @override_settings(ERROR_NOTIFICATION_EMAIL_ADDRS=['waa@luigi.com', 'spam@spam.com'])
+    def test_email_sent_sandbox_not_stopped_error(self, *args) -> None:
+        with mock.patch('autograder.grading_tasks.tasks.grade_mutation_test_suite'
+                        '._mocking_hook_sandbox_teardown_error',
+                        new=mock.Mock(side_effect=SandboxNotStopped)):
+            tasks.grade_mutation_test_suite_impl(self.mutation_test_suite, self.submission)
+
+        # Make sure that grading actually finished
+        result = self.submission.mutation_test_suite_results.get(
+            mutation_test_suite=self.mutation_test_suite)
+        self.assertEqual(0, result.setup_result.return_code)
+
+        email = mail.outbox[0]
+        self.assertTrue(email.subject.startswith('[Autograder.io] SandboxNotStopped'))
+
+        self.assertEqual(['waa@luigi.com', 'spam@spam.com'], email.to)
+        self.assertIn('Traceback', email.body)
+
+    @override_settings(ERROR_NOTIFICATION_EMAIL_ADDRS=['waa@luigi.com', 'spam@spam.com'])
+    def test_email_sent_sandbox_not_destroyed_error(self, *args) -> None:
+        with mock.patch('autograder.grading_tasks.tasks.grade_mutation_test_suite'
+                        '._mocking_hook_sandbox_teardown_error',
+                        new=mock.Mock(side_effect=SandboxNotDestroyed)):
+            tasks.grade_mutation_test_suite_impl(self.mutation_test_suite, self.submission)
+
+        # Make sure that grading actually finished
+        result = self.submission.mutation_test_suite_results.get(
+            mutation_test_suite=self.mutation_test_suite)
+        self.assertEqual(0, result.setup_result.return_code)
+
+        email = mail.outbox[0]
+        self.assertTrue(email.subject.startswith('[Autograder.io] SandboxNotDestroyed'))
+
+        self.assertEqual(['waa@luigi.com', 'spam@spam.com'], email.to)
+        self.assertIn('Traceback', email.body)

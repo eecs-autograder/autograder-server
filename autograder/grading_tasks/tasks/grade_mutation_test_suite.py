@@ -6,9 +6,11 @@ from io import FileIO
 from typing import List, Tuple
 
 import celery
-from autograder_sandbox import AutograderSandbox, SandboxNotDestroyed
+from autograder_sandbox import AutograderSandbox, SandboxNotDestroyed, SandboxNotStopped
 from autograder_sandbox.autograder_sandbox import CompletedCommand
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.mail import send_mail
+from django.conf import settings
 from django.db import IntegrityError, transaction
 
 import autograder.core.models as ag_models
@@ -58,12 +60,15 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
                 print('Running setup for', mutation_test_suite.name)
                 setup_run_result = run_ag_command(mutation_test_suite.setup_command, sandbox)
                 if setup_run_result.return_code != 0:
-                    _save_results(mutation_test_suite, submission, setup_run_result,
-                                student_tests=[],
-                                discarded_tests=[],
-                                invalid_tests=[],
-                                timed_out_tests=[],
-                                bugs_exposed=[])
+                    _save_results(
+                        mutation_test_suite,
+                        submission, setup_run_result,
+                        student_tests=[],
+                        discarded_tests=[],
+                        invalid_tests=[],
+                        timed_out_tests=[],
+                        bugs_exposed=[]
+                    )
                     return
             else:
                 setup_run_result = None
@@ -72,13 +77,17 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
                 mutation_test_suite.get_student_test_names_command, sandbox)
 
             if get_test_names_result.return_code != 0:
-                _save_results(mutation_test_suite, submission, setup_run_result,
-                            student_tests=[],
-                            discarded_tests=[],
-                            invalid_tests=[],
-                            timed_out_tests=[],
-                            bugs_exposed=[],
-                            get_test_names_run_result=get_test_names_result)
+                _save_results(
+                    mutation_test_suite,
+                    submission,
+                    setup_run_result,
+                    student_tests=[],
+                    discarded_tests=[],
+                    invalid_tests=[],
+                    timed_out_tests=[],
+                    bugs_exposed=[],
+                    get_test_names_run_result=get_test_names_result
+                )
                 return
 
             if mutation_test_suite.test_name_discovery_whitespace_handling == 'newline':
@@ -140,18 +149,42 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
                     )
                 )
 
-            _save_results(mutation_test_suite, submission,
-                        setup_run_result,
-                        student_tests, discarded_tests,
-                        invalid_tests, timed_out_tests, exposed_bugs,
-                        get_test_names_run_result=get_test_names_result,
-                        validity_check_stdout=validity_check_stdout,
-                        validity_check_stderr=validity_check_stderr,
-                        buggy_impls_stdout=buggy_impls_stdout,
-                        buggy_impls_stderr=buggy_impls_stderr)
-    except SandboxNotDestroyed:
-        # This is a non-critical error.
-        pass
+            _save_results(
+                mutation_test_suite,
+                submission,
+                setup_run_result,
+                student_tests, discarded_tests,
+                invalid_tests, timed_out_tests, exposed_bugs,
+                get_test_names_run_result=get_test_names_result,
+                validity_check_stdout=validity_check_stdout,
+                validity_check_stderr=validity_check_stderr,
+                buggy_impls_stdout=buggy_impls_stdout,
+                buggy_impls_stderr=buggy_impls_stderr
+            )
+            _mocking_hook_sandbox_teardown_error()
+    except (SandboxNotStopped, SandboxNotDestroyed) as e:
+        # If either of these exceptions were thrown, we know that the
+        # suite finished grading (these exceptions can only be thrown
+        # when the sandbox is being torn down).
+        # Rather than marking the submission with error status,
+        # we proceed as normal and send an urgent email to the sysadmin.
+        send_mail(
+            subject=f'[Autograder.io] {type(e).__name__} error on autograder',
+            message=f'Error encountered when tearing down sandbox with ID {sandbox.name}. '
+                    'If the exception in the subject is SandboxNotStopped, this is urgent.\n\n'
+                    '(UMmich DCO): Go to the monitoring site to figure out which machine '
+                    f'this sandbox is running on, then try running "docker kill {sandbox.name}" '
+                    'on that machine.\n\n'
+                    'The full error is below: \n\n'
+                    + traceback.format_exc(),
+            from_email=settings.EMAIL_FROM_ADDR,
+            recipient_list=settings.ERROR_NOTIFICATION_EMAIL_ADDRS,
+            fail_silently=True
+        )
+
+
+def _mocking_hook_sandbox_teardown_error():
+    pass
 
 
 def _run_individual_tests_against_mutants(

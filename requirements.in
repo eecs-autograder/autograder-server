@@ -1,4 +1,4 @@
-autograder-sandbox==6.0.0a3
+autograder-sandbox==6.0.0a4
 backports.zoneinfo
 celery<5.0.0
 django-extensions

@@ -5,8 +5,10 @@ import uuid
 from typing import IO, Optional, Tuple
 
 import celery
-from autograder_sandbox import AutograderSandbox, SandboxNotDestroyed
+from autograder_sandbox import AutograderSandbox, SandboxNotDestroyed, SandboxNotStopped
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.mail import send_mail
+from django.conf import settings
 from django.db import IntegrityError, transaction
 
 import autograder.core.models as ag_models
@@ -100,9 +102,32 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
                 print('Grading test case', ag_test_case.name)
                 case_result = grade_ag_test_case_impl(sandbox, ag_test_case, suite_result)
                 on_test_case_finished(case_result)
-    except SandboxNotDestroyed:
-        # This is a non-critical error.
-        pass
+
+            # Used for testing SandboxNotStopped/SandboxNOtDestroyed error handling.
+            _mocking_hook_sandbox_teardown_error()
+    except (SandboxNotStopped, SandboxNotDestroyed) as e:
+        # If either of these exceptions were thrown, we know that the
+        # suite finished grading (these exceptions can only be thrown
+        # when the sandbox is being torn down).
+        # Rather than marking the submission with error status,
+        # we proceed as normal and send an urgent email to the sysadmin.
+        send_mail(
+            subject=f'[Autograder.io] {type(e).__name__} error on autograder',
+            message=f'Error encountered when tearing down sandbox with ID {sandbox.name}. '
+                    'If the exception in the subject is SandboxNotStopped, this is urgent.\n\n'
+                    '(UMmich DCO): Go to the monitoring site to figure out which machine '
+                    f'this sandbox is running on, then try running "docker kill {sandbox.name}" '
+                    'on that machine.\n\n'
+                    'The full error is below: \n\n'
+                    + traceback.format_exc(),
+            from_email=settings.EMAIL_FROM_ADDR,
+            recipient_list=settings.ERROR_NOTIFICATION_EMAIL_ADDRS,
+            fail_silently=True
+        )
+
+
+def _mocking_hook_sandbox_teardown_error():
+    pass
 
 
 # This is patched in test cases
