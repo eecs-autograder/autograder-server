@@ -27,6 +27,8 @@ SITE_DOMAIN = os.environ.get('SITE_DOMAIN', '').strip()  # This is used for auth
 OAUTH2_SECRETS_FILENAME = os.environ.get('OAUTH2_SECRETS_FILENAME', 'dev_oauth2_secrets.json')
 OAUTH2_SECRETS_PATH = os.path.join(SETTINGS_DIR, OAUTH2_SECRETS_FILENAME)
 
+# ONLY USED FOR LEGACY MIGRATION.
+# TODO: Remove in next major release.
 PREFERRED_DOMAIN = '@umich.edu'
 
 SECRETS_DIR = os.path.join(SETTINGS_DIR, 'secrets')
