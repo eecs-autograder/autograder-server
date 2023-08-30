@@ -1,3 +1,4 @@
+import os
 import uuid
 
 from django.conf import settings
@@ -80,7 +81,8 @@ class CreateInstructorFileTestCase(AGViewTestBase):
 
         self.file_obj.seek(0)
         self.assertEqual(self.file_obj.name, loaded.name)
-        self.assertEqual(self.file_obj.read(), loaded.file_obj.read())
+        with open(loaded.abspath, 'rb') as f:
+            self.assertEqual(self.file_obj.read(), f.read())
 
     def test_invalid_create_too_large_uploaded_file(self):
         too_big_file = SimpleUploadedFile('spam', b'a' * (constants.MAX_INSTRUCTOR_FILE_SIZE + 1))
@@ -255,7 +257,8 @@ class UpdateUploadedFileContentTestCase(_DetailViewTestSetup):
 
         self.file_.refresh_from_db()
         self.assertNotEqual(original_last_modified, self.file_.last_modified)
-        self.assertEqual(self.new_content, self.file_.file_obj.read())
+        with open(self.file_.abspath, 'rb') as f:
+            self.assertEqual(self.new_content, f.read())
         self.assertEqual(self.file_.to_dict(), response.data)
 
     def test_non_admin_update_content_permission_denied(self):
@@ -270,7 +273,8 @@ class UpdateUploadedFileContentTestCase(_DetailViewTestSetup):
                 self.file_, self.client, user, self.url,
                 {'file_obj': self.updated_file}, format='multipart')
             self.file_.refresh_from_db()
-            self.assertEqual(self.file_content, self.file_.file_obj.read())
+            with open(self.file_.abspath, 'rb') as f:
+                self.assertEqual(self.file_content, f.read())
 
     def test_error_update_content_too_large(self):
         self.client.force_authenticate(self.admin)
@@ -292,11 +296,13 @@ class UpdateUploadedFileContentTestCase(_DetailViewTestSetup):
         self.assertIn('file_obj', response.data)
 
 
-class DeleteUploadedFileTestCase(_DetailViewTestSetup):
+class DeleteInstructorFileTestCase(_DetailViewTestSetup):
     def test_admin_delete_file(self):
+        abspath = self.file_.abspath
+        self.assertTrue(os.path.isfile(abspath))
         self.do_delete_object_test(self.file_, self.client, self.admin, self.url)
-        with self.assertRaises(FileNotFoundError):
-            self.file_.file_obj.read()
+        # Note that we don't actually delete the file in the filesystem.
+        self.assertTrue(os.path.isfile(abspath))
 
     def test_non_admin_delete_file_permission_denied(self):
         student = obj_build.make_student_user(self.course)
@@ -307,4 +313,4 @@ class DeleteUploadedFileTestCase(_DetailViewTestSetup):
 
         for user in self.staff, student, handgrader, guest:
             self.do_delete_object_permission_denied_test(self.file_, self.client, user, self.url)
-            self.file_.file_obj.read()
+            self.assertTrue(os.path.isfile(self.file_.abspath))

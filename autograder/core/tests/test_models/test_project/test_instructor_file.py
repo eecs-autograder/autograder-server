@@ -38,7 +38,8 @@ class CreateInstuctorFileTestCase(_SetUp):
         self.assertEqual(self.file_obj.size, instructor_file.size)
 
         self.file_obj.seek(0)
-        self.assertEqual(self.file_obj.read(), instructor_file.file_obj.read())
+        with open(instructor_file.abspath, 'rb') as f:
+            self.assertEqual(self.file_obj.read(), f.read())
 
         with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(self.file_obj.name))
@@ -77,9 +78,13 @@ class CreateInstuctorFileTestCase(_SetUp):
             InstructorFile.objects.validate_and_create(
                 project=self.project, file_obj=duplicate_file)
 
-        self.assertIn('filename', cm.exception.message_dict)
+        self.assertIn(
+            'Instructor file with this Name and Project already exists.',
+            cm.exception.message_dict['__all__'][0]
+        )
         self.file_obj.seek(0)
-        self.assertEqual(instructor_file.file_obj.read(), self.file_obj.read())
+        with open(instructor_file.abspath, 'rb') as f:
+            self.assertEqual(self.file_obj.read(), f.read())
 
     def test_different_projects_same_name_no_error(self):
         other_project = obj_build.make_project(course=self.project.course)
@@ -94,6 +99,7 @@ class RenameInstructorFileTestCase(_SetUp):
         self.instructor_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
+        self.file_obj.seek(0)
 
     def test_valid_rename(self):
         original_last_modified = self.instructor_file.last_modified
@@ -142,16 +148,101 @@ class RenameInstructorFileTestCase(_SetUp):
         other_file.refresh_from_db()
         self.assertEqual('other_file.txt', other_file.name)
 
+    def test_rename_file_then_create_with_old_name(self) -> None:
+        file1_content = self.file_obj.read()
+        old_abspath = self.instructor_file.abspath
+
+        self.instructor_file.rename('some_new_name1432.txt')
+
+        self.assertNotEqual(old_abspath, self.instructor_file.abspath)
+        self.assertTrue(os.path.isfile(old_abspath))
+        with open(old_abspath, 'rb') as f:
+            self.assertEqual(file1_content, f.read())
+        with open(self.instructor_file.abspath, 'rb') as f:
+            self.assertEqual(file1_content, f.read())
+
+        file2_content = b'oneifwhtoniewtoeinwaftoenwafotnwf92831472'
+        file2 = InstructorFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile(self.file_obj.name, file2_content)
+        )
+        self.assertEqual(old_abspath, file2.abspath)
+        with open(self.instructor_file.abspath, 'rb') as f:
+            self.assertEqual(file1_content, f.read())
+        with open(file2.abspath, 'rb') as f:
+            self.assertEqual(file2_content, f.read())
+
+    def test_rename_file_then_rename_other_file_to_old_name(self) -> None:
+        file1_content = self.file_obj.read()
+        old_abspath = self.instructor_file.abspath
+
+        self.instructor_file.rename('some_new_name1432.txt')
+
+        self.assertNotEqual(old_abspath, self.instructor_file.abspath)
+        self.assertTrue(os.path.isfile(old_abspath))
+        with open(old_abspath, 'rb') as f:
+            self.assertEqual(file1_content, f.read())
+        with open(self.instructor_file.abspath, 'rb') as f:
+            self.assertEqual(file1_content, f.read())
+
+        file2_content = b'oneifwhtoniewtoeinwaftoenwafotnwf92831472'
+        file2 = InstructorFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile('some_random_name.txt', file2_content)
+        )
+        self.assertNotEqual(old_abspath, file2.abspath)
+
+        file2.rename(self.file_obj.name)
+
+        self.assertEqual(old_abspath, file2.abspath)
+        with open(self.instructor_file.abspath, 'rb') as f:
+            self.assertEqual(file1_content, f.read())
+        with open(file2.abspath, 'rb') as f:
+            self.assertEqual(file2_content, f.read())
+
 
 class DeleteInstructorFileTestCase(_SetUp):
-    def test_file_deleted_from_filesystem(self):
-        instructor_file = InstructorFile.objects.validate_and_create(
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.file1 = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
-        self.assertTrue(os.path.exists(instructor_file.abspath))
+        self.file1_abspath = self.file1.abspath
 
-        instructor_file.delete()
-        self.assertFalse(os.path.exists(instructor_file.abspath))
+        self.file_obj2_contents = b'very different content 67384219'
+        self.file_obj2 = SimpleUploadedFile('very_other_file2.txt', self.file_obj2_contents)
+
+    def test_delete_file_then_create_with_old_name(self) -> None:
+        self.file1.delete()
+        with open(self.file1_abspath, 'rb') as f:
+            self.assertNotEqual(self.file_obj2_contents, f.read())
+
+        new_file = InstructorFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile(self.file_obj.name, self.file_obj2_contents)
+        )
+        self.assertEqual(self.file1_abspath, new_file.abspath)
+        with open(new_file.abspath, 'rb') as f:
+            self.assertEqual(f.read(), self.file_obj2_contents)
+
+    def test_delete_file_then_rename_other_file_to_old_name(self) -> None:
+        file2 = InstructorFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile(self.file_obj2.name, self.file_obj2_contents)
+        )
+        self.assertEqual(2, self.project.instructor_files.count())
+
+        self.file1.delete()
+        with open(self.file1_abspath, 'rb') as f:
+            self.assertNotEqual(self.file_obj2_contents, f.read())
+
+        file2.rename(self.file_obj.name)
+        self.assertEqual(self.file1_abspath, file2.abspath)
+        with open(file2.abspath, 'rb') as f:
+            self.assertEqual(f.read(), self.file_obj2_contents)
+
+        self.assertEqual(1, self.project.instructor_files.count())
 
 
 class InstructorFileMiscTestCase(_SetUp):

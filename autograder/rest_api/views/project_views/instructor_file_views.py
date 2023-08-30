@@ -66,8 +66,8 @@ class ListCreateInstructorFileView(NestedModelView):
         return self.do_list()
 
     @convert_django_validation_error
-    @transaction.atomic
     @method_decorator(require_body_params('file_obj'))
+    @transaction.atomic
     def post(self, *args, **kwargs):
         instructor_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.get_object(),
