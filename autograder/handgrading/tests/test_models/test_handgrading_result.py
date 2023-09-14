@@ -1,3 +1,7 @@
+from pathlib import Path
+import subprocess
+import tempfile
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.core.models as ag_models
@@ -368,3 +372,64 @@ class HandgradingResultTestCase(UnitTestBase):
         result.refresh_from_db()
         self.assertEqual(3, result.points_adjustment)
         self.assertTrue(result.finished_grading)
+
+
+class SubmittedFilesContainsZipContentsTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+            project=obj_build.build_project())
+
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
+            project=self.rubric.project,
+            pattern='*', max_num_matches=10)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            subprocess.run([
+                'bash', '-c',
+                f'mkdir -p {temp_dir}/spam/egg; '
+                f'touch {temp_dir}/spam/wee.txt; '
+                f'touch {temp_dir}/spam/egg/waa.txt; '
+                f'touch {temp_dir}/waluigi.txt ;'
+                f'cd {temp_dir} && zip -r spam.zip spam waluigi.txt'
+            ], check=True)
+            with open(Path(temp_dir) / 'spam.zip', 'rb') as f:
+                self.zip_file = SimpleUploadedFile('spam.zip', f.read())
+
+    def test_only_zip_submitted_directories_not_listed(self) -> None:
+        self.submission = obj_build.make_submission(
+            group=obj_build.make_group(project=self.rubric.project),
+            submitted_files=[self.zip_file])
+
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            group=self.submission.group,
+            handgrading_rubric=self.rubric)  # type: handgrading_models.HandgradingResult
+
+        # Note: Only files should be included in the list, not directories
+        self.assertEqual(
+            sorted(['spam.zip', 'spam.zip/spam/wee.txt',
+                    'spam.zip/waluigi.txt', 'spam.zip/spam/egg/waa.txt']),
+            sorted(result.submitted_filenames)
+        )
+
+    def test_zip_and_other_files_submitted(self) -> None:
+        self.submission = obj_build.make_submission(
+            group=obj_build.make_group(project=self.rubric.project),
+            submitted_files=[
+                SimpleUploadedFile('file1', b''),
+                self.zip_file,
+                SimpleUploadedFile('file2', b'')]
+            )
+
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            group=self.submission.group,
+            handgrading_rubric=self.rubric)  # type: handgrading_models.HandgradingResult
+
+        self.assertEqual(
+            sorted(['file1', 'file2', 'spam.zip', 'spam.zip/spam/wee.txt',
+                    'spam.zip/waluigi.txt', 'spam.zip/spam/egg/waa.txt']),
+            sorted(result.submitted_filenames)
+        )

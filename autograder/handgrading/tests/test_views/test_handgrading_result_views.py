@@ -136,6 +136,12 @@ class RetrieveHandgradingResultTestCase(_SetUp):
         response = self.client.get(self.get_file_url('not_a_file'))
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
+    def test_requested_file_in_zip(self) -> None:
+        self.fail()
+
+    def test_requested_file_not_found_in_zip(self) -> None:
+        self.fail()
+
     def test_handgrading_result_does_not_exist(self):
         self.handgrading_result.delete()
 

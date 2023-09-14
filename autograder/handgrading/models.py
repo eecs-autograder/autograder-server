@@ -1,4 +1,6 @@
+from pathlib import Path
 from typing import List
+import zipfile
 
 from django.core import validators
 from django.core.exceptions import ValidationError
@@ -6,6 +8,7 @@ from django.core.validators import MaxValueValidator
 from django.db import models
 
 import autograder.core.fields as ag_fields
+import autograder.core.utils as core_ut
 from autograder.core.models import AutograderModel, Group, Project, Submission
 from autograder.core.models.ag_model_base import (
     AutograderModelManager, DictSerializable, make_min_value_validator, non_empty_str_validator
@@ -239,8 +242,23 @@ class HandgradingResult(AutograderModel):
         """
         Returns a list of strings containing the filenames of the Submission this result
         belongs to.
+
+        If any of the filenames have the .zip extension, will attempt to include the paths
+        of files inside the zip archive.
         """
-        return self.submission.submitted_filenames
+        filenames = []
+        for name in self.submission.submitted_filenames:
+            filenames.append(name)
+            if not name.endswith('.zip'):
+                continue
+
+            with zipfile.ZipFile(Path(core_ut.get_submission_dir(self.submission)) / name) as f:
+                prefix = Path(name)
+                for zip_member in f.namelist():
+                    if not zip_member.endswith('/'):
+                        filenames.append(str(prefix / zip_member))
+
+        return filenames
 
     @property
     def total_points(self) -> float:
