@@ -420,8 +420,9 @@ class SubmittedFilesContainsZipContentsTestCase(UnitTestBase):
             submitted_files=[
                 SimpleUploadedFile('file1', b''),
                 self.zip_file,
-                SimpleUploadedFile('file2', b'')]
-            )
+                SimpleUploadedFile('file2', b'')
+            ]
+        )
 
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
@@ -433,3 +434,18 @@ class SubmittedFilesContainsZipContentsTestCase(UnitTestBase):
                     'spam.zip/waluigi.txt', 'spam.zip/spam/egg/waa.txt']),
             sorted(result.submitted_filenames)
         )
+
+    def test_invalid_zip_file(self) -> None:
+        self.submission = obj_build.make_submission(
+            group=obj_build.make_group(project=self.rubric.project),
+            submitted_files=[
+                SimpleUploadedFile('bad_zip.zip', b'noirestaniroesatonriesatonriseta'),
+            ]
+        )
+
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            group=self.submission.group,
+            handgrading_rubric=self.rubric)  # type: handgrading_models.HandgradingResult
+
+        self.assertEqual(['bad_zip.zip'], result.submitted_filenames)

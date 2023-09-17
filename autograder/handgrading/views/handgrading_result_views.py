@@ -1,11 +1,12 @@
-import copy
 import itertools
-from collections import OrderedDict
+from pathlib import Path
+import zipfile
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db import transaction
 from django.db.models import Prefetch
+from django.http import FileResponse
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
 from rest_framework import exceptions, response, status
@@ -220,7 +221,25 @@ class HandgradingResultFileContentView(NestedModelView):
     def get(self, request, *args, **kwargs):
         group: ag_models.Group = self.get_object()
         filename = request.query_params['filename']
-        return serve_file(group.handgrading_result.submission.get_file_abspath(filename))
+
+        if len((path := Path(filename)).parts) > 1:  # could be dealing with a zip file
+            zip_file = path.parts[0]
+            requested_file = str(path.relative_to(zip_file))
+
+            # Will raise ObjectDoesNotExist if the zip_file doesn't exist
+            submitted_abspath = group.handgrading_result.submission.get_file_abspath(zip_file)
+
+            try:
+                with zipfile.ZipFile(submitted_abspath) as f:
+                    return FileResponse(
+                        zipfile.Path(f, requested_file).open('rb'),
+                        content_type='application/octet-stream',
+                        headers={'Content-Length': f.getinfo(requested_file).file_size}
+                    )
+            except (zipfile.BadZipFile, FileNotFoundError) as e:
+                raise ObjectDoesNotExist from e
+        else:
+            return serve_file(group.handgrading_result.submission.get_file_abspath(filename))
 
 
 class HandgradingResultHasCorrectSubmissionView(NestedModelView):

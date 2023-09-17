@@ -244,7 +244,12 @@ class HandgradingResult(AutograderModel):
         belongs to.
 
         If any of the filenames have the .zip extension, will attempt to include the paths
-        of files inside the zip archive.
+        of files inside the zip archive. These entries will be of the form:
+            {zip_filename}/zip/member/path
+
+        For example, if a file "submission.zip" was submitted that contains a file
+        called "tests.py", the entry for tests.py would be:
+            submission.zip/tests.py
         """
         filenames = []
         for name in self.submission.submitted_filenames:
@@ -252,11 +257,16 @@ class HandgradingResult(AutograderModel):
             if not name.endswith('.zip'):
                 continue
 
-            with zipfile.ZipFile(Path(core_ut.get_submission_dir(self.submission)) / name) as f:
-                prefix = Path(name)
-                for zip_member in f.namelist():
-                    if not zip_member.endswith('/'):
-                        filenames.append(str(prefix / zip_member))
+            try:
+                with zipfile.ZipFile(
+                    Path(core_ut.get_submission_dir(self.submission)) / name
+                ) as f:
+                    prefix = Path(name)
+                    for zip_member in f.infolist():
+                        if not zip_member.is_dir():
+                            filenames.append(str(prefix / zip_member.filename))
+            except zipfile.BadZipFile:
+                pass
 
         return filenames
 
