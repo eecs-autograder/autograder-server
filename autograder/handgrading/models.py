@@ -437,7 +437,7 @@ class AppliedAnnotation(AutograderModel):
         """
         super().clean()
 
-        if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
+        if self.location.filename not in self.handgrading_result.submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')
 
         if self.annotation.handgrading_rubric != self.handgrading_result.handgrading_rubric:
@@ -488,7 +488,7 @@ class Comment(AutograderModel):
         into the cleaned_data dictionary of the form."
             source: https://docs.djangoproject.com/en/2.0/ref/forms/validation/
         """
-        submitted_filenames = self.handgrading_result.submission.submitted_filenames
+        submitted_filenames = self.handgrading_result.submitted_filenames
 
         if self.location and self.location.filename not in submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')
