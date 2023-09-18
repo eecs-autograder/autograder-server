@@ -1,9 +1,15 @@
 """Comment tests"""
 
-import autograder.utils.testing.model_obj_builders as obj_build
-import autograder.handgrading.models as handgrading_models
-from autograder.utils.testing import UnitTestBase
+import subprocess
+import tempfile
+from pathlib import Path
+
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+import autograder.handgrading.models as handgrading_models
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 
 
 class CommentTestCase(UnitTestBase):
@@ -151,3 +157,72 @@ class CommentTestCase(UnitTestBase):
             comment_dict.pop(non_editable)
 
         comment_obj.validate_and_update(**comment_dict)
+
+
+class AddCommentToMemberOfZipArchiveTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            subprocess.run([
+                'bash', '-c',
+                f'mkdir -p {temp_dir}/spam/egg; '
+                f'echo "wee.txt content" > {temp_dir}/spam/wee.txt; '
+                f'echo "waa.txt content" > {temp_dir}/spam/egg/waa.txt; '
+                f'echo "waluigi.txt content" > {temp_dir}/waluigi.txt ;'
+                f'cd {temp_dir} && zip -r spam.zip spam waluigi.txt'
+            ], check=True)
+            with open(Path(temp_dir) / 'spam.zip', 'rb') as f:
+                self.zip_file = SimpleUploadedFile('spam.zip', f.read())
+
+        self.project = obj_build.make_project()
+        group = obj_build.make_group(project=self.project)
+        obj_build.make_expected_student_file(self.project, pattern='*')
+        submission = obj_build.make_submission(group=group, submitted_files=[self.zip_file])
+
+        self.rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+            max_points=10,
+            show_grades_and_rubric_to_students=False,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True,
+            project=self.project
+        )
+
+        self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            group=submission.group,
+            handgrading_rubric=self.rubric
+        )
+
+    def test_filename_in_location_exists_in_zip_file(self) -> None:
+        comment = handgrading_models.Comment.objects.validate_and_create(
+            location={
+                'first_line': 0,
+                'last_line': 1,
+                'filename': 'spam.zip/waluigi.txt'
+            },
+            text='WAAA',
+            handgrading_result=self.handgrading_result
+        )
+
+        self.assertEqual(comment.handgrading_result, self.handgrading_result)
+
+        self.assertEqual(comment.location.first_line, 0)
+        self.assertEqual(comment.location.last_line, 1)
+        self.assertEqual(comment.location.filename, 'spam.zip/waluigi.txt')
+
+    def test_filename_in_location_not_in_zip_file(self) -> None:
+        with self.assertRaises(ValidationError) as cm:
+            handgrading_models.Comment.objects.validate_and_create(
+                location={
+                    'first_line': 0,
+                    'last_line': 1,
+                    'filename': self.zip_file.name + '/nope.txt'
+                },
+                text='WAAA',
+                handgrading_result=self.handgrading_result
+            )
+
+        self.assertIn(
+            'Filename is not part of submitted files', cm.exception.message_dict['__all__'])

@@ -1,8 +1,7 @@
 import datetime
 import os
-from typing import Any, Dict
-
-from backports import zoneinfo
+from typing import Any
+import zoneinfo
 
 from django.core import exceptions, validators
 from django.db import models

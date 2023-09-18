@@ -1,4 +1,6 @@
+from pathlib import Path
 from typing import List
+import zipfile
 
 from django.core import validators
 from django.core.exceptions import ValidationError
@@ -6,6 +8,7 @@ from django.core.validators import MaxValueValidator
 from django.db import models
 
 import autograder.core.fields as ag_fields
+import autograder.core.utils as core_ut
 from autograder.core.models import AutograderModel, Group, Project, Submission
 from autograder.core.models.ag_model_base import (
     AutograderModelManager, DictSerializable, make_min_value_validator, non_empty_str_validator
@@ -239,8 +242,33 @@ class HandgradingResult(AutograderModel):
         """
         Returns a list of strings containing the filenames of the Submission this result
         belongs to.
+
+        If any of the filenames have the .zip extension, will attempt to include the paths
+        of files inside the zip archive. These entries will be of the form:
+            {zip_filename}/zip/member/path
+
+        For example, if a file "submission.zip" was submitted that contains a file
+        called "tests.py", the entry for tests.py would be:
+            submission.zip/tests.py
         """
-        return self.submission.submitted_filenames
+        filenames = []
+        for name in self.submission.submitted_filenames:
+            filenames.append(name)
+            if not name.endswith('.zip'):
+                continue
+
+            try:
+                with zipfile.ZipFile(
+                    Path(core_ut.get_submission_dir(self.submission)) / name
+                ) as f:
+                    prefix = Path(name)
+                    for zip_member in f.infolist():
+                        if not zip_member.is_dir():
+                            filenames.append(str(prefix / zip_member.filename))
+            except zipfile.BadZipFile:
+                pass
+
+        return filenames
 
     @property
     def total_points(self) -> float:
@@ -409,7 +437,7 @@ class AppliedAnnotation(AutograderModel):
         """
         super().clean()
 
-        if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
+        if self.location.filename not in self.handgrading_result.submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')
 
         if self.annotation.handgrading_rubric != self.handgrading_result.handgrading_rubric:
@@ -460,7 +488,7 @@ class Comment(AutograderModel):
         into the cleaned_data dictionary of the form."
             source: https://docs.djangoproject.com/en/2.0/ref/forms/validation/
         """
-        submitted_filenames = self.handgrading_result.submission.submitted_filenames
+        submitted_filenames = self.handgrading_result.submitted_filenames
 
         if self.location and self.location.filename not in submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')

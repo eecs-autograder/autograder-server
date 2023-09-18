@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import Any, Dict, Iterable, List, cast
-
-from backports import zoneinfo
+import zoneinfo
 
 import django.contrib.postgres.fields as pg_fields
 from django.contrib.auth.models import User
@@ -170,7 +169,7 @@ class Group(ag_model_base.AutograderModel):
         start_datetime, end_datetime = core_ut.get_24_hour_period(
             self.project.submission_limit_reset_time,
             timezone.now().astimezone(
-                zoneinfo.ZoneInfo(self.project.submission_limit_reset_timezone)  # type: ignore
+                zoneinfo.ZoneInfo(self.project.submission_limit_reset_timezone)
             )
         )
 

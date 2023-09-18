@@ -1,4 +1,7 @@
+from pathlib import Path
 import random
+import subprocess
+import tempfile
 from unittest import mock
 from urllib.parse import urlencode
 
@@ -191,6 +194,99 @@ class RetrieveHandgradingResultTestCase(_SetUp):
         return reverse(
             'handgrading-result-file',
             kwargs={'group_pk': self.submission.group.pk}
+        ) + '?filename={}'.format(filename)
+
+
+class GetFileFromSubmittedZip(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.group = obj_build.make_group()
+        self.student = self.group.members.first()
+        self.project = self.group.project
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
+            pattern='*', max_num_matches=10, project=self.project)
+
+        self.handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            project=self.project
+        )  # type: hg_models.HandgradingRubric
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            subprocess.run([
+                'bash', '-c',
+                f'mkdir -p {temp_dir}/spam/egg; '
+                f'printf "wee.txt content" > {temp_dir}/spam/wee.txt; '
+                f'printf "waa.txt content" > {temp_dir}/spam/egg/waa.txt; '
+                f'printf "waluigi.txt content" > {temp_dir}/waluigi.txt ;'
+                f'cd {temp_dir} && zip -r spam.zip spam waluigi.txt'
+            ], check=True)
+            with open(Path(temp_dir) / 'spam.zip', 'rb') as f:
+                self.zip_file = SimpleUploadedFile('spam.zip', f.read())
+
+        self.handgrader = obj_build.make_user()
+        self.project.course.handgraders.add(self.handgrader)
+
+        self.client = APIClient()
+        self.client.force_authenticate(self.handgrader)
+        self.course = self.handgrading_rubric.project.course
+
+    def test_requested_file_in_zip(self) -> None:
+        submission = obj_build.make_submission(
+            group=self.group,
+            submitted_files=[self.zip_file],
+            status=Submission.GradingStatus.finished_grading)
+
+        self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            group=submission.group,
+            handgrading_rubric=self.handgrading_rubric
+        )  # type: hg_models.HandgradingResult
+
+        expected_filename = self.zip_file.name + '/spam/wee.txt'
+        response = self.client.get(
+            self.get_file_url(submission, expected_filename))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        expected_content = b'wee.txt content'
+        self.assertIn('Content-Length', response)
+        self.assertEqual(str(len(expected_content)), response['Content-Length'])
+        self.assertEqual(expected_content, b''.join(response.streaming_content))
+
+    def test_requested_file_not_found_in_zip(self) -> None:
+        submission = obj_build.make_submission(
+            group=self.group,
+            submitted_files=[self.zip_file],
+            status=Submission.GradingStatus.finished_grading)
+
+        self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            group=submission.group,
+            handgrading_rubric=self.handgrading_rubric
+        )  # type: hg_models.HandgradingResult
+
+        expected_filename = self.zip_file.name + '/spam/nope.txt'
+        response = self.client.get(
+            self.get_file_url(submission, expected_filename))
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+    def test_get_file_bad_zip(self):
+        submission = obj_build.make_submission(
+            group=self.group,
+            submitted_files=[SimpleUploadedFile(self.zip_file.name, b'not a zip')],
+            status=Submission.GradingStatus.finished_grading)
+
+        self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            group=submission.group,
+            handgrading_rubric=self.handgrading_rubric
+        )  # type: hg_models.HandgradingResult
+
+        response = self.client.get(
+            self.get_file_url(submission, self.zip_file.name + '/file.txt'))
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+    def get_file_url(self, submission: Submission, filename: str):
+        return reverse(
+            'handgrading-result-file',
+            kwargs={'group_pk': submission.group.pk}
         ) + '?filename={}'.format(filename)
 
 
