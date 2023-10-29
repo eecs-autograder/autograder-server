@@ -12,7 +12,7 @@ from autograder.grading_tasks.tasks.grade_mutation_test_suite import grade_mutat
 from autograder.grading_tasks.tasks.utils import load_queryset_with_retry
 from autograder.utils.retry import retry_should_recover
 
-from .exceptions import RerunCancelled
+from .exceptions import RerunCancelled, SubmissionRejected
 from .grade_ag_test import grade_ag_test_suite_impl
 
 # See autograder/rest_api/tests/test_views/test_rerun_submissions_task_views.py
@@ -60,7 +60,7 @@ class SubmissionRerunner:
             self.load_data()
             self.rerun_suites()
             self.mark_as_finished()
-        except RerunCancelled:
+        except (RerunCancelled, SubmissionRejected):
             pass
         except Exception as e:
             print('Error grading submission')

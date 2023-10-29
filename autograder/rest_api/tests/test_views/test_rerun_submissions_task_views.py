@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
+from autograder.grading_tasks.tasks.grade_submission import grade_submission
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.caching import get_cached_submission_feedback, submission_fdbk_cache_key
 from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResultFeedback
@@ -665,3 +666,33 @@ class RejectSubmissionTestCase(TransactionUnitTestBase):
                 ag_test_suite_result__submission=submission
             ).count()
         )
+
+    def test_reject_submission_on_rerun_not_recorded_as_error(self, sleep_mock) -> None:
+        submission = obj_build.make_submission()
+        suite = obj_build.make_ag_test_suite(
+            submission.project,
+            reject_submission_if_setup_fails=True,
+            setup_suite_cmd='false'
+        )
+        test_case = obj_build.make_ag_test_case(suite)
+
+        # Grade submission so it gets marked as rejected
+        grade_submission(submission.pk)
+        submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.rejected, submission.status)
+
+        rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
+            project=submission.project,
+            creator=obj_build.make_user(),
+            total_num_subtasks=1,
+        )
+
+        rerun_submission(submission.pk, rerun_task.pk)
+
+        submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.rejected, submission.status)
+        rerun_task.refresh_from_db()
+        self.assertEqual('', rerun_task.error_msg)
+        self.assertEqual(100, rerun_task.progress)
+
+        sleep_mock.assert_not_called()

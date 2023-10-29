@@ -105,7 +105,7 @@ def retry(max_num_retries,
 
 RERAISE_IMMEDIATELY = (
     db.IntegrityError,
-    StopGrading,
+    StopGrading,  # Covers remove from queue, reject submission, cancel rerun
     TestDeleted,
     ObjectDoesNotExist,  # raised by QuerySet.get()
     MaxRetriesExceeded,  # We don't want nested retry loops
