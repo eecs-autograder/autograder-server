@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     'autograder.grading_tasks',
     'autograder.utils',
     'autograder.handgrading',
+    'autograder.mutant_hints',
 ]
 
 MIDDLEWARE = (

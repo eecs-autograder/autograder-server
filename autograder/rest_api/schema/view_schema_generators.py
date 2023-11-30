@@ -7,7 +7,8 @@ from rest_framework.schemas.openapi import AutoSchema
 
 from autograder import utils
 from autograder.rest_api.schema.model_schema_generators import (
-    API_OBJ_TYPE_NAMES, AGModelSchemaGenerator, APIClassType, as_schema_ref, assert_not_ref
+    AGModelSchemaGenerator, APIClassType, api_object_type_name_is_registered,
+    as_schema_ref, assert_not_ref, get_api_object_type_name
 )
 from autograder.rest_api.schema.openapi_types import (
     ContentType, HTTPMethodName, MediaTypeObject, OperationObject, OrRef, ParameterObject,
@@ -185,7 +186,7 @@ class AGListViewSchemaMixin:
 
     def _get_operation_id_impl(self, path: str, method: str) -> str:
         if method == 'GET':
-            return f'list{API_OBJ_TYPE_NAMES[self.get_api_class()]}s'  # type: ignore
+            return f'list{get_api_object_type_name(self.get_api_class())}s'  # type: ignore
 
         return super()._get_operation_id_impl(path, method)  # type: ignore
 
@@ -200,7 +201,7 @@ class AGCreateViewSchemaMixin:
 
     def _get_operation_id_impl(self, path: str, method: str) -> str:
         if method == 'POST':
-            return f'create{API_OBJ_TYPE_NAMES[self.get_api_class()]}'  # type: ignore
+            return f'create{get_api_object_type_name(self.get_api_class())}'  # type: ignore
 
         return super()._get_operation_id_impl(path, method)  # type: ignore
 
@@ -221,7 +222,7 @@ class AGRetrieveViewSchemaMixin:
 
     def _get_operation_id_impl(self, path: str, method: str) -> str:
         if method == 'GET':
-            return f'get{API_OBJ_TYPE_NAMES[self.get_api_class()]}'  # type: ignore
+            return f'get{get_api_object_type_name(self.get_api_class())}'  # type: ignore
 
         return super()._get_operation_id_impl(path, method)  # type: ignore
 
@@ -236,7 +237,7 @@ class AGPatchViewSchemaMixin:
 
     def _get_operation_id_impl(self, path: str, method: str) -> str:
         if method == 'PATCH':
-            return f'update{API_OBJ_TYPE_NAMES[self.get_api_class()]}'  # type: ignore
+            return f'update{get_api_object_type_name(self.get_api_class())}'  # type: ignore
 
         return super()._get_operation_id_impl(path, method)  # type: ignore
 
@@ -246,7 +247,7 @@ class AGDetailViewSchemaGenerator(
 ):
     def _get_operation_id_impl(self, path: str, method: str) -> str:
         if method == 'DELETE':
-            return f'delete{API_OBJ_TYPE_NAMES[self.get_api_class()]}'
+            return f'delete{get_api_object_type_name(self.get_api_class())}'
 
         return super()._get_operation_id_impl(path, method)
 
@@ -294,7 +295,7 @@ def as_array_content_obj(
     if isinstance(type_, dict):
         obj_dict = type_
     else:
-        assert type_ in API_OBJ_TYPE_NAMES
+        assert api_object_type_name_is_registered(type_)
         obj_dict = as_schema_ref(type_)
 
     return {
@@ -313,7 +314,7 @@ def as_paginated_content_obj(
     if isinstance(type_, dict):
         obj_dict = type_
     else:
-        assert type_ in API_OBJ_TYPE_NAMES
+        assert api_object_type_name_is_registered(type_)
         obj_dict = as_schema_ref(type_)
 
     return {
@@ -393,7 +394,7 @@ class OrderViewSchema(CustomViewSchema):
     def __init__(self, tags: List[APITags], api_class: APIClassType):
         super().__init__(tags, {
             'GET': {
-                'operation_id': f'get{API_OBJ_TYPE_NAMES[api_class]}Order',
+                'operation_id': f'get{get_api_object_type_name(api_class)}Order',
                 'responses': {
                     '200': {
                         'description': '',
@@ -409,7 +410,7 @@ class OrderViewSchema(CustomViewSchema):
                 }
             },
             'PUT': {
-                'operation_id': f'set{API_OBJ_TYPE_NAMES[api_class]}Order',
+                'operation_id': f'set{get_api_object_type_name(api_class)}Order',
                 'request': {
                     'content': {
                         'application/json': {

@@ -22,6 +22,7 @@ urlpatterns = [
     url(r'^api/', include('autograder.core.urls')),
     url(r'^api/', include('autograder.rest_api.urls')),
     url(r'^api/', include('autograder.handgrading.urls')),
+    url(r'^api/', include('autograder.mutant_hints.urls')),
 ]
 
 if settings.DEBUG:

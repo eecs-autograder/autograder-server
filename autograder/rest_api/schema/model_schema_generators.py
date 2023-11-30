@@ -35,7 +35,7 @@ from autograder.rest_api.schema.openapi_types import (
 def generate_model_schemas() -> Dict[str, OrRef[SchemaObject]]:
     result: Dict[str, OrRef[SchemaObject]] = {
         name: APIClassSchemaGenerator.factory(class_).generate()
-        for class_, name in API_OBJ_TYPE_NAMES.items()
+        for class_, name in _API_OBJ_TYPE_NAMES.items()
     }
 
     result['UserRoles'] = {
@@ -120,7 +120,23 @@ values:
     }
 
 
-API_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
+def register_api_object_type_name(api_class: APIClassType, name: str | None = None) -> None:
+    global _API_OBJ_TYPE_NAMES
+    if name is None:
+        name = api_class.__name__
+
+    _API_OBJ_TYPE_NAMES[api_class] = name
+
+
+def get_api_object_type_name(api_class: APIClassType) -> str:
+    return _API_OBJ_TYPE_NAMES[api_class]
+
+
+def api_object_type_name_is_registered(api_class: APIClassType) -> bool:
+    return api_class in _API_OBJ_TYPE_NAMES
+
+
+_API_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     User: 'User',
     ag_models.Course: ag_models.Course.__name__,
     ag_models.Semester: ag_models.Semester.__name__,
@@ -589,7 +605,7 @@ def _get_py_type_schema(type_: type) -> OrRef[SchemaObject]:
     if origin is dict:
         return {'type': 'object'}
 
-    if type_ in API_OBJ_TYPE_NAMES:
+    if type_ in _API_OBJ_TYPE_NAMES:
         return as_schema_ref(type_)
 
     # assert not isinstance(type_, ForwardRef), f'ForwardRef detected: {ForwardRef}'
@@ -614,7 +630,7 @@ _PY_ATTR_TYPES: Dict[type, SchemaObject] = {
 
 
 def as_schema_ref(type_: APIClassType) -> ReferenceObject:
-    return {'$ref': f'#/components/schemas/{API_OBJ_TYPE_NAMES[type_]}'}
+    return {'$ref': f'#/components/schemas/{_API_OBJ_TYPE_NAMES[type_]}'}
 
 
 _NonRefType = TypeVar('_NonRefType', bound=Mapping[str, object])

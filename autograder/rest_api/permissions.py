@@ -231,13 +231,16 @@ def is_group_member(get_group_fn: GetGroupFnType = _get_group) -> PermissionClas
 
 
 def can_request_feedback_category(
-    get_submission_fn: Callable[[Any], ag_models.Submission] = lambda submission: submission
+    get_submission_fn: Callable[[Any], ag_models.Submission] = lambda submission: submission,
+    feedback_category: ag_models.FeedbackCategory | None = None
 ) -> Type[permissions.BasePermission]:
     class CanRequestFeedbackCategory(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             try:
-                fdbk_category = ag_models.FeedbackCategory(
-                    request.query_params.get('feedback_category'))
+                fdbk_category = (
+                    feedback_category if feedback_category is not None
+                    else ag_models.FeedbackCategory(request.query_params.get('feedback_category'))
+                )
             except KeyError:
                 raise exceptions.ValidationError(
                     {'feedback_category': 'Missing required query param: feedback_category'})

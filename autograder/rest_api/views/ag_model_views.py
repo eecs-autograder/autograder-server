@@ -142,7 +142,8 @@ class NestedModelView(AGModelAPIView):
     # The name of the relationship that can be used to load the nested objects.
     # For example, if loading Projects from a Course, this attribute would
     # have the value 'projects'.
-    # If NestedModelView.get_nested_manager() or NestedModelView.do_list() are
+    # If NestedModelView.get_nested_manager(), NestedModelView.do_retrieve(),
+    # or NestedModelView.do_list() are
     # to be called, this attribute must be non-null.
     nested_field_name: Optional[str] = None
 
@@ -204,6 +205,34 @@ def require_body_params(*required_body_params: str):
             if missing_params:
                 error_msg = 'Missing required body parameter(s): {}'.format(
                     ', '.join(missing_params)
+                )
+                return response.Response(data=error_msg, status=status.HTTP_400_BAD_REQUEST)
+
+            return view(request, *args, **kwargs)
+
+        return decorated_view
+
+    return decorator
+
+
+def require_non_null_body_params(*non_null_body_params: str):
+    """
+    When applied to a DRF view, checks whether each parameter listed in
+    non_null_body_params is not None *if present* in the request body.
+    Missing parameters are skipped.
+    If any of the specifieg parameters are present and None,
+    returns a 400 response.
+    """
+    def decorator(view):
+        def decorated_view(request: Request, *args, **kwargs):
+            null_params = []
+            for param in non_null_body_params:
+                if param in request.data and request.data[param] is None:
+                    null_params.append(param)
+
+            if null_params:
+                error_msg = 'These body parameter(s) must not be null: {}'.format(
+                    ', '.join(null_params)
                 )
                 return response.Response(data=error_msg, status=status.HTTP_400_BAD_REQUEST)
 

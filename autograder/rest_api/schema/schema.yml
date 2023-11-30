@@ -3633,12 +3633,6 @@ paths:
                         non_deferred_grading_end_time:
                           type: string
                           format: datetime
-                        _time_spent_in_queue:
-                          type: integer
-                          description: Time spent in queue in minutes
-                        _time_spent_grading_non_deferred:
-                          type: integer
-                          description: Time spent grading non-deferred tests in minutes
       tags:
       - submissions
   /api/sandbox_docker_images/:
@@ -7619,7 +7613,13 @@ paths:
                   type: number
                 submitted_filenames:
                   description: "Returns a list of strings containing the filenames\
-                    \ of the Submission this result\n        belongs to."
+                    \ of the Submission this result\n        belongs to.\n\n     \
+                    \   If any of the filenames have the .zip extension, will attempt\
+                    \ to include the paths\n        of files inside the zip archive.\
+                    \ These entries will be of the form:\n            {zip_filename}/zip/member/path\n\
+                    \n        For example, if a file \"submission.zip\" was submitted\
+                    \ that contains a file\n        called \"tests.py\", the entry\
+                    \ for tests.py would be:\n            submission.zip/tests.py"
                   readOnly: true
                   type: array
                   items:
@@ -8224,6 +8224,116 @@ paths:
       tags:
       - projects
       - handgrading_results
+  /api/mutation_test_suites/{mutation_test_suite_pk}/hint_config/:
+    get:
+      operationId: listMutationTestSuiteHintConfigs
+      description: ''
+      parameters:
+      - name: mutation_test_suite_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MutationTestSuiteHintConfig'
+          description: ''
+      tags:
+      - mutation_test_suites
+    post:
+      operationId: createMutationTestSuiteHintConfig
+      description: ''
+      parameters:
+      - name: mutation_test_suite_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+              required: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MutationTestSuiteHintConfig'
+          description: ''
+      tags:
+      - mutation_test_suites
+  /api/mutation-test-suite-hint-configs/{id}/:
+    get:
+      operationId: getMutationTestSuiteHintConfig
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MutationTestSuiteHintConfig'
+          description: ''
+      tags:
+      - mutation_test_suites
+    patch:
+      operationId: updateMutationTestSuiteHintConfig
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MutationTestSuiteHintConfig'
+          description: ''
+      tags:
+      - mutation_test_suites
+    delete:
+      operationId: deleteMutationTestSuiteHintConfig
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+      - mutation_test_suites
   /api/courses/{id}/copy/:
     post:
       operationId: copyCourse
@@ -11168,7 +11278,13 @@ components:
           type: number
         submitted_filenames:
           description: "Returns a list of strings containing the filenames of the\
-            \ Submission this result\n        belongs to."
+            \ Submission this result\n        belongs to.\n\n        If any of the\
+            \ filenames have the .zip extension, will attempt to include the paths\n\
+            \        of files inside the zip archive. These entries will be of the\
+            \ form:\n            {zip_filename}/zip/member/path\n\n        For example,\
+            \ if a file \"submission.zip\" was submitted that contains a file\n  \
+            \      called \"tests.py\", the entry for tests.py would be:\n       \
+            \     submission.zip/tests.py"
           type: array
           items:
             type: string
@@ -11272,6 +11388,9 @@ components:
           description: The last line in the source code region (inclusive). Must be
             non-negative.
           type: integer
+    MutationTestSuiteHintConfig:
+      type: object
+      properties: {}
     UserRoles:
       type: object
       properties:
