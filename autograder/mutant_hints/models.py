@@ -125,6 +125,7 @@ class UnlockedHint(ag_models.AutograderModel):
     hint_text = models.TextField()
 
     hint_rating = models.IntegerField(blank=True, null=True, default=None)
+    rated_by = models.TextField(blank=True)
     user_comment = models.TextField(blank=True)
 
     # FIXME: Obfuscated mutant names. Make sure no extra db queries
@@ -144,6 +145,7 @@ class UnlockedHint(ag_models.AutograderModel):
     EDITABLE_FIELDS = (
         'hint_rating',
         'user_comment',
+        'rated_by',
     )
 
 # Note to self: hints should only be unlockable on submissions eligible for normal feedback

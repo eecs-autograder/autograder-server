@@ -20,7 +20,8 @@ from autograder.rest_api.schema import (
     APITags,
     register_api_object_type_name,
 )
-from autograder.rest_api.schema.view_schema_generators import AGListViewSchemaMixin, AGPatchViewSchemaMixin, AGViewSchemaGenerator
+from autograder.rest_api.schema.view_schema_generators import (
+    AGListViewSchemaMixin, AGPatchViewSchemaMixin, AGViewSchemaGenerator)
 from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView,
     AGModelDetailView,
@@ -41,9 +42,10 @@ register_api_object_type_name(UnlockedHint)
 
 
 class MutationTestSuiteHintConfigGetCreateView(NestedModelView):
-    schema = AGListCreateViewSchemaGenerator(
-        [APITags.mutation_test_suites], MutationTestSuiteHintConfig,
-    )
+    schema = None
+    # schema = AGListCreateViewSchemaGenerator(
+    #     [APITags.mutation_test_suites], MutationTestSuiteHintConfig,
+    # )
 
     permission_classes = [
         ag_permissions.is_admin(lambda suite: suite.project.course)
@@ -76,7 +78,8 @@ class MutationTestSuiteHintConfigGetCreateView(NestedModelView):
 
 
 class MutationTestSuiteHintConfigDetailView(AGModelDetailView):
-    schema = AGDetailViewSchemaGenerator(tags=[APITags.mutation_test_suites])
+    schema = None
+    # schema = AGDetailViewSchemaGenerator(tags=[APITags.mutation_test_suites])
 
     permission_classes = [
         ag_permissions.is_admin(
@@ -96,9 +99,10 @@ class MutationTestSuiteHintConfigDetailView(AGModelDetailView):
 
 
 class UnlockedMutantHintsView(NestedModelView):
-    schema = AGListCreateViewSchemaGenerator(
-        [APITags.mutation_test_suites], UnlockedHint
-    )
+    schema = None
+    # schema = AGListCreateViewSchemaGenerator(
+    #     [APITags.mutation_test_suites], UnlockedHint
+    # )
 
     is_staff = P(ag_permissions.is_staff(lambda result: result.mutation_test_suite.project.course))
     is_read_only_staff = P(ag_permissions.IsReadOnly) & is_staff
@@ -133,6 +137,7 @@ class UnlockedMutantHintsView(NestedModelView):
             mutation_test_suite_hint_config__mutation_test_suite=result.mutation_test_suite,
             mutant_name=_get_first_undetected_bug(result),
         )
+        # FIXME: mutant name obfuscation
         return response.Response(
             data=[self.serialize_object(obj) for obj in query],
             status=status.HTTP_200_OK,
@@ -145,7 +150,8 @@ class UnlockedMutantHintsView(NestedModelView):
         """Request a hint"""
         result: ag_models.MutationTestSuiteResult = self.get_object()
 
-        locked_group = ag_models.Group.objects.select_for_update().get(pk=result.submission.group_id)
+        locked_group = ag_models.Group.objects.select_for_update().get(
+            pk=result.submission.group_id)
         test_ut.mocking_hook()
 
         hint_config = MutationTestSuiteHintConfig.objects.get(
@@ -190,7 +196,8 @@ class UnlockedMutantHintsView(NestedModelView):
         result: ag_models.MutationTestSuiteResult,
         hint_config: MutationTestSuiteHintConfig
     ):
-        num_hints_for_submission = get_num_hints_for_submission(result.mutation_test_suite, result.submission)
+        num_hints_for_submission = get_num_hints_for_submission(
+            result.mutation_test_suite, result.submission)
         if (hint_config.num_hints_per_submission is not None
                 and num_hints_for_submission >= hint_config.num_hints_per_submission):
             raise ValidationError({
@@ -208,6 +215,7 @@ class UnlockedMutantHintsView(NestedModelView):
 
 
 class NumMutantHintsAvailableView(AGModelDetailView):
+    schema = None
     # FIXME: Custom schema generator
 
     permission_classes = UnlockedMutantHintsView.permission_classes
@@ -229,7 +237,7 @@ class NumMutantHintsAvailableView(AGModelDetailView):
         )
         return response.Response({
             'num_hints_remaining': num_hints_remaining,
-            # FIXME: Obfuscation
+            # FIXME: mutant name obfuscation
             'mutant_name': first_undetected,
         })
 
@@ -285,12 +293,13 @@ def get_num_locked_hints_remaining(
 
 
 class AllUnlockedHintsView(AGModelAPIView):
-    class _SchemaGenerator(AGListViewSchemaMixin, AGViewSchemaGenerator):
-        pass
+    schema = None
+    # class _SchemaGenerator(AGListViewSchemaMixin, AGViewSchemaGenerator):
+    #     pass
 
-    schema = _SchemaGenerator(
-        [APITags.mutation_test_suites], UnlockedHint
-    )
+    # schema = _SchemaGenerator(
+    #     [APITags.mutation_test_suites], UnlockedHint
+    # )
 
     pk_key = 'group_pk'
     model_manager = ag_models.Group.objects.select_related('project__course')
@@ -303,18 +312,19 @@ class AllUnlockedHintsView(AGModelAPIView):
     def get(self, *args, **kwargs):
         group = self.get_object()
         hints = UnlockedHint.objects.filter(mutation_test_suite_result__submission__group=group)
-
+        # FIXME: mutant name obfuscation
         return response.Response(data=[hint.to_dict() for hint in hints])
 
 
 class RateHintView(AGModelDetailView):
-    class _SchemaGenerator(AGPatchViewSchemaMixin, AGViewSchemaGenerator):
-        pass
+    schema = None
+    # class _SchemaGenerator(AGPatchViewSchemaMixin, AGViewSchemaGenerator):
+    #     pass
 
-    # FIXME: custom body with CustomViewSchema
-    schema = _SchemaGenerator(
-        [APITags.mutation_test_suites], UnlockedHint
-    )
+    # # FIXME: custom body with CustomViewSchema
+    # schema = _SchemaGenerator(
+    #     [APITags.mutation_test_suites], UnlockedHint
+    # )
 
     model_manager = UnlockedHint.objects.select_related(
         'mutation_test_suite_result__submission__group__project__course')
@@ -329,10 +339,13 @@ class RateHintView(AGModelDetailView):
     @method_decorator(require_non_null_body_params('hint_rating'))
     @method_decorator(require_body_params('hint_rating'))
     def patch(self, *args, **kwargs):
+        # FIXME: rated by
+        self.request.data['rated_by'] = self.request.user.username
         return self.do_patch()
 
 
 class DailyHintLimitView(AGModelAPIView):
+    schema = None
     # FIXME: Custom response schema
 
     pk_key = 'group_pk'
@@ -343,13 +356,12 @@ class DailyHintLimitView(AGModelAPIView):
         ag_permissions.is_staff_or_group_member(),
     ]
 
-    # FIXME: This needs to either include limits for all the mutation test suites
-    # or take in the PK of the particular suite in addition to the group PK
     @handle_object_does_not_exist_404
     @transaction.atomic
     def get(self, *args, **kwargs):
         group = self.get_object()
-        hint_config = MutationTestSuiteHintConfig.objects.get(mutation_test_suite__project=group.project)
+        hint_config = MutationTestSuiteHintConfig.objects.get(
+            mutation_test_suite__project=group.project)
         return response.Response(
             data={
                 'num_hints_unlocked_today': get_num_hints_today(group, hint_config),
@@ -359,6 +371,7 @@ class DailyHintLimitView(AGModelAPIView):
 
 
 class HintLimitView(AGModelAPIView):
+    schema = None
     # FIXME: Custom response schema
 
     pk_key = 'mutation_test_suite_result_pk'

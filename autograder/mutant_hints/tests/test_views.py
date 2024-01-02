@@ -1033,6 +1033,8 @@ class RateHintViewTestCase(_UnlockedHintSetUp):
             self.get_rate_hint_url(self.group2_hint),
             {'hint_rating': 2, 'user_comment': 'some very comment'}
         )
+        self.group2_hint.refresh_from_db()
+        self.assertEqual(self.group2.members.first().username, self.group2_hint.rated_by)
 
     def test_non_group_member_rate_hint_forbidden(self) -> None:
         self.do_patch_object_permission_denied_test(
