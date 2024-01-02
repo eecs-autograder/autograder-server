@@ -16,7 +16,7 @@ class Command(DictSerializable):
                  time_limit: int = constants.DEFAULT_SUBPROCESS_TIMEOUT,
                  # Remove in version 5.0.0
                  stack_size_limit: int = constants.DEFAULT_STACK_SIZE_LIMIT,
-                 use_virtual_memory_limit: bool = True,
+                 use_virtual_memory_limit: bool = False,
                  virtual_memory_limit: int = constants.DEFAULT_VIRTUAL_MEM_LIMIT,
                  block_process_spawn: bool = False,
                  # Remove in version 5.0.0
