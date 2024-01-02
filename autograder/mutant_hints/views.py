@@ -122,12 +122,21 @@ class UnlockedMutantHintsView(NestedModelView):
 
     pk_key = 'mutation_test_suite_result_pk'
     model_manager = ag_models.MutationTestSuiteResult.objects.select_related(
-        'submission__project__course')
+        'submission__group__project__course')
     nested_field_name = 'unlocked_hints'
 
     def get(self, *args, **kwargs):
         """Load hints unlocked for the requested mutation test suite."""
-        return self.do_list()
+        result: ag_models.MutationTestSuiteResult = self.get_object()
+        query = UnlockedHint.objects.filter(
+            mutation_test_suite_result__submission__group=result.submission.group,
+            mutation_test_suite_hint_config__mutation_test_suite=result.mutation_test_suite,
+            mutant_name=_get_first_undetected_bug(result),
+        )
+        return response.Response(
+            data=[self.serialize_object(obj) for obj in query],
+            status=status.HTTP_200_OK,
+        )
 
     @handle_object_does_not_exist_404
     @convert_django_validation_error
@@ -169,6 +178,7 @@ class UnlockedMutantHintsView(NestedModelView):
             mutant_name=first_undetected,
             hint_number=next_hint_index,
             hint_text=hint_text,
+            unlocked_by=self.request.user.username,
         )
         return response.Response(
             data=self.serialize_object(new_hint),
@@ -212,12 +222,16 @@ class NumMutantHintsAvailableView(AGModelDetailView):
         hint_config = MutationTestSuiteHintConfig.objects.get(
             mutation_test_suite=result.mutation_test_suite
         )
-        num_hints_available = get_num_locked_hints_remaining(
+        num_hints_remaining = get_num_locked_hints_remaining(
             result.submission.group,
             hint_config,
             first_undetected
         )
-        return response.Response(data=num_hints_available)
+        return response.Response({
+            'num_hints_remaining': num_hints_remaining,
+            # FIXME: Obfuscation
+            'mutant_name': first_undetected,
+        })
 
 
 def _get_first_undetected_bug(result: ag_models.MutationTestSuiteResult) -> str | None:

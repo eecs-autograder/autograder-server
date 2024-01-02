@@ -231,6 +231,9 @@ class _UnlockedHintSetUp(AGViewTestBase):
             self.assertEqual(expected_hint_number, response.data['hint_number'])
             # FIXME: check mutant name
 
+            loaded = UnlockedHint.objects.get(pk=response.data['pk'])
+            self.assertEqual(user.username, loaded.unlocked_by)
+
         return result
 
     def do_permission_denied_unlock_hint_test(
@@ -419,6 +422,134 @@ class UnlockedMutantHintsViewGetHintListTestCase(_UnlockedHintSetUp):
             ]
         )
 
+    def test_results_with_same_undetected_mutant_get_cumulative_hints(self) -> None:
+        # Earlier and later submissions with the same 1st undectected mutant
+        # should be shown all the hints unlocked for that mutant
+
+        self.config.hints_by_mutant_name['mut1'].append('hint2')
+        self.config.save()
+        # Make sure that we're querying on the hint config and the mutant name
+        self.mutation_test_suite2.buggy_impl_names.append('mut1')
+        self.mutation_test_suite2.save()
+        self.config2.hints_by_mutant_name['mut1'] = ['sneaky hint1']
+        self.config2.save()
+
+        group3 = obj_build.make_group(project=self.project)
+        group3_submission1 = obj_build.make_finished_submission(group=group3)
+        group3_submission2 = obj_build.make_finished_submission(group=group3)
+        group3_submission3 = obj_build.make_finished_submission(group=group3)
+        group3_submission4 = obj_build.make_finished_submission(group=group3)
+
+        group3_submission1_result1 = ag_models.MutationTestSuiteResult.objects.validate_and_create(
+            mutation_test_suite=self.mutation_test_suite,
+            submission=group3_submission1,
+            bugs_exposed=[],
+        )
+
+        # First hint unlocked here
+        group3_submission2_result1 = ag_models.MutationTestSuiteResult.objects.validate_and_create(
+            mutation_test_suite=self.mutation_test_suite,
+            submission=group3_submission2,
+            bugs_exposed=[],
+        )
+        group3_submission2_result1_hint = UnlockedHint.objects.validate_and_create(
+            mutation_test_suite_result=group3_submission2_result1,
+            mutation_test_suite_hint_config=self.config,
+            mutant_name='mut1',
+            hint_number=0,
+            hint_text='hint1',
+        )
+
+        # 2nd hint unlocked here
+        group3_submission3_result1 = ag_models.MutationTestSuiteResult.objects.validate_and_create(
+            mutation_test_suite=self.mutation_test_suite,
+            submission=group3_submission3,
+            bugs_exposed=[],
+        )
+        group3_submission3_result1_hint = UnlockedHint.objects.validate_and_create(
+            mutation_test_suite_result=group3_submission3_result1,
+            mutation_test_suite_hint_config=self.config,
+            mutant_name='mut1',
+            hint_number=1,
+            hint_text='hint2',
+        )
+
+        # Throw in a hint for the other mutation test suite so that we know
+        # our query differentiates
+        group3_submission3_result2 = ag_models.MutationTestSuiteResult.objects.validate_and_create(
+            mutation_test_suite=self.mutation_test_suite2,
+            submission=group3_submission3,
+            bugs_exposed=['suite2_mut1'],
+        )
+        group3_submission3_result2_hint = UnlockedHint.objects.validate_and_create(
+            mutation_test_suite_result=group3_submission3_result2,
+            mutation_test_suite_hint_config=self.config2,
+            mutant_name='mut1',
+            hint_number=0,
+            hint_text='sneaky hint1',
+        )
+
+        group3_submission4_result1 = ag_models.MutationTestSuiteResult.objects.validate_and_create(
+            mutation_test_suite=self.mutation_test_suite,
+            submission=group3_submission4,
+            bugs_exposed=['mut1'],
+        )
+        group3_submission4_result1_hint = UnlockedHint.objects.validate_and_create(
+            mutation_test_suite_result=group3_submission4_result1,
+            mutation_test_suite_hint_config=self.config,
+            mutant_name='mut2',
+            hint_number=1,
+            hint_text='some mut2 hint',
+        )
+
+        self.do_list_objects_test(
+            self.client,
+            group3.members.first(),
+            self.get_result_hints_url(group3_submission1_result1),
+            [
+                group3_submission2_result1_hint.to_dict(),
+                group3_submission3_result1_hint.to_dict(),
+            ]
+        )
+
+        self.do_list_objects_test(
+            self.client,
+            group3.members.first(),
+            self.get_result_hints_url(group3_submission2_result1),
+            [
+                group3_submission2_result1_hint.to_dict(),
+                group3_submission3_result1_hint.to_dict(),
+            ]
+        )
+
+        self.do_list_objects_test(
+            self.client,
+            group3.members.first(),
+            self.get_result_hints_url(group3_submission3_result1),
+            [
+                group3_submission2_result1_hint.to_dict(),
+                group3_submission3_result1_hint.to_dict(),
+            ]
+        )
+
+        self.do_list_objects_test(
+            self.client,
+            group3.members.first(),
+            self.get_result_hints_url(group3_submission3_result2),
+            [
+                group3_submission3_result2_hint.to_dict(),
+            ]
+        )
+
+        self.do_list_objects_test(
+            self.client,
+            group3.members.first(),
+            self.get_result_hints_url(group3_submission4_result1),
+            [
+                group3_submission4_result1_hint.to_dict(),
+            ]
+        )
+
     def test_staff_get_self_hints(self) -> None:
         self.project.course.staff.add(self.group2.members.first())
 
@@ -500,6 +631,17 @@ class UnlockedMutantHintsViewGetHintListTestCase(_UnlockedHintSetUp):
             self.group2.members.first(),
             self.get_result_hints_url(self.group2_submission1_result),
         )
+
+    def test_unlock_hints_no_hint_config_404(self) -> None:
+        self.config.delete()
+        self.client.force_authenticate(self.group1.members.first())
+
+        url = reverse(
+            'mutation-test-suite-unlocked-hints',
+            kwargs={'mutation_test_suite_result_pk': self.group1_submission1_result1.pk}
+        )
+        response = self.client.post(url, {})
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
 
 # Note: This suite also tests the hint limit endpoints
@@ -588,7 +730,7 @@ class UnlockedMutantHintsViewUnlockNewHintTestCase(_UnlockedHintSetUp):
         self.do_unlock_hint_test(
             self.mutation_test_suite,
             self.group1,
-            bugs_detected=['mut1', 'mut2', 'mut3'],
+            bugs_detected=['mut1', 'mut2', 'mut3_no_hints'],
             expected_response_status=status.HTTP_204_NO_CONTENT
         )
 
@@ -1020,6 +1162,7 @@ class NumMutantHintsAvailableViewTestCase(_UnlockedHintSetUp):
         self,
         result: ag_models.MutationTestSuiteResult,
         expected_num_hints_remaining: int,
+        expected_mutant_name: str,
         *,
         user: User | None = None
     ):
@@ -1029,7 +1172,8 @@ class NumMutantHintsAvailableViewTestCase(_UnlockedHintSetUp):
         self.client.force_authenticate(user)
         response = self.client.get(self.get_num_hints_remaining_url(result))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual(expected_num_hints_remaining, response.data)
+        self.assertEqual(expected_num_hints_remaining, response.data['num_hints_remaining'])
+        self.assertEqual(expected_mutant_name, response.data['mutant_name'])
 
     def test_get_num_hints_remaining(self) -> None:
         submission1_result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
@@ -1038,9 +1182,9 @@ class NumMutantHintsAvailableViewTestCase(_UnlockedHintSetUp):
             bugs_exposed=[],
         )
         self.client.force_authenticate(self.group1.members.first())
-        self.do_num_hints_remaining_test(submission1_result, 1)
+        self.do_num_hints_remaining_test(submission1_result, 1, 'mut1')
         self.client.post(self.get_result_hints_url(submission1_result))
-        self.do_num_hints_remaining_test(submission1_result, 0)
+        self.do_num_hints_remaining_test(submission1_result, 0, 'mut1')
 
 
         submission2_result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
@@ -1048,23 +1192,23 @@ class NumMutantHintsAvailableViewTestCase(_UnlockedHintSetUp):
             submission=obj_build.make_submission(self.group1),
             bugs_exposed=['mut1'],
         )
-        self.do_num_hints_remaining_test(submission2_result, 3)
+        self.do_num_hints_remaining_test(submission2_result, 3, 'mut2')
 
         self.client.post(self.get_result_hints_url(submission2_result))
-        self.do_num_hints_remaining_test(submission2_result, 2)
+        self.do_num_hints_remaining_test(submission2_result, 2, 'mut2')
 
         self.client.post(self.get_result_hints_url(submission2_result))
-        self.do_num_hints_remaining_test(submission2_result, 1)
+        self.do_num_hints_remaining_test(submission2_result, 1, 'mut2')
 
         self.client.post(self.get_result_hints_url(submission2_result))
-        self.do_num_hints_remaining_test(submission2_result, 0)
+        self.do_num_hints_remaining_test(submission2_result, 0, 'mut2')
 
         submission3_result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
             mutation_test_suite=self.mutation_test_suite,
             submission=obj_build.make_submission(self.group1),
             bugs_exposed=['mut1', 'mut2'],
         )
-        self.do_num_hints_remaining_test(submission3_result, 0)
+        self.do_num_hints_remaining_test(submission3_result, 0, 'mut3_no_hints')
 
     def test_staff_get_num_hints_remaining(self) -> None:
         submission1_result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
@@ -1074,7 +1218,7 @@ class NumMutantHintsAvailableViewTestCase(_UnlockedHintSetUp):
         )
         staff = obj_build.make_staff_user(self.course)
         self.client.force_authenticate(staff)
-        self.do_num_hints_remaining_test(submission1_result, 1, user=staff)
+        self.do_num_hints_remaining_test(submission1_result, 1, 'mut1', user=staff)
 
     def test_project_hidden_forbidden(self) -> None:
         result = ag_models.MutationTestSuiteResult.objects.validate_and_create(

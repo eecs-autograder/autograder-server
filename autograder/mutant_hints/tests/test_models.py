@@ -126,6 +126,7 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
 
         update_dict = copy.deepcopy(config_dict)
         non_editable = [
+            'pk',
             'created_at',
             'last_modified',
             'mutation_test_suite',

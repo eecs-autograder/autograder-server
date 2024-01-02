@@ -106,13 +106,15 @@ class UnlockedHint(ag_models.AutograderModel):
     objects = AutograderModelManager["UnlockedHint"]()
 
     created_at = models.DateTimeField(auto_now_add=True)
+    unlocked_by = models.TextField(blank=True)
 
     mutation_test_suite_result = models.ForeignKey(
         ag_models.MutationTestSuiteResult,
         related_name='unlocked_hints',
         on_delete=models.CASCADE)
     mutation_test_suite_hint_config = models.ForeignKey(
-        MutationTestSuiteHintConfig, on_delete=models.CASCADE)
+        MutationTestSuiteHintConfig,
+        on_delete=models.CASCADE)
 
     mutant_name = models.TextField()
     hint_number = models.IntegerField(
