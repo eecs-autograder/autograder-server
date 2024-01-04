@@ -306,6 +306,12 @@ def make_group(num_members: int = 1,
     return result
 
 
+def promote_to_staff(course: ag_models.Course, user: User):
+    course.staff.add(user)
+    course._clear_user_roles(user)
+    return user
+
+
 def make_group_invitation(
     project: ag_models.Project = None,
     num_recipients: int = 1,

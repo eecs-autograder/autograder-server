@@ -161,6 +161,13 @@ class Course(AutograderModel):
 
         return user_roles
 
+    def _clear_user_roles(self, user: User) -> None:
+        user_roles_attr = f'_user_roles_{user.pk}'
+        delattr(self, user_roles_attr)
+
+        cache_key = f'course_{self.pk}_user_{user.pk}'
+        cache.delete(cache_key)
+
     def is_allowed_guest(self, user: User) -> bool:
         """
         If self.allowed_guest_domain is empty, returns True.

@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 
 import autograder.core.utils as core_ut
 import autograder.core.models as ag_models
-from autograder.mutant_hints.models import MutationTestSuiteHintConfig, UnlockedHint
+from autograder.mutant_hints.models import MutantNameObfuscationChoices, MutationTestSuiteHintConfig, UnlockedHint
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.models import Course, LateDaysRemaining, Semester
 from autograder.core.models.course import clear_cached_user_roles
@@ -29,7 +29,7 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
         self.assertEqual(datetime.time(0, 0, 0, 0), config.hint_limit_reset_time)
         self.assertEqual('UTC', config.hint_limit_reset_timezone)
         self.assertIsNone(config.num_hints_per_submission)
-        self.assertFalse(config.obfuscate_mutant_names)
+        self.assertEqual(MutantNameObfuscationChoices.none, config.obfuscate_mutant_names)
 
     def test_create_no_defaults(self) -> None:
         reset_time = datetime.time(8, 42)
@@ -40,7 +40,7 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
             hint_limit_reset_time=reset_time,
             hint_limit_reset_timezone='America/New_York',
             num_hints_per_submission=41,
-            obfuscate_mutant_names=True,
+            obfuscate_mutant_names=MutantNameObfuscationChoices.hash,
         )
 
         self.assertEqual({'mutant_spam': ['hint1', 'bad hint'], 'mutant_egg': []},
@@ -49,7 +49,7 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
         self.assertEqual(reset_time, config.hint_limit_reset_time)
         self.assertEqual('America/New_York', config.hint_limit_reset_timezone)
         self.assertEqual(41, config.num_hints_per_submission)
-        self.assertTrue(config.obfuscate_mutant_names)
+        self.assertEqual(MutantNameObfuscationChoices.hash, config.obfuscate_mutant_names)
 
     def test_error_num_hints_per_day_less_than_1(self) -> None:
         with self.assertRaises(ValidationError) as cm:

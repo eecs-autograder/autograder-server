@@ -8,6 +8,21 @@ import autograder.core.models as ag_models
 from autograder.core.models.ag_model_base import AutograderModelManager
 
 
+class MutantNameObfuscationChoices(models.TextChoices):
+    # Do not obfuscate mutant names
+    none = 'none'
+
+    # Mutant name obfuscated as "Mutant X", where X is replaced with
+    # the index of the mutant in the mutation test suite settings.
+    sequential = 'sequential'
+
+    # Mutant name obfuscated as "Mutant X", where X is replaced with
+    # a hash generated using the mutant name and the primary key
+    # of the current group. This ensures that obfuscated mutant names are
+    # deterministic but unique to the group it is shown to.
+    hash = 'hash'
+
+
 class MutationTestSuiteHintConfig(ag_models.AutograderModel):
     objects = AutograderModelManager["MutationTestSuiteHintConfig"]()
 
@@ -52,10 +67,29 @@ class MutationTestSuiteHintConfig(ag_models.AutograderModel):
                   "None indicates no limit."
     )
 
-    obfuscate_mutant_names = models.BooleanField(
-        blank=True, default=False,
-        help_text="""If true, display deterministically obfuscated mutant names
-                     included with the hints instead of the actual mutant names."""
+    obfuscate_mutant_names = models.TextField(
+        blank=True, default=MutantNameObfuscationChoices.none,
+        choices=MutantNameObfuscationChoices.choices,
+        help_text="""Determines whether the mutant names included with
+            unlocked hints should be obfuscated. The options are as follows:
+            - "none": Do not obfuscate mutant names
+            - "sequential": Mutant names are obfuscated as "Mutant X",
+            where X is replaced with the index of the mutant in the
+            mutation test suite settings.
+            - "hash": Mutant names are obfuscated as "Mutant X", where X
+            is replaced with a hash generated using the mutant name and
+            some information unique to the current group. This ensures that
+            obfuscated mutant names are deterministic but unique to the
+            group they are shown to.
+
+        Note that the "Mutant" part of "Mutant X" in the above examples can
+        be changed in the obfuscated_mutant_name_prefix field.
+        """
+    )
+    obfuscated_mutant_name_prefix = models.TextField(
+        blank=True, default='Mutant',
+        help_text="""A user-specified prefix for obfuscated mutant names.
+            See "obfuscated_mutant_names" for more information."""
     )
 
     def clean(self, *args, **kwargs):
