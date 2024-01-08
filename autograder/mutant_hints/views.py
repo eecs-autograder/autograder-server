@@ -168,7 +168,10 @@ def _obfuscate_mutant_name(
                 + hashlib.sha256(f'{mutant_name}_{group.pk}'.encode()).hexdigest()[:10]
             )
 
-    assert False
+    assert False, (
+        'Unexpected value for obfuscate_mutant_names on hint config '
+        f'{hint_config.pk}: {hint_config.obfuscate_mutant_names}'
+    )
 
 
 def _index_of(strings: str, search_for: str, *, start_at: int) -> int:
