@@ -349,6 +349,10 @@ class NumMutantHintsAvailableView(AGModelDetailView):
     def get(self, *args, **kwargs):
         result: ag_models.MutationTestSuiteResult = self.get_object()
         first_undetected = _get_first_undetected_bug(result)
+
+        if first_undetected is None:
+            return response.Response(status=status.HTTP_204_NO_CONTENT)
+
         hint_config = MutationTestSuiteHintConfig.objects.get(
             mutation_test_suite=result.mutation_test_suite
         )

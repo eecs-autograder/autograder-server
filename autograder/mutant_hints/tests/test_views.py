@@ -1849,6 +1849,24 @@ class NumMutantHintsAvailableViewTestCase(_UnlockedHintSetUp):
         self.client.force_authenticate(staff)
         self.do_num_hints_remaining_test(submission1_result, 1, 'mut1', user=staff)
 
+    def test_hints_remaining_all_bugs_detected(self) -> None:
+        submission1_result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
+            mutation_test_suite=self.mutation_test_suite,
+            submission=obj_build.make_submission(self.group1),
+            bugs_exposed=list(self.mutation_test_suite.buggy_impl_names),
+        )
+
+        self.client.force_authenticate(self.group1.members.first())
+        response = self.client.get(self.get_num_hints_remaining_url(submission1_result))
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        self.config.validate_and_update(
+            obfuscate_mutant_names=MutantNameObfuscationChoices.sequential)
+
+        self.client.force_authenticate(self.group1.members.first())
+        response = self.client.get(self.get_num_hints_remaining_url(submission1_result))
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
     def test_obfuscated_mutant_name(self) -> None:
         submission1_result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
             mutation_test_suite=self.mutation_test_suite,
