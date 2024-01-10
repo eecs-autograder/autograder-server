@@ -121,6 +121,7 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
             'hint_limit_reset_timezone',
             'num_hints_per_submission',
             'obfuscate_mutant_names',
+            'obfuscated_mutant_name_prefix',
         ]
         self.assertCountEqual(expected_keys, config_dict.keys())
 

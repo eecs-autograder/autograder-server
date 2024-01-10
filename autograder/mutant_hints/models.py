@@ -121,6 +121,7 @@ class MutationTestSuiteHintConfig(ag_models.AutograderModel):
         'hint_limit_reset_timezone',
         'num_hints_per_submission',
         'obfuscate_mutant_names',
+        'obfuscated_mutant_name_prefix',
 
         'created_at',
         'last_modified',
@@ -133,6 +134,7 @@ class MutationTestSuiteHintConfig(ag_models.AutograderModel):
         'hint_limit_reset_timezone',
         'num_hints_per_submission',
         'obfuscate_mutant_names',
+        'obfuscated_mutant_name_prefix',
     )
 
 
@@ -161,8 +163,6 @@ class UnlockedHint(ag_models.AutograderModel):
     hint_rating = models.IntegerField(blank=True, null=True, default=None)
     rated_by = models.TextField(blank=True)
     user_comment = models.TextField(blank=True)
-
-    # FIXME: Obfuscated mutant names. Make sure no extra db queries
 
     SERIALIZABLE_FIELDS = (
         'pk',
