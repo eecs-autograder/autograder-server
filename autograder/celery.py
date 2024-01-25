@@ -15,11 +15,16 @@ app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 def detect_queues(sender, **kwargs):
     import autograder.core.models as ag_models
     from autograder.grading_tasks.tasks.queueing import get_worker_prefix, register_project_queues
+    from autograder.utils.retry import retry_should_recover
 
     if get_worker_prefix(sender.hostname) not in settings.WORKER_PREFIX_TO_QUEUE_TMPLS:
         return
 
-    project_pks = [project.pk for project in ag_models.Project.objects.all()]
+    @retry_should_recover
+    def load_project_pks():
+        return [project.pk for project in ag_models.Project.objects.all()]
+
+    project_pks = load_project_pks()
 
     page_size = 50
     for i in range(0, len(project_pks), page_size):
