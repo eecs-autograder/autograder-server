@@ -41,7 +41,8 @@ def generate_model_schemas() -> Dict[str, OrRef[SchemaObject]]:
         if class_ in _API_CREATE_OBJ_TYPE_NAMES:
             create_name = _API_CREATE_OBJ_TYPE_NAMES[class_]
             if class_ in _CREATE_BODY_OVERRIDES:
-                result[create_name] = _CREATE_BODY_OVERRIDES[class_]
+                if _CREATE_BODY_OVERRIDES[class_] is not None:
+                    result[create_name] = _CREATE_BODY_OVERRIDES[class_]
             else:
                 result[create_name] = (
                     generator.generate_request_body_schema(include_required=True)
@@ -50,7 +51,8 @@ def generate_model_schemas() -> Dict[str, OrRef[SchemaObject]]:
         if class_ in _API_UPDATE_OBJ_TYPE_NAMES:
             update_name = _API_UPDATE_OBJ_TYPE_NAMES[class_]
             if class_ in _UPDATE_BODY_OVERRIDES:
-                result[update_name] = _UPDATE_BODY_OVERRIDES[class_]
+                if _UPDATE_BODY_OVERRIDES[class_] is not None:
+                    result[update_name] = _UPDATE_BODY_OVERRIDES[class_]
             else:
                 result[update_name] = (
                     generator.generate_request_body_schema(include_required=False)
@@ -747,11 +749,13 @@ _CREATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
     # FIXME: is criterionresult.selected required on create?
     # FIXME: create download task fields
     # FIXME: remove from api Create rerun submission task
+    ag_models.RerunSubmissionsTask: None,
 }
 
 _UPDATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
     # FIXME: instructor file
     # FIXME: remove from api update download task
+    ag_models.DownloadTask: None,
 }
 
 # FIXME: look into required: - project in handgrading rubric create request
