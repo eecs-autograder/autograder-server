@@ -99,7 +99,15 @@ class RenameInstructorFileView(AGModelAPIView):
             'request': {
                 'content': {
                     'application/json': {
-                        'schema': {'type': 'string'}
+                        'schema': {
+                            'type': 'object',
+                            'properties': {
+                                'name': {
+                                    'type': 'string',
+                                    'description': 'The new filename.'
+                                }
+                            }
+                        }
                     }
                 },
             },

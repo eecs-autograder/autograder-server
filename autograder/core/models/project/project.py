@@ -1,7 +1,6 @@
 import datetime
 import os
 from typing import Any
-import zoneinfo
 
 from django.core import exceptions, validators
 from django.db import models
@@ -155,7 +154,7 @@ class Project(AutograderModel):
         default='UTC',
         help_text="""A string representing the timezone to use when computing
             how many submissions a group has made in a 24 hour period.""",
-        choices=[(tz, tz) for tz in sorted(zoneinfo.available_timezones())]
+        validators=[core_ut.validate_timezone]
     )
 
     num_bonus_submissions = models.IntegerField(

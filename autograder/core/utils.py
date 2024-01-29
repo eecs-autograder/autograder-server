@@ -118,6 +118,14 @@ def check_filename(filename: str) -> None:
     if filename == '..' or filename == '.':
         raise exceptions.ValidationError('Filenames must not be ".." or ".".')
 
+
+def validate_timezone(timezone: str) -> None:
+    """
+    Raises ValidationError if the given timezone is not in zoneinfo.available_timezones()
+    """
+    if timezone not in zoneinfo.available_timezones():
+        raise exceptions.ValidationError(f'Timezone "{timezone}" not available on the server.')
+
 # -----------------------------------------------------------------------------
 
 

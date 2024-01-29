@@ -1,10 +1,11 @@
 import datetime
-import zoneinfo
+
 from django.core import exceptions
 from django.core.validators import MinValueValidator
 from django.db import models
 
 import autograder.core.models as ag_models
+import autograder.core.utils as core_ut
 from autograder.core.models.ag_model_base import AutograderModelManager
 
 
@@ -56,7 +57,7 @@ class MutationTestSuiteHintConfig(ag_models.AutograderModel):
         default='UTC',
         help_text="""A string representing the timezone to use when computing
             how many hints a group has unlocked in a 24 hour period.""",
-        choices=[(tz, tz) for tz in sorted(zoneinfo.available_timezones())]
+        validators=[core_ut.validate_timezone]
     )
 
     num_hints_per_submission = models.IntegerField(

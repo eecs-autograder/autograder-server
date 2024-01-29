@@ -1,16 +1,14 @@
 import copy
-import os
+import datetime
 
 from django.core.exceptions import ValidationError
 
-import autograder.core.utils as core_ut
 import autograder.core.models as ag_models
-from autograder.mutant_hints.models import MutantNameObfuscationChoices, MutationTestSuiteHintConfig, UnlockedHint
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.models import Course, LateDaysRemaining, Semester
-from autograder.core.models.course import clear_cached_user_roles
+from autograder.mutant_hints.models import (
+    MutantNameObfuscationChoices, MutationTestSuiteHintConfig, UnlockedHint
+)
 from autograder.utils.testing import UnitTestBase
-import datetime
 
 
 class MutationTestSuiteHintConfigTestCase(UnitTestBase):
@@ -97,11 +95,20 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
 
         for invalid in invalid_dicts:
             with self.assertRaises(ValidationError) as cm:
-                config = MutationTestSuiteHintConfig.objects.validate_and_create(
+                MutationTestSuiteHintConfig.objects.validate_and_create(
                     mutation_test_suite=self.mutation_test_suite,
                     hints_by_mutant_name=invalid,
                 )
             self.assertIn('hints_by_mutant_name', cm.exception.message_dict)
+
+    def test_error_invalid_reset_timezone(self) -> None:
+        with self.assertRaises(ValidationError) as cm:
+                MutationTestSuiteHintConfig.objects.validate_and_create(
+                    mutation_test_suite=self.mutation_test_suite,
+                    submission_limit_reset_timezone='nope'
+                )
+
+        self.assertIn('submission_limit_reset_timezone', cm.exception.message_dict)
 
     def test_serialization(self) -> None:
         config = MutationTestSuiteHintConfig.objects.validate_and_create(

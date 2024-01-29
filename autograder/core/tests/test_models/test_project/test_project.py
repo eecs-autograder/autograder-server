@@ -267,6 +267,13 @@ class ProjectMiscErrorTestCase(UnitTestBase):
 
         self.assertIn('num_bonus_submissions', cm.exception.message_dict)
 
+    def test_error_invalid_reset_timezone(self) -> None:
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='merp', course=self.course, submission_limit_reset_timezone='nope')
+
+        self.assertIn('submission_limit_reset_timezone', cm.exception.message_dict)
+
 
 class ProjectNameExceptionTestCase(UnitTestBase):
     def setUp(self):

@@ -90,18 +90,16 @@ class SchemaObject(TypedDict, total=False):
     maximum: Union[int, float]
 
     # mypy doesn't support recursive types yet
-    items: _FauxRecursiveSchemaObject
-    properties: Dict[str, _FauxRecursiveSchemaObject]
-    anyOf: List[_FauxRecursiveSchemaObject]
-    allOf: List[_FauxRecursiveSchemaObject]
-    oneOf: List[_FauxRecursiveSchemaObject]
+    items: SchemaObject
+    properties: Dict[str, SchemaObject]
+    anyOf: List[SchemaObject]
+    allOf: List[SchemaObject]
+    oneOf: List[SchemaObject]
 
 
 ReferenceObject = TypedDict('ReferenceObject', {'$ref': str})
 _R = TypeVar('_R')
 OrRef = Union[_R, ReferenceObject]
-
-_FauxRecursiveSchemaObject = Any
 
 
 class _ResponseObjectRequired(TypedDict):

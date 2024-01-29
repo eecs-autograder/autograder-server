@@ -33,10 +33,28 @@ from autograder.rest_api.schema.openapi_types import (
 
 
 def generate_model_schemas() -> Dict[str, OrRef[SchemaObject]]:
-    result: Dict[str, OrRef[SchemaObject]] = {
-        name: APIClassSchemaGenerator.factory(class_).generate()
-        for class_, name in _API_OBJ_TYPE_NAMES.items()
-    }
+    result: Dict[str, OrRef[SchemaObject]] = {}
+    for class_, name in _API_OBJ_TYPE_NAMES.items():
+        generator = APIClassSchemaGenerator.factory(class_)
+        result[name] = generator.generate()
+
+        if class_ in _API_CREATE_OBJ_TYPE_NAMES:
+            create_name = _API_CREATE_OBJ_TYPE_NAMES[class_]
+            if class_ in _CREATE_BODY_OVERRIDES:
+                result[create_name] = _CREATE_BODY_OVERRIDES[class_]
+            else:
+                result[create_name] = (
+                    generator.generate_request_body_schema(include_required=True)
+                )
+
+        if class_ in _API_UPDATE_OBJ_TYPE_NAMES:
+            update_name = _API_UPDATE_OBJ_TYPE_NAMES[class_]
+            if class_ in _UPDATE_BODY_OVERRIDES:
+                result[update_name] = _UPDATE_BODY_OVERRIDES[class_]
+            else:
+                result[update_name] = (
+                    generator.generate_request_body_schema(include_required=False)
+                )
 
     result['UserRoles'] = {
         'type': 'object',
@@ -45,7 +63,13 @@ def generate_model_schemas() -> Dict[str, OrRef[SchemaObject]]:
             'is_staff': {'type': 'boolean'},
             'is_student': {'type': 'boolean'},
             'is_handgrader': {'type': 'boolean'},
-        }
+        },
+        'required': [
+            'is_admin',
+            'is_staff',
+            'is_student',
+            'is_handgrader',
+        ],
     }
 
     result['SubmissionWithResults'] = {
@@ -55,7 +79,8 @@ def generate_model_schemas() -> Dict[str, OrRef[SchemaObject]]:
                 'type': 'object',
                 'properties': {
                     'results': as_schema_ref(SubmissionResultFeedback)
-                }
+                },
+                'required': ['results']
             }
         ]
     }
@@ -191,6 +216,116 @@ _API_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     hg_models.Location: hg_models.Location.__name__,
 }
 
+_API_CREATE_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
+    # User: 'User',
+    ag_models.Course: 'Create' + ag_models.Course.__name__,
+    # ag_models.Semester: ag_models.Semester.__name__,
+    ag_models.Project: 'Create' + ag_models.Project.__name__,
+    # ag_models.UltimateSubmissionPolicy: ag_models.UltimateSubmissionPolicy.__name__,
+    ag_models.ExpectedStudentFile: 'Create' + ag_models.ExpectedStudentFile.__name__,
+    ag_models.InstructorFile: 'Create' + ag_models.InstructorFile.__name__,
+    ag_models.DownloadTask: 'Create' + ag_models.DownloadTask.__name__,
+    # ag_models.DownloadType: ag_models.DownloadType.__name__,
+    # ag_models.Group: 'Create' + ag_models.Group.__name__,
+    # ag_models.GroupInvitation: 'Create' + ag_models.GroupInvitation.__name__,
+    # ag_models.Submission: 'Create' + ag_models.Submission.__name__,
+
+    # ag_models.Command: ag_models.Command.__name__,
+
+    # ag_models.SandboxDockerImage: ag_models.SandboxDockerImage.__name__,
+    # ag_models.BuildSandboxDockerImageTask: 'Create' + ag_models.BuildSandboxDockerImageTask.__name__,
+    # ag_models.BuildImageStatus: ag_models.BuildImageStatus.__name__,
+    ag_models.AGTestSuite: 'Create' + ag_models.AGTestSuite.__name__,
+    # ag_models.AGTestSuiteFeedbackConfig: 'AGTestSuiteFeedbackConfig',
+    ag_models.AGTestCase: 'Create' + ag_models.AGTestCase.__name__,
+    # ag_models.AGTestCaseFeedbackConfig: 'AGTestCaseFeedbackConfig',
+    ag_models.AGTestCommand: 'Create' + ag_models.AGTestCommand.__name__,
+    # ag_models.AGTestCommandFeedbackConfig: 'AGTestCommandFeedbackConfig',
+
+    # ag_models.StdinSource: ag_models.StdinSource.__name__,
+    # ag_models.ExpectedOutputSource: ag_models.ExpectedOutputSource.__name__,
+    # ag_models.ExpectedReturnCode: ag_models.ExpectedReturnCode.__name__,
+    # ag_models.ValueFeedbackLevel: ag_models.ValueFeedbackLevel.__name__,
+
+    # SubmissionResultFeedback: SubmissionResultFeedback.__name__,
+    # AGTestSuiteResultFeedback: AGTestSuiteResultFeedback.__name__,
+    # AGTestCaseResultFeedback: AGTestCaseResultFeedback.__name__,
+    # AGTestCommandResultFeedback: AGTestCommandResultFeedback.__name__,
+    # ag_models.FeedbackCategory: ag_models.FeedbackCategory.__name__,
+
+    ag_models.MutationTestSuite: 'Create' + ag_models.MutationTestSuite.__name__,
+    # ag_models.MutationTestSuiteFeedbackConfig: ag_models.MutationTestSuiteFeedbackConfig.__name__,
+    # ag_models.BugsExposedFeedbackLevel: ag_models.BugsExposedFeedbackLevel.__name__,
+    # ag_models.MutationTestSuiteResult.FeedbackCalculator: 'MutationTestSuiteResultFeedback',
+
+    ag_models.RerunSubmissionsTask: 'Create' + ag_models.RerunSubmissionsTask.__name__,
+
+    hg_models.HandgradingRubric: 'Create' + hg_models.HandgradingRubric.__name__,
+    # hg_models.PointsStyle: hg_models.PointsStyle.__name__,
+    hg_models.Criterion: 'Create' + hg_models.Criterion.__name__,
+    hg_models.Annotation: 'Create' + hg_models.Annotation.__name__,
+    hg_models.HandgradingResult: 'Create' + hg_models.HandgradingResult.__name__,
+    # hg_models.CriterionResult: 'Create' + hg_models.CriterionResult.__name__,
+    hg_models.AppliedAnnotation: 'Create' + hg_models.AppliedAnnotation.__name__,
+    hg_models.Comment: 'Create' + hg_models.Comment.__name__,
+    # hg_models.Location: hg_models.Location.__name__,
+}
+
+_API_UPDATE_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
+    # User: 'User',
+    ag_models.Course: 'Update' + ag_models.Course.__name__,
+    # ag_models.Semester: ag_models.Semester.__name__,
+    ag_models.Project: 'Update' + ag_models.Project.__name__,
+    # ag_models.UltimateSubmissionPolicy: ag_models.UltimateSubmissionPolicy.__name__,
+    ag_models.ExpectedStudentFile: 'Update' + ag_models.ExpectedStudentFile.__name__,
+    # ag_models.InstructorFile: 'Update' + ag_models.InstructorFile.__name__,
+    ag_models.DownloadTask: 'Update' + ag_models.DownloadTask.__name__,
+    # ag_models.DownloadType: ag_models.DownloadType.__name__,
+    # ag_models.Group: 'Update' + ag_models.Group.__name__,
+    # ag_models.GroupInvitation: 'Update' + ag_models.GroupInvitation.__name__,
+    # ag_models.Submission: 'Update' + ag_models.Submission.__name__,
+
+    # ag_models.Command: ag_models.Command.__name__,
+
+    ag_models.SandboxDockerImage: 'Update' + ag_models.SandboxDockerImage.__name__,
+    # ag_models.BuildSandboxDockerImageTask: 'Update' + ag_models.BuildSandboxDockerImageTask.__name__,
+    # ag_models.BuildImageStatus: ag_models.BuildImageStatus.__name__,
+    ag_models.AGTestSuite: 'Update' + ag_models.AGTestSuite.__name__,
+    # ag_models.AGTestSuiteFeedbackConfig: 'AGTestSuiteFeedbackConfig',
+    ag_models.AGTestCase: 'Update' + ag_models.AGTestCase.__name__,
+    # ag_models.AGTestCaseFeedbackConfig: 'AGTestCaseFeedbackConfig',
+    ag_models.AGTestCommand: 'Update' + ag_models.AGTestCommand.__name__,
+    # ag_models.AGTestCommandFeedbackConfig: 'AGTestCommandFeedbackConfig',
+
+    # ag_models.StdinSource: ag_models.StdinSource.__name__,
+    # ag_models.ExpectedOutputSource: ag_models.ExpectedOutputSource.__name__,
+    # ag_models.ExpectedReturnCode: ag_models.ExpectedReturnCode.__name__,
+    # ag_models.ValueFeedbackLevel: ag_models.ValueFeedbackLevel.__name__,
+
+    # SubmissionResultFeedback: SubmissionResultFeedback.__name__,
+    # AGTestSuiteResultFeedback: AGTestSuiteResultFeedback.__name__,
+    # AGTestCaseResultFeedback: AGTestCaseResultFeedback.__name__,
+    # AGTestCommandResultFeedback: AGTestCommandResultFeedback.__name__,
+    # ag_models.FeedbackCategory: ag_models.FeedbackCategory.__name__,
+
+    ag_models.MutationTestSuite: 'Update' + ag_models.MutationTestSuite.__name__,
+    # ag_models.MutationTestSuiteFeedbackConfig: ag_models.MutationTestSuiteFeedbackConfig.__name__,
+    # ag_models.BugsExposedFeedbackLevel: ag_models.BugsExposedFeedbackLevel.__name__,
+    # ag_models.MutationTestSuiteResult.FeedbackCalculator: 'MutationTestSuiteResultFeedback',
+
+    # ag_models.RerunSubmissionsTask: 'Update' + ag_models.RerunSubmissionsTask.__name__,
+
+    hg_models.HandgradingRubric: 'Update' + hg_models.HandgradingRubric.__name__,
+    # hg_models.PointsStyle: hg_models.PointsStyle.__name__,
+    hg_models.Criterion: 'Update' + hg_models.Criterion.__name__,
+    hg_models.Annotation: 'Update' + hg_models.Annotation.__name__,
+    hg_models.HandgradingResult: 'Update' + hg_models.HandgradingResult.__name__,
+    hg_models.CriterionResult: 'Update' + hg_models.CriterionResult.__name__,
+    # hg_models.AppliedAnnotation: 'Update' + hg_models.AppliedAnnotation.__name__,
+    # hg_models.Comment: 'Update' + hg_models.Comment.__name__,
+    # hg_models.Location: hg_models.Location.__name__,
+}
+
 APIClassType = Union[
     Type[AutograderModel],
     Type[ToDictMixin],
@@ -246,6 +381,9 @@ class APIClassSchemaGenerator:
     def _field_names(self) -> Sequence[str]:
         return []
 
+    def _editable_field_names(self) -> Sequence[str]:
+        return []
+
 
 HasToDictMixinType = TypeVar('HasToDictMixinType', bound=Type[ToDictMixin])
 
@@ -266,6 +404,17 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
     def __init__(self, class_: Type[AutograderModel]):
         self._class = class_
 
+    def generate(self) -> SchemaObject:
+        return (
+            super().generate()
+            | {
+                'required': [
+                    field for field in self._field_names()
+                    if self._field_is_required_on_get(field)
+                ]
+            }
+        )
+
     def generate_request_body_schema(
         self, *, include_required: bool
     ) -> Optional[SchemaObject]:
@@ -278,20 +427,32 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
                     name,
                     include_readonly=True
                 )
-                for name in self._field_names()
+                for name in self._editable_field_names()
             }
         }
         if include_required:
             result['required'] = self._get_required_fields()
         return result
 
+    def _editable_field_names(self) -> Sequence[str]:
+        return self._class.get_editable_fields()
+
     def _get_required_fields(self) -> List[str]:
         return [
             field_name for field_name in self._class.get_serializable_fields()
-            if self._field_is_required(field_name)
+            if self._field_is_required_on_create(field_name)
         ]
 
-    def _field_is_required(self, field_name: str) -> bool:
+    # Returns true if the specified field will always be present in
+    # a GET request context.
+    def _field_is_required_on_get(self, field_name: str) -> bool:
+        override = _PROP_FIELD_IS_REQUIRED_OVERRIDES.get(self._class, {}).get(field_name, None)
+        if override is not None:
+            return override
+
+        return True
+
+    def _field_is_required_on_create(self, field_name: str) -> bool:
         override = _PROP_FIELD_IS_REQUIRED_OVERRIDES.get(self._class, {}).get(field_name, None)
         if override is not None:
             return override
@@ -561,19 +722,50 @@ _PROP_FIELD_OVERRIDES: Dict[APIClassType, Dict[str, SchemaObject]] = {
 _PROP_FIELD_IS_REQUIRED_OVERRIDES: Dict[APIClassType, Dict[str, bool]] = {
     ag_models.Group: {
         'member_names': True
+    },
+    ag_models.Project: {
+        'closing_time': False
     }
 }
+
+_CREATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
+    ag_models.InstructorFile: {
+        'type': 'object',
+        'properties': {
+            'file_obj': {
+                'type': 'string',
+                'format': 'binary',
+                'description': 'The form-encoded file.'
+            }
+        }
+    },
+
+    # FIXME: rerun
+    # FIXME: submission
+    # FIXME: applied annotation (request body and create model)
+    # FIXME: comment
+    # FIXME: is criterionresult.selected required on create?
+    # FIXME: create download task fields
+    # FIXME: remove from api Create rerun submission task
+}
+
+_UPDATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
+    # FIXME: instructor file
+    # FIXME: remove from api update download task
+}
+
+# FIXME: look into required: - project in handgrading rubric create request
 
 
 _PK_SCHEMA: SchemaObject = {
     'type': 'integer',
-    'format': 'id',
+    # 'format': 'id',
 }
 
 
 _PK_SCHEMA_READ_ONLY: SchemaObject = {
     'type': 'integer',
-    'format': 'id',
+    # 'format': 'id',
     'readOnly': True,
 }
 
@@ -631,6 +823,10 @@ _PY_ATTR_TYPES: Dict[type, SchemaObject] = {
 
 def as_schema_ref(type_: APIClassType) -> ReferenceObject:
     return {'$ref': f'#/components/schemas/{_API_OBJ_TYPE_NAMES[type_]}'}
+
+
+def as_create_schema_ref(type_: APIClassType) -> ReferenceObject:
+    return {'$ref': f'#/components/schemas/{_API_CREATE_OBJ_TYPE_NAMES[type_]}'}
 
 
 _NonRefType = TypeVar('_NonRefType', bound=Mapping[str, object])

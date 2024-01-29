@@ -15,3 +15,8 @@ Django<3.3.0
 PyYAML
 gunicorn
 oauth2client
+# See https://docs.python.org/3/library/zoneinfo.html#data-sources 
+# and https://github.com/python/cpython/blob/main/Lib/zoneinfo/_tzpath.py#L118
+# (available_timezones implementation)
+# This will help speed up calls to zoneinfo.available_timezones().
+tzdata
