@@ -818,7 +818,10 @@ _CREATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
                 },
                 'description': 'A list of form-encoded files to submit.'
             }
-        }
+        },
+        'required': [
+            'submitted_files',
+        ]
     },
 
     # FIXME: applied annotation (request body and create model)

@@ -7438,6 +7438,8 @@ components:
             type: string
             format: binary
           description: A list of form-encoded files to submit.
+      required:
+      - submitted_files
     Command:
       type: object
       properties:
