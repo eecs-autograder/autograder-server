@@ -10547,6 +10547,119 @@ components:
       - obfuscated_mutant_name_prefix
       - created_at
       - last_modified
+    Create MutationTestSuiteHintConfig:
+      type: object
+      properties:
+        hints_by_mutant_name:
+          description: A mapping of mutant names to list of hints.
+          nullable: false
+          type: object
+        num_hints_per_day:
+          description: The number of hints a student is allowed to unlock per submission
+            for this mutation test suite in a 24 hour period. None indicates no limit.
+          nullable: true
+          type: integer
+        hint_limit_reset_time:
+          description: "The time at which the number of hints a group\n          \
+            \           has unlocked resets. Defaults to 00:00:00."
+          nullable: false
+          type: string
+          format: time
+        hint_limit_reset_timezone:
+          description: "A string representing the timezone to use when computing\n\
+            \            how many hints a group has unlocked in a 24 hour period."
+          nullable: false
+          type: string
+        num_hints_per_submission:
+          description: The number of hints that can be unlocked for this mutation
+            test suite on a single submission. None indicates no limit.
+          nullable: true
+          type: integer
+        obfuscate_mutant_names:
+          description: "Determines whether the mutant names included with\n      \
+            \      unlocked hints should be obfuscated. The options are as follows:\n\
+            \            - \"none\": Do not obfuscate mutant names\n            -\
+            \ \"sequential\": Mutant names are obfuscated as \"Mutant X\",\n     \
+            \       where X is replaced with the index of the mutant in the\n    \
+            \        mutation test suite settings.\n            - \"hash\": Mutant\
+            \ names are obfuscated as \"Mutant X\", where X\n            is replaced\
+            \ with a hash generated using the mutant name and\n            some information\
+            \ unique to the current group. This ensures that\n            obfuscated\
+            \ mutant names are deterministic but unique to the\n            group\
+            \ they are shown to.\n\n        Note that the \"Mutant\" part of \"Mutant\
+            \ X\" in the above examples can\n        be changed in the obfuscated_mutant_name_prefix\
+            \ field."
+          nullable: false
+          enum:
+          - none
+          - sequential
+          - hash
+          type: string
+        obfuscated_mutant_name_prefix:
+          description: "A user-specified prefix for obfuscated mutant names.\n   \
+            \         See \"obfuscated_mutant_names\" for more information."
+          nullable: false
+          type: string
+      required: []
+    UpdateMutationTestSuiteHintConfig:
+      type: object
+      properties:
+        hints_by_mutant_name:
+          description: A mapping of mutant names to list of hints.
+          nullable: false
+          type: object
+        num_hints_per_day:
+          description: The number of hints a student is allowed to unlock per submission
+            for this mutation test suite in a 24 hour period. None indicates no limit.
+          nullable: true
+          type: integer
+        hint_limit_reset_time:
+          description: "The time at which the number of hints a group\n          \
+            \           has unlocked resets. Defaults to 00:00:00."
+          nullable: false
+          type: string
+          format: time
+        hint_limit_reset_timezone:
+          description: "A string representing the timezone to use when computing\n\
+            \            how many hints a group has unlocked in a 24 hour period."
+          nullable: false
+          type: string
+        num_hints_per_submission:
+          description: The number of hints that can be unlocked for this mutation
+            test suite on a single submission. None indicates no limit.
+          nullable: true
+          type: integer
+        obfuscate_mutant_names:
+          description: "Determines whether the mutant names included with\n      \
+            \      unlocked hints should be obfuscated. The options are as follows:\n\
+            \            - \"none\": Do not obfuscate mutant names\n            -\
+            \ \"sequential\": Mutant names are obfuscated as \"Mutant X\",\n     \
+            \       where X is replaced with the index of the mutant in the\n    \
+            \        mutation test suite settings.\n            - \"hash\": Mutant\
+            \ names are obfuscated as \"Mutant X\", where X\n            is replaced\
+            \ with a hash generated using the mutant name and\n            some information\
+            \ unique to the current group. This ensures that\n            obfuscated\
+            \ mutant names are deterministic but unique to the\n            group\
+            \ they are shown to.\n\n        Note that the \"Mutant\" part of \"Mutant\
+            \ X\" in the above examples can\n        be changed in the obfuscated_mutant_name_prefix\
+            \ field."
+          nullable: false
+          enum:
+          - none
+          - sequential
+          - hash
+          type: string
+        obfuscated_mutant_name_prefix:
+          description: "A user-specified prefix for obfuscated mutant names.\n   \
+            \         See \"obfuscated_mutant_names\" for more information."
+          nullable: false
+          type: string
+    MutantNameObfuscationChoices:
+      type: string
+      enum:
+      - none
+      - sequential
+      - hash
     UnlockedHint:
       type: object
       properties:

@@ -1,6 +1,5 @@
 from .model_schema_generators import APIClassType as APIClassType
 from .model_schema_generators import as_schema_ref as as_schema_ref
-from .model_schema_generators import register_api_object_type_name as register_api_object_type_name
 from .openapi_types import ComponentsObject as ComponentsObject
 from .openapi_types import ContentType as ContentType
 from .openapi_types import ExampleObject as ExampleObject

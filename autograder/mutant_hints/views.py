@@ -20,7 +20,6 @@ from autograder.rest_api.schema import (
     AGDetailViewSchemaGenerator,
     AGListCreateViewSchemaGenerator,
     APITags,
-    register_api_object_type_name,
 )
 from autograder.rest_api.schema.view_schema_generators import (
     AGListViewSchemaMixin,
@@ -39,11 +38,6 @@ from autograder.rest_api.views.ag_model_views import (
 import autograder.core.utils as core_ut
 
 from .models import MutantNameObfuscationChoices, MutationTestSuiteHintConfig, UnlockedHint
-
-# CRUD for mutant test suite hence config, admin only
-
-register_api_object_type_name(MutationTestSuiteHintConfig)
-register_api_object_type_name(UnlockedHint)
 
 
 class MutationTestSuiteHintConfigGetCreateView(NestedModelView):

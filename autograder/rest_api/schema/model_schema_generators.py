@@ -27,6 +27,9 @@ from autograder.core.submission_feedback import (
     AGTestCaseResultFeedback, AGTestCommandResultFeedback, AGTestSuiteResultFeedback,
     SubmissionResultFeedback
 )
+from autograder.mutant_hints.models import (
+    MutantNameObfuscationChoices, MutationTestSuiteHintConfig, UnlockedHint
+)
 from autograder.rest_api.schema.openapi_types import (
     OrRef, ParameterObject, ReferenceObject, SchemaObject
 )
@@ -147,14 +150,6 @@ values:
     }
 
 
-def register_api_object_type_name(api_class: APIClassType, name: str | None = None) -> None:
-    global _API_OBJ_TYPE_NAMES
-    if name is None:
-        name = api_class.__name__
-
-    _API_OBJ_TYPE_NAMES[api_class] = name
-
-
 def get_api_object_type_name(api_class: APIClassType) -> str:
     return _API_OBJ_TYPE_NAMES[api_class]
 
@@ -216,6 +211,10 @@ _API_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     hg_models.AppliedAnnotation: hg_models.AppliedAnnotation.__name__,
     hg_models.Comment: hg_models.Comment.__name__,
     hg_models.Location: hg_models.Location.__name__,
+
+    MutationTestSuiteHintConfig: MutationTestSuiteHintConfig.__name__,
+    MutantNameObfuscationChoices: MutantNameObfuscationChoices.__name__,
+    UnlockedHint: UnlockedHint.__name__,
 }
 
 _API_CREATE_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
@@ -271,6 +270,8 @@ _API_CREATE_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     hg_models.AppliedAnnotation: 'Create' + hg_models.AppliedAnnotation.__name__,
     hg_models.Comment: 'Create' + hg_models.Comment.__name__,
     # hg_models.Location: hg_models.Location.__name__,
+
+    MutationTestSuiteHintConfig: 'Create ' + MutationTestSuiteHintConfig.__name__,
 }
 
 _API_UPDATE_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
@@ -326,6 +327,8 @@ _API_UPDATE_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     # hg_models.AppliedAnnotation: 'Update' + hg_models.AppliedAnnotation.__name__,
     # hg_models.Comment: 'Update' + hg_models.Comment.__name__,
     # hg_models.Location: hg_models.Location.__name__,
+
+    MutationTestSuiteHintConfig: 'Update' + MutationTestSuiteHintConfig.__name__,
 }
 
 APIClassType = Union[
