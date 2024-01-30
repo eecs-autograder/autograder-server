@@ -45,7 +45,7 @@ def generate_model_schemas() -> Dict[str, OrRef[SchemaObject]]:
                     result[create_name] = _CREATE_BODY_OVERRIDES[class_]
             else:
                 result[create_name] = (
-                    generator.generate_request_body_schema(include_required=True)
+                    generator.generate_create_model_schema()
                 )
 
         if class_ in _API_UPDATE_OBJ_TYPE_NAMES:
@@ -372,6 +372,12 @@ class APIClassSchemaGenerator:
             }
         }
 
+    def generate_create_model_schema(self) -> SchemaObject | None:
+        return None
+
+    def generate_update_model_schema(self) -> SchemaObject | None:
+        return None
+
     # Generate a version of the schema for this class that includes
     # only the fields that are allowed in create (POST) and update (PATCH)
     # requests.
@@ -417,6 +423,23 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
             }
         )
 
+    def generate_create_model_schema(self) -> SchemaObject | None:
+        result: SchemaObject = {
+            'type': 'object',
+            'properties': {
+                name: _get_field_schema(
+                    _extract_field(name, self._class),
+                    self._class,
+                    name,
+                    include_readonly=True
+                )
+                for name in self._settable_on_create_fields_names()
+            },
+            'required': self._get_required_fields()
+        }
+        return result
+
+
     def generate_request_body_schema(
         self, *, include_required: bool
     ) -> Optional[SchemaObject]:
@@ -445,6 +468,12 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
             if self._field_is_required_on_create(field_name)
         ]
 
+    def _settable_on_create_fields_names(self) -> list[str]:
+        if self._class in self._settable_on_create_field_names_override:
+            return self._settable_on_create_field_names_override[self._class]
+
+        return self._editable_field_names()
+
     # Returns true if the specified field will always be present in
     # a GET request context.
     def _field_is_required_on_get(self, field_name: str) -> bool:
@@ -465,11 +494,23 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
                 # Remove this cast once django-stubs fixes:
                 # https://github.com/typeddjango/django-stubs/issues/447
                 not cast('RelatedField[object, object]', field).many_to_many
+                and not cast('RelatedField[object, object]', field).is_relation
                 and not field.blank
                 and field.default == fields.NOT_PROVIDED
             )
         except (FieldDoesNotExist, AttributeError):
             return False
+
+    _settable_on_create_field_names_override: Dict[APIClassType, list[str]] = {
+        ag_models.RerunSubmissionsTask: [
+            'rerun_all_submissions',
+            'submission_pks',
+            'rerun_all_ag_test_suites',
+            'ag_test_suite_data',
+            'rerun_all_mutation_test_suites',
+            'mutation_suite_pks',
+        ]
+    }
 
 
 class DictSerializableSchemaGenerator(HasToDictMixinSchemaGenerator):
@@ -742,19 +783,16 @@ _CREATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
         }
     },
 
-    # FIXME: rerun
     # FIXME: submission
     # FIXME: applied annotation (request body and create model)
     # FIXME: comment
-    # FIXME: is criterionresult.selected required on create?
-    # FIXME: create download task fields
-    # FIXME: remove from api Create rerun submission task
-    ag_models.RerunSubmissionsTask: None,
+    ag_models.DownloadTask: None,
 }
+
+# FIXME: required fields on result fdbk objects
 
 _UPDATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
     # FIXME: instructor file
-    # FIXME: remove from api update download task
     ag_models.DownloadTask: None,
 }
 

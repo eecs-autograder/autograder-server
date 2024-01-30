@@ -1127,7 +1127,6 @@ paths:
                   type: string
               required:
               - name
-              - course
       responses:
         '201':
           content:
@@ -1618,7 +1617,6 @@ paths:
                   readOnly: false
                   type: integer
               required:
-              - project
               - pattern
       responses:
         '201':
@@ -2574,7 +2572,6 @@ paths:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
               required:
               - name
-              - project
       responses:
         '201':
           content:
@@ -2879,7 +2876,6 @@ paths:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
               required:
               - name
-              - ag_test_suite
       responses:
         '201':
           content:
@@ -3333,7 +3329,6 @@ paths:
                   type: boolean
               required:
               - name
-              - ag_test_case
               - cmd
       responses:
         '201':
@@ -3941,7 +3936,6 @@ paths:
                   - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
               required:
               - name
-              - project
       responses:
         '201':
           content:
@@ -4296,9 +4290,7 @@ paths:
             schema:
               type: object
               properties: {}
-              required:
-              - creator
-              - project
+              required: []
       responses:
         '201':
           content:
@@ -5086,8 +5078,7 @@ paths:
                   nullable: false
                   readOnly: false
                   type: boolean
-              required:
-              - project
+              required: []
       responses:
         '201':
           content:
@@ -5264,8 +5255,7 @@ paths:
                   nullable: true
                   readOnly: false
                   type: number
-              required:
-              - handgrading_rubric
+              required: []
       responses:
         '201':
           content:
@@ -5474,8 +5464,7 @@ paths:
                   nullable: false
                   readOnly: false
                   type: number
-              required:
-              - handgrading_rubric
+              required: []
       responses:
         '201':
           content:
@@ -5819,8 +5808,6 @@ paths:
               properties: {}
               required:
               - location
-              - annotation
-              - handgrading_result
       responses:
         '201':
           content:
@@ -5911,7 +5898,6 @@ paths:
                   type: string
               required:
               - text
-              - handgrading_result
       responses:
         '201':
           content:
@@ -6035,8 +6021,6 @@ paths:
                   type: boolean
               required:
               - selected
-              - criterion
-              - handgrading_result
       responses:
         '201':
           content:
@@ -7124,7 +7108,6 @@ components:
           type: string
       required:
       - name
-      - course
     UpdateProject:
       type: object
       properties:
@@ -7363,7 +7346,6 @@ components:
           readOnly: false
           type: integer
       required:
-      - project
       - pattern
     UpdateExpectedStudentFile:
       type: object
@@ -7474,35 +7456,6 @@ components:
       - include_pending_extensions
       - error_msg
       - created_at
-    CreateDownloadTask:
-      type: object
-      properties:
-        result_filename:
-          description: ''
-          nullable: false
-          readOnly: false
-          type: string
-        progress:
-          description: A percentage indicating how close the task is to completion.
-          nullable: false
-          readOnly: false
-          type: integer
-        include_pending_extensions:
-          description: "Applies only to \"final_graded_submission_scores\" downloads,\n\
-            \            ignored otherwise. When True, students with pending extensions\
-            \ will be\n            included in final_graded_submission_scores download\
-            \ CSV files."
-          nullable: false
-          readOnly: false
-          type: boolean
-        error_msg:
-          description: ''
-          nullable: false
-          readOnly: false
-          type: string
-      required:
-      - project
-      - download_type
     DownloadType:
       type: string
       enum:
@@ -8146,7 +8099,6 @@ components:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
       required:
       - name
-      - project
     UpdateAGTestSuite:
       type: object
       properties:
@@ -8371,7 +8323,6 @@ components:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
       required:
       - name
-      - ag_test_suite
     UpdateAGTestCase:
       type: object
       properties:
@@ -8921,7 +8872,6 @@ components:
           type: boolean
       required:
       - name
-      - ag_test_case
       - cmd
     UpdateAGTestCommand:
       type: object
@@ -9763,7 +9713,6 @@ components:
           - $ref: '#/components/schemas/MutationTestSuiteFeedbackConfig'
       required:
       - name
-      - project
     UpdateMutationTestSuite:
       type: object
       properties:
@@ -10180,6 +10129,67 @@ components:
       - ag_test_suite_data
       - rerun_all_mutation_test_suites
       - mutation_suite_pks
+    CreateRerunSubmissionsTask:
+      type: object
+      properties:
+        rerun_all_submissions:
+          description: "When True, indicates that all submissions for the specified\n\
+            \                     project should be rerun. Otherwise, only the submissions\n\
+            \                     whose primary keys are listed in submission_pks\
+            \ should be rerun."
+          nullable: false
+          readOnly: true
+          type: boolean
+        submission_pks:
+          description: "When rerun_all_submissions is False, specifies which submissions\n\
+            \                     should be rerun."
+          nullable: false
+          readOnly: true
+          type: array
+          items:
+            description: ''
+            nullable: false
+            type: integer
+        rerun_all_ag_test_suites:
+          description: "When True, indicates that all AGTestSuites belonging\n   \
+            \                  to the specified project should be rerun. Otherwise,\n\
+            \                     only the AGTestSuites specified in ag_test_suite_data\
+            \ should\n                     be rerun."
+          nullable: false
+          readOnly: true
+          type: boolean
+        ag_test_suite_data:
+          description: "When rerun_all_ag_test_suites is False, specifies which\n\
+            \                     AGTestSuites should be rerun and which AGTestCases\
+            \ within\n                     those suites should be rerun.\n\n     \
+            \   Data format:\n        {\n            // Note: JSON format requires\
+            \ that keys are strings. Postgres\n            // doesn't seem to care,\
+            \ but some JSON serializers might.\n            \"<ag_test_suite_pk>\"\
+            : [<ag_test_case_pk>, ...],\n            ...\n        }\n\n        If\
+            \ an ag_test_suite_pk is mapped to an empty list, then all ag test cases\n\
+            \        belonging to that ag test suite will be rerun."
+          nullable: false
+          readOnly: true
+          type: object
+        rerun_all_mutation_test_suites:
+          description: "When True, indicates that all MutationTestSuites belonging\n\
+            \                     to the specified project should be rerun. Otherwise,\n\
+            \                     only the MutationTestSuites specified in mutation_test_suite_pks\n\
+            \                     should be rerun."
+          nullable: false
+          readOnly: true
+          type: boolean
+        mutation_suite_pks:
+          description: "When rerun_all_mutation_test_suites is False, specifies which\n\
+            \                     mutation test suites should be rerun."
+          nullable: false
+          readOnly: true
+          type: array
+          items:
+            description: ''
+            nullable: false
+            type: integer
+      required: []
     HandgradingRubric:
       type: object
       properties:
@@ -10297,8 +10307,7 @@ components:
           nullable: false
           readOnly: false
           type: boolean
-      required:
-      - project
+      required: []
     UpdateHandgradingRubric:
       type: object
       properties:
@@ -10405,8 +10414,7 @@ components:
           nullable: false
           readOnly: false
           type: number
-      required:
-      - handgrading_rubric
+      required: []
     UpdateCriterion:
       type: object
       properties:
@@ -10499,8 +10507,7 @@ components:
           nullable: true
           readOnly: false
           type: number
-      required:
-      - handgrading_rubric
+      required: []
     UpdateAnnotation:
       type: object
       properties:
@@ -10630,10 +10637,7 @@ components:
           nullable: false
           readOnly: false
           type: boolean
-      required:
-      - submission
-      - handgrading_rubric
-      - group
+      required: []
     UpdateHandgradingResult:
       type: object
       properties:
@@ -10725,8 +10729,6 @@ components:
       properties: {}
       required:
       - location
-      - annotation
-      - handgrading_result
     Comment:
       type: object
       properties:
@@ -10767,7 +10769,6 @@ components:
           type: string
       required:
       - text
-      - handgrading_result
     Location:
       type: object
       properties:
