@@ -435,7 +435,7 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
                 )
                 for name in self._settable_on_create_fields_names()
             },
-            'required': self._get_required_fields()
+            'required': self._get_required_on_create_fields()
         }
         return result
 
@@ -456,23 +456,48 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
             }
         }
         if include_required:
-            result['required'] = self._get_required_fields()
+            result['required'] = self._get_required_on_create_fields()
         return result
 
     def _editable_field_names(self) -> Sequence[str]:
         return self._class.get_editable_fields()
-
-    def _get_required_fields(self) -> List[str]:
-        return [
-            field_name for field_name in self._class.get_serializable_fields()
-            if self._field_is_required_on_create(field_name)
-        ]
 
     def _settable_on_create_fields_names(self) -> list[str]:
         if self._class in self._settable_on_create_field_names_override:
             return self._settable_on_create_field_names_override[self._class]
 
         return self._editable_field_names()
+
+    _settable_on_create_field_names_override: Dict[APIClassType, list[str]] = {
+        ag_models.RerunSubmissionsTask: [
+            'rerun_all_submissions',
+            'submission_pks',
+            'rerun_all_ag_test_suites',
+            'ag_test_suite_data',
+            'rerun_all_mutation_test_suites',
+            'mutation_suite_pks',
+        ],
+        hg_models.AppliedAnnotation: [
+            'annotation',
+            'location',
+        ]
+    }
+
+    def _get_required_on_create_fields(self) -> List[str]:
+        if self._class in self._required_on_create_field_names_override:
+            return self._required_on_create_field_names_override[self._class]
+
+        return [
+            field_name for field_name in self._class.get_serializable_fields()
+            if self._field_is_required_on_create(field_name)
+        ]
+
+    _required_on_create_field_names_override: Dict[APIClassType, list[str]] = {
+        hg_models.AppliedAnnotation: [
+            'annotation',
+            'location,'
+        ],
+    }
 
     # Returns true if the specified field will always be present in
     # a GET request context.
@@ -500,17 +525,6 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
             )
         except (FieldDoesNotExist, AttributeError):
             return False
-
-    _settable_on_create_field_names_override: Dict[APIClassType, list[str]] = {
-        ag_models.RerunSubmissionsTask: [
-            'rerun_all_submissions',
-            'submission_pks',
-            'rerun_all_ag_test_suites',
-            'ag_test_suite_data',
-            'rerun_all_mutation_test_suites',
-            'mutation_suite_pks',
-        ]
-    }
 
 
 class DictSerializableSchemaGenerator(HasToDictMixinSchemaGenerator):
@@ -793,7 +807,10 @@ _CREATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
                     'format': 'username',
                 }
             }
-        }
+        },
+        'required': [
+            'member_names',
+        ]
     },
 
     ag_models.GroupInvitation: {
@@ -806,7 +823,10 @@ _CREATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
                     'format': 'username',
                 }
             }
-        }
+        },
+        'required': [
+            'recipients',
+        ]
     },
 
     ag_models.Submission: {
@@ -823,9 +843,7 @@ _CREATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
         }
     },
 
-    # FIXME: submission
     # FIXME: applied annotation (request body and create model)
-    # FIXME: comment
     ag_models.DownloadTask: None,
 }
 
@@ -836,12 +854,9 @@ _UPDATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
     ag_models.DownloadTask: None,
 }
 
-# FIXME: look into required: - project in handgrading rubric create request
-
 
 _PK_SCHEMA: SchemaObject = {
     'type': 'integer',
-    # 'format': 'id',
 }
 
 

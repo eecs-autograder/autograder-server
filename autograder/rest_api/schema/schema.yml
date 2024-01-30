@@ -5807,7 +5807,8 @@ paths:
               type: object
               properties: {}
               required:
-              - location
+              - annotation
+              - location,
       responses:
         '201':
           content:
@@ -7547,6 +7548,8 @@ components:
           items:
             type: string
             format: username
+      required:
+      - member_names
     GroupInvitation:
       type: object
       properties:
@@ -7600,6 +7603,8 @@ components:
           items:
             type: string
             format: username
+      required:
+      - recipients
     Submission:
       type: object
       properties:
@@ -10751,9 +10756,22 @@ components:
       - handgrading_result
     CreateAppliedAnnotation:
       type: object
-      properties: {}
+      properties:
+        annotation:
+          description: The Annotation that was applied to the source code.
+          nullable: false
+          readOnly: true
+          allOf:
+          - $ref: '#/components/schemas/Annotation'
+        location:
+          description: The source code location where the Annotation was applied.
+          nullable: false
+          readOnly: true
+          allOf:
+          - $ref: '#/components/schemas/Location'
       required:
-      - location
+      - annotation
+      - location,
     Comment:
       type: object
       properties:
