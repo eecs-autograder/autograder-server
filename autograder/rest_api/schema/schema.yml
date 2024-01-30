@@ -5570,7 +5570,7 @@ paths:
               properties: {}
               required:
               - annotation
-              - location,
+              - location
       responses:
         '201':
           content:
@@ -10403,7 +10403,7 @@ components:
           - $ref: '#/components/schemas/Location'
       required:
       - annotation
-      - location,
+      - location
     Comment:
       type: object
       properties:

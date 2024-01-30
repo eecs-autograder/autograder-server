@@ -508,9 +508,12 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
         ]
 
     _required_on_create_field_names_override: Dict[APIClassType, list[str]] = {
+        ag_models.AGTestCase: [
+            'name',
+        ],
         hg_models.AppliedAnnotation: [
             'annotation',
-            'location,'
+            'location',
         ],
     }
 
