@@ -399,12 +399,34 @@ HasToDictMixinType = TypeVar('HasToDictMixinType', bound=Type[ToDictMixin])
 class HasToDictMixinSchemaGenerator(APIClassSchemaGenerator):
     _class: Type[ToDictMixin]
 
+    def generate(self) -> SchemaObject:
+        result = super().generate()
+        return (
+            super().generate()
+            | {
+                'required': self._get_required_field_names()
+            }
+        )
+
     def __init__(self, class_: Type[ToDictMixin]):
         self._class = class_
 
     def _field_names(self) -> Sequence[str]:
         return self._class.get_serializable_fields()
 
+    def _get_required_field_names(self) -> list[str]:
+        if self._class in self._required_field_names_override:
+            return self._required_field_names_override[self._class]
+
+        return list(self._field_names())
+
+    _required_field_names_override: Dict[Type[ToDictMixin], list[str]] = {
+        SubmissionResultFeedback: [
+            'pk',
+            'total_points',
+            'total_points_possible',
+        ]
+    }
 
 class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
     _class: Type[AutograderModel]
@@ -412,16 +434,11 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
     def __init__(self, class_: Type[AutograderModel]):
         self._class = class_
 
-    def generate(self) -> SchemaObject:
-        return (
-            super().generate()
-            | {
-                'required': [
-                    field for field in self._field_names()
-                    if self._field_is_required_on_get(field)
-                ]
-            }
-        )
+    def _get_required_field_names(self) -> list[str]:
+        return [
+            field for field in self._field_names()
+            if self._field_is_required_on_get(field)
+        ]
 
     def generate_create_model_schema(self) -> SchemaObject | None:
         result: SchemaObject = {
@@ -542,7 +559,8 @@ class DictSerializableSchemaGenerator(HasToDictMixinSchemaGenerator):
                     **_get_py_type_schema(self._class.get_field_type(name))
                 }
                 for name in self._field_names()
-            }
+            },
+            'required': self._get_required_field_names()
         }
 
 

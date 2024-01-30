@@ -7481,6 +7481,15 @@ components:
           description: "This field is IGNORED and will be removed in version 5.0.0.\n\
             \            Use block_process_spawn instead."
           type: integer
+      required:
+      - cmd
+      - name
+      - time_limit
+      - stack_size_limit
+      - use_virtual_memory_limit
+      - virtual_memory_limit
+      - block_process_spawn
+      - process_spawn_limit
     SandboxDockerImage:
       type: object
       properties:
@@ -7924,6 +7933,13 @@ components:
         show_setup_stderr:
           description: Whether to show stderr content from a suite's setup command.
           type: boolean
+      required:
+      - visible
+      - show_individual_tests
+      - show_setup_return_code
+      - show_setup_timed_out
+      - show_setup_stdout
+      - show_setup_stderr
     AGTestCase:
       type: object
       properties:
@@ -8063,6 +8079,9 @@ components:
         show_individual_commands:
           description: ''
           type: boolean
+      required:
+      - visible
+      - show_individual_commands
     AGTestCommand:
       type: object
       properties:
@@ -8772,6 +8791,16 @@ components:
         show_whether_timed_out:
           description: ''
           type: boolean
+      required:
+      - visible
+      - return_code_fdbk_level
+      - stdout_fdbk_level
+      - stderr_fdbk_level
+      - show_points
+      - show_actual_return_code
+      - show_actual_stdout
+      - show_actual_stderr
+      - show_whether_timed_out
     StdinSource:
       type: string
       enum:
@@ -8825,6 +8854,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MutationTestSuiteResultFeedback'
+      required:
+      - pk
+      - total_points
+      - total_points_possible
     AGTestSuiteResultFeedback:
       type: object
       properties:
@@ -8862,6 +8895,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AGTestCaseResultFeedback'
+      required:
+      - pk
+      - ag_test_suite_name
+      - ag_test_suite_pk
+      - fdbk_settings
+      - total_points
+      - total_points_possible
+      - setup_name
+      - setup_return_code
+      - setup_timed_out
+      - ag_test_case_results
     AGTestCaseResultFeedback:
       type: object
       properties:
@@ -8887,6 +8931,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AGTestCommandResultFeedback'
+      required:
+      - pk
+      - ag_test_case_name
+      - ag_test_case_pk
+      - fdbk_settings
+      - total_points
+      - total_points_possible
+      - ag_test_command_results
     AGTestCommandResultFeedback:
       type: object
       properties:
@@ -8950,6 +9002,25 @@ components:
         total_points_possible:
           description: ''
           type: integer
+      required:
+      - pk
+      - ag_test_command_pk
+      - ag_test_command_name
+      - fdbk_settings
+      - timed_out
+      - return_code_correct
+      - expected_return_code
+      - actual_return_code
+      - return_code_points
+      - return_code_points_possible
+      - stdout_correct
+      - stdout_points
+      - stdout_points_possible
+      - stderr_correct
+      - stderr_points
+      - stderr_points_possible
+      - total_points
+      - total_points_possible
     FeedbackCategory:
       type: string
       enum:
@@ -9527,6 +9598,21 @@ components:
         bugs_exposed_fdbk_level:
           description: ''
           $ref: '#/components/schemas/BugsExposedFeedbackLevel'
+      required:
+      - visible
+      - show_setup_return_code
+      - show_setup_stdout
+      - show_setup_stderr
+      - show_get_test_names_return_code
+      - show_get_test_names_stdout
+      - show_get_test_names_stderr
+      - show_validity_check_stdout
+      - show_validity_check_stderr
+      - show_grade_buggy_impls_stdout
+      - show_grade_buggy_impls_stderr
+      - show_invalid_test_names
+      - show_points
+      - bugs_exposed_fdbk_level
     BugsExposedFeedbackLevel:
       type: string
       enum:
@@ -9617,6 +9703,26 @@ components:
           description: ''
           type: string
           format: float
+      required:
+      - pk
+      - mutation_test_suite_name
+      - mutation_test_suite_pk
+      - fdbk_settings
+      - has_setup_command
+      - setup_command_name
+      - setup_return_code
+      - setup_timed_out
+      - get_student_test_names_return_code
+      - get_student_test_names_timed_out
+      - student_tests
+      - discarded_tests
+      - invalid_tests
+      - timed_out_tests
+      - num_bugs_exposed
+      - bugs_exposed
+      - all_bug_names
+      - total_points
+      - total_points_possible
     RerunSubmissionsTask:
       type: object
       properties:
@@ -10341,6 +10447,10 @@ components:
           description: The last line in the source code region (inclusive). Must be
             non-negative.
           type: integer
+      required:
+      - filename
+      - first_line
+      - last_line
     MutationTestSuiteHintConfig:
       type: object
       properties:
