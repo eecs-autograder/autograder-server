@@ -431,7 +431,6 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
                     _extract_field(name, self._class),
                     self._class,
                     name,
-                    include_readonly=True
                 )
                 for name in self._settable_on_create_fields_names()
             },
@@ -450,7 +449,6 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
                     _extract_field(name, self._class),
                     self._class,
                     name,
-                    include_readonly=True
                 )
                 for name in self._editable_field_names()
             }
@@ -607,7 +605,6 @@ def _get_field_schema(
     field: FieldType,
     api_class: APIClassType,
     name: str,
-    include_readonly: bool = False
 ) -> SchemaObject:
     return {'type': 'unknown'}
 
@@ -618,20 +615,12 @@ def _django_field(
     field: Field[object, object],
     api_class: Type[AutograderModel],
     name: str,
-    include_readonly: bool = False
 ) -> SchemaObject:
-    read_only = False
-    if issubclass(api_class, AutograderModel) and name not in api_class.get_editable_fields():
-        read_only = True
-
     result: SchemaObject = {
         # str() is used to force processing of django lazy eval
         'description': str(field.help_text).strip() if hasattr(field, 'help_text') else '',
         'nullable': field.null,
     }
-
-    if include_readonly:
-        result['readOnly'] = read_only
 
     # In Django 2, choices is an empty list by default. In Django 3,
     # choices is None by default.
@@ -645,7 +634,6 @@ def _django_field(
     if isinstance(field, pg_fields.ArrayField):
         result.update({
             'type': 'array',
-            # We want include_readonly to be False for recursive calls.
             'items': _get_field_schema(field.base_field, api_class, name),
         })
         return result
@@ -717,16 +705,13 @@ def _property(
     prop: property,
     api_class: APIClassType,
     name: str,
-    include_readonly: bool = False
 ) -> SchemaObject:
     if name == 'pk':
-        return _PK_SCHEMA_READ_ONLY if include_readonly else _PK_SCHEMA
+        return _PK_SCHEMA
 
     result: SchemaObject = {
         'description': _get_prop_description(prop),
     }
-    if include_readonly:
-        result['readOnly'] = True
     result.update(
         assert_not_ref(
             _get_py_type_schema(get_type_hints(prop.fget).get('return', Any))
@@ -741,16 +726,13 @@ def _cached_property(
     prop: 'cached_property[object]',
     api_class: APIClassType,
     name: str,
-    include_readonly: bool = False
 ) -> SchemaObject:
     if name == 'pk':
-        return _PK_SCHEMA_READ_ONLY if include_readonly else _PK_SCHEMA
+        return _PK_SCHEMA
 
     result: SchemaObject = {
         'description': _get_prop_description(prop),
     }
-    if include_readonly:
-        result['readOnly'] = True
     result.update(
         assert_not_ref(
             _get_py_type_schema(get_type_hints(prop.func).get('return', Any))
@@ -769,11 +751,6 @@ def _get_prop_description(prop: Union[property, cached_property[object]]) -> str
 
 
 _PROP_FIELD_OVERRIDES: Dict[APIClassType, Dict[str, SchemaObject]] = {
-    ag_models.Group: {
-        'member_names': {
-            'readOnly': False,
-        }
-    }
 }
 
 _PROP_FIELD_IS_REQUIRED_OVERRIDES: Dict[APIClassType, Dict[str, bool]] = {
@@ -862,8 +839,6 @@ _PK_SCHEMA: SchemaObject = {
 
 _PK_SCHEMA_READ_ONLY: SchemaObject = {
     'type': 'integer',
-    # 'format': 'id',
-    'readOnly': True,
 }
 
 
