@@ -495,6 +495,10 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
         hg_models.AppliedAnnotation: [
             'annotation',
             'location',
+        ],
+        hg_models.Comment: [
+            'text',
+            'location',
         ]
     }
 

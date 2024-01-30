@@ -10441,6 +10441,12 @@ components:
           description: Text to be shown to students.
           nullable: false
           type: string
+        location:
+          description: "When not None, specifies the source code location this comment\n\
+            \                     applies to."
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/Location'
       required:
       - text
     Location:
