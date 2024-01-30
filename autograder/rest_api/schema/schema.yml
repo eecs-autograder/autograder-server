@@ -7539,6 +7539,14 @@ components:
       - num_submits_towards_limit
       - created_at
       - last_modified
+    CreateGroup:
+      type: object
+      properties:
+        member_names:
+          type: array
+          items:
+            type: string
+            format: username
     GroupInvitation:
       type: object
       properties:
@@ -7584,6 +7592,14 @@ components:
       - sender_username
       - recipient_usernames
       - recipients_who_accepted
+    CreateGroupInvitation:
+      type: object
+      properties:
+        recipients:
+          type: array
+          items:
+            type: string
+            format: username
     Submission:
       type: object
       properties:
@@ -7709,6 +7725,15 @@ components:
       - grading_start_time
       - non_deferred_grading_end_time
       - last_modified
+    CreateSubmission:
+      type: object
+      properties:
+        submitted_files:
+          type: array
+          items:
+            type: string
+            format: binary
+          description: A list of form-encoded files to submit.
     Command:
       type: object
       properties:

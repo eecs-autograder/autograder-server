@@ -228,9 +228,9 @@ _API_CREATE_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     ag_models.InstructorFile: 'Create' + ag_models.InstructorFile.__name__,
     ag_models.DownloadTask: 'Create' + ag_models.DownloadTask.__name__,
     # ag_models.DownloadType: ag_models.DownloadType.__name__,
-    # ag_models.Group: 'Create' + ag_models.Group.__name__,
-    # ag_models.GroupInvitation: 'Create' + ag_models.GroupInvitation.__name__,
-    # ag_models.Submission: 'Create' + ag_models.Submission.__name__,
+    ag_models.Group: 'Create' + ag_models.Group.__name__,
+    ag_models.GroupInvitation: 'Create' + ag_models.GroupInvitation.__name__,
+    ag_models.Submission: 'Create' + ag_models.Submission.__name__,
 
     # ag_models.Command: ag_models.Command.__name__,
 
@@ -779,6 +779,46 @@ _CREATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
                 'type': 'string',
                 'format': 'binary',
                 'description': 'The form-encoded file.'
+            }
+        }
+    },
+
+    ag_models.Group: {
+        'type': 'object',
+        'properties': {
+            'member_names': {
+                'type': 'array',
+                'items': {
+                    'type': 'string',
+                    'format': 'username',
+                }
+            }
+        }
+    },
+
+    ag_models.GroupInvitation: {
+        'type': 'object',
+        'properties': {
+            'recipients': {
+                'type': 'array',
+                'items': {
+                    'type': 'string',
+                    'format': 'username',
+                }
+            }
+        }
+    },
+
+    ag_models.Submission: {
+        'type': 'object',
+        'properties': {
+            'submitted_files': {
+                'type': 'array',
+                'items': {
+                    'type': 'string',
+                    'format': 'binary',
+                },
+                'description': 'A list of form-encoded files to submit.'
             }
         }
     },
