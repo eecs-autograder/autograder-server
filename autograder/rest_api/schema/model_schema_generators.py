@@ -570,6 +570,7 @@ class UserSchemaGenerator(APIClassSchemaGenerator):
                 assert '$ref' not in prop
                 cast(SchemaObject, prop)['format'] = 'email'
 
+        result['required'] = list(self._fields)
         return result
 
     def _field_names(self) -> Sequence[str]:

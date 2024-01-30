@@ -6348,6 +6348,12 @@ components:
             assigning them.
           nullable: false
           type: boolean
+      required:
+      - pk
+      - username
+      - first_name
+      - last_name
+      - is_superuser
     Course:
       type: object
       properties:
