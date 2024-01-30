@@ -235,7 +235,7 @@ _API_CREATE_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     # ag_models.Command: ag_models.Command.__name__,
 
     # ag_models.SandboxDockerImage: ag_models.SandboxDockerImage.__name__,
-    # ag_models.BuildSandboxDockerImageTask: 'Create' + ag_models.BuildSandboxDockerImageTask.__name__,
+    ag_models.BuildSandboxDockerImageTask: 'BuildSandboxDockerImage',
     # ag_models.BuildImageStatus: ag_models.BuildImageStatus.__name__,
     ag_models.AGTestSuite: 'Create' + ag_models.AGTestSuite.__name__,
     # ag_models.AGTestSuiteFeedbackConfig: 'AGTestSuiteFeedbackConfig',
@@ -840,6 +840,21 @@ _CREATE_BODY_OVERRIDES: Dict[APIClassType, SchemaObject] = {
         'required': [
             'submitted_files',
         ]
+    },
+
+    ag_models.BuildSandboxDockerImageTask: {
+        'type': 'object',
+        'properties': {
+            'files': {
+                'description': (
+                    'The form-encoded files. One file must be named "Dockerfile"'),
+                'type': 'array',
+                'items': {
+                    'type': 'string',
+                    'format': 'binary',
+                },
+            }
+        }
     },
 
     # FIXME: applied annotation (request body and create model)

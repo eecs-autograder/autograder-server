@@ -7601,6 +7601,15 @@ components:
       - validation_error_msg
       - internal_error_msg
       - last_modified
+    BuildSandboxDockerImage:
+      type: object
+      properties:
+        files:
+          description: The form-encoded files. One file must be named "Dockerfile"
+          type: array
+          items:
+            type: string
+            format: binary
     BuildImageStatus:
       type: string
       enum:
