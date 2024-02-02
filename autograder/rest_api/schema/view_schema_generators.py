@@ -150,6 +150,7 @@ class AGViewSchemaGenerator(AutoSchema):
 
         return cast(APIClassType, self.view.model_manager.model)
 
+# FIXME: call the new as_schema_ref methods, make update/create versions of this method, or just inline?
     def make_api_class_request_body(self, *, include_required: bool) -> RequestBodyObject:
         body_schema = AGModelSchemaGenerator.factory(
             self.get_api_class()).generate_request_body_schema(include_required=include_required)

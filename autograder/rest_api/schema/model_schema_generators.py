@@ -948,6 +948,10 @@ def as_create_schema_ref(type_: APIClassType) -> ReferenceObject:
     return {'$ref': f'#/components/schemas/{_API_CREATE_OBJ_TYPE_NAMES[type_]}'}
 
 
+def as_update_schema_ref(type_: APIClassType) -> ReferenceObject:
+    return {'$ref': f'#/components/schemas/{_API_UPDATE_OBJ_TYPE_NAMES[type_]}'}
+
+
 _NonRefType = TypeVar('_NonRefType', bound=Mapping[str, object])
 
 
