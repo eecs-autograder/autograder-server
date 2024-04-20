@@ -18,6 +18,7 @@ import autograder.handgrading.models as hg_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
+from autograder.core.models.submission import Submission
 from autograder.rest_api.schema import (
     AGPatchViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags, CustomViewDict, CustomViewSchema,
     as_content_obj, as_paginated_content_obj, as_schema_ref
