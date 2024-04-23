@@ -18,7 +18,6 @@ import autograder.handgrading.models as hg_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
-from autograder.core.models.submission import Submission
 from autograder.rest_api.schema import (
     AGPatchViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags, CustomViewDict, CustomViewSchema,
     as_content_obj, as_paginated_content_obj, as_schema_ref
@@ -402,7 +401,7 @@ class ListHandgradingResultsView(AGModelAPIView):
                     group.handgrading_result.to_dict(),
                     ['finished_grading', 'total_points', 'total_points_possible'])
             finished_grading_results_exist = any(
-                submission.status == Submission.GradingStatus.finished_grading
+                submission.status == ag_models.Submission.GradingStatus.finished_grading
                 for submission in group.submissions.all()
             )
 
