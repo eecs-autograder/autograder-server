@@ -223,6 +223,14 @@ def make_finished_submission(group: Optional[ag_models.Group] = None,
     return make_submission(status=ag_models.Submission.GradingStatus.finished_grading,
                            group=group,
                            **submission_kwargs)
+    
+
+def make_rejected_submission(group: Optional[ag_models.Group] = None,
+                                **submission_kwargs) -> ag_models.Submission:
+    """Creates a Submission with the status set to rejected."""
+    return make_submission(status=ag_models.Submission.GradingStatus.rejected,
+                                    group=group,
+                                    **submission_kwargs)
 
 
 def make_course(**kwargs) -> ag_models.Course:
