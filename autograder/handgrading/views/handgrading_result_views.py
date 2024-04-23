@@ -401,8 +401,11 @@ class ListHandgradingResultsView(AGModelAPIView):
                 data['handgrading_result'] = utils.filter_dict(
                     group.handgrading_result.to_dict(),
                     ['finished_grading', 'total_points', 'total_points_possible'])
-            finished_grading_results_exist = group.submissions.filter(
-                status__exact=Submission.GradingStatus.finished_grading).exists()
+            finished_grading_results_exist = any(
+                submission.status == Submission.GradingStatus.finished_grading
+                for submission in group.submissions.all()
+            )
+
             data['has_autograded_submissions'] = finished_grading_results_exist
 
             results.append(data)
