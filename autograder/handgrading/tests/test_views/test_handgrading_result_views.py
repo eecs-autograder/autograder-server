@@ -726,6 +726,7 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
                 'finished_grading': hg_result.finished_grading
             }
             data['member_names'].sort()
+            data['has_autograded_submissions'] = True
             expected_data.append(data)
 
         # Groups that don't have a handgrading result
@@ -733,6 +734,7 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
             data = groups[i].to_dict()
             data['member_names'].sort()
             data['handgrading_result'] = None
+            data['has_autograded_submissions'] = False
             expected_data.append(data)
 
         expected_data.sort(key=lambda group: group['member_names'][0])
