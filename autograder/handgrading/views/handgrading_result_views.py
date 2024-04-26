@@ -333,7 +333,7 @@ class ListHandgradingResultsView(AGModelAPIView):
                                             },
                                         }
                                     },
-                                    'has_autograded_submissions': {
+                                    'has_handgradeable_submission': {
                                         'description': (
                                             'When this value is false, indicates that '
                                             'this group does not have any submissions whose '
@@ -405,7 +405,7 @@ class ListHandgradingResultsView(AGModelAPIView):
                 for submission in group.submissions.all()
             )
 
-            data['has_autograded_submissions'] = finished_grading_results_exist
+            data['has_handgradeable_submission'] = finished_grading_results_exist
 
             results.append(data)
 
