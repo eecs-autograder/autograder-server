@@ -635,7 +635,7 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
         [self.handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
     def test_staff_get_handgrading_results_no_results(self):
-        self.do_handgrading_results_test(self.staff, num_results=0)
+        self.do_handgrading_results_test(self.staff, num_groups=0)
 
     def test_get_handgrading_results_exclude_staff(self):
         staff_group = obj_build.make_group(members_role=obj_build.UserRole.staff,
@@ -670,67 +670,65 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
         self.assertEqual(student_group.member_names, response.data['results'][0]['member_names'])
 
     def test_handgrader_get_handgrading_results_no_results(self):
-        self.do_handgrading_results_test(self.handgrader, num_results=0)
+        self.do_handgrading_results_test(self.handgrader, num_groups=0)
 
     def test_staff_get_handgrading_results_default_page_size(self):
-        self.do_handgrading_results_test(self.staff, num_results=2)
+        self.do_handgrading_results_test(self.staff, num_groups=2)
 
     def test_handgrader_get_handgrading_results_default_page_size(self):
-        self.do_handgrading_results_test(self.handgrader, num_results=2)
+        self.do_handgrading_results_test(self.handgrader, num_groups=2)
 
     def test_staff_get_paginated_handgrading_results_custom_page_size(self):
-        self.do_handgrading_results_test(self.staff, num_results=3, page_size=1)
+        self.do_handgrading_results_test(self.staff, num_groups=3, page_size=1)
 
     def test_handgrader_get_paginated_handgrading_results_custom_page_size(self):
-        self.do_handgrading_results_test(self.handgrader, num_results=3, page_size=1)
+        self.do_handgrading_results_test(self.handgrader, num_groups=3, page_size=1)
 
     def test_staff_get_paginated_handgrading_results_specific_page(self):
-        self.do_handgrading_results_test(self.staff, num_results=4, page_size=3, page_num=2)
+        self.do_handgrading_results_test(self.staff, num_groups=4, page_size=3, page_num=2)
 
     def test_handgrader_get_paginated_handgrading_results_specific_page(self):
-        self.do_handgrading_results_test(self.handgrader, num_results=4, page_size=3, page_num=2)
+        self.do_handgrading_results_test(self.handgrader,
+                                         num_groups=4, page_size=3, page_num=2)
 
     def test_get_paginated_results_some_groups_have_no_result(self):
-        self.do_handgrading_results_test(self.handgrader, num_results=2, num_groups=4)
+        self.do_handgrading_results_test(
+            self.handgrader, num_groups=4, submission_statuses=[
+                Submission.GradingStatus.finished_grading] * 2 + [None] * 2)
 
     def test_non_staff_non_handgrader_get_handgrading_results_permission_denied(self):
         [student] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(student)
         response = self.client.get(reverse('handgrading_results', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-        
+
     def test_handgrader_get_handgrading_results_only_rejected_submissions(self):
-        self.do_handgrading_results_test(self.handgrader, num_results=1, num_groups_only_reject=2, num_groups=3)
-        
+        self.do_handgrading_results_test(self.handgrader, num_groups=3, submission_statuses=[
+            Submission.GradingStatus.finished_grading] + 2 * [Submission.GradingStatus.rejected])
+
     def test_staff_get_handgrading_results_only_rejected_submissions(self):
-        self.do_handgrading_results_test(self.staff, num_results=1, num_groups_only_reject=2, num_groups=3)
+        self.do_handgrading_results_test(self.staff, num_groups=3, submission_statuses=[
+            Submission.GradingStatus.finished_grading] + [Submission.GradingStatus.rejected] * 2)
 
-    def do_handgrading_results_test(self, user: User, *,
-                                    num_results: int,
-                                    num_groups_only_reject: int = 0,
-                                    num_groups: int = None,
+    def do_handgrading_results_test(self, user: User, *, num_groups: int = None,
+                                    submission_statuses:
+                                    list[ag_models.Submission.GradingStatus | None] | None = None,
                                     page_size: int = None, page_num: int = None):
-        """Perform the test for the handgrading results view.
-
-        Args:
-            user (User): user's role.
-            num_results (int): number of groups who have accepted submissions and handgraded results.
-            num_groups_only_reject (int): number of groups who only have rejected submissions. Defaults to 0.
-            num_groups (int, optional): total number of groups. Defaults to None.
-            page_size (int, optional): _description_. Defaults to None.
-            page_num (int, optional): _description_. Defaults to None.
-        """
-         
-        
-        if num_groups is None:
-            num_groups = num_results + num_groups_only_reject
+        """Perform the test for the handgrading results view."""
+        if submission_statuses is None:
+            submission_statuses = [Submission.GradingStatus.finished_grading] * num_groups
         else:
-            assert num_groups >= num_results + num_groups_only_reject
+            assert len(submission_statuses) == num_groups
+
+        # ensure that finished grading submissions are sorted before rejected submissions
+        submission_statuses.sort(
+            key=lambda status: status is Submission.GradingStatus.finished_grading)
 
         groups = [obj_build.make_group(3, project=self.project) for _ in range(num_groups)]
         expected_data = []
-        for i in range(num_results):
-            group = groups[i]
+
+        def gen_expected_data_for_group_has_handgraded(group: ag_models.Group):
+            """Generate the expected data for a group that has a handgraded submission."""
             s = obj_build.make_finished_submission(group=group)
             score = random.randint(0, self.rubric.max_points + 3)
             hg_result = hg_models.HandgradingResult.objects.validate_and_create(
@@ -747,24 +745,30 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
             }
             data['member_names'].sort()
             data['has_handgradeable_submission'] = True
-            expected_data.append(data)
-        
-        for i in range(num_results, num_results + num_groups_only_reject):
-            group = groups[i]
-            s = obj_build.make_rejected_submission(group=group)
+            return data
+
+        def gen_exepcted_data_for_group_no_handgraded(group: ag_models.Group):
+            """Generate the expected data for a group that has no handgraded submission."""
             data = group.to_dict()
             data['member_names'].sort()
             data['handgrading_result'] = None
             data['has_handgradeable_submission'] = False
-            expected_data.append(data)
-        
-        # Groups that don't have a handgrading result
-        for i in range(num_results + num_groups_only_reject, num_groups):
-            data = groups[i].to_dict()
-            data['member_names'].sort()
-            data['handgrading_result'] = None
-            data['has_handgradeable_submission'] = False
-            expected_data.append(data)
+            return data
+
+        def gen_expected_data_for_group_has_rejected(group: ag_models.Group):
+            """ Generate the expected data for a group that has a rejected submission."""
+            _s = obj_build.make_rejected_submission(group=group)
+            # can call gen_expected_data_for_group_has_handgraded
+            return gen_exepcted_data_for_group_no_handgraded(group)
+
+        # for each group, they need to make a submission according to the submission_statuses list
+        for group, group_submission_status in zip(groups, submission_statuses):
+            if group_submission_status == Submission.GradingStatus.finished_grading:
+                expected_data.append(gen_expected_data_for_group_has_handgraded(group))
+            elif group_submission_status == Submission.GradingStatus.rejected:
+                expected_data.append(gen_expected_data_for_group_has_rejected(group))
+            else:
+                expected_data.append(gen_exepcted_data_for_group_no_handgraded(group))
 
         expected_data.sort(key=lambda group: group['member_names'][0])
 
