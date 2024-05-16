@@ -631,9 +631,74 @@ class _GroupHGDataConfig:
         if self.submission_status != ag_models.Submission.GradingStatus.finished_grading:
             # If the submission does not have a finished_grading status, it must not
             # have a handgrading result
-            assert not self.has_handgrading_result,\
+            assert not self.has_handgrading_result, \
                 ('Submissions with a status other than'
                  ' "finished_grading" must not have a handgrading result')
+
+    def create_submission(self, group: ag_models.Group) -> ag_models.Submission | None:
+        """
+        Create a submission based on the configuration.
+        If submission_status is None, return None.
+        """
+        if self.submission_status is None:
+            return None
+        return obj_build.make_submission(group=group, status=self.submission_status)
+
+    @staticmethod
+    def format_group_data(group, handgrading_result: dict | None,
+                          has_handgradeable_submission: bool) -> dict:
+        """Format the group data for comparison with the response data."""
+        data = group.to_dict()
+        data['handgrading_result'] = handgrading_result
+        data['member_names'].sort()
+        data['has_handgradeable_submission'] = has_handgradeable_submission
+        return data
+
+    def generate_expected_data(self, group: ag_models.Group,
+                               rubric: hg_models.HandgradingRubric) -> dict:
+        """Generate the expected data base on submission status and handgrading result status."""
+        submission = self.create_submission(group)
+        match self.has_handgrading_result, self.submission_status:
+            # A finished_grading submission with a handgrading result
+            case True, _:
+                return self.generate_expected_data_with_handgrading_result(
+                    group, submission, rubric)
+            # A finished_grading submission without a handgrading result
+            # (has_handgradeable_submission would still be true in this case)
+            case False, ag_models.Submission.GradingStatus.finished_grading:
+                return self.format_group_data(group,
+                                              handgrading_result=None,
+                                              has_handgradeable_submission=True)
+            # A submission with any status other than
+            # finished_grading (and consequently no handgrading result either).
+            # has_handgradeable_submission would be false in this case.
+            case _:
+                return self.format_group_data(group,
+                                              handgrading_result=None,
+                                              has_handgradeable_submission=False)
+
+    def generate_expected_data_with_handgrading_result(
+            self, group: ag_models.Group, submission: ag_models.Submission,
+            rubric: hg_models.HandgradingRubric) -> dict:
+        """Generate the expected data for a group with a handgrading result."""
+        hg_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            group=group,
+            handgrading_rubric=rubric
+        )
+        handgrading_data = {
+            'total_points': hg_result.total_points,
+            'total_points_possible': hg_result.total_points_possible,
+            'finished_grading': hg_result.finished_grading
+        }
+        match self.submission_status:
+            # Is handgradable when the submission has a finished grading status
+            case ag_models.Submission.GradingStatus.finished_grading:
+                return self.format_group_data(
+                    group, handgrading_data, has_handgradeable_submission=True)
+            case _:
+                return self.format_group_data(
+                    group, handgrading_data, has_handgradeable_submission=False)
 
 
 class ListHandgradingResultsViewTestCase(UnitTestBase):
@@ -714,7 +779,7 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
 
     def test_get_paginated_results_some_groups_have_no_result(self):
         self.do_handgrading_results_test(
-            self.handgrader, num_groups=4, submission_configs=[
+            self.handgrader, num_groups=4, group_handgrading_data_configs=[
                 _GroupHGDataConfig()] * 2 + [_GroupHGDataConfig(has_handgrading_result=False)] * 2)
 
     def test_non_staff_non_handgrader_get_handgrading_results_permission_denied(self):
@@ -727,7 +792,7 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
         self.do_handgrading_results_test(
             self.handgrader,
             num_groups=3,
-            submission_configs=[
+            group_handgrading_data_configs=[
                 _GroupHGDataConfig()] + 2 * [
                 _GroupHGDataConfig(
                     submission_status=Submission.GradingStatus.rejected,
@@ -737,61 +802,28 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
         self.do_handgrading_results_test(
             self.staff,
             num_groups=3,
-            submission_configs=[
+            group_handgrading_data_configs=[
                 _GroupHGDataConfig()] + [
                 _GroupHGDataConfig(
                     submission_status=Submission.GradingStatus.rejected,
                     has_handgrading_result=False)] * 2)
 
     def do_handgrading_results_test(self, user: User, *, num_groups: int = None,
-                                    submission_configs:
+                                    group_handgrading_data_configs:
                                     list[_GroupHGDataConfig] | None = None,
                                     page_size: int = None, page_num: int = None):
         """Perform the test for the handgrading results view."""
-        if submission_configs is None:
+        if group_handgrading_data_configs is None:
             # default initialization of submission_configs to all finished grading submissions
-            submission_configs = [_GroupHGDataConfig()] * num_groups
+            group_handgrading_data_configs = [_GroupHGDataConfig()] * num_groups
         else:
-            assert len(submission_configs) == num_groups
-
-        # ensure that finished grading submissions are sorted before rejected submissions
-        submission_configs.sort(
-            key=lambda config:
-            config.submission_status is Submission.GradingStatus.finished_grading)
+            assert len(group_handgrading_data_configs) == num_groups
 
         groups = [obj_build.make_group(3, project=self.project) for _ in range(num_groups)]
 
-        def gen_exp_data(group: ag_models.Group, config: _GroupHGDataConfig):
-            """Generate the expected data for a group based on the configuration."""
-
-            submission = None
-            if config.submission_status is not None:
-                submission = obj_build.make_submission(
-                    group=group, status=config.submission_status)
-
-            if config.has_handgrading_result:
-                hg_result = hg_models.HandgradingResult.objects.validate_and_create(
-                    submission=submission,
-                    group=group, handgrading_rubric=self.rubric)
-                data = hg_result.group.to_dict()
-                data['handgrading_result'] = {
-                    'total_points': hg_result.total_points,
-                    'total_points_possible': hg_result.total_points_possible,
-                    'finished_grading': hg_result.finished_grading
-                }
-            else:
-                data = group.to_dict()
-                data['handgrading_result'] = None
-
-            data['member_names'].sort()
-            data['has_handgradeable_submission'] =\
-                config.submission_status is ag_models.Submission.GradingStatus.finished_grading
-            return data
-
         expected_data = [
-            gen_exp_data(
-                group, config) for group, config in zip(
-                groups, submission_configs)]
+            config.generate_expected_data(group, self.rubric)
+            for group, config in zip(groups, group_handgrading_data_configs)]
         expected_data.sort(key=lambda group: group['member_names'][0])
 
         self.client.force_authenticate(user)

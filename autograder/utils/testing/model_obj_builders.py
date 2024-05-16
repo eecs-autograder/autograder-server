@@ -225,14 +225,6 @@ def make_finished_submission(group: Optional[ag_models.Group] = None,
                            **submission_kwargs)
 
 
-def make_rejected_submission(group: Optional[ag_models.Group] = None,
-                             **submission_kwargs) -> ag_models.Submission:
-    """Creates a Submission with the status set to rejected."""
-    return make_submission(status=ag_models.Submission.GradingStatus.rejected,
-                           group=group,
-                           **submission_kwargs)
-
-
 def make_course(**kwargs) -> ag_models.Course:
     if 'name' not in kwargs:
         kwargs['name'] = 'course{}'.format(get_unique_id())
