@@ -8,6 +8,7 @@ from typing import Sequence, Optional
 
 import autograder.core.models as ag_models
 from autograder.core import utils as core_ut
+from autograder.mutant_hints.models import MutationTestSuiteHintConfig
 
 
 def get_unique_id() -> str:
@@ -510,3 +511,16 @@ def make_mutation_test_suite(project: ag_models.Project = None,
 
     return ag_models.MutationTestSuite.objects.validate_and_create(
         project=project, **mutation_test_suite_kwargs)
+
+
+def make_mutation_test_suite_hint_config(
+    mutation_test_suite: ag_models.MutationTestSuite | None = None,
+    **mutation_test_suite_kwargs
+) -> MutationTestSuiteHintConfig:
+    if mutation_test_suite is None:
+        mutation_test_suite = make_mutation_test_suite()
+
+    return MutationTestSuiteHintConfig.objects.validate_and_create(
+        mutation_test_suite=mutation_test_suite,
+        **mutation_test_suite_kwargs
+    )
