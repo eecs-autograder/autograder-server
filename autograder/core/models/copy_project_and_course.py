@@ -209,7 +209,7 @@ class _ProjectCopier:
             ]
 
             assert self._new_project is not None
-            MutationTestSuite.objects.validate_and_create(
+            new_suite = MutationTestSuite.objects.validate_and_create(
                 project=self._new_project,
                 instructor_files_needed=instructor_files_needed,
                 student_files_needed=student_files_needed,
@@ -217,8 +217,14 @@ class _ProjectCopier:
                     mutation_suite.sandbox_docker_image, self._new_project.course),
                 **utils.exclude_dict(
                     mutation_suite.to_dict(),
-                    ('pk', 'project') + tuple(MutationTestSuite.get_serialize_related_fields()))
+                    ('pk', 'project') + tuple(MutationTestSuite.get_serialize_related_fields())),
             )
+
+            if hasattr(mutation_suite, "mutation_test_suite_hint_config"):
+                mutation_test_suite_hint_config = mutation_suite.mutation_test_suite_hint_config
+                mutation_test_suite_hint_config.pk = None
+                mutation_test_suite_hint_config.mutation_test_suite = new_suite
+                mutation_test_suite_hint_config.save()
 
 
 def _copy_sandbox_docker_image(

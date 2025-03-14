@@ -295,6 +295,31 @@ class CopyProjectTestCase(UnitTestBase):
         new_project = copy_project(project, project.course, new_project_name='Projy')
         self.assertFalse(hasattr(new_project, 'handgrading_rubric'))
 
+    def test_copy_project_with_mutant_hints(self):
+        project = obj_build.make_project()
+
+        mutation_suite1 = obj_build.make_mutation_test_suite(project)
+        mutation_suite2 = obj_build.make_mutation_test_suite(project)
+
+        hint_config1 = obj_build.make_mutation_test_suite_hint_config(
+            mutation_suite1, num_hints_per_day=1)
+        hint_config2 = obj_build.make_mutation_test_suite_hint_config(
+            mutation_suite2, num_hints_per_day=2)
+
+        new_project = copy_project(project, project.course, new_project_name='Projy')
+
+        new_mutation_suite1 = new_project.mutation_test_suites.all()[0]
+        new_mutation_suite2 = new_project.mutation_test_suites.all()[1]
+
+        new_hint_config1 = new_mutation_suite1.mutation_test_suite_hint_config
+        new_hint_config2 = new_mutation_suite2.mutation_test_suite_hint_config
+
+        self.assertNotEqual(hint_config1.pk, new_hint_config1.pk)
+        self.assertEqual(new_hint_config1.num_hints_per_day, 1)
+
+        self.assertNotEqual(hint_config2.pk, new_hint_config2.pk)
+        self.assertEqual(new_hint_config2.num_hints_per_day, 2)
+
 
 class SandboxImageCopyingTestCase(UnitTestBase):
     @classmethod
