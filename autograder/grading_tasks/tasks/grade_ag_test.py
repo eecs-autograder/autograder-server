@@ -1,3 +1,4 @@
+import re
 import shutil
 import tempfile
 import traceback
@@ -257,6 +258,34 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                 ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
                 ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
             result_data['stderr_correct'] = diff.diff_pass
+
+        if ag_test_cmd.partial_credit_source != ag_models.PartialCreditSource.none:
+            if ag_test_cmd.partial_credit_source == ag_models.PartialCreditSource.stdout:
+                partial_credit_source = run_result.stdout
+            else:
+                partial_credit_source = run_result.stderr
+
+            with open(partial_credit_source.name) as f:
+                partial_credit_text = f.read()
+
+            regex_pattern = re.compile(ag_test_cmd.partial_credit_regex,)
+            matches = regex_pattern.findall(partial_credit_text)
+
+            if not matches:
+                result_data['partial_credit_points'] = 0
+                result_data['partial_credit_error'] = (
+                    ag_models.PartialCreditError.failed_to_find_pattern)
+            else:
+                try:
+                    result_data['partial_credit_points'] = int(matches[-1])
+                except ValueError:
+                    result_data['partial_credit_points'] = 0
+                    result_data['partial_credit_error'] = ag_models.PartialCreditError.non_integer
+
+            if result_data['partial_credit_points'] > ag_test_cmd.max_points_for_partial_credit:
+                result_data['partial_credit_points'] = ag_test_cmd.max_points_for_partial_credit
+                result_data['partial_credit_error'] = (
+                    ag_models.PartialCreditError.exceeded_max_points)
 
         print(result_data)
 

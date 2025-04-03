@@ -237,6 +237,94 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertFalse(res.stderr_correct)
 
+    def test_stdout_partial_credit_full_points(self, *args):
+        cmd = obj_build.make_stdout_partial_credit_test_command(
+            self.ag_test_case,
+            max_points_for_partial_credit=10,
+            cmd='printf "foo<!!score:10 !!>bar"')
+        tasks.grade_submission_task(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(res.partial_credit_points, cmd.max_points_for_partial_credit)
+        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+
+    def test_stderr_partial_credit_full_points(self, *args):
+        cmd = obj_build.make_stderr_partial_credit_test_command(
+            self.ag_test_case,
+            max_points_for_partial_credit=10,
+            cmd='printf "foo<!!  \n  score:  \t  10 !!>bar" 1>&2')
+        tasks.grade_submission_task(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(res.partial_credit_points, cmd.max_points_for_partial_credit)
+        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+
+    def test_partial_credit_with_custom_regex(self, *args):
+        cmd = obj_build.make_stdout_partial_credit_test_command(
+            self.ag_test_case,
+            max_points_for_partial_credit=10,
+            cmd='printf "MARIO5LUIGI"',
+            partial_credit_regex=r'MARIO(\d)LUIGI')
+        tasks.grade_submission_task(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(res.partial_credit_points, 5)
+        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+
+    def test_partial_credit_last_output_used(self, *args):
+        cmd = obj_build.make_stdout_partial_credit_test_command(
+            self.ag_test_case,
+            max_points_for_partial_credit=10,
+            cmd='printf "<!! score: 10 !!>\n<!! score: 15 !!>\n<!! score: 9 !!>"')
+        tasks.grade_submission_task(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(res.partial_credit_points, 9)
+        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+
+    def test_partial_credit_pattern_not_found(self, *args):
+        cmd = obj_build.make_stdout_partial_credit_test_command(
+            self.ag_test_case,
+            max_points_for_partial_credit=10,
+            cmd='printf "not a valid pattern!!!"')
+        tasks.grade_submission_task(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(res.partial_credit_points, 0)
+        self.assertEqual(
+            res.partial_credit_error,
+            ag_models.PartialCreditError.failed_to_find_pattern
+        )
+
+    def test_partial_credit_non_integer(self, *args):
+        cmd = obj_build.make_stdout_partial_credit_test_command(
+            self.ag_test_case,
+            max_points_for_partial_credit=10,
+            partial_credit_regex=r'(.*)',
+            cmd='printf "3.5"')
+        tasks.grade_submission_task(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(res.partial_credit_points, 0)
+        self.assertEqual(
+            res.partial_credit_error,
+            ag_models.PartialCreditError.non_integer
+        )
+
+    def test_partial_credit_more_than_max_points(self, *args):
+        cmd = obj_build.make_stdout_partial_credit_test_command(
+            self.ag_test_case,
+            max_points_for_partial_credit=1,
+            cmd='printf "<!! score: 2 !!>"')
+        tasks.grade_submission_task(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(res.partial_credit_points, 1)
+        self.assertEqual(
+            res.partial_credit_error,
+            ag_models.PartialCreditError.exceeded_max_points
+        )
+
 
 @tag('slow', 'sandbox')
 @mock.patch('autograder.utils.retry.sleep')

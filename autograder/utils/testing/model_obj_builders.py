@@ -372,7 +372,7 @@ def make_ag_test_case(ag_test_suite: ag_models.AGTestSuite = None,
 
 
 def make_full_ag_test_command(
-        ag_test_case: ag_models.AGTestCase = None,
+        ag_test_case: ag_models.AGTestCase | None = None,
         set_arbitrary_points=True,
         set_arbitrary_expected_vals=True,
         **ag_test_cmd_kwargs) -> ag_models.AGTestCommand:
@@ -410,6 +410,63 @@ def make_full_ag_test_command(
 
     base_kwargs.update(ag_test_cmd_kwargs)
     return ag_models.AGTestCommand.objects.validate_and_create(**base_kwargs)
+
+
+def make_stdout_partial_credit_test_command(
+    ag_test_case: ag_models.AGTestCase | None = None,
+    max_points_for_partial_credit: int | None = None,
+    partial_credit_regex: str | None = None,
+    **command_kwargs,
+):
+    return _make_partial_credit_test_command(
+        ag_test_case=ag_test_case,
+        max_points_for_partial_credit=max_points_for_partial_credit,
+        partial_credit_regex=partial_credit_regex,
+        **command_kwargs)
+
+
+def make_stderr_partial_credit_test_command(
+    ag_test_case: ag_models.AGTestCase | None = None,
+    max_points_for_partial_credit: int | None = None,
+    partial_credit_regex: str | None = None,
+    **command_kwargs,
+):
+    return _make_partial_credit_test_command(
+        ag_test_case=ag_test_case,
+        max_points_for_partial_credit=max_points_for_partial_credit,
+        partial_credit_regex=partial_credit_regex,
+        stderr=True,
+        **command_kwargs)
+
+
+def _make_partial_credit_test_command(
+    ag_test_case: ag_models.AGTestCase | None = None,
+    max_points_for_partial_credit: int | None = None,
+    partial_credit_regex: str | None = None,
+    stderr: bool = False,
+    **command_kwargs,
+):
+    cmd = make_full_ag_test_command(ag_test_case, **command_kwargs)
+
+    if stderr:
+        cmd.expected_stderr_source = ag_models.ExpectedOutputSource.none
+        cmd.points_for_correct_stderr = 0
+        cmd.deduction_for_wrong_stderr = 0
+        cmd.partial_credit_source = ag_models.PartialCreditSource.stderr
+    else:
+        cmd.expected_stdout_source = ag_models.ExpectedOutputSource.none
+        cmd.points_for_correct_stdout = 0
+        cmd.deduction_for_wrong_stdout = 0
+        cmd.partial_credit_source = ag_models.PartialCreditSource.stdout
+
+    if max_points_for_partial_credit is not None:
+        cmd.max_points_for_partial_credit = max_points_for_partial_credit
+
+    if partial_credit_regex is not None:
+        cmd.partial_credit_regex = partial_credit_regex
+
+    cmd.save()
+    return cmd
 
 
 def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand,
@@ -458,6 +515,8 @@ def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand
         'return_code_correct': True,
         'stdout_correct': True,
         'stderr_correct': True,
+
+        'partial_credit_points': ag_test_command.max_points_for_partial_credit
     }
 
     kwargs.update(result_kwargs)
@@ -490,6 +549,7 @@ def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestComma
     result.return_code_correct = False
     result.stdout_correct = False
     result.stderr_correct = False
+    result.partial_credit_points = 0
     result.save()
 
     with open(result.stdout_filename, 'a') as f:

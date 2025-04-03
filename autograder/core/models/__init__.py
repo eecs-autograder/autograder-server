@@ -15,6 +15,7 @@ from .ag_test.ag_test_command import StdinSource as StdinSource
 from .ag_test.ag_test_command import PartialCreditSource as PartialCreditSource
 from .ag_test.ag_test_command import ValueFeedbackLevel as ValueFeedbackLevel
 from .ag_test.ag_test_command_result import AGTestCommandResult as AGTestCommandResult
+from .ag_test.ag_test_command_result import PartialCreditError as PartialCreditError
 from .ag_test.ag_test_suite import AGTestSuite as AGTestSuite
 from .ag_test.ag_test_suite import AGTestSuiteFeedbackConfig as AGTestSuiteFeedbackConfig
 from .ag_test.ag_test_suite_result import AGTestSuiteResult as AGTestSuiteResult

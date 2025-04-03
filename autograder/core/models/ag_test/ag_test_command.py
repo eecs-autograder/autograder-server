@@ -242,7 +242,7 @@ class AGTestCommand(AutograderModel):
                      expected_stdout_source is not none, and stderr cannot be selected
                      when expected_stderr_source is not none''')
     partial_credit_regex = models.TextField(
-        default=r'<!! score: (-?\d+) !!>',
+        default=r'(?i)<!!\s*score:\s*(-?\d+)\s*!!>',
         help_text='''Specifies the regex pattern used to extract the partial credit
                      score from the output stream''')
     max_points_for_partial_credit = models.IntegerField(

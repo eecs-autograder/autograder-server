@@ -81,7 +81,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertEqual(constants.DEFAULT_PROCESS_LIMIT, ag_cmd.process_spawn_limit)
 
         self.assertEqual(ag_models.PartialCreditSource.none, ag_cmd.partial_credit_source)
-        self.assertEqual(r'<!! score: (-?\d+) !!>', ag_cmd.partial_credit_regex)
+        self.assertEqual(r'(?i)<!!\s*score:\s*(-?\d+)\s*!!>', ag_cmd.partial_credit_regex)
         self.assertEqual(0, ag_cmd.max_points_for_partial_credit)
 
     def test_normal_fdbk_default(self):

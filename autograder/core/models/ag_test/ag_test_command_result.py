@@ -9,6 +9,13 @@ from ..ag_command import AGCommandResultBase
 from .ag_test_command import AGTestCommand
 
 
+class PartialCreditError(models.TextChoices):
+    none = 'none'
+    non_integer = 'non_integer'
+    exceeded_max_points = 'exceeded_max_points'
+    failed_to_find_pattern = 'failed_to_find_pattern'
+
+
 class AGTestCommandResult(AGCommandResultBase):
     """
     This class stores the data from an AGTestCommand
@@ -35,6 +42,10 @@ class AGTestCommandResult(AGCommandResultBase):
     return_code_correct = models.BooleanField(blank=True, null=True, default=None)
     stdout_correct = models.BooleanField(blank=True, null=True, default=None)
     stderr_correct = models.BooleanField(blank=True, null=True, default=None)
+
+    partial_credit_points = models.IntegerField(blank=True, null=True, default=None)
+    partial_credit_error = models.TextField(
+        choices=PartialCreditError.choices, default=PartialCreditError.none)
 
     @property
     def stdout_filename(self) -> str:
@@ -66,4 +77,7 @@ class AGTestCommandResult(AGCommandResultBase):
 
         'stdout_truncated',
         'stderr_truncated',
+
+        'partial_credit_points',
+        'partial_credit_error',
     )

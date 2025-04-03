@@ -12,7 +12,8 @@ from django.db import transaction
 from django.db.models import Prefetch
 from django.utils.functional import cached_property
 
-from autograder.core.models import AGTestCommandResult, MutationTestSuiteResult, Submission
+from autograder.core.models import (AGTestCommandResult, MutationTestSuiteResult, Submission,
+                                    PartialCreditSource, PartialCreditError)
 from autograder.core.models.ag_model_base import ToDictMixin
 from autograder.core.models.ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 from autograder.core.models.ag_test.ag_test_case_result import AGTestCaseResult
@@ -287,6 +288,14 @@ class AGTestCommandResultProtocol(Protocol):
     def stderr_filename(self) -> str:
         ...
 
+    @property
+    def partial_credit_points(self) -> int:
+        ...
+
+    @property
+    def partial_credit_error(self) -> str:
+        ...
+
 
 class SerializedAGTestCommandResultWrapper:
     def __init__(self, cmd_result_dict: Dict[str, object]):
@@ -331,6 +340,14 @@ class SerializedAGTestCommandResultWrapper:
     @property
     def stderr_truncated(self) -> bool:
         return cast(bool, self._cmd_result_dict['stderr_truncated'])
+
+    @property
+    def partial_credit_points(self) -> int:
+        return cast(int, self._cmd_result_dict['partial_credit_points'])
+
+    @property
+    def partial_credit_error(self) -> str:
+        return cast(str, self._cmd_result_dict['partial_credit_error'])
 
     # ------------------------------------------------------------------
 
@@ -955,6 +972,9 @@ class AGTestCommandResultFeedback(ToDictMixin):
         if self.stderr_correct is not None and not self.stderr_correct:
             return self._cmd.student_on_fail_description
 
+        if self.partial_credit_points < self.partial_credit_points_possible:
+            return self._cmd.student_on_fail_description
+
         return None
 
     @property
@@ -1191,11 +1211,51 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return self._cmd.points_for_correct_stderr
 
     @property
+    def partial_credit_points(self) -> int:
+        if not self._fdbk.show_points:
+            return 0
+        if self._cmd.partial_credit_source == PartialCreditSource.none:
+            return 0
+        return self._ag_test_command_result.partial_credit_points
+
+    @property
+    def partial_credit_points_possible(self) -> int:
+        if not self._fdbk.show_points:
+            return 0
+        if self._cmd.partial_credit_source == PartialCreditSource.none:
+            return 0
+        return self._cmd.max_points_for_partial_credit
+
+    @property
+    def partial_credit_error(self) -> str:
+        if not self._fdbk.show_points:
+            return 'none'
+
+        match self._ag_test_command_result.partial_credit_error:
+            case PartialCreditError.none:
+                return 'none'
+            case PartialCreditError.non_integer:
+                return 'Non-integer value found for partial credit score'
+            case PartialCreditError.exceeded_max_points:
+                return ('Partial credit points exceeded the number of partial credit'
+                        ' points available')
+            case PartialCreditError.failed_to_find_pattern:
+                return (
+                    'No output matched the specified pattern for determining partial'
+                    ' credit points')
+            case _:
+                raise AssertionError(
+                    f'Unhandled error: {self._ag_test_command_result.partial_credit_error}.'
+                    ' Expected code to be unreachable'
+                )
+
+    @property
     def total_points(self) -> int:
         if not self._fdbk.show_points:
             return 0
 
-        return self.return_code_points + self.stdout_points + self.stderr_points
+        return (self.return_code_points + self.stdout_points + self.stderr_points
+                + self.partial_credit_points)
 
     @property
     def total_points_possible(self) -> int:
@@ -1203,7 +1263,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
             return 0
 
         return (self.return_code_points_possible + self.stdout_points_possible
-                + self.stderr_points_possible)
+                + self.stderr_points_possible + self.partial_credit_points_possible)
 
     SERIALIZABLE_FIELDS = (
         'pk',
@@ -1228,6 +1288,10 @@ class AGTestCommandResultFeedback(ToDictMixin):
         'stderr_correct',
         'stderr_points',
         'stderr_points_possible',
+
+        'partial_credit_points',
+        'partial_credit_points_possible',
+        'partial_credit_error',
 
         'total_points',
         'total_points_possible'
