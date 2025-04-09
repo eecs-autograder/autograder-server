@@ -319,7 +319,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(res.partial_credit_points, 1)
+        self.assertEqual(res.partial_credit_points, 2)
         self.assertEqual(
             res.partial_credit_error,
             ag_models.PartialCreditError.exceeded_max_points

@@ -283,7 +283,6 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                     result_data['partial_credit_error'] = ag_models.PartialCreditError.non_integer
 
             if result_data['partial_credit_points'] > ag_test_cmd.max_points_for_partial_credit:
-                result_data['partial_credit_points'] = ag_test_cmd.max_points_for_partial_credit
                 result_data['partial_credit_error'] = (
                     ag_models.PartialCreditError.exceeded_max_points)
 

@@ -1216,6 +1216,10 @@ class AGTestCommandResultFeedback(ToDictMixin):
             return 0
         if self._cmd.partial_credit_source == PartialCreditSource.none:
             return 0
+        if (self._ag_test_command_result.partial_credit_points
+                > self._cmd.max_points_for_partial_credit):
+            return self._cmd.max_points_for_partial_credit
+
         return self._ag_test_command_result.partial_credit_points
 
     @property
