@@ -259,7 +259,8 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                 ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
             result_data['stderr_correct'] = diff.diff_pass
 
-        if ag_test_cmd.partial_credit_source != ag_models.PartialCreditSource.none:
+        if (ag_test_cmd.partial_credit_source != ag_models.PartialCreditSource.none
+                and run_result.timed_out is False):
             if ag_test_cmd.partial_credit_source == ag_models.PartialCreditSource.stdout:
                 partial_credit_source = run_result.stdout
             else:
