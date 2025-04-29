@@ -414,39 +414,31 @@ def make_full_ag_test_command(
 
 def make_stdout_partial_credit_test_command(
     ag_test_case: ag_models.AGTestCase | None = None,
-    max_points_for_partial_credit: int | None = None,
-    partial_credit_regex: str | None = None,
     **command_kwargs,
 ):
     return _make_partial_credit_test_command(
         ag_test_case=ag_test_case,
-        max_points_for_partial_credit=max_points_for_partial_credit,
-        partial_credit_regex=partial_credit_regex,
         **command_kwargs)
 
 
 def make_stderr_partial_credit_test_command(
     ag_test_case: ag_models.AGTestCase | None = None,
-    max_points_for_partial_credit: int | None = None,
-    partial_credit_regex: str | None = None,
     **command_kwargs,
 ):
     return _make_partial_credit_test_command(
         ag_test_case=ag_test_case,
-        max_points_for_partial_credit=max_points_for_partial_credit,
-        partial_credit_regex=partial_credit_regex,
         stderr=True,
         **command_kwargs)
 
 
 def _make_partial_credit_test_command(
     ag_test_case: ag_models.AGTestCase | None = None,
-    max_points_for_partial_credit: int | None = None,
-    partial_credit_regex: str | None = None,
+    max_points_for_partial_credit: int = 100,
     stderr: bool = False,
     **command_kwargs,
 ):
     cmd = make_full_ag_test_command(ag_test_case, **command_kwargs)
+    cmd.max_points_for_partial_credit = max_points_for_partial_credit
 
     if stderr:
         cmd.expected_stderr_source = ag_models.ExpectedOutputSource.none
@@ -458,12 +450,6 @@ def _make_partial_credit_test_command(
         cmd.points_for_correct_stdout = 0
         cmd.deduction_for_wrong_stdout = 0
         cmd.partial_credit_source = ag_models.PartialCreditSource.stdout
-
-    if max_points_for_partial_credit is not None:
-        cmd.max_points_for_partial_credit = max_points_for_partial_credit
-
-    if partial_credit_regex is not None:
-        cmd.partial_credit_regex = partial_credit_regex
 
     cmd.save()
     return cmd

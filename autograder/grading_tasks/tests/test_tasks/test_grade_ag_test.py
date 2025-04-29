@@ -498,6 +498,7 @@ sys.stderr.flush()
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.timed_out)
         self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(res.partial_credit_points, 0)
 
     def test_program_times_out_with_stderr_partial_credit(self, *args):
         cmd = obj_build.make_stderr_partial_credit_test_command(
@@ -509,6 +510,7 @@ sys.stderr.flush()
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.timed_out)
         self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(res.partial_credit_points, 0)
 
     def test_program_prints_a_lot_of_output(self, *args):
         cmd = obj_build.make_full_ag_test_command(

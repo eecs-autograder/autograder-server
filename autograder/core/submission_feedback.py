@@ -1216,11 +1216,11 @@ class AGTestCommandResultFeedback(ToDictMixin):
             return 0
         if self._cmd.partial_credit_source == PartialCreditSource.none:
             return 0
-        if (self._ag_test_command_result.partial_credit_points
-                > self._cmd.max_points_for_partial_credit):
-            return self._cmd.max_points_for_partial_credit
 
-        return self._ag_test_command_result.partial_credit_points
+        return min(
+            self._ag_test_command_result.partial_credit_points,
+            self._cmd.max_points_for_partial_credit
+        )
 
     @property
     def partial_credit_points_possible(self) -> int:
@@ -1233,16 +1233,17 @@ class AGTestCommandResultFeedback(ToDictMixin):
     @property
     def partial_credit_error(self) -> str:
         if not self._fdbk.show_points:
-            return 'none'
+            return ''
 
         match self._ag_test_command_result.partial_credit_error:
             case PartialCreditError.none:
-                return 'none'
+                return ''
             case PartialCreditError.non_integer:
                 return 'Non-integer value found for partial credit score'
             case PartialCreditError.exceeded_max_points:
-                return ('Partial credit points exceeded the number of partial credit'
-                        ' points available')
+                return (f'Partial credit points ({self._ag_test_command_result}) exceeded'
+                        ' the number of partial credit points available'
+                        f' ({self._cmd.max_points_for_partial_credit})')
             case PartialCreditError.failed_to_find_pattern:
                 return (
                     'No output matched the specified pattern for determining partial'

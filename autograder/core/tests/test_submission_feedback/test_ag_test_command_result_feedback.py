@@ -130,9 +130,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.max_points_possible, fdbk.total_points_possible)
 
     def test_points_everything_correct_with_stdout_partial_credit_max_fdbk(self):
-        self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(
-            max_points_for_partial_credit=42
-        )
+        self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(self.ag_test_case)
         cmd_result = self.make_correct_result()
         fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
 
@@ -153,9 +151,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.max_points_possible, fdbk.total_points_possible)
 
     def test_points_everything_correct_with_stderr_partial_credit_max_fdbk(self):
-        self.ag_test_command = obj_build.make_stderr_partial_credit_test_command(
-            max_points_for_partial_credit=42
-        )
+        self.ag_test_command = obj_build.make_stderr_partial_credit_test_command(self.ag_test_case)
         cmd_result = self.make_correct_result()
         fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
 
@@ -196,9 +192,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.max_points_possible, fdbk.total_points_possible)
 
     def test_points_everything_incorrect_with_stdout_partial_credit_max_fdbk(self):
-        self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(
-            max_points_for_partial_credit=42
-        )
+        self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(self.ag_test_case)
         cmd_result = self.make_incorrect_result()
         fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
 
@@ -219,9 +213,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.max_points_possible, fdbk.total_points_possible)
 
     def test_points_everything_incorrect_with_stderr_partial_credit_max_fdbk(self):
-        self.ag_test_command = obj_build.make_stderr_partial_credit_test_command(
-            max_points_for_partial_credit=42
-        )
+        self.ag_test_command = obj_build.make_stderr_partial_credit_test_command(self.ag_test_case)
         cmd_result = self.make_incorrect_result()
         fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
 
@@ -298,13 +290,10 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.max_points_possible, fdbk.total_points_possible)
 
     def test_points_negative_stdout_partial_credit_points(self):
-        self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(
-            self.ag_test_case,
-            max_points_for_partial_credit=42
-        )
+        self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(self.ag_test_case)
         cmd_result = self.make_incorrect_result()
 
-        cmd_result.partial_credit_points = - 42
+        cmd_result.partial_credit_points = -42
         cmd_result.save()
 
         fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
@@ -318,10 +307,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.max_points_possible, fdbk.total_points_possible)
 
     def test_points_negative_stderr_partial_credit_points(self):
-        self.ag_test_command = obj_build.make_stderr_partial_credit_test_command(
-            self.ag_test_case,
-            max_points_for_partial_credit=42
-        )
+        self.ag_test_command = obj_build.make_stderr_partial_credit_test_command(self.ag_test_case)
         cmd_result = self.make_incorrect_result()
 
         cmd_result.partial_credit_points = -1337
@@ -336,6 +322,34 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
 
         self.assertEqual(self.min_points_possible - 1337, fdbk.total_points)
         self.assertEqual(self.max_points_possible, fdbk.total_points_possible)
+
+    def test_points_more_than_max_stdout_partial_credit_points(self):
+        self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(self.ag_test_case)
+
+        cmd_result = self.make_correct_result()
+        cmd_result.partial_credit_points = self.ag_test_command.max_points_for_partial_credit + 42
+
+        fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
+
+        self.assertEqual(
+            self.ag_test_command.max_points_for_partial_credit,
+            fdbk.partial_credit_points
+        )
+        self.assertEqual(self.max_points_possible, fdbk.total_points)
+
+    def test_points_more_than_max_stderr_partial_credit_points(self):
+        self.ag_test_command = obj_build.make_stderr_partial_credit_test_command(self.ag_test_case)
+
+        cmd_result = self.make_correct_result()
+        cmd_result.partial_credit_points = self.ag_test_command.max_points_for_partial_credit + 42
+
+        fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
+
+        self.assertEqual(
+            self.ag_test_command.max_points_for_partial_credit,
+            fdbk.partial_credit_points
+        )
+        self.assertEqual(self.max_points_possible, fdbk.total_points)
 
     def test_return_code_not_checked(self):
         self.ag_test_command.validate_and_update(
@@ -925,13 +939,14 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
                          fdbk.stderr_points)
 
-    def test_points_visibility(self):
-        self.ag_test_command.validate_and_update(normal_fdbk_config={'show_points': False})
-
+    def _do_points_visibility_test(self):
         correct_result = self.make_correct_result()
         fdbk = get_cmd_fdbk(correct_result, ag_models.FeedbackCategory.normal)
         self.assertEqual(0, fdbk.total_points)
         self.assertEqual(0, fdbk.total_points_possible)
+        self.assertEqual(0, fdbk.partial_credit_points)
+        self.assertEqual(0, fdbk.partial_credit_points_possible)
+        self.assertEqual('', fdbk.partial_credit_error)
 
         correct_result.delete()
 
@@ -939,6 +954,27 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         fdbk = get_cmd_fdbk(incorrect_result, ag_models.FeedbackCategory.normal)
         self.assertEqual(0, fdbk.total_points)
         self.assertEqual(0, fdbk.total_points_possible)
+        self.assertEqual(0, fdbk.partial_credit_points)
+        self.assertEqual(0, fdbk.partial_credit_points_possible)
+        self.assertEqual('', fdbk.partial_credit_error)
+
+    def test_points_visibility(self):
+        self.ag_test_command.validate_and_update(normal_fdbk_config={'show_points': False})
+        self._do_points_visibility_test()
+
+    def test_points_visibility_with_stdout_partial_credit(self):
+        self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(
+            self.ag_test_case,
+            normal_fdbk_config={'show_points': False}
+        )
+        self._do_points_visibility_test()
+
+    def test_points_visibility_with_stderr_partial_credit(self):
+        self.ag_test_command = obj_build.make_stderr_partial_credit_test_command(
+            self.ag_test_case,
+            normal_fdbk_config={'show_points': False}
+        )
+        self._do_points_visibility_test()
 
     def test_all_diff_options_false_stdout_correct_stderr_incorrect(self):
         self.do_diff_options_test(
@@ -1150,16 +1186,15 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         description = 'description WAAAAAA'
         on_fail_description = 'WAAAA fail'
         normal_fdbk_config = self.ag_test_command.normal_fdbk_config
-        opts = (True, False, None)
 
         self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(
             self.ag_test_case,
-            max_points_for_partial_credit=1
+            normal_fdbk_config=normal_fdbk_config
         )
-        self.ag_test_command.validate_and_update(normal_fdbk_config=normal_fdbk_config)
+
         for (
             return_code_correct, stderr_correct, partial_credit_correct
-        ) in itertools.product(opts, opts, opts):
+        ) in itertools.product(*itertools.repeat([True, False, None], 3)):
             if False in (return_code_correct, stderr_correct, partial_credit_correct):
                 self._do_student_on_fail_description_test(
                     show_student_description=True,
@@ -1175,12 +1210,12 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
 
         self.ag_test_command = obj_build.make_stderr_partial_credit_test_command(
             self.ag_test_case,
-            max_points_for_partial_credit=1
+            normal_fdbk_config=normal_fdbk_config
         )
-        self.ag_test_command.validate_and_update(normal_fdbk_config=normal_fdbk_config)
+
         for (
             return_code_correct, stdout_correct, partial_credit_correct
-        ) in itertools.product(opts, opts, opts):
+        ) in itertools.product(*itertools.repeat([True, False, None], 3)):
             if False in (return_code_correct, stdout_correct, partial_credit_correct):
                 self._do_student_on_fail_description_test(
                     show_student_description=True,
@@ -1231,10 +1266,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
             stderr_correct=True,
         )
 
-        self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(
-            self.ag_test_case,
-            max_points_for_partial_credit=42
-        )
+        self.ag_test_command = obj_build.make_stdout_partial_credit_test_command(self.ag_test_case)
         self._do_student_on_fail_description_test(
             show_student_description=True,
             description=description,

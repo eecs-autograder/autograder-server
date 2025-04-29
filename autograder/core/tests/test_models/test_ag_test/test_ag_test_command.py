@@ -809,18 +809,20 @@ class InstructorFileDeleteBehaviorTestCase(UnitTestBase):
         self.assertIsNone(self.ag_test_command.expected_stderr_instructor_file)
 
     def test_partial_credit_source_stdout_when_expected_stdout_source_is_not_none(self):
-        with self.assertRaises(exceptions.ValidationError):
+        with self.assertRaises(exceptions.ValidationError) as cm:
             self.ag_test_command.validate_and_update(
                 expected_stdout_source=ag_models.ExpectedOutputSource.text,
                 partial_credit_source=ag_models.PartialCreditSource.stdout
             )
+        self.assertIn('partial_credit_source', cm.exception.message_dict)
 
     def test_partial_credit_source_stderr_when_expected_stderr_source_is_not_none(self):
-        with self.assertRaises(exceptions.ValidationError):
+        with self.assertRaises(exceptions.ValidationError) as cm:
             self.ag_test_command.validate_and_update(
                 expected_stderr_source=ag_models.ExpectedOutputSource.text,
                 partial_credit_source=ag_models.PartialCreditSource.stderr
             )
+        self.assertIn('partial_credit_source', cm.exception.message_dict)
 
     def test_partial_credit_source_stdout_when_expected_stderr_source_is_not_none(self):
         self.ag_test_command.validate_and_update(
@@ -834,6 +836,19 @@ class InstructorFileDeleteBehaviorTestCase(UnitTestBase):
                          ag_models.ExpectedOutputSource.text)
         self.assertEqual(self.ag_test_command.partial_credit_source,
                          ag_models.PartialCreditSource.stdout)
+
+    def test_partial_credit_source_stderr_when_expected_stdout_source_is_not_none(self):
+        self.ag_test_command.validate_and_update(
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            partial_credit_source=ag_models.PartialCreditSource.stderr
+        )
+
+        self.assertEqual(self.ag_test_command.expected_stdout_source,
+                         ag_models.ExpectedOutputSource.text)
+        self.assertEqual(self.ag_test_command.expected_stderr_source,
+                         ag_models.ExpectedOutputSource.none)
+        self.assertEqual(self.ag_test_command.partial_credit_source,
+                         ag_models.PartialCreditSource.stderr)
 
     def test_max_points_for_partial_credit_negative(self):
         with self.assertRaises(exceptions.ValidationError):
