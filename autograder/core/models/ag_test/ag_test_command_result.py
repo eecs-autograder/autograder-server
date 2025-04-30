@@ -43,7 +43,7 @@ class AGTestCommandResult(AGCommandResultBase):
     stdout_correct = models.BooleanField(blank=True, null=True, default=None)
     stderr_correct = models.BooleanField(blank=True, null=True, default=None)
 
-    partial_credit_points = models.IntegerField(blank=True, null=True, default=None)
+    partial_credit_points = models.IntegerField(default=0)
     partial_credit_error = models.TextField(
         choices=PartialCreditError.choices, default=PartialCreditError.none)
 

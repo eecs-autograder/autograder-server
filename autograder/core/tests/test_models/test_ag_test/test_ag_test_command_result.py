@@ -48,7 +48,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertIsNone(cmd_res.stderr_correct)
         self.assertFalse(cmd_res.stdout_truncated)
         self.assertFalse(cmd_res.stderr_truncated)
-        self.assertIsNone(cmd_res.partial_credit_points)
+        self.assertEqual(cmd_res.partial_credit_points, 0)
         self.assertEqual(cmd_res.partial_credit_error, ag_models.PartialCreditError.none)
 
     def test_create_cmd_result_no_defaults(self):

@@ -491,24 +491,26 @@ sys.stderr.flush()
     def test_program_times_out_with_stdout_partial_credit(self, *args):
         cmd = obj_build.make_stdout_partial_credit_test_command(
             self.ag_test_case,
-            cmd=self.timeout_cmd,
+            cmd=f'printf "<!! score: 10 !!>" && {self.timeout_cmd}',
             time_limit=1)
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.timed_out)
         self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(res.partial_credit_points, 0)
 
     def test_program_times_out_with_stderr_partial_credit(self, *args):
         cmd = obj_build.make_stderr_partial_credit_test_command(
             self.ag_test_case,
-            cmd=self.timeout_cmd,
+            cmd=f'printf "<!! score: 10 !!>" >&2 && {self.timeout_cmd}',
             time_limit=1)
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.timed_out)
         self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(res.partial_credit_points, 0)
 
     def test_program_prints_a_lot_of_output(self, *args):
         cmd = obj_build.make_full_ag_test_command(
