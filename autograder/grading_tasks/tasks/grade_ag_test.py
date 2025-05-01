@@ -266,19 +266,21 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
             else:
                 partial_credit_source = run_result.stderr
 
-            with open(partial_credit_source.name) as f:
-                partial_credit_text = f.read()
-
             regex_pattern = re.compile(ag_test_cmd.partial_credit_regex,)
-            matches = regex_pattern.findall(partial_credit_text)
 
-            if not matches:
+            partial_credit_points_match = None
+            with open(partial_credit_source.name) as f:
+                for line in f.readlines():
+                    for match in regex_pattern.finditer(line):
+                        partial_credit_points_match = match.group(1)
+
+            if not partial_credit_points_match:
                 result_data['partial_credit_points'] = 0
                 result_data['partial_credit_error'] = (
                     ag_models.PartialCreditError.failed_to_find_pattern)
             else:
                 try:
-                    result_data['partial_credit_points'] = int(matches[-1])
+                    result_data['partial_credit_points'] = int(partial_credit_points_match)
                 except ValueError:
                     result_data['partial_credit_points'] = 0
                     result_data['partial_credit_error'] = ag_models.PartialCreditError.non_integer

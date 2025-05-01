@@ -275,7 +275,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         cmd = obj_build.make_stdout_partial_credit_test_command(
             self.ag_test_case,
             max_points_for_partial_credit=10,
-            cmd='printf "<!! score: 10 !!>\n<!! score: 15 !!>\n<!! score: 9 !!>"')
+            cmd='printf "<!! score: 10 !!>\t<!! score: 15 !!>\t<!! score: 9 !!>"')
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
@@ -324,6 +324,16 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             res.partial_credit_error,
             ag_models.PartialCreditError.exceeded_max_points
         )
+
+    def test_partial_credit_with_non_utf_8_chars(self, *args):
+        cmd = obj_build.make_stdout_partial_credit_test_command(
+            self.ag_test_case,
+            cmd='printf "\x80<!! score: 2 !!>\x80"')
+        tasks.grade_submission_task(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(res.partial_credit_points, 2)
+        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
 
 
 @tag('slow', 'sandbox')
