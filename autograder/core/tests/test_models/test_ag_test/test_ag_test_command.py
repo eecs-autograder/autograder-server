@@ -80,6 +80,10 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertFalse(ag_cmd.block_process_spawn)
         self.assertEqual(constants.DEFAULT_PROCESS_LIMIT, ag_cmd.process_spawn_limit)
 
+        self.assertEqual(ag_models.PartialCreditSource.none, ag_cmd.partial_credit_source)
+        self.assertEqual(r'(?i)<!!\s*score:\s*(-?\d+)\s*!!>', ag_cmd.partial_credit_regex)
+        self.assertEqual(0, ag_cmd.max_points_for_partial_credit)
+
     def test_normal_fdbk_default(self):
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
@@ -529,6 +533,10 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             'expected_stderr_text',
             'expected_stderr_instructor_file',
 
+            'partial_credit_source',
+            'max_points_for_partial_credit',
+            'partial_credit_regex',
+
             'ignore_case',
             'ignore_whitespace',
             'ignore_whitespace_changes',
@@ -673,6 +681,7 @@ class InstructorFileDeleteBehaviorTestCase(UnitTestBase):
     """
     Regression tests for https://github.com/eecs-autograder/autograder-server/issues/403
     """
+
     def setUp(self):
         super().setUp()
 
@@ -798,3 +807,51 @@ class InstructorFileDeleteBehaviorTestCase(UnitTestBase):
         self.assertEqual(ag_models.ExpectedOutputSource.text,
                          self.ag_test_command.expected_stderr_source)
         self.assertIsNone(self.ag_test_command.expected_stderr_instructor_file)
+
+    def test_partial_credit_source_stdout_when_expected_stdout_source_is_not_none(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.ag_test_command.validate_and_update(
+                expected_stdout_source=ag_models.ExpectedOutputSource.text,
+                partial_credit_source=ag_models.PartialCreditSource.stdout
+            )
+        self.assertIn('partial_credit_source', cm.exception.message_dict)
+
+    def test_partial_credit_source_stderr_when_expected_stderr_source_is_not_none(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.ag_test_command.validate_and_update(
+                expected_stderr_source=ag_models.ExpectedOutputSource.text,
+                partial_credit_source=ag_models.PartialCreditSource.stderr
+            )
+        self.assertIn('partial_credit_source', cm.exception.message_dict)
+
+    def test_partial_credit_source_stdout_when_expected_stderr_source_is_not_none(self):
+        self.ag_test_command.validate_and_update(
+            expected_stderr_source=ag_models.ExpectedOutputSource.text,
+            partial_credit_source=ag_models.PartialCreditSource.stdout
+        )
+
+        self.assertEqual(self.ag_test_command.expected_stdout_source,
+                         ag_models.ExpectedOutputSource.none)
+        self.assertEqual(self.ag_test_command.expected_stderr_source,
+                         ag_models.ExpectedOutputSource.text)
+        self.assertEqual(self.ag_test_command.partial_credit_source,
+                         ag_models.PartialCreditSource.stdout)
+
+    def test_partial_credit_source_stderr_when_expected_stdout_source_is_not_none(self):
+        self.ag_test_command.validate_and_update(
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            partial_credit_source=ag_models.PartialCreditSource.stderr
+        )
+
+        self.assertEqual(self.ag_test_command.expected_stdout_source,
+                         ag_models.ExpectedOutputSource.text)
+        self.assertEqual(self.ag_test_command.expected_stderr_source,
+                         ag_models.ExpectedOutputSource.none)
+        self.assertEqual(self.ag_test_command.partial_credit_source,
+                         ag_models.PartialCreditSource.stderr)
+
+    def test_max_points_for_partial_credit_negative(self):
+        with self.assertRaises(exceptions.ValidationError):
+            self.ag_test_command.validate_and_update(
+                max_points_for_partial_credit=-1
+            )

@@ -6706,6 +6706,28 @@ components:
           nullable: true
           allOf:
           - $ref: '#/components/schemas/InstructorFile'
+        partial_credit_source:
+          description: "Specifies the output stream where partial credit output will\
+            \ be\n                     printed to. Note that stdout cannot be selected\
+            \ when\n                     expected_stdout_source is not none, and stderr\
+            \ cannot be selected\n                     when expected_stderr_source\
+            \ is not none"
+          nullable: false
+          enum:
+          - none
+          - stdout
+          - stderr
+          type: string
+        partial_credit_regex:
+          description: "Specifies the regex pattern used to extract the partial credit\n\
+            \                     score from the output stream"
+          nullable: false
+          type: string
+        max_points_for_partial_credit:
+          description: "The maximum number of points that can be awarded when using\n\
+            \                     partial credit scoring"
+          nullable: false
+          type: integer
         ignore_case:
           description: Ignore case when checking output. Equivalent to diff -i
           nullable: false
@@ -6839,6 +6861,9 @@ components:
       - expected_stderr_source
       - expected_stderr_text
       - expected_stderr_instructor_file
+      - partial_credit_source
+      - partial_credit_regex
+      - max_points_for_partial_credit
       - ignore_case
       - ignore_whitespace
       - ignore_whitespace_changes
@@ -7005,6 +7030,28 @@ components:
         points_for_correct_stderr:
           description: "The number of points to be awarded when this command\n   \
             \                  produces the correct stderr"
+          nullable: false
+          type: integer
+        partial_credit_source:
+          description: "Specifies the output stream where partial credit output will\
+            \ be\n                     printed to. Note that stdout cannot be selected\
+            \ when\n                     expected_stdout_source is not none, and stderr\
+            \ cannot be selected\n                     when expected_stderr_source\
+            \ is not none"
+          nullable: false
+          enum:
+          - none
+          - stdout
+          - stderr
+          type: string
+        partial_credit_regex:
+          description: "Specifies the regex pattern used to extract the partial credit\n\
+            \                     score from the output stream"
+          nullable: false
+          type: string
+        max_points_for_partial_credit:
+          description: "The maximum number of points that can be awarded when using\n\
+            \                     partial credit scoring"
           nullable: false
           type: integer
         deduction_for_wrong_return_code:
@@ -7236,6 +7283,28 @@ components:
         points_for_correct_stderr:
           description: "The number of points to be awarded when this command\n   \
             \                  produces the correct stderr"
+          nullable: false
+          type: integer
+        partial_credit_source:
+          description: "Specifies the output stream where partial credit output will\
+            \ be\n                     printed to. Note that stdout cannot be selected\
+            \ when\n                     expected_stdout_source is not none, and stderr\
+            \ cannot be selected\n                     when expected_stderr_source\
+            \ is not none"
+          nullable: false
+          enum:
+          - none
+          - stdout
+          - stderr
+          type: string
+        partial_credit_regex:
+          description: "Specifies the regex pattern used to extract the partial credit\n\
+            \                     score from the output stream"
+          nullable: false
+          type: string
+        max_points_for_partial_credit:
+          description: "The maximum number of points that can be awarded when using\n\
+            \                     partial credit scoring"
           nullable: false
           type: integer
         deduction_for_wrong_return_code:
@@ -7571,6 +7640,15 @@ components:
         stderr_points_possible:
           description: ''
           type: integer
+        partial_credit_points:
+          description: ''
+          type: integer
+        partial_credit_points_possible:
+          description: ''
+          type: integer
+        partial_credit_error:
+          description: ''
+          type: string
         total_points:
           description: ''
           type: integer
@@ -7596,6 +7674,9 @@ components:
       - stderr_correct
       - stderr_points
       - stderr_points_possible
+      - partial_credit_points
+      - partial_credit_points_possible
+      - partial_credit_error
       - total_points
       - total_points_possible
     FeedbackCategory:

@@ -26,6 +26,7 @@ class AGTestCommandFeedbackConfig(DictSerializable):
     """
     Contains feedback options for an AGTestCommand
     """
+
     def __init__(self,
                  visible: bool = True,
                  return_code_fdbk_level: ValueFeedbackLevel = ValueFeedbackLevel.get_min(),
@@ -117,6 +118,12 @@ class ExpectedReturnCode(models.TextChoices):
     none = 'none'  # Don't check return code
     zero = 'zero'
     nonzero = 'nonzero'
+
+
+class PartialCreditSource(models.TextChoices):
+    none = 'none'  # Don't look for partial credit output
+    stdout = 'stdout'
+    stderr = 'stderr'
 
 
 # The maximum length of the "expected_stdout_text" and "expected_stderr_text"
@@ -227,6 +234,21 @@ class AGTestCommand(AutograderModel):
         help_text='''An InstructorFile whose contents should be compared against this command's
                      stderr. This value is used (and may not be null) when expected_stderr_source
                      is ExpectedOutputSource.instructor_file and is ignored otherwise.''')
+
+    partial_credit_source = models.TextField(
+        choices=PartialCreditSource.choices, default=PartialCreditSource.none,
+        help_text='''Specifies the output stream where partial credit output will be
+                     printed to. Note that stdout cannot be selected when
+                     expected_stdout_source is not none, and stderr cannot be selected
+                     when expected_stderr_source is not none''')
+    partial_credit_regex = models.TextField(
+        default=r'(?i)<!!\s*score:\s*(-?\d+)\s*!!>',
+        help_text='''Specifies the regex pattern used to extract the partial credit
+                     score from the output stream''')
+    max_points_for_partial_credit = models.IntegerField(
+        default=0, validators=[MinValueValidator(0)],
+        help_text='''The maximum number of points that can be awarded when using
+                     partial credit scoring''')
 
     ignore_case = models.BooleanField(
         default=False,
@@ -402,6 +424,20 @@ class AGTestCommand(AutograderModel):
                     )
                 )
 
+        if (
+            self.expected_stdout_source != ExpectedOutputSource.none
+            and self.partial_credit_source == PartialCreditSource.stdout
+        ):
+            error_dict['partial_credit_source'] = (
+                'This field may not be stdout when expected_stdout_source is not none')
+
+        if (
+            self.expected_stderr_source != ExpectedOutputSource.none
+            and self.partial_credit_source == PartialCreditSource.stderr
+        ):
+            error_dict['partial_credit_source'] = (
+                'This field may not be stderr when expected_stderr_source is not none')
+
         if error_dict:
             raise exceptions.ValidationError(error_dict)
 
@@ -448,6 +484,10 @@ class AGTestCommand(AutograderModel):
         'expected_stderr_source',
         'expected_stderr_text',
         'expected_stderr_instructor_file',
+
+        'partial_credit_source',
+        'partial_credit_regex',
+        'max_points_for_partial_credit',
 
         'ignore_case',
         'ignore_whitespace',
@@ -506,6 +546,10 @@ class AGTestCommand(AutograderModel):
         'points_for_correct_return_code',
         'points_for_correct_stdout',
         'points_for_correct_stderr',
+
+        'partial_credit_source',
+        'partial_credit_regex',
+        'max_points_for_partial_credit',
 
         'deduction_for_wrong_return_code',
         'deduction_for_wrong_stdout',
