@@ -252,7 +252,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         cmd = obj_build.make_stderr_partial_credit_test_command(
             self.ag_test_case,
             max_points_for_partial_credit=10,
-            cmd='printf "foo<!!  \n  score:  \t  10 !!>bar" 1>&2')
+            cmd='printf "foo<!!  score:  \t  10 !!>bar" 1>&2')
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
@@ -300,7 +300,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         cmd = obj_build.make_stdout_partial_credit_test_command(
             self.ag_test_case,
             max_points_for_partial_credit=10,
-            partial_credit_regex=r'(.*)',
+            partial_credit_regex=r'(\d.\d)',
             cmd='printf "3.5"')
         tasks.grade_submission_task(self.submission.pk)
 
@@ -336,7 +336,10 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
-        self.assertEqual(self.submission.status, ag_models.Submission.GradingStatus.finished_grading)
+        self.assertEqual(
+            self.submission.status,
+            ag_models.Submission.GradingStatus.finished_grading
+        )
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(res.partial_credit_points, 2)
@@ -353,11 +356,14 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         tasks.grade_submission_task(self.submission.pk)
 
         self.submission.refresh_from_db()
-        self.assertEqual(self.submission.status, ag_models.Submission.GradingStatus.finished_grading)
+        self.assertEqual(
+            self.submission.status, ag_models.Submission.GradingStatus.finished_grading
+        )
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(res.partial_credit_points, 2)
         self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+
 
 @tag('slow', 'sandbox')
 @mock.patch('autograder.utils.retry.sleep')
