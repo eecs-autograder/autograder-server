@@ -269,8 +269,8 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
             regex_pattern = re.compile(ag_test_cmd.partial_credit_regex,)
 
             partial_credit_points_match = None
-            with open(partial_credit_source.name) as f:
-                for line in f.readlines():
+            with open(partial_credit_source.name, errors='surrogateescape') as f:
+                for line in f:
                     for match in regex_pattern.finditer(line):
                         partial_credit_points_match = match.group(1)
 

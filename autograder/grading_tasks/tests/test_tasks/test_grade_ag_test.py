@@ -325,16 +325,39 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             ag_models.PartialCreditError.exceeded_max_points
         )
 
-    def test_partial_credit_with_non_utf_8_chars(self, *args):
+    def test_stdout_partial_credit_with_non_utf_8_chars(self, *args):
+        non_utf_8_prog = """
+            python3 -c "import sys; sys.stdout.buffer.write(b'<!! score: 2 !!>>\\x80')"
+            """
+
         cmd = obj_build.make_stdout_partial_credit_test_command(
             self.ag_test_case,
-            cmd='printf "\x80<!! score: 2 !!>\x80"')
+            cmd=non_utf_8_prog)
         tasks.grade_submission_task(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(self.submission.status, ag_models.Submission.GradingStatus.finished_grading)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(res.partial_credit_points, 2)
         self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
 
+    def test_stderr_partial_credit_with_non_utf_8_chars(self, *args):
+        non_utf_8_prog = """
+            python3 -c "import sys; sys.stderr.buffer.write(b'<!! score: 2 !!>>\\x80')"
+            """
+
+        cmd = obj_build.make_stderr_partial_credit_test_command(
+            self.ag_test_case,
+            cmd=non_utf_8_prog)
+        tasks.grade_submission_task(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(self.submission.status, ag_models.Submission.GradingStatus.finished_grading)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(res.partial_credit_points, 2)
+        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
 
 @tag('slow', 'sandbox')
 @mock.patch('autograder.utils.retry.sleep')
