@@ -9,7 +9,7 @@ from ..ag_command import AGCommandResultBase
 from .ag_test_command import AGTestCommand
 
 
-class PartialCreditError(models.TextChoices):
+class CustomScoringError(models.TextChoices):
     none = 'none'
     non_integer = 'non_integer'
     exceeded_max_points = 'exceeded_max_points'
@@ -43,9 +43,9 @@ class AGTestCommandResult(AGCommandResultBase):
     stdout_correct = models.BooleanField(blank=True, null=True, default=None)
     stderr_correct = models.BooleanField(blank=True, null=True, default=None)
 
-    partial_credit_points = models.IntegerField(default=0)
-    partial_credit_error = models.TextField(
-        choices=PartialCreditError.choices, default=PartialCreditError.none)
+    custom_scoring_points = models.IntegerField(default=0)
+    custom_scoring_error = models.TextField(
+        choices=CustomScoringError.choices, default=CustomScoringError.none)
 
     @property
     def stdout_filename(self) -> str:
@@ -78,6 +78,6 @@ class AGTestCommandResult(AGCommandResultBase):
         'stdout_truncated',
         'stderr_truncated',
 
-        'partial_credit_points',
-        'partial_credit_error',
+        'custom_scoring_points',
+        'custom_scoring_error',
     )

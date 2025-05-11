@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterField(
             model_name='agtestcommandresult',
-            name='partial_credit_points',
+            name='custom_scoring_points',
             field=models.IntegerField(default=0),
         ),
     ]

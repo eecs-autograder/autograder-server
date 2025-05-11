@@ -13,17 +13,17 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='agtestcommand',
-            name='max_points_for_partial_credit',
+            name='max_points_for_custom_scoring',
             field=models.IntegerField(default=0, help_text='The maximum number of points that can be awarded when using\n                     partial credit scoring', validators=[django.core.validators.MinValueValidator(0)]),
         ),
         migrations.AddField(
             model_name='agtestcommand',
-            name='partial_credit_regex',
+            name='custom_scoring_regex',
             field=models.TextField(default='<!! score: (-?\\d+) !!>', help_text='Specifies the regex pattern used to extract the partial credit\n                     score from the output stream'),
         ),
         migrations.AddField(
             model_name='agtestcommand',
-            name='partial_credit_source',
+            name='custom_scoring_source',
             field=models.TextField(choices=[('none', 'None'), ('stdout', 'Stdout'), ('stderr', 'Stderr')], default='none', help_text='Specifies the output stream where partial credit output will be\n                     printed to. Note that stdout cannot be selected when\n                     expected_stdout_source is not none, and stderr cannot be selected\n                     when expected_stderr_source is not none'),
         ),
     ]

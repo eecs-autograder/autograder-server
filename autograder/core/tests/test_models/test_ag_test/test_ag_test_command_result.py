@@ -48,8 +48,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertIsNone(cmd_res.stderr_correct)
         self.assertFalse(cmd_res.stdout_truncated)
         self.assertFalse(cmd_res.stderr_truncated)
-        self.assertEqual(cmd_res.partial_credit_points, 0)
-        self.assertEqual(cmd_res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(cmd_res.custom_scoring_points, 0)
+        self.assertEqual(cmd_res.custom_scoring_error, ag_models.CustomScoringError.none)
 
     def test_create_cmd_result_no_defaults(self):
         cmd_res_kwargs = {
@@ -87,8 +87,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
             'stdout_truncated',
             'stderr_truncated',
 
-            'partial_credit_points',
-            'partial_credit_error',
+            'custom_scoring_points',
+            'custom_scoring_error',
         ]
 
         cmd_res = ag_models.AGTestCommandResult.objects.validate_and_create(
