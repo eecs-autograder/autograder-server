@@ -43,6 +43,7 @@ class AGTestCommandResult(AGCommandResultBase):
     stdout_correct = models.BooleanField(blank=True, null=True, default=None)
     stderr_correct = models.BooleanField(blank=True, null=True, default=None)
 
+    custom_scoring_used = models.BooleanField(default=False)
     custom_scoring_points = models.IntegerField(default=0)
     custom_scoring_error = models.TextField(
         choices=CustomScoringError.choices, default=CustomScoringError.none)

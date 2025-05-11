@@ -261,6 +261,8 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
 
         if (ag_test_cmd.custom_scoring_source != ag_models.CustomScoringSource.none
                 and run_result.timed_out is False):
+            result_data['custom_scoring_used'] = True
+
             if ag_test_cmd.custom_scoring_source == ag_models.CustomScoringSource.stdout:
                 custom_scoring_source = run_result.stdout
             else:
