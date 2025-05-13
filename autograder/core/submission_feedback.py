@@ -289,6 +289,10 @@ class AGTestCommandResultProtocol(Protocol):
         ...
 
     @property
+    def custom_scoring_used(self) -> bool:
+        ...
+
+    @property
     def custom_scoring_points(self) -> int:
         ...
 
@@ -340,6 +344,10 @@ class SerializedAGTestCommandResultWrapper:
     @property
     def stderr_truncated(self) -> bool:
         return cast(bool, self._cmd_result_dict['stderr_truncated'])
+
+    @property
+    def custom_scoring_used(self) -> bool:
+        return cast(bool, self._cmd_result_dict['custom_scoring_used'])
 
     @property
     def custom_scoring_points(self) -> int:
@@ -1211,6 +1219,10 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return self._cmd.points_for_correct_stderr
 
     @property
+    def custom_scoring_used(self) -> bool:
+        return self._ag_test_command_result.custom_scoring_used
+
+    @property
     def custom_scoring_points(self) -> int:
         if not self._fdbk.show_points:
             return 0
@@ -1232,27 +1244,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def custom_scoring_error(self) -> str:
-        if not self._fdbk.show_points:
-            return ''
-
-        match self._ag_test_command_result.custom_scoring_error:
-            case CustomScoringError.none:
-                return ''
-            case CustomScoringError.non_integer:
-                return 'Non-integer value found for partial credit score'
-            case CustomScoringError.exceeded_max_points:
-                return (f'Partial credit points ({self._ag_test_command_result}) exceeded'
-                        ' the number of partial credit points available'
-                        f' ({self._cmd.max_points_for_custom_scoring})')
-            case CustomScoringError.failed_to_find_pattern:
-                return (
-                    'No output matched the specified pattern for determining partial'
-                    ' credit points')
-            case _:
-                raise AssertionError(
-                    f'Unhandled error: {self._ag_test_command_result.custom_scoring_error}.'
-                    ' Expected code to be unreachable'
-                )
+        return self._ag_test_command_result.custom_scoring_error
 
     @property
     def total_points(self) -> int:
@@ -1294,6 +1286,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
         'stderr_points',
         'stderr_points_possible',
 
+        'custom_scoring_used',
         'custom_scoring_points',
         'custom_scoring_points_possible',
         'custom_scoring_error',

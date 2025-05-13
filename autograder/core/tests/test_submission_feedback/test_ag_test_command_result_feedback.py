@@ -946,7 +946,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.total_points_possible)
         self.assertEqual(0, fdbk.custom_scoring_points)
         self.assertEqual(0, fdbk.custom_scoring_points_possible)
-        self.assertEqual('', fdbk.custom_scoring_error)
+        self.assertEqual(ag_models.CustomScoringError.none, fdbk.custom_scoring_error)
 
         correct_result.delete()
 
@@ -956,7 +956,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.total_points_possible)
         self.assertEqual(0, fdbk.custom_scoring_points)
         self.assertEqual(0, fdbk.custom_scoring_points_possible)
-        self.assertEqual('', fdbk.custom_scoring_error)
+        self.assertEqual(ag_models.CustomScoringError.none, fdbk.custom_scoring_error)
 
     def test_points_visibility(self):
         self.ag_test_command.validate_and_update(normal_fdbk_config={'show_points': False})
@@ -1359,6 +1359,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
             'stderr_points',
             'stderr_points_possible',
 
+            'custom_scoring_used',
             'custom_scoring_points',
             'custom_scoring_points_possible',
             'custom_scoring_error',

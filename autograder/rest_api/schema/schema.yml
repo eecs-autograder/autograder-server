@@ -7640,6 +7640,9 @@ components:
         stderr_points_possible:
           description: ''
           type: integer
+        custom_scoring_used:
+          description: ''
+          type: boolean
         custom_scoring_points:
           description: ''
           type: integer
@@ -7674,6 +7677,7 @@ components:
       - stderr_correct
       - stderr_points
       - stderr_points_possible
+      - custom_scoring_used
       - custom_scoring_points
       - custom_scoring_points_possible
       - custom_scoring_error

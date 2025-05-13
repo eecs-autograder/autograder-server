@@ -48,6 +48,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertIsNone(cmd_res.stderr_correct)
         self.assertFalse(cmd_res.stdout_truncated)
         self.assertFalse(cmd_res.stderr_truncated)
+        self.assertFalse(cmd_res.custom_scoring_used)
         self.assertEqual(cmd_res.custom_scoring_points, 0)
         self.assertEqual(cmd_res.custom_scoring_error, ag_models.CustomScoringError.none)
 
@@ -87,6 +88,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             'stdout_truncated',
             'stderr_truncated',
 
+            'custom_scoring_used',
             'custom_scoring_points',
             'custom_scoring_error',
         ]

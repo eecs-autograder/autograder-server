@@ -79,6 +79,7 @@ class AGTestCommandResult(AGCommandResultBase):
         'stdout_truncated',
         'stderr_truncated',
 
+        'custom_scoring_used',
         'custom_scoring_points',
         'custom_scoring_error',
     )
