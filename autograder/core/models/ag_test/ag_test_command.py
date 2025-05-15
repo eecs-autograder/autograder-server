@@ -249,6 +249,9 @@ class AGTestCommand(AutograderModel):
         default=0, validators=[MinValueValidator(0)],
         help_text='''The maximum number of points that can be awarded when using
                      partial credit scoring''')
+    custom_scoring_description = models.TextField(
+        blank=True, null=True, default=None,
+        help_text="An optional description for custom scoring points")
 
     ignore_case = models.BooleanField(
         default=False,
@@ -488,6 +491,7 @@ class AGTestCommand(AutograderModel):
         'custom_scoring_source',
         'custom_scoring_regex',
         'max_points_for_custom_scoring',
+        'custom_scoring_description',
 
         'ignore_case',
         'ignore_whitespace',
@@ -550,6 +554,7 @@ class AGTestCommand(AutograderModel):
         'custom_scoring_source',
         'custom_scoring_regex',
         'max_points_for_custom_scoring',
+        'custom_scoring_description',
 
         'deduction_for_wrong_return_code',
         'deduction_for_wrong_stdout',

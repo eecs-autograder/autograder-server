@@ -6728,6 +6728,10 @@ components:
             \                     partial credit scoring"
           nullable: false
           type: integer
+        custom_scoring_description:
+          description: An optional description for custom scoring points
+          nullable: true
+          type: string
         ignore_case:
           description: Ignore case when checking output. Equivalent to diff -i
           nullable: false
@@ -6864,6 +6868,7 @@ components:
       - custom_scoring_source
       - custom_scoring_regex
       - max_points_for_custom_scoring
+      - custom_scoring_description
       - ignore_case
       - ignore_whitespace
       - ignore_whitespace_changes
@@ -7054,6 +7059,10 @@ components:
             \                     partial credit scoring"
           nullable: false
           type: integer
+        custom_scoring_description:
+          description: An optional description for custom scoring points
+          nullable: true
+          type: string
         deduction_for_wrong_return_code:
           description: "The number of points to deduct when this command\n       \
             \              produces the wrong return code (this value must be negative).\n\
@@ -7307,6 +7316,10 @@ components:
             \                     partial credit scoring"
           nullable: false
           type: integer
+        custom_scoring_description:
+          description: An optional description for custom scoring points
+          nullable: true
+          type: string
         deduction_for_wrong_return_code:
           description: "The number of points to deduct when this command\n       \
             \              produces the wrong return code (this value must be negative).\n\
@@ -7652,6 +7665,10 @@ components:
         custom_scoring_error:
           description: ''
           type: string
+        custom_scoring_description:
+          description: ''
+          nullable: true
+          type: string
         total_points:
           description: ''
           type: integer
@@ -7681,6 +7698,7 @@ components:
       - custom_scoring_points
       - custom_scoring_points_possible
       - custom_scoring_error
+      - custom_scoring_description
       - total_points
       - total_points_possible
     FeedbackCategory:

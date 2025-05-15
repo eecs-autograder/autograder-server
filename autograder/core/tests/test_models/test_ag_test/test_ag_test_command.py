@@ -83,6 +83,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertEqual(ag_models.CustomScoringSource.none, ag_cmd.custom_scoring_source)
         self.assertEqual(r'(?i)<!!\s*score:\s*(-?\d+)\s*!!>', ag_cmd.custom_scoring_regex)
         self.assertEqual(0, ag_cmd.max_points_for_custom_scoring)
+        self.assertEqual(None, ag_cmd.custom_scoring_description)
 
     def test_normal_fdbk_default(self):
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
@@ -536,6 +537,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             'custom_scoring_source',
             'max_points_for_custom_scoring',
             'custom_scoring_regex',
+            'custom_scoring_description',
 
             'ignore_case',
             'ignore_whitespace',
@@ -851,7 +853,8 @@ class InstructorFileDeleteBehaviorTestCase(UnitTestBase):
                          ag_models.CustomScoringSource.stderr)
 
     def test_max_points_for_custom_scoring_negative(self):
-        with self.assertRaises(exceptions.ValidationError):
+        with self.assertRaises(exceptions.ValidationError) as cm:
             self.ag_test_command.validate_and_update(
                 max_points_for_custom_scoring=-1
             )
+        self.assertIn('max_points_for_custom_scoring', cm.exception.message_dict)
