@@ -1247,10 +1247,10 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return self._ag_test_command_result.custom_scoring_error
 
     @property
-    def custom_scoring_description(self) -> Optional[str]:
+    def custom_scoring_label(self) -> Optional[str]:
         if not self._fdbk.show_points:
             return None
-        return self._cmd.custom_scoring_description
+        return self._cmd.custom_scoring_label
 
     @property
     def total_points(self) -> int:
@@ -1296,7 +1296,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
         'custom_scoring_points',
         'custom_scoring_points_possible',
         'custom_scoring_error',
-        'custom_scoring_description',
+        'custom_scoring_label',
 
         'total_points',
         'total_points_possible'

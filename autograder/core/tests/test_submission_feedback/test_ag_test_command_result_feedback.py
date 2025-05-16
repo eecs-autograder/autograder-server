@@ -351,46 +351,43 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         )
         self.assertEqual(self.max_points_possible, fdbk.total_points)
 
-    def test_custom_scoring_description(self):
-        # stdout custom scoring with default and custom description
-        self.ag_test_command = obj_build.make_stdout_custom_scoring_test_command(
-            self.ag_test_case,
-            custom_scoring_description='demerits'
-        )
-        cmd_result = self.make_correct_result()
-        fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
-
-        self.assertEqual('demerits', fdbk.custom_scoring_description)
-        self.ag_test_command.delete()
-
+    def test_stdout_custom_scoring_label_default_value(self):
         self.ag_test_command = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
         )
         cmd_result = self.make_correct_result()
         fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
 
-        self.assertIsNone(fdbk.custom_scoring_description)
-        self.ag_test_command.delete()
+        self.assertIsNone(fdbk.custom_scoring_label)
 
-        # stderr custom scoring with default and custom description
-        self.ag_test_command = obj_build.make_stderr_custom_scoring_test_command(
+    def test_stdout_custom_scoring_label_provided_value(self):
+        self.ag_test_command = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
-            custom_scoring_description='kudos'
+            custom_scoring_label='demerits'
         )
         cmd_result = self.make_correct_result()
         fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
 
-        self.assertEqual('kudos', fdbk.custom_scoring_description)
-        self.ag_test_command.delete()
+        self.assertEqual('demerits', fdbk.custom_scoring_label)
 
+    def test_stderr_custom_scoring_label_default_value(self):
+        self.ag_test_command = obj_build.make_stderr_custom_scoring_test_command(
+            self.ag_test_case,
+            custom_scoring_label='kudos'
+        )
+        cmd_result = self.make_correct_result()
+        fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
+
+        self.assertEqual('kudos', fdbk.custom_scoring_label)
+
+    def test_stderr_custom_scoring_label_provided_value(self):
         self.ag_test_command = obj_build.make_stderr_custom_scoring_test_command(
             self.ag_test_case,
         )
         cmd_result = self.make_correct_result()
         fdbk = get_cmd_fdbk(cmd_result, ag_models.FeedbackCategory.max)
 
-        self.assertIsNone(fdbk.custom_scoring_description)
-        self.ag_test_command.delete()
+        self.assertIsNone(fdbk.custom_scoring_label)
 
     def test_return_code_not_checked(self):
         self.ag_test_command.validate_and_update(
@@ -988,7 +985,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.custom_scoring_points)
         self.assertEqual(0, fdbk.custom_scoring_points_possible)
         self.assertEqual(ag_models.CustomScoringError.none, fdbk.custom_scoring_error)
-        self.assertIsNone(fdbk.custom_scoring_description)
+        self.assertIsNone(fdbk.custom_scoring_label)
 
         correct_result.delete()
 
@@ -999,7 +996,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.custom_scoring_points)
         self.assertEqual(0, fdbk.custom_scoring_points_possible)
         self.assertEqual(ag_models.CustomScoringError.none, fdbk.custom_scoring_error)
-        self.assertIsNone(fdbk.custom_scoring_description)
+        self.assertIsNone(fdbk.custom_scoring_label)
 
     def test_points_visibility(self):
         self.ag_test_command.validate_and_update(normal_fdbk_config={'show_points': False})
@@ -1009,7 +1006,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.ag_test_command = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
             normal_fdbk_config={'show_points': False},
-            custom_scoring_description="Special points"
+            custom_scoring_label="Special points"
         )
         self._do_points_visibility_test()
 
@@ -1017,7 +1014,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.ag_test_command = obj_build.make_stderr_custom_scoring_test_command(
             self.ag_test_case,
             normal_fdbk_config={'show_points': False},
-            custom_scoring_description="Special points"
+            custom_scoring_label="Special points"
         )
         self._do_points_visibility_test()
 
@@ -1408,7 +1405,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
             'custom_scoring_points',
             'custom_scoring_points_possible',
             'custom_scoring_error',
-            'custom_scoring_description',
+            'custom_scoring_label',
 
             'total_points',
             'total_points_possible',

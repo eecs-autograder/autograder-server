@@ -83,7 +83,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertEqual(ag_models.CustomScoringSource.none, ag_cmd.custom_scoring_source)
         self.assertEqual(r'(?i)<!!\s*score:\s*(-?\d+)\s*!!>', ag_cmd.custom_scoring_regex)
         self.assertEqual(0, ag_cmd.max_points_for_custom_scoring)
-        self.assertEqual(None, ag_cmd.custom_scoring_description)
+        self.assertEqual(None, ag_cmd.custom_scoring_label)
 
     def test_normal_fdbk_default(self):
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
@@ -537,7 +537,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             'custom_scoring_source',
             'max_points_for_custom_scoring',
             'custom_scoring_regex',
-            'custom_scoring_description',
+            'custom_scoring_label',
 
             'ignore_case',
             'ignore_whitespace',

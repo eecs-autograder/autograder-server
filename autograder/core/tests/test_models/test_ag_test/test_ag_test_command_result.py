@@ -52,7 +52,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertEqual(cmd_res.custom_scoring_points, 0)
         self.assertEqual(cmd_res.custom_scoring_error, ag_models.CustomScoringError.none)
 
-    def test_create_cmd_result_no_defaults(self):
+    def test_cmd_result_to_dict(self):
         cmd_res_kwargs = {
             'ag_test_command': self.cmd,
             'ag_test_case_result': self.case_result,
