@@ -12,12 +12,12 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterField(
             model_name='agtestcommand',
-            name='partial_credit_regex',
+            name='custom_scoring_regex',
             field=models.TextField(default='(?i)<!!\\s*score:\\s*(-?\\d+)\\s*!!>', help_text='Specifies the regex pattern used to extract the partial credit\n                     score from the output stream'),
         ),
         migrations.AlterField(
             model_name='agtestcommandresult',
-            name='partial_credit_error',
+            name='custom_scoring_error',
             field=models.TextField(choices=[('none', 'None'), ('non_integer', 'Non Integer'), ('exceeded_max_points', 'Exceeded Max Points'), ('failed_to_find_pattern', 'Failed To Find Pattern')], default='none'),
         ),
     ]

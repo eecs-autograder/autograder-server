@@ -120,7 +120,7 @@ class ExpectedReturnCode(models.TextChoices):
     nonzero = 'nonzero'
 
 
-class PartialCreditSource(models.TextChoices):
+class CustomScoringSource(models.TextChoices):
     none = 'none'  # Don't look for partial credit output
     stdout = 'stdout'
     stderr = 'stderr'
@@ -235,20 +235,23 @@ class AGTestCommand(AutograderModel):
                      stderr. This value is used (and may not be null) when expected_stderr_source
                      is ExpectedOutputSource.instructor_file and is ignored otherwise.''')
 
-    partial_credit_source = models.TextField(
-        choices=PartialCreditSource.choices, default=PartialCreditSource.none,
+    custom_scoring_source = models.TextField(
+        choices=CustomScoringSource.choices, default=CustomScoringSource.none,
         help_text='''Specifies the output stream where partial credit output will be
                      printed to. Note that stdout cannot be selected when
                      expected_stdout_source is not none, and stderr cannot be selected
                      when expected_stderr_source is not none''')
-    partial_credit_regex = models.TextField(
+    custom_scoring_regex = models.TextField(
         default=r'(?i)<!!\s*score:\s*(-?\d+)\s*!!>',
         help_text='''Specifies the regex pattern used to extract the partial credit
                      score from the output stream''')
-    max_points_for_partial_credit = models.IntegerField(
+    max_points_for_custom_scoring = models.IntegerField(
         default=0, validators=[MinValueValidator(0)],
         help_text='''The maximum number of points that can be awarded when using
                      partial credit scoring''')
+    custom_scoring_label = models.TextField(
+        blank=True, null=True, default=None,
+        help_text="An optional label for custom scoring points")
 
     ignore_case = models.BooleanField(
         default=False,
@@ -426,16 +429,16 @@ class AGTestCommand(AutograderModel):
 
         if (
             self.expected_stdout_source != ExpectedOutputSource.none
-            and self.partial_credit_source == PartialCreditSource.stdout
+            and self.custom_scoring_source == CustomScoringSource.stdout
         ):
-            error_dict['partial_credit_source'] = (
+            error_dict['custom_scoring_source'] = (
                 'This field may not be stdout when expected_stdout_source is not none')
 
         if (
             self.expected_stderr_source != ExpectedOutputSource.none
-            and self.partial_credit_source == PartialCreditSource.stderr
+            and self.custom_scoring_source == CustomScoringSource.stderr
         ):
-            error_dict['partial_credit_source'] = (
+            error_dict['custom_scoring_source'] = (
                 'This field may not be stderr when expected_stderr_source is not none')
 
         if error_dict:
@@ -485,9 +488,10 @@ class AGTestCommand(AutograderModel):
         'expected_stderr_text',
         'expected_stderr_instructor_file',
 
-        'partial_credit_source',
-        'partial_credit_regex',
-        'max_points_for_partial_credit',
+        'custom_scoring_source',
+        'custom_scoring_regex',
+        'max_points_for_custom_scoring',
+        'custom_scoring_label',
 
         'ignore_case',
         'ignore_whitespace',
@@ -547,9 +551,10 @@ class AGTestCommand(AutograderModel):
         'points_for_correct_stdout',
         'points_for_correct_stderr',
 
-        'partial_credit_source',
-        'partial_credit_regex',
-        'max_points_for_partial_credit',
+        'custom_scoring_source',
+        'custom_scoring_regex',
+        'max_points_for_custom_scoring',
+        'custom_scoring_label',
 
         'deduction_for_wrong_return_code',
         'deduction_for_wrong_stdout',

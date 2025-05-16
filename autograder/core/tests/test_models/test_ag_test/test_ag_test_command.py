@@ -80,9 +80,10 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertFalse(ag_cmd.block_process_spawn)
         self.assertEqual(constants.DEFAULT_PROCESS_LIMIT, ag_cmd.process_spawn_limit)
 
-        self.assertEqual(ag_models.PartialCreditSource.none, ag_cmd.partial_credit_source)
-        self.assertEqual(r'(?i)<!!\s*score:\s*(-?\d+)\s*!!>', ag_cmd.partial_credit_regex)
-        self.assertEqual(0, ag_cmd.max_points_for_partial_credit)
+        self.assertEqual(ag_models.CustomScoringSource.none, ag_cmd.custom_scoring_source)
+        self.assertEqual(r'(?i)<!!\s*score:\s*(-?\d+)\s*!!>', ag_cmd.custom_scoring_regex)
+        self.assertEqual(0, ag_cmd.max_points_for_custom_scoring)
+        self.assertEqual(None, ag_cmd.custom_scoring_label)
 
     def test_normal_fdbk_default(self):
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
@@ -533,9 +534,10 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             'expected_stderr_text',
             'expected_stderr_instructor_file',
 
-            'partial_credit_source',
-            'max_points_for_partial_credit',
-            'partial_credit_regex',
+            'custom_scoring_source',
+            'max_points_for_custom_scoring',
+            'custom_scoring_regex',
+            'custom_scoring_label',
 
             'ignore_case',
             'ignore_whitespace',
@@ -808,50 +810,51 @@ class InstructorFileDeleteBehaviorTestCase(UnitTestBase):
                          self.ag_test_command.expected_stderr_source)
         self.assertIsNone(self.ag_test_command.expected_stderr_instructor_file)
 
-    def test_partial_credit_source_stdout_when_expected_stdout_source_is_not_none(self):
+    def test_custom_scoring_source_stdout_when_expected_stdout_source_is_not_none(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             self.ag_test_command.validate_and_update(
                 expected_stdout_source=ag_models.ExpectedOutputSource.text,
-                partial_credit_source=ag_models.PartialCreditSource.stdout
+                custom_scoring_source=ag_models.CustomScoringSource.stdout
             )
-        self.assertIn('partial_credit_source', cm.exception.message_dict)
+        self.assertIn('custom_scoring_source', cm.exception.message_dict)
 
-    def test_partial_credit_source_stderr_when_expected_stderr_source_is_not_none(self):
+    def test_custom_scoring_source_stderr_when_expected_stderr_source_is_not_none(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             self.ag_test_command.validate_and_update(
                 expected_stderr_source=ag_models.ExpectedOutputSource.text,
-                partial_credit_source=ag_models.PartialCreditSource.stderr
+                custom_scoring_source=ag_models.CustomScoringSource.stderr
             )
-        self.assertIn('partial_credit_source', cm.exception.message_dict)
+        self.assertIn('custom_scoring_source', cm.exception.message_dict)
 
-    def test_partial_credit_source_stdout_when_expected_stderr_source_is_not_none(self):
+    def test_custom_scoring_source_stdout_when_expected_stderr_source_is_not_none(self):
         self.ag_test_command.validate_and_update(
             expected_stderr_source=ag_models.ExpectedOutputSource.text,
-            partial_credit_source=ag_models.PartialCreditSource.stdout
+            custom_scoring_source=ag_models.CustomScoringSource.stdout
         )
 
         self.assertEqual(self.ag_test_command.expected_stdout_source,
                          ag_models.ExpectedOutputSource.none)
         self.assertEqual(self.ag_test_command.expected_stderr_source,
                          ag_models.ExpectedOutputSource.text)
-        self.assertEqual(self.ag_test_command.partial_credit_source,
-                         ag_models.PartialCreditSource.stdout)
+        self.assertEqual(self.ag_test_command.custom_scoring_source,
+                         ag_models.CustomScoringSource.stdout)
 
-    def test_partial_credit_source_stderr_when_expected_stdout_source_is_not_none(self):
+    def test_custom_scoring_source_stderr_when_expected_stdout_source_is_not_none(self):
         self.ag_test_command.validate_and_update(
             expected_stdout_source=ag_models.ExpectedOutputSource.text,
-            partial_credit_source=ag_models.PartialCreditSource.stderr
+            custom_scoring_source=ag_models.CustomScoringSource.stderr
         )
 
         self.assertEqual(self.ag_test_command.expected_stdout_source,
                          ag_models.ExpectedOutputSource.text)
         self.assertEqual(self.ag_test_command.expected_stderr_source,
                          ag_models.ExpectedOutputSource.none)
-        self.assertEqual(self.ag_test_command.partial_credit_source,
-                         ag_models.PartialCreditSource.stderr)
+        self.assertEqual(self.ag_test_command.custom_scoring_source,
+                         ag_models.CustomScoringSource.stderr)
 
-    def test_max_points_for_partial_credit_negative(self):
-        with self.assertRaises(exceptions.ValidationError):
+    def test_max_points_for_custom_scoring_negative(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
             self.ag_test_command.validate_and_update(
-                max_points_for_partial_credit=-1
+                max_points_for_custom_scoring=-1
             )
+        self.assertIn('max_points_for_custom_scoring', cm.exception.message_dict)

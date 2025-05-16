@@ -412,44 +412,44 @@ def make_full_ag_test_command(
     return ag_models.AGTestCommand.objects.validate_and_create(**base_kwargs)
 
 
-def make_stdout_partial_credit_test_command(
+def make_stdout_custom_scoring_test_command(
     ag_test_case: ag_models.AGTestCase | None = None,
     **command_kwargs,
 ):
-    return _make_partial_credit_test_command(
+    return _make_custom_scoring_test_command(
         ag_test_case=ag_test_case,
         **command_kwargs)
 
 
-def make_stderr_partial_credit_test_command(
+def make_stderr_custom_scoring_test_command(
     ag_test_case: ag_models.AGTestCase | None = None,
     **command_kwargs,
 ):
-    return _make_partial_credit_test_command(
+    return _make_custom_scoring_test_command(
         ag_test_case=ag_test_case,
         stderr=True,
         **command_kwargs)
 
 
-def _make_partial_credit_test_command(
+def _make_custom_scoring_test_command(
     ag_test_case: ag_models.AGTestCase | None = None,
-    max_points_for_partial_credit: int = 100,
+    max_points_for_custom_scoring: int = 100,
     stderr: bool = False,
     **command_kwargs,
 ):
     cmd = make_full_ag_test_command(ag_test_case, **command_kwargs)
-    cmd.max_points_for_partial_credit = max_points_for_partial_credit
+    cmd.max_points_for_custom_scoring = max_points_for_custom_scoring
 
     if stderr:
         cmd.expected_stderr_source = ag_models.ExpectedOutputSource.none
         cmd.points_for_correct_stderr = 0
         cmd.deduction_for_wrong_stderr = 0
-        cmd.partial_credit_source = ag_models.PartialCreditSource.stderr
+        cmd.custom_scoring_source = ag_models.CustomScoringSource.stderr
     else:
         cmd.expected_stdout_source = ag_models.ExpectedOutputSource.none
         cmd.points_for_correct_stdout = 0
         cmd.deduction_for_wrong_stdout = 0
-        cmd.partial_credit_source = ag_models.PartialCreditSource.stdout
+        cmd.custom_scoring_source = ag_models.CustomScoringSource.stdout
 
     cmd.save()
     return cmd
@@ -502,7 +502,7 @@ def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand
         'stdout_correct': True,
         'stderr_correct': True,
 
-        'partial_credit_points': ag_test_command.max_points_for_partial_credit
+        'custom_scoring_points': ag_test_command.max_points_for_custom_scoring
     }
 
     kwargs.update(result_kwargs)
@@ -535,7 +535,7 @@ def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestComma
     result.return_code_correct = False
     result.stdout_correct = False
     result.stderr_correct = False
-    result.partial_credit_points = 0
+    result.custom_scoring_points = 0
     result.save()
 
     with open(result.stdout_filename, 'a') as f:

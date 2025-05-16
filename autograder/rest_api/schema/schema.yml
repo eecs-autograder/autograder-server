@@ -6706,7 +6706,7 @@ components:
           nullable: true
           allOf:
           - $ref: '#/components/schemas/InstructorFile'
-        partial_credit_source:
+        custom_scoring_source:
           description: "Specifies the output stream where partial credit output will\
             \ be\n                     printed to. Note that stdout cannot be selected\
             \ when\n                     expected_stdout_source is not none, and stderr\
@@ -6718,16 +6718,20 @@ components:
           - stdout
           - stderr
           type: string
-        partial_credit_regex:
+        custom_scoring_regex:
           description: "Specifies the regex pattern used to extract the partial credit\n\
             \                     score from the output stream"
           nullable: false
           type: string
-        max_points_for_partial_credit:
+        max_points_for_custom_scoring:
           description: "The maximum number of points that can be awarded when using\n\
             \                     partial credit scoring"
           nullable: false
           type: integer
+        custom_scoring_label:
+          description: An optional label for custom scoring points
+          nullable: true
+          type: string
         ignore_case:
           description: Ignore case when checking output. Equivalent to diff -i
           nullable: false
@@ -6861,9 +6865,10 @@ components:
       - expected_stderr_source
       - expected_stderr_text
       - expected_stderr_instructor_file
-      - partial_credit_source
-      - partial_credit_regex
-      - max_points_for_partial_credit
+      - custom_scoring_source
+      - custom_scoring_regex
+      - max_points_for_custom_scoring
+      - custom_scoring_label
       - ignore_case
       - ignore_whitespace
       - ignore_whitespace_changes
@@ -7032,7 +7037,7 @@ components:
             \                  produces the correct stderr"
           nullable: false
           type: integer
-        partial_credit_source:
+        custom_scoring_source:
           description: "Specifies the output stream where partial credit output will\
             \ be\n                     printed to. Note that stdout cannot be selected\
             \ when\n                     expected_stdout_source is not none, and stderr\
@@ -7044,16 +7049,20 @@ components:
           - stdout
           - stderr
           type: string
-        partial_credit_regex:
+        custom_scoring_regex:
           description: "Specifies the regex pattern used to extract the partial credit\n\
             \                     score from the output stream"
           nullable: false
           type: string
-        max_points_for_partial_credit:
+        max_points_for_custom_scoring:
           description: "The maximum number of points that can be awarded when using\n\
             \                     partial credit scoring"
           nullable: false
           type: integer
+        custom_scoring_label:
+          description: An optional label for custom scoring points
+          nullable: true
+          type: string
         deduction_for_wrong_return_code:
           description: "The number of points to deduct when this command\n       \
             \              produces the wrong return code (this value must be negative).\n\
@@ -7285,7 +7294,7 @@ components:
             \                  produces the correct stderr"
           nullable: false
           type: integer
-        partial_credit_source:
+        custom_scoring_source:
           description: "Specifies the output stream where partial credit output will\
             \ be\n                     printed to. Note that stdout cannot be selected\
             \ when\n                     expected_stdout_source is not none, and stderr\
@@ -7297,16 +7306,20 @@ components:
           - stdout
           - stderr
           type: string
-        partial_credit_regex:
+        custom_scoring_regex:
           description: "Specifies the regex pattern used to extract the partial credit\n\
             \                     score from the output stream"
           nullable: false
           type: string
-        max_points_for_partial_credit:
+        max_points_for_custom_scoring:
           description: "The maximum number of points that can be awarded when using\n\
             \                     partial credit scoring"
           nullable: false
           type: integer
+        custom_scoring_label:
+          description: An optional label for custom scoring points
+          nullable: true
+          type: string
         deduction_for_wrong_return_code:
           description: "The number of points to deduct when this command\n       \
             \              produces the wrong return code (this value must be negative).\n\
@@ -7640,14 +7653,21 @@ components:
         stderr_points_possible:
           description: ''
           type: integer
-        partial_credit_points:
+        custom_scoring_used:
+          description: ''
+          type: boolean
+        custom_scoring_points:
           description: ''
           type: integer
-        partial_credit_points_possible:
+        custom_scoring_points_possible:
           description: ''
           type: integer
-        partial_credit_error:
+        custom_scoring_error:
           description: ''
+          type: string
+        custom_scoring_label:
+          description: ''
+          nullable: true
           type: string
         total_points:
           description: ''
@@ -7674,9 +7694,11 @@ components:
       - stderr_correct
       - stderr_points
       - stderr_points_possible
-      - partial_credit_points
-      - partial_credit_points_possible
-      - partial_credit_error
+      - custom_scoring_used
+      - custom_scoring_points
+      - custom_scoring_points_possible
+      - custom_scoring_error
+      - custom_scoring_label
       - total_points
       - total_points_possible
     FeedbackCategory:

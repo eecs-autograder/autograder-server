@@ -237,100 +237,100 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertFalse(res.stderr_correct)
 
-    def test_stdout_partial_credit_full_points(self, *args):
-        cmd = obj_build.make_stdout_partial_credit_test_command(
+    def test_stdout_custom_scoring_full_points(self, *args):
+        cmd = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
-            max_points_for_partial_credit=10,
+            max_points_for_custom_scoring=10,
             cmd='printf "foo<!!score:10 !!>bar"')
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(res.partial_credit_points, cmd.max_points_for_partial_credit)
-        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(res.custom_scoring_points, cmd.max_points_for_custom_scoring)
+        self.assertEqual(res.custom_scoring_error, ag_models.CustomScoringError.none)
 
-    def test_stderr_partial_credit_full_points(self, *args):
-        cmd = obj_build.make_stderr_partial_credit_test_command(
+    def test_stderr_custom_scoring_full_points(self, *args):
+        cmd = obj_build.make_stderr_custom_scoring_test_command(
             self.ag_test_case,
-            max_points_for_partial_credit=10,
+            max_points_for_custom_scoring=10,
             cmd='printf "foo<!!  score:  \t  10 !!>bar" 1>&2')
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(res.partial_credit_points, cmd.max_points_for_partial_credit)
-        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(res.custom_scoring_points, cmd.max_points_for_custom_scoring)
+        self.assertEqual(res.custom_scoring_error, ag_models.CustomScoringError.none)
 
-    def test_partial_credit_with_custom_regex(self, *args):
-        cmd = obj_build.make_stdout_partial_credit_test_command(
+    def test_custom_scoring_with_custom_regex(self, *args):
+        cmd = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
-            max_points_for_partial_credit=10,
+            max_points_for_custom_scoring=10,
             cmd='printf "MARIO5LUIGI"',
-            partial_credit_regex=r'MARIO(\d)LUIGI')
+            custom_scoring_regex=r'MARIO(\d)LUIGI')
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(res.partial_credit_points, 5)
-        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(res.custom_scoring_points, 5)
+        self.assertEqual(res.custom_scoring_error, ag_models.CustomScoringError.none)
 
-    def test_partial_credit_last_output_used(self, *args):
-        cmd = obj_build.make_stdout_partial_credit_test_command(
+    def test_custom_scoring_last_output_used(self, *args):
+        cmd = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
-            max_points_for_partial_credit=10,
+            max_points_for_custom_scoring=10,
             cmd='printf "<!! score: 10 !!>\t<!! score: 15 !!>\t<!! score: 9 !!>"')
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(res.partial_credit_points, 9)
-        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(res.custom_scoring_points, 9)
+        self.assertEqual(res.custom_scoring_error, ag_models.CustomScoringError.none)
 
-    def test_partial_credit_pattern_not_found(self, *args):
-        cmd = obj_build.make_stdout_partial_credit_test_command(
+    def test_custom_scoring_pattern_not_found(self, *args):
+        cmd = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
-            max_points_for_partial_credit=10,
+            max_points_for_custom_scoring=10,
             cmd='printf "not a valid pattern!!!"')
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(res.partial_credit_points, 0)
+        self.assertEqual(res.custom_scoring_points, 0)
         self.assertEqual(
-            res.partial_credit_error,
-            ag_models.PartialCreditError.failed_to_find_pattern
+            res.custom_scoring_error,
+            ag_models.CustomScoringError.failed_to_find_pattern
         )
 
-    def test_partial_credit_non_integer(self, *args):
-        cmd = obj_build.make_stdout_partial_credit_test_command(
+    def test_custom_scoring_non_integer(self, *args):
+        cmd = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
-            max_points_for_partial_credit=10,
-            partial_credit_regex=r'(\d.\d)',
+            max_points_for_custom_scoring=10,
+            custom_scoring_regex=r'(\d.\d)',
             cmd='printf "3.5"')
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(res.partial_credit_points, 0)
+        self.assertEqual(res.custom_scoring_points, 0)
         self.assertEqual(
-            res.partial_credit_error,
-            ag_models.PartialCreditError.non_integer
+            res.custom_scoring_error,
+            ag_models.CustomScoringError.non_integer
         )
 
-    def test_partial_credit_more_than_max_points(self, *args):
-        cmd = obj_build.make_stdout_partial_credit_test_command(
+    def test_custom_scoring_more_than_max_points(self, *args):
+        cmd = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
-            max_points_for_partial_credit=1,
+            max_points_for_custom_scoring=1,
             cmd='printf "<!! score: 2 !!>"')
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(res.partial_credit_points, 2)
+        self.assertEqual(res.custom_scoring_points, 2)
         self.assertEqual(
-            res.partial_credit_error,
-            ag_models.PartialCreditError.exceeded_max_points
+            res.custom_scoring_error,
+            ag_models.CustomScoringError.exceeded_max_points
         )
 
-    def test_stdout_partial_credit_with_non_utf_8_chars(self, *args):
+    def test_stdout_custom_scoring_with_non_utf_8_chars(self, *args):
         non_utf_8_prog = """
             python3 -c "import sys; sys.stdout.buffer.write(b'<!! score: 2 !!>>\\x80')"
             """
 
-        cmd = obj_build.make_stdout_partial_credit_test_command(
+        cmd = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
             cmd=non_utf_8_prog)
         tasks.grade_submission_task(self.submission.pk)
@@ -342,15 +342,15 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         )
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(res.partial_credit_points, 2)
-        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(res.custom_scoring_points, 2)
+        self.assertEqual(res.custom_scoring_error, ag_models.CustomScoringError.none)
 
-    def test_stderr_partial_credit_with_non_utf_8_chars(self, *args):
+    def test_stderr_custom_scoring_with_non_utf_8_chars(self, *args):
         non_utf_8_prog = """
             python3 -c "import sys; sys.stderr.buffer.write(b'<!! score: 2 !!>>\\x80')"
             """
 
-        cmd = obj_build.make_stderr_partial_credit_test_command(
+        cmd = obj_build.make_stderr_custom_scoring_test_command(
             self.ag_test_case,
             cmd=non_utf_8_prog)
         tasks.grade_submission_task(self.submission.pk)
@@ -361,8 +361,8 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         )
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(res.partial_credit_points, 2)
-        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
+        self.assertEqual(res.custom_scoring_points, 2)
+        self.assertEqual(res.custom_scoring_error, ag_models.CustomScoringError.none)
 
 
 @tag('slow', 'sandbox')
@@ -527,8 +527,8 @@ sys.stderr.flush()
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.timed_out)
 
-    def test_program_times_out_with_stdout_partial_credit(self, *args):
-        cmd = obj_build.make_stdout_partial_credit_test_command(
+    def test_program_times_out_with_stdout_custom_scoring(self, *args):
+        cmd = obj_build.make_stdout_custom_scoring_test_command(
             self.ag_test_case,
             cmd=f'printf "<!! score: 10 !!>" && {self.timeout_cmd}',
             time_limit=1)
@@ -536,11 +536,11 @@ sys.stderr.flush()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.timed_out)
-        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
-        self.assertEqual(res.partial_credit_points, 0)
+        self.assertEqual(res.custom_scoring_error, ag_models.CustomScoringError.none)
+        self.assertEqual(res.custom_scoring_points, 0)
 
-    def test_program_times_out_with_stderr_partial_credit(self, *args):
-        cmd = obj_build.make_stderr_partial_credit_test_command(
+    def test_program_times_out_with_stderr_custom_scoring(self, *args):
+        cmd = obj_build.make_stderr_custom_scoring_test_command(
             self.ag_test_case,
             cmd=f'printf "<!! score: 10 !!>" >&2 && {self.timeout_cmd}',
             time_limit=1)
@@ -548,8 +548,8 @@ sys.stderr.flush()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.timed_out)
-        self.assertEqual(res.partial_credit_error, ag_models.PartialCreditError.none)
-        self.assertEqual(res.partial_credit_points, 0)
+        self.assertEqual(res.custom_scoring_error, ag_models.CustomScoringError.none)
+        self.assertEqual(res.custom_scoring_points, 0)
 
     def test_program_prints_a_lot_of_output(self, *args):
         cmd = obj_build.make_full_ag_test_command(

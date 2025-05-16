@@ -259,35 +259,37 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                 ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
             result_data['stderr_correct'] = diff.diff_pass
 
-        if (ag_test_cmd.partial_credit_source != ag_models.PartialCreditSource.none
+        if (ag_test_cmd.custom_scoring_source != ag_models.CustomScoringSource.none
                 and run_result.timed_out is False):
-            if ag_test_cmd.partial_credit_source == ag_models.PartialCreditSource.stdout:
-                partial_credit_source = run_result.stdout
+            result_data['custom_scoring_used'] = True
+
+            if ag_test_cmd.custom_scoring_source == ag_models.CustomScoringSource.stdout:
+                custom_scoring_source = run_result.stdout
             else:
-                partial_credit_source = run_result.stderr
+                custom_scoring_source = run_result.stderr
 
-            regex_pattern = re.compile(ag_test_cmd.partial_credit_regex,)
+            regex_pattern = re.compile(ag_test_cmd.custom_scoring_regex,)
 
-            partial_credit_points_match = None
-            with open(partial_credit_source.name, errors='surrogateescape') as f:
+            custom_scoring_points_match = None
+            with open(custom_scoring_source.name, errors='surrogateescape') as f:
                 for line in f:
                     for match in regex_pattern.finditer(line):
-                        partial_credit_points_match = match.group(1)
+                        custom_scoring_points_match = match.group(1)
 
-            if not partial_credit_points_match:
-                result_data['partial_credit_points'] = 0
-                result_data['partial_credit_error'] = (
-                    ag_models.PartialCreditError.failed_to_find_pattern)
+            if not custom_scoring_points_match:
+                result_data['custom_scoring_points'] = 0
+                result_data['custom_scoring_error'] = (
+                    ag_models.CustomScoringError.failed_to_find_pattern)
             else:
                 try:
-                    result_data['partial_credit_points'] = int(partial_credit_points_match)
+                    result_data['custom_scoring_points'] = int(custom_scoring_points_match)
                 except ValueError:
-                    result_data['partial_credit_points'] = 0
-                    result_data['partial_credit_error'] = ag_models.PartialCreditError.non_integer
+                    result_data['custom_scoring_points'] = 0
+                    result_data['custom_scoring_error'] = ag_models.CustomScoringError.non_integer
 
-            if result_data['partial_credit_points'] > ag_test_cmd.max_points_for_partial_credit:
-                result_data['partial_credit_error'] = (
-                    ag_models.PartialCreditError.exceeded_max_points)
+            if result_data['custom_scoring_points'] > ag_test_cmd.max_points_for_custom_scoring:
+                result_data['custom_scoring_error'] = (
+                    ag_models.CustomScoringError.exceeded_max_points)
 
         print(result_data)
 
