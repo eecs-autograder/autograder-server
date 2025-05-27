@@ -1220,6 +1220,8 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def custom_scoring_used(self) -> bool:
+        if not self._fdbk.show_points:
+            return False
         return self._ag_test_command_result.custom_scoring_used
 
     @property
