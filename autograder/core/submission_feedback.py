@@ -1017,6 +1017,9 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def return_code_points(self) -> int:
+        if not self._fdbk.show_points:
+            return 0
+
         if self.return_code_correct is None:
             return 0
 
@@ -1026,6 +1029,9 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def return_code_points_possible(self) -> int:
+        if not self._fdbk.show_points:
+            return 0
+
         if self.return_code_correct is None:
             return 0
 
@@ -1110,6 +1116,9 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def stdout_points(self) -> int:
+        if not self._fdbk.show_points:
+            return 0
+
         if self.stdout_correct is None:
             return 0
 
@@ -1120,6 +1129,9 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def stdout_points_possible(self) -> int:
+        if not self._fdbk.show_points:
+            return 0
+
         if self.stdout_correct is None:
             return 0
 
@@ -1203,6 +1215,9 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def stderr_points(self) -> int:
+        if not self._fdbk.show_points:
+            return 0
+
         if self.stderr_correct is None:
             return 0
 
@@ -1213,6 +1228,9 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def stderr_points_possible(self) -> int:
+        if not self._fdbk.show_points:
+            return 0
+
         if self.stderr_correct is None:
             return 0
 
@@ -1256,17 +1274,11 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def total_points(self) -> int:
-        if not self._fdbk.show_points:
-            return 0
-
         return (self.return_code_points + self.stdout_points + self.stderr_points
                 + self.custom_scoring_points)
 
     @property
     def total_points_possible(self) -> int:
-        if not self._fdbk.show_points:
-            return 0
-
         return (self.return_code_points_possible + self.stdout_points_possible
                 + self.stderr_points_possible + self.custom_scoring_points_possible)
 
