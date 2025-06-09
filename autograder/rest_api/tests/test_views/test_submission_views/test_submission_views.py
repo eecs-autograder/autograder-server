@@ -1063,7 +1063,7 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
         reset_timezone = 'America/Detroit'
         reset_datetime = timezone.now().astimezone(
             timezone.pytz.timezone(reset_timezone)
-        ).replace(hour=22)
+        ) + timezone.timedelta(hours=2)
         self.project.validate_and_update(
             submission_limit_reset_time=reset_datetime.time(),
             submission_limit_reset_timezone=reset_timezone,
