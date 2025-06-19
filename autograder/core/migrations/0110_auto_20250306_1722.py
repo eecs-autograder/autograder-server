@@ -12,12 +12,12 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='agtestcommandresult',
-            name='custom_scoring_error',
+            name='partial_credit_error',
             field=models.TextField(choices=[('none', 'None'), ('non_integer', 'Non Integer'), ('pattern_not_found', 'Pattern Not Found')], default='none'),
         ),
         migrations.AddField(
             model_name='agtestcommandresult',
-            name='custom_scoring_points',
+            name='partial_credit_points',
             field=models.IntegerField(blank=True, default=None, null=True),
         ),
     ]
