@@ -347,15 +347,16 @@ class SerializedAGTestCommandResultWrapper:
 
     @property
     def custom_scoring_used(self) -> bool:
-        return cast(bool, self._cmd_result_dict['custom_scoring_used'])
+        return cast(bool, self._cmd_result_dict.get('custom_scoring_used', False))
 
     @property
     def custom_scoring_points(self) -> int:
-        return cast(int, self._cmd_result_dict['custom_scoring_points'])
+        return cast(int, self._cmd_result_dict.get('custom_scoring_points', 0))
 
     @property
-    def custom_scoring_error(self) -> str:
-        return cast(str, self._cmd_result_dict['custom_scoring_error'])
+    def custom_scoring_error(self) -> CustomScoringError:
+        return cast(CustomScoringError,
+                    self._cmd_result_dict.get('custom_scoring_error', CustomScoringError.none))
 
     # ------------------------------------------------------------------
 
