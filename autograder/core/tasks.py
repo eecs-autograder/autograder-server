@@ -141,8 +141,8 @@ def _validate_image_config(tag: str, task: ag_models.BuildSandboxDockerImageTask
     config = json.loads(inspect_result.stdout)
 
     error_msg = ''
-    entrypoint = config['Entrypoint']
-    cmd = config['Cmd']
+    entrypoint = config.get('Entrypoint')
+    cmd = config.get('Cmd')
     if entrypoint is not None:
         error_msg += 'Custom images may not use the ENTRYPOINT directive.\n'
 
