@@ -60,6 +60,16 @@ class AGTestCommandResult(AGCommandResultBase):
             self.ag_test_case_result.ag_test_suite_result.submission)
         return os.path.join(result_output_dir, 'cmd_result_{}_stderr'.format(self.pk))
 
+    stdout_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the command's stdout"
+    )
+
+    stderr_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the command's stderr"
+    )
+
     # Serializing AGTestCommandResults should be used for DENORMALIZATION
     # ONLY.
     SERIALIZABLE_FIELDS = (

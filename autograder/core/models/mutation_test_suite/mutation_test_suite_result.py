@@ -91,6 +91,42 @@ class MutationTestSuiteResult(AutograderModel):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'student_suite_result_{}_grade_buggy_impls_stderr'.format(self.pk))
 
+    setup_stdout_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the setup command's stdout"
+    )
+    setup_stderr_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the setup command's stderr"
+    )
+
+    student_test_names_stdout_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the student test name discovery command's stdout"
+    )
+    student_test_names_stderr_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the student test name discovery command's stderr"
+    )
+
+    validity_check_stdout_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the validity check command's stdout"
+    )
+    validity_check_stderr_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the validity check command's stderr"
+    )
+
+    grade_buggy_impls_stdout_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the grade buggy impls command's stdout"
+    )
+    grade_buggy_impls_stderr_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the grade buggy impls command's stderr"
+    )
+
     def save(self, *args: Any, **kwargs: Any) -> None:
         is_create = self.pk is None
         super().save(*args, **kwargs)

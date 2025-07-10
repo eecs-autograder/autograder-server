@@ -47,6 +47,16 @@ class AGTestSuiteResult(AutograderModel):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'suite_result_{}_setup_stderr'.format(self.pk))
 
+    stdout_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the setup command's stdout"
+    )
+
+    stderr_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The size in bytes of the setup command's stderr"
+    )
+
     # Serializing AGTestSuiteResults should be used for DENORMALIZATION
     # ONLY.
     SERIALIZABLE_FIELDS = (
