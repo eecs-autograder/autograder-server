@@ -2,6 +2,7 @@ import os
 from typing import Any, Optional, TypedDict, cast
 
 from django.contrib.auth.models import User
+from django.contrib.postgres.fields import ArrayField
 from django.core import validators
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -259,6 +260,28 @@ class LateDaysRemaining(AutograderModel):
     _extra_late_days_granted = models.IntegerField(blank=True, default=0)
     late_days_used = models.IntegerField(
         blank=True, default=0, validators=[MinValueValidator(0)])
+
+
+class LateDayUsage(AutograderModel):
+    """
+    Represents a record of a student's use of a late day, and all subsequent
+    associated submissions.
+    """
+    objects = AutograderModelManager['LateDayUsage']()
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+
+    user_pk = models.IntegerField()
+    group_pk = models.IntegerField()
+    project_pk = models.IntegerField()
+    submission_pks = ArrayField(models.IntegerField(), default=list)
+
+    timestamp = models.DateTimeField()
+    num_late_days_used = models.IntegerField()
+
+    EDITABLE_FIELDS = [
+        "submission_pks"
+    ]
 
 
 def clear_cached_user_roles(course_pk: int) -> None:

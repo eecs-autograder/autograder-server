@@ -166,14 +166,19 @@ class ListCreateSubmissionView(NestedModelView):
         group_deadline_past = group_deadline is not None and timestamp > group_deadline
 
         does_not_count_for = []
+        updates_late_day_usage_for = []  # (user, LateDayUsage)
+        new_late_day_usage_for = []  # (user, num_late_days_used)
+
         if group_deadline_past:
             course = group.project.course
             if course.num_late_days != 0 and group.project.allow_late_days:
                 for user in group.members.all():
-                    user_deadline = self._get_deadline_for_user(group, user)
-                    assert user_deadline >= group_deadline
+                    user_deadline, late_day_usage = self._get_deadline_for_user(group, user)
+                    assert group_deadline and user_deadline >= group_deadline
 
                     if user_deadline > timestamp:
+                        assert late_day_usage
+                        updates_late_day_usage_for.append((user, late_day_usage))
                         continue
 
                     remaining = ag_models.LateDaysRemaining.objects.get_or_create(
@@ -186,6 +191,7 @@ class ListCreateSubmissionView(NestedModelView):
                         group.late_days_used.setdefault(user.username, 0)
                         group.late_days_used[user.username] += late_days_needed
                         group.save()
+                        new_late_day_usage_for.append((user, late_days_needed))
                     else:
                         does_not_count_for.append(user.username)
 
@@ -214,10 +220,27 @@ class ListCreateSubmissionView(NestedModelView):
                                    f'{group.project.total_submission_limit} submissions'}
                 )
 
-        return self._create_submission(group, timestamp,
-                                       is_past_daily_limit=is_past_daily_limit,
-                                       is_bonus_submission=is_bonus_submission,
-                                       does_not_count_for=does_not_count_for)
+        submission = self._create_submission(
+            group,
+            timestamp,
+            is_past_daily_limit=is_past_daily_limit,
+            is_bonus_submission=is_bonus_submission,
+            does_not_count_for=does_not_count_for)
+
+        for user, late_day_usage in updates_late_day_usage_for:
+            late_day_usage.validate_and_update(
+                submission_pks=late_day_usage.submission_pks + [submission.pk])
+
+        for user, num_late_days_used in new_late_day_usage_for:
+            ag_models.LateDayUsage.objects.validate_and_create(
+                course=group.project.course,
+                user_pk=user.pk,
+                group_pk=group.pk,
+                project_pk=group.project.pk,
+                submission_pks=[submission.pk],
+                timestamp=submission.timestamp,
+                num_late_days_used=num_late_days_used)
+        return submission
 
     def _get_deadline_for_group(self, group: ag_models.Group):
         project = group.project
@@ -227,10 +250,20 @@ class ListCreateSubmissionView(NestedModelView):
         return (group.extended_due_date if group.extended_due_date is not None
                 else project.closing_time)
 
-    def _get_deadline_for_user(self, group: ag_models.Group,
-                               user: User) -> Optional[datetime.datetime]:
-        deadline = self._get_deadline_for_group(group)
-        return deadline + datetime.timedelta(days=group.late_days_used.get(user.username, 0))
+    def _get_deadline_for_user(
+        self, group: ag_models.Group,
+        user: User
+    ) -> tuple[datetime.datetime, Optional[ag_models.LateDayUsage]]:
+        group_deadline = self._get_deadline_for_group(group)
+        assert group_deadline is not None
+
+        deadline = group_deadline + datetime.timedelta(
+            days=group.late_days_used.get(user.username, 0)
+        )
+        late_day_usage = ag_models.LateDayUsage.objects.filter(
+            user_pk=user.pk, group_pk=group.pk
+        ).last()
+        return deadline, late_day_usage
 
     def _create_submission(self, group: ag_models.Group,
                            timestamp: datetime.datetime,
