@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^10.1.0"
+  }
+}

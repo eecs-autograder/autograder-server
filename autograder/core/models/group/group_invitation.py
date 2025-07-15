@@ -13,6 +13,7 @@ from autograder.core.constants import MAX_CHAR_FIELD_LEN
 from .. import ag_model_base
 from ..project import Project
 from . import verification
+from .group_invitation_email import send_group_invitation_email
 
 
 class GroupInvitationManager(ag_model_base.AutograderModelManager['GroupInvitation']):
@@ -48,6 +49,10 @@ class GroupInvitationManager(ag_model_base.AutograderModelManager['GroupInvitati
             invitation.save()
             invitation.recipients.add(*recipients)
             invitation.full_clean()
+
+            # Send emails to the recipients
+            send_group_invitation_email(sender, recipients, project, project.course.name)
+
             return invitation
 
 

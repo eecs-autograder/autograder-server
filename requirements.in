@@ -9,6 +9,7 @@ python-gnupg
 uritemplate
 drf-composable-permissions
 psycopg2
+psycopg2-binary
 redis
 ipython
 Django<3.3.0

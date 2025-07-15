@@ -66,6 +66,8 @@ prompt-toolkit==3.0.14
     # via ipython
 psycopg2==2.8.6
     # via -r requirements.in
+psycopg2-binary==2.9.10
+    # via -r requirements.in
 ptyprocess==0.7.0
     # via pexpect
 pyasn1==0.4.8
