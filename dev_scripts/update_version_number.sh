@@ -8,7 +8,8 @@ if test "$#" -ne 1; then
 fi
 version=$1
 
+echo "Setting version to $version"
+
 sed --in-place "s/^\(VERSION = \)['\"].*/\1'$version'/" $base_dir/autograder/settings/base.py
 
 sed --in-place "s/^\(\s*version: \).*/\1$version/" $base_dir/autograder/rest_api/schema/schema.yml
-#   version: 0.0.0.dev0
