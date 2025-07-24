@@ -153,3 +153,36 @@ Benchmark scripts should be added to autograder-server/benchmarks and should inc
     - Results from the last time they were run (and specifying what machine).
 3. Visit the API URL in your browser with the query parameter `debug=true` appended.
 For example: `https://localhost:<port>/api/users/current/?debug=true`
+
+# Versioning & Branches
+This package uses calendar versioning following [Python conventions](https://packaging.python.org/en/latest/discussions/versioning/), with version numbers of the form `yyyy.mm.X`, where `X` is for minor versions.
+For example: `2024.08.0` corresponds to August 2024.
+We also make use of pre-release tags such as `.devX`.
+Since we don't build this module as a Python package, we zero-pad the month to be consistent with branch names.
+
+## Development & Release Branches: Protocols and Workflow
+
+### "develop" branch
+Use feature branches for all changes, and make a pull request against the `develop` branch.
+
+### "release-*" branches
+Name release branches as `release-YYYY.MM.x`, replacing YYYY with the full year and MM with the zero padded month (e.g., `release-2024.08.x`).
+
+Do NOT merge or rebase directly between the develop and release branches.
+Once a release branch is created, it should only be updated with bugfix- or (rarely) feature-style branches.
+Squash-and-merge for this type of PRs.
+After the squashed branch is merged into a release branch, cherry-pick the squashed commit on top of `develop` and open a pull request to merge the changes into `develop`.
+
+The version of `README.md` (this file) on the `develop` branch is the source of truth.
+Update this file on release branches just before publishing a release.
+If instructions differ across releases, include both, and label which version the instructions apply to.
+
+### Publishing a release
+To create a github release, tag the latest commit on the release branch.
+For example, to create the first non-dev 2024.08 release, we'd run:
+```
+git checkout release-2024.08.x
+git tag 2024.08.0
+git push --tags
+```
+CI will build and test the module and create a GitHub release.
