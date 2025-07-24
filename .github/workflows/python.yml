@@ -185,6 +185,13 @@ jobs:
       contents: write  # IMPORTANT: mandatory for making GitHub Releases
 
     steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Download updated version files
         uses: actions/download-artifact@v4
         with:
