@@ -8,13 +8,11 @@ This tutorial will walk you through setting up your local machine for modifying
 and testing the server code.
 
 ## System Requirements
-
-**Supported Operating Systems:**
-- Ubuntu 20.04 or later
+OS: A currently supported Ubuntu LTS
 
 It may be possible to run the server tests on OSX.
 If you decide to try this, you're on your own.
-Newer versions of Ubuntu are usually ok.
+Newer versions of Ubuntu are usually ok, but some steps may differ.
 
 ## Clone and Checkout
 ```
@@ -149,9 +147,9 @@ You can install Node 16 with [NVM](https://github.com/nvm-sh/nvm?tab=readme-ov-f
 You can use django-debug-toolbar to profile API requests.
 
 1. Follow the [dev stack setup tutorial](https://github.com/eecs-autograder/autograder-full-stack/blob/master/docs/development_setup.md) for the [autograder-full-stack repo](https://github.com/eecs-autograder/autograder-full-stack).
-2. Populate the database with benchmark data. 
+2. Populate the database with benchmark data.
 Benchmark scripts should be added to autograder-server/benchmarks and should include:
     - Instructions on how to run them on the development stack.
     - Results from the last time they were run (and specifying what machine).
-3. Visit the API URL in your browser with the query parameter `debug=true` appended. 
+3. Visit the API URL in your browser with the query parameter `debug=true` appended.
 For example: `https://localhost:<port>/api/users/current/?debug=true`
