@@ -114,16 +114,6 @@ jobs:
             echo "Not a workflow dispatch. Skipping version update."
           fi
 
-      - name: Download updated settings base
-        uses: actions/download-artifact@v4
-        with:
-          name: settings-base
-
-      - name: Download updated api-schema
-        uses: actions/download-artifact@v4
-        with:
-          name: api-schema
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
