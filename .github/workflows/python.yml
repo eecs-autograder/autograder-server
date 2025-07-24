@@ -156,9 +156,9 @@ jobs:
 
       - name: Update version number (on tag only)
         run: |
-          echo "Git ref: $GITHUB_REF"
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            ./dev_scripts/update_version_number.sh ${{ inputs.version }}
+            echo Version: "${{ inputs.version }}"
+            ./dev_scripts/update_version_number.sh "${{ inputs.version }}"
           else
             echo "Not a workflow dispatch. Skipping version update."
           fi
