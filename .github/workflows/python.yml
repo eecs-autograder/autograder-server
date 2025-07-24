@@ -16,9 +16,6 @@ jobs:
   lint:
     runs-on: ubuntu-24.04
 
-    # update-version-number only does anything on workflow_dispatch
-    needs: update-version-number
-
     strategy:
       matrix:
         python-version: ["3.10"]
@@ -46,15 +43,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Download updated settings base
-        uses: actions/download-artifact@v4
-        with:
-          name: settings-base
-
-      - name: Download updated api-schema
-        uses: actions/download-artifact@v4
-        with:
-          name: api-schema
+      # Yes, we're running this on each step because I couldn't figure out
+      # the quirks of uploading/downloading artifacts into the right
+      # directory
+      - name: Update version number (on dispatch only)
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo Version: "${{ inputs.version }}"
+            ./dev_scripts/update_version_number.sh "${{ inputs.version }}"
+          else
+            echo "Not a workflow dispatch. Skipping version update."
+          fi
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -102,6 +101,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      # Yes, we're running this on each step because I couldn't figure out
+      # the quirks of uploading/downloading artifacts into the right
+      # directory
+      - name: Update version number (on dispatch only)
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo Version: "${{ inputs.version }}"
+            ./dev_scripts/update_version_number.sh "${{ inputs.version }}"
+          else
+            echo "Not a workflow dispatch. Skipping version update."
+          fi
 
       - name: Download updated settings base
         uses: actions/download-artifact@v4
@@ -156,6 +167,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # Yes, we're running this on each step because I couldn't figure out
+      # the quirks of uploading/downloading artifacts into the right
+      # directory
+      - name: Update version number (on dispatch only)
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo Version: "${{ inputs.version }}"
+            ./dev_scripts/update_version_number.sh "${{ inputs.version }}"
+          else
+            echo "Not a workflow dispatch. Skipping version update."
+          fi
+
       - name: Download updated settings base
         uses: actions/download-artifact@v4
         with:
@@ -179,35 +202,6 @@ jobs:
       - name: Run tests
         run: |
           python3 manage.py test -v2 --exclude-tag fix_on_ci --tag slow --tag sandbox
-
-  # Runs only on workflow_dispatch
-  update-version-number:
-    runs-on: ubuntu-24.04
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Update version number (on dispatch only)
-        run: |
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo Version: "${{ inputs.version }}"
-            ./dev_scripts/update_version_number.sh "${{ inputs.version }}"
-          else
-            echo "Not a workflow dispatch. Skipping version update."
-          fi
-
-      - name: Upload updated settings file
-        uses: actions/upload-artifact@v4
-        with:
-          name: settings-base
-          path: autograder/settings/base.py
-
-      - name: Upload updated API schema file
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-schema
-          path: autograder/rest_api/schema/schema.yml
-
 
   create-release:
     name: Create GitHub Release
