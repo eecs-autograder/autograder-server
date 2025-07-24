@@ -160,7 +160,7 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             ./dev_scripts/update_version_number.sh
           else
-            echo "Not a tag push. Skipping version update."
+            echo "Not a workflow dispatch. Skipping version update."
           fi
 
       - name: Upload updated version files
