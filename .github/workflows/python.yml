@@ -163,13 +163,18 @@ jobs:
             echo "Not a workflow dispatch. Skipping version update."
           fi
 
-      - name: Upload updated version files
+      - name: Upload updated settings file
         uses: actions/upload-artifact@v4
         with:
-          name: updated-version-files
-          path: |
-            autograder/settings/base.py
-            autograder/rest_api/schema/schema.yml
+          name: settings-base
+          path: autograder/settings/base.py
+
+      - name: Upload updated API schema file
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-schema
+          path: autograder/rest_api/schema/schema.yml
+
 
   create-release:
     name: Create GitHub Release
@@ -192,10 +197,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Download updated version files
+      - name: Download updated settings base
         uses: actions/download-artifact@v4
         with:
-          name: updated-version-files
+          name: settings-base
+
+      - name: Download updated api-schema
+        uses: actions/download-artifact@v4
+        with:
+          name: api-schema
 
       - name: Commit updated version files
         run: |
