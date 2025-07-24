@@ -1,10 +1,23 @@
-name: Python package
+name: Autograder Server
 
-on: [push]
+on:
+  push:
+    branches: [ develop, release* ]
+    tags:
+      - '*'
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number for release'
+        required: true
 
 jobs:
   lint:
     runs-on: ubuntu-24.04
+
+    # update-version-number only does anything on workflow_dispatch
+    needs: update-version-number
 
     strategy:
       matrix:
@@ -52,6 +65,7 @@ jobs:
 
   test:
     runs-on: ubuntu-24.04
+    needs: lint
     strategy:
       matrix:
         python-version: ["3.10"]
@@ -93,6 +107,7 @@ jobs:
 
   slow_tests:
     runs-on: ubuntu-24.04
+    needs: lint
     strategy:
       matrix:
         python-version: ["3.10"]
@@ -132,3 +147,62 @@ jobs:
         run: |
           python3 manage.py test -v2 --exclude-tag fix_on_ci --tag slow --tag sandbox
 
+  # Runs only on workflow_dispatch
+  update-version-number:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Update version number (on tag only)
+        run: |
+          echo "Git ref: $GITHUB_REF"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            ./dev_scripts/update_version_number.sh
+          else
+            echo "Not a tag push. Skipping version update."
+          fi
+
+      - name: Upload updated version files
+        uses: actions/upload-artifact@v4
+        with:
+          name: updated-version-files
+          path: |
+            autograder/settings/base.py
+            autograder/rest_api/schema/schema.yml
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'workflow_dispatch'
+
+    needs:
+    - lint
+    # - test
+    # - slow_tests
+
+    permissions:
+      contents: write  # IMPORTANT: mandatory for making GitHub Releases
+
+    steps:
+      - name: Download updated version files
+        uses: actions/download-artifact@v4
+        with:
+          name: updated-version-files
+
+      - name: Commit updated version files
+        run: |
+          git add autograder/settings/base.py autograder/rest_api/schema/schema.yml
+          git commit -m "Version ${{ inputs.version }}"
+          git push --dry-run
+          git tag ${{ inputs.version }}
+          git push --dry-run --tags
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create
+          "$GITHUB_REF_NAME"
+          --repo "$GITHUB_REPOSITORY"
+          --notes ""
