@@ -154,7 +154,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Update version number (on tag only)
+      - name: Update version number (on dispatch only)
         run: |
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             echo Version: "${{ inputs.version }}"
@@ -215,11 +215,11 @@ jobs:
           git tag ${{ inputs.version }}
           git push --dry-run --tags
 
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create
-          "$GITHUB_REF_NAME"
-          --repo "$GITHUB_REPOSITORY"
-          --notes ""
+      # - name: Create GitHub Release
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}
+      #   run: >-
+      #     gh release create
+      #     "$GITHUB_REF_NAME"
+      #     --repo "$GITHUB_REPOSITORY"
+      #     --notes ""
