@@ -279,10 +279,6 @@ class LateDayUsage(AutograderModel):
     timestamp = models.DateTimeField()
     num_late_days_used = models.IntegerField()
 
-    EDITABLE_FIELDS = [
-        "submission_pk"
-    ]
-
 
 def clear_cached_user_roles(course_pk: int) -> None:
     keys = cache.iter_keys(f'course_{course_pk}_user_*', itersize=5000)  # type: ignore
