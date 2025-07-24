@@ -274,13 +274,13 @@ class LateDayUsage(AutograderModel):
     user_pk = models.IntegerField()
     group_pk = models.IntegerField()
     project_pk = models.IntegerField()
-    submission_pks = ArrayField(models.IntegerField(), default=list)
+    submission_pk = models.IntegerField()
 
     timestamp = models.DateTimeField()
     num_late_days_used = models.IntegerField()
 
     EDITABLE_FIELDS = [
-        "submission_pks"
+        "submission_pk"
     ]
 
 

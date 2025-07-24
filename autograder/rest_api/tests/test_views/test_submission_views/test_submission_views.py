@@ -637,7 +637,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             usage = self.get_most_recent_late_day_usage(user)
             self.assertEqual(1, usage.num_late_days_used)
-            self.assertCountEqual([submission.pk], usage.submission_pks)
+            self.assertEqual(submission.pk, usage.submission_pk)
 
     def test_multiple_submissions_in_one_late_day(self):
         submitter = self.group.members.first()
@@ -665,7 +665,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             usage = self.get_most_recent_late_day_usage(user)
             self.assertEqual(1, usage.num_late_days_used)
-            self.assertCountEqual([first_sub.pk, second_sub.pk], usage.submission_pks)
+            self.assertEqual(first_sub.pk, usage.submission_pk)
 
     def test_multiple_late_days_used_one_at_a_time_same_project(self):
         submitter = self.group.members.first()
@@ -682,7 +682,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             usage = self.get_most_recent_late_day_usage(user)
             self.assertEqual(1, usage.num_late_days_used)
-            self.assertCountEqual([first_sub.pk], usage.submission_pks)
+            self.assertEqual(first_sub.pk, usage.submission_pk)
 
         second_sub = self.submit(self.group, submitter,
                                  self.closing_time + datetime.timedelta(days=1, hours=1),
@@ -697,7 +697,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             usage = self.get_most_recent_late_day_usage(user)
             self.assertEqual(1, usage.num_late_days_used)
-            self.assertCountEqual([second_sub.pk], usage.submission_pks)
+            self.assertEqual(second_sub.pk, usage.submission_pk)
 
     def test_multiple_late_days_used_by_one_submission(self):
         submitter = self.group.members.first()
@@ -714,7 +714,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             usage = self.get_most_recent_late_day_usage(user)
             self.assertEqual(2, usage.num_late_days_used)
-            self.assertCountEqual([sub.pk], usage.submission_pks)
+            self.assertEqual(sub.pk, usage.submission_pk)
 
     def test_multiple_late_days_used_different_projects(self):
         other_project = obj_build.make_project(
@@ -774,7 +774,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             usage = self.get_most_recent_late_day_usage(user)
             self.assertEqual(1, usage.num_late_days_used)
-            self.assertCountEqual([late_day_sub.pk], usage.submission_pks)
+            self.assertEqual(late_day_sub.pk, usage.submission_pk)
 
     def test_user_with_no_late_days_in_group_cannot_submit_after_deadline(self):
         submitter = self.group.members.first()
@@ -844,7 +844,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
         usage = self.get_most_recent_late_day_usage(submitter)
         self.assertEqual(1, usage.num_late_days_used)
-        self.assertCountEqual([submission.pk], usage.submission_pks)
+        self.assertEqual(submission.pk, usage.submission_pk)
 
         non_submitter_remaining = ag_models.LateDaysRemaining.objects.get(
             user=non_submitter, course=self.course)
@@ -871,7 +871,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
         usage = self.get_most_recent_late_day_usage(submitter)
         self.assertEqual(2, usage.num_late_days_used)
-        self.assertCountEqual([submission.pk], usage.submission_pks)
+        self.assertEqual(submission.pk, usage.submission_pk)
 
         remaining = ag_models.LateDaysRemaining.objects.get(user=submitter, course=self.course)
         self.assertEqual(self.num_late_days - 2, remaining.late_days_remaining)
@@ -971,7 +971,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             usage = self.get_most_recent_late_day_usage(user)
             self.assertEqual(1, usage.num_late_days_used)
-            self.assertCountEqual([submission1.pk, submission2.pk], usage.submission_pks)
+            self.assertEqual(submission1.pk, usage.submission_pk)
 
     def test_group_out_of_daily_submissions_no_late_days_used(self):
         self.project.validate_and_update(
