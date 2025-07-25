@@ -3,8 +3,6 @@ name: Autograder Server
 on:
   push:
     branches: [ develop, release* ]
-    tags:
-      - '*'
   pull_request:
   workflow_dispatch:
     inputs:
