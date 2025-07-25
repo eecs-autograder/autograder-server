@@ -199,6 +199,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # Yes, we're running this on each step because I couldn't figure out
+      # the quirks of uploading/downloading artifacts into the right
+      # directory
+      - name: Update version number (on dispatch only)
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo Version: "${{ inputs.version }}"
+            ./dev_scripts/update_version_number.sh "${{ inputs.version }}"
+          else
+            echo "Not a workflow dispatch. Skipping version update."
+          fi
+
       - name: Set up Git
         run: |
           git config user.name "github-actions[bot]"
