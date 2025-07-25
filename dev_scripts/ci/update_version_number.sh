@@ -1,6 +1,11 @@
 #! /bin/bash
 
-base_dir=$(dirname $(realpath "$0"))/..
+if test "$GITHUB_EVENT_NAME" != "workflow_dispatch"; then
+    echo "Not a workflow dispatch. Skipping version update."
+    exit 0
+fi
+
+base_dir=$(dirname $(realpath "$0"))/../..
 
 if test "$#" -ne 1; then
     echo "Usage: $0 version"
