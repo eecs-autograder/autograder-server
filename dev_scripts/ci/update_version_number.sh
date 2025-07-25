@@ -1,5 +1,7 @@
 #! /bin/bash
 
+set -e
+
 if test "$GITHUB_EVENT_NAME" != "workflow_dispatch"; then
     echo "Not a workflow dispatch. Skipping version update."
     exit 0
