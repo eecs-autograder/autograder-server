@@ -178,11 +178,7 @@ Update this file on release branches just before publishing a release.
 If instructions differ across releases, include both, and label which version the instructions apply to.
 
 ### Publishing a release
-To create a github release, tag the latest commit on the release branch.
-For example, to create the first non-dev 2024.08 release, we'd run:
-```
-git checkout release-2024.08.x
-git tag 2024.08.0
-git push --tags
-```
-CI will build and test the module and create a GitHub release.
+To create a github release, trigger a `workflow_dispatch` event on the release branch.
+Pass the version number as input.
+
+CI will update the version number, lint and test the module, tag the release, and create a GitHub release.
