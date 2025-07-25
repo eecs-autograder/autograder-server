@@ -172,8 +172,8 @@ jobs:
 
     needs:
     - lint
-    # - test
-    # - slow_tests
+    - test
+    - slow_tests
 
     permissions:
       contents: write  # IMPORTANT: mandatory for making GitHub Releases
@@ -196,16 +196,15 @@ jobs:
         run: |
           git add autograder/settings/base.py autograder/rest_api/schema/schema.yml
           git commit -m "Version ${{ inputs.version }}"
-          git push --dry-run
+          git push
           git tag ${{ inputs.version }}
-          git push --dry-run --tags
+          git push --tags
 
-      # - name: Create GitHub Release
-      #   env:
-      #     GITHUB_TOKEN: ${{ github.token }}
-      #   run: >-
-      #     gh release create
-      #     "${{ inputs.version }}"
-      #     --draft
-      #     --repo "$GITHUB_REPOSITORY"
-      #     --notes ""
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create
+          "${{ inputs.version }}"
+          --repo "$GITHUB_REPOSITORY"
+          --notes ""
