@@ -3,8 +3,6 @@ name: Autograder Server
 on:
   push:
     branches: [ develop, release* ]
-    tags:
-      - '*'
   pull_request:
   workflow_dispatch:
     inputs:
@@ -15,9 +13,6 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-24.04
-
-    # update-version-number only does anything on workflow_dispatch
-    needs: update-version-number
 
     strategy:
       matrix:
@@ -45,6 +40,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      # Yes, we're running this on each step because I couldn't figure out
+      # the quirks of uploading/downloading artifacts into the right
+      # directory
+      - name: Update version number (on dispatch only)
+        run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -91,6 +93,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      # Yes, we're running this on each step because I couldn't figure out
+      # the quirks of uploading/downloading artifacts into the right
+      # directory
+      - name: Update version number (on dispatch only)
+        run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -133,6 +142,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      # Yes, we're running this on each step because I couldn't figure out
+      # the quirks of uploading/downloading artifacts into the right
+      # directory
+      - name: Update version number (on dispatch only)
+        run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -147,30 +163,6 @@ jobs:
         run: |
           python3 manage.py test -v2 --exclude-tag fix_on_ci --tag slow --tag sandbox
 
-  # Runs only on workflow_dispatch
-  update-version-number:
-    runs-on: ubuntu-24.04
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Update version number (on tag only)
-        run: |
-          echo "Git ref: $GITHUB_REF"
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            ./dev_scripts/update_version_number.sh
-          else
-            echo "Not a tag push. Skipping version update."
-          fi
-
-      - name: Upload updated version files
-        uses: actions/upload-artifact@v4
-        with:
-          name: updated-version-files
-          path: |
-            autograder/settings/base.py
-            autograder/rest_api/schema/schema.yml
-
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-24.04
@@ -178,31 +170,39 @@ jobs:
 
     needs:
     - lint
-    # - test
-    # - slow_tests
+    - test
+    - slow_tests
 
     permissions:
       contents: write  # IMPORTANT: mandatory for making GitHub Releases
 
     steps:
-      - name: Download updated version files
-        uses: actions/download-artifact@v4
-        with:
-          name: updated-version-files
+      - uses: actions/checkout@v3
+
+      # Yes, we're running this on each step because I couldn't figure out
+      # the quirks of uploading/downloading artifacts into the right
+      # directory
+      - name: Update version number (on dispatch only)
+        run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Commit updated version files
         run: |
           git add autograder/settings/base.py autograder/rest_api/schema/schema.yml
           git commit -m "Version ${{ inputs.version }}"
-          git push --dry-run
+          git push
           git tag ${{ inputs.version }}
-          git push --dry-run --tags
+          git push --tags
 
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: >-
           gh release create
-          "$GITHUB_REF_NAME"
+          "${{ inputs.version }}"
           --repo "$GITHUB_REPOSITORY"
           --notes ""
