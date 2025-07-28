@@ -170,8 +170,8 @@ jobs:
 
     needs:
     - lint
-    # - test
-    # - slow_tests
+    - test
+    - slow_tests
 
     permissions:
       contents: write  # IMPORTANT: mandatory for making GitHub Releases
