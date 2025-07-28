@@ -177,7 +177,19 @@ jobs:
       contents: write  # IMPORTANT: mandatory for making GitHub Releases
 
     steps:
-      - uses: actions/checkout@v3
+      # See https://github.com/organizations/eecs-autograder/settings/apps
+      # and https://github.com/orgs/community/discussions/25305#discussioncomment-8256560
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.VERSION_BUMPER_APPID }}
+          private-key: ${{ secrets.VERSION_BUMPER_SECRET }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       # Yes, we're running this on each step because I couldn't figure out
       # the quirks of uploading/downloading artifacts into the right
