@@ -64,7 +64,7 @@ pickleshare==0.7.5
     # via ipython
 prompt-toolkit==3.0.14
     # via ipython
-psycopg2==2.8.6
+psycopg==3.2.9
     # via -r requirements.in
 ptyprocess==0.7.0
     # via pexpect
@@ -107,6 +107,7 @@ typing-extensions==4.12.2
     # via
     #   -r requirements.in
     #   asgiref
+    #   psycopg
 tzdata==2023.4
     # via -r requirements.in
 uritemplate==3.0.1
