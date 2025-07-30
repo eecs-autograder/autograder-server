@@ -286,7 +286,7 @@ APIClassType = Union[
     Type[Model],
     Type[Enum]
 ]
-FieldType = Union[Field[Any, Any], ForeignObjectRel, property, cached_property[Any]]
+FieldType = Union['Field[Any, Any]', ForeignObjectRel, property, 'cached_property[Any]']
 
 
 class APIClassSchemaGenerator:
