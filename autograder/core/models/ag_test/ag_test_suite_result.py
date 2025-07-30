@@ -47,25 +47,31 @@ class AGTestSuiteResult(AutograderModel):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'suite_result_{}_setup_stderr'.format(self.pk))
 
-    stdout_size = models.IntegerField(
+    setup_stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
         help_text="""The size in bytes of the setup command's stdout. None indicates:
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
+
             When non-None, stores the size in bytes of the output and indicates
             that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
 
-    stderr_size = models.IntegerField(
+    setup_stderr_size = models.IntegerField(
         blank=True, null=True, default=None,
         help_text="""The size in bytes of the setup command's stderr. None indicates:
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
+
             When non-None, stores the size in bytes of the output and indicates
             that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
 

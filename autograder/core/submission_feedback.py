@@ -656,7 +656,11 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         if not self._fdbk.show_setup_stdout:
             return None
 
-        return os.path.getsize(self._ag_test_suite_result.setup_stdout_filename)
+        return (
+            self._ag_test_suite_result.setup_stdout_size
+            if self._ag_test_suite_result.setup_stdout_size is not None
+            else os.path.getsize(self._ag_test_suite_result.setup_stdout_filename)
+        )
 
     @property
     def setup_stdout_truncated(self) -> Optional[bool]:
@@ -683,7 +687,11 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         if not self._fdbk.show_setup_stderr:
             return None
 
-        return os.path.getsize(self._ag_test_suite_result.setup_stderr_filename)
+        return (
+            self._ag_test_suite_result.setup_stderr_size
+            if self._ag_test_suite_result.setup_stderr_size is not None
+            else os.path.getsize(self._ag_test_suite_result.setup_stderr_filename)
+        )
 
     @property
     def setup_stderr_truncated(self) -> Optional[bool]:

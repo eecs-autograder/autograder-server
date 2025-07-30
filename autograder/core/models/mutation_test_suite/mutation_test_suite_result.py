@@ -97,8 +97,11 @@ class MutationTestSuiteResult(AutograderModel):
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
+
             When non-None, stores the size in bytes of the output and indicates
             that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
     setup_stderr_size = models.IntegerField(
@@ -107,8 +110,11 @@ class MutationTestSuiteResult(AutograderModel):
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
+
             When non-None, stores the size in bytes of the output and indicates
             that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
 
@@ -118,8 +124,11 @@ class MutationTestSuiteResult(AutograderModel):
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
+
             When non-None, stores the size in bytes of the output and indicates
             that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
     student_test_names_stderr_size = models.IntegerField(
@@ -128,8 +137,11 @@ class MutationTestSuiteResult(AutograderModel):
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
+
             When non-None, stores the size in bytes of the output and indicates
             that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
 
@@ -139,8 +151,11 @@ class MutationTestSuiteResult(AutograderModel):
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
+
             When non-None, stores the size in bytes of the output and indicates
             that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
     validity_check_stderr_size = models.IntegerField(
@@ -149,8 +164,11 @@ class MutationTestSuiteResult(AutograderModel):
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
+
             When non-None, stores the size in bytes of the output and indicates
             that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
 
@@ -160,8 +178,11 @@ class MutationTestSuiteResult(AutograderModel):
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
+
             When non-None, stores the size in bytes of the output and indicates
             that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
     grade_buggy_impls_stderr_size = models.IntegerField(
@@ -170,8 +191,11 @@ class MutationTestSuiteResult(AutograderModel):
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
+
             When non-None, stores the size in bytes of the output and indicates
             that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
 
