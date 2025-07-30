@@ -6,7 +6,7 @@ import os
 import re
 import subprocess
 import typing
-from typing import List, Tuple, Type, TypeGuard, TypeVar
+from typing import List, Tuple, Type, TypeVar
 import zoneinfo
 
 from django.conf import settings

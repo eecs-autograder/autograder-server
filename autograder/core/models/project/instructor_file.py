@@ -37,6 +37,7 @@ class InstructorFileManager(AutograderModelManager['InstructorFile']):
 
         filename = os.path.basename(file_obj.name) if file_obj.name is not None else None
         core_ut.check_filename(filename)
+        # check_filename checks for None, this is to appease the type checker
         assert file_obj.file is not None
 
         with transaction.atomic():
