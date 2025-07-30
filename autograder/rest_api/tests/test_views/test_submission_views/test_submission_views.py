@@ -5,6 +5,8 @@ from typing import Iterable, List, Optional
 from unittest import mock
 from urllib.parse import urlencode
 
+import pytz
+
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import QueryDict
@@ -1044,7 +1046,7 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
     def test_num_submits_towards_limit_non_default_timezone(self):
         local_timezone = 'America/Chicago'
         now = timezone.now()
-        now_local = now.astimezone(timezone.pytz.timezone(local_timezone))
+        now_local = now.astimezone(pytz.timezone(local_timezone))
 
         self.project.validate_and_update(
             submission_limit_reset_time=now_local - timezone.timedelta(minutes=5),
@@ -1062,7 +1064,7 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
     def test_non_default_limit_reset_time_and_timezone(self):
         reset_timezone = 'America/Detroit'
         reset_datetime = timezone.now().astimezone(
-            timezone.pytz.timezone(reset_timezone)
+            pytz.timezone(reset_timezone)
         ) + timezone.timedelta(hours=2)
         self.project.validate_and_update(
             submission_limit_reset_time=reset_datetime.time(),
