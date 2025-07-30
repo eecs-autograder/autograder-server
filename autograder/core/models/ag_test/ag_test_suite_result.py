@@ -49,12 +49,24 @@ class AGTestSuiteResult(AutograderModel):
 
     stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="The size in bytes of the setup command's stdout"
+        help_text="""The size in bytes of the setup command's stdout. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+        """
     )
 
     stderr_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="The size in bytes of the setup command's stderr"
+        help_text="""The size in bytes of the setup command's stderr. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+        """
     )
 
     # Serializing AGTestSuiteResults should be used for DENORMALIZATION

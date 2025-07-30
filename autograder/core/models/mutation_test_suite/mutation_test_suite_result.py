@@ -93,38 +93,86 @@ class MutationTestSuiteResult(AutograderModel):
 
     setup_stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="The size in bytes of the setup command's stdout"
+        help_text="""The size in bytes of the setup command's stdout. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+        """
     )
     setup_stderr_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="The size in bytes of the setup command's stderr"
+        help_text="""The size in bytes of the setup command's stderr. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+        """
     )
 
     student_test_names_stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="The size in bytes of the student test name discovery command's stdout"
+        help_text="""The size in bytes of the student test name discovery command's stdout. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+        """
     )
     student_test_names_stderr_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="The size in bytes of the student test name discovery command's stderr"
+        help_text="""The size in bytes of the student test name discovery command's stderr. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+        """
     )
 
     validity_check_stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="The size in bytes of the validity check command's stdout"
+        help_text="""The size in bytes of the validity check command's stdout. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+        """
     )
     validity_check_stderr_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="The size in bytes of the validity check command's stderr"
+        help_text="""The size in bytes of the validity check command's stderr. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+        """
     )
 
     grade_buggy_impls_stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="The size in bytes of the grade buggy impls command's stdout"
+        help_text="""The size in bytes of the grade buggy impls command's stdout. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+        """
     )
     grade_buggy_impls_stderr_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="The size in bytes of the grade buggy impls command's stderr"
+        help_text="""The size in bytes of the grade buggy impls command's stderr. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+        """
     )
 
     def save(self, *args: Any, **kwargs: Any) -> None:
