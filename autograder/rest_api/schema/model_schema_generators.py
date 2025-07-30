@@ -485,7 +485,7 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
             field = self._class._meta.get_field(field_name)
             return (
                 not field.many_to_many
-                and field.is_relation
+                and not field.is_relation
                 # For some reason, mypy thinks GenericForeignKey doesn't have
                 # "blank" or "default", even though it inherits from Field
                 and not field.blank  # type: ignore
