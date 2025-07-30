@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 def _make_get_test_names_result_default() -> int:
-    return cast(int, AGCommandResult.objects.validate_and_create().pk)
+    return AGCommandResult.objects.validate_and_create().pk
 
 
 class MutationTestSuiteResult(AutograderModel):
@@ -140,7 +140,7 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def pk(self) -> int:
-            return cast(int, self._mutation_test_suite_result.pk)
+            return self._mutation_test_suite_result.pk
 
         @property
         def mutation_test_suite_name(self) -> str:
@@ -148,7 +148,7 @@ class MutationTestSuiteResult(AutograderModel):
 
         @property
         def mutation_test_suite_pk(self) -> int:
-            return cast(int, self._mutation_test_suite.pk)
+            return self._mutation_test_suite.pk
 
         @property
         def fdbk_conf(self) -> MutationTestSuiteFeedbackConfig:

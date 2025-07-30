@@ -59,7 +59,7 @@ def get_ultimate_submissions(
     :return: An iterator of feedback results for ultimate submissions
         belonging to project.
     """
-    filter_groups = _prefetch_submissions(project, filter_groups)
+    groups_with_prefetched_submissions = _prefetch_submissions(project, filter_groups)
 
     mutation_test_suite_preloader = MutationTestSuitePreLoader(project)
 
@@ -71,7 +71,7 @@ def get_ultimate_submissions(
                 ag_test_preloader,
                 mutation_test_suite_preloader
             )
-            for group in filter_groups
+            for group in groups_with_prefetched_submissions
             if (most_recent_submission := group.submissions.first()) is not None
         )
     elif project.ultimate_submission_policy == UltimateSubmissionPolicy.best_with_normal_fdbk:
@@ -83,7 +83,7 @@ def get_ultimate_submissions(
         best_submissions_fdbks = (
             _get_best_submission(
                 group, FeedbackCategory.normal, ag_test_preloader, mutation_test_suite_preloader)
-            for group in filter_groups
+            for group in groups_with_prefetched_submissions
         )
         best_submissions = (fdbk.submission for fdbk in best_submissions_fdbks
                             if fdbk is not None)
@@ -95,7 +95,7 @@ def get_ultimate_submissions(
         best_submissions_fdbks = (
             _get_best_submission(
                 group, FeedbackCategory.max, ag_test_preloader, mutation_test_suite_preloader)
-            for group in filter_groups
+            for group in groups_with_prefetched_submissions
         )
         return (fdbk for fdbk in best_submissions_fdbks if fdbk is not None)
 
@@ -109,12 +109,12 @@ def _prefetch_submissions(
     finished_submissions_queryset = Submission.objects.filter(
         status=Submission.GradingStatus.finished_grading)
 
-    base_group_queryset = project.groups
+    base_group_queryset = project.groups.all()
     if groups is not None:
         base_group_queryset = base_group_queryset.filter(pk__in=[group.pk for group in groups])
 
     submissions_queryset = get_submissions_with_results_queryset(
-        base_manager=finished_submissions_queryset)
+        base_queryset=finished_submissions_queryset)
     return base_group_queryset.prefetch_related(Prefetch('submissions', submissions_queryset))
 
 

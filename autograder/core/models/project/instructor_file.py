@@ -22,21 +22,22 @@ def _get_project_file_upload_to_path(instance: InstructorFile, filename: str) ->
 
 
 # Remove in v5
-def _validate_filename(file_obj: File) -> None:
+def _validate_filename(file_obj: File[bytes]) -> None:
     core_ut.check_filename(file_obj.name)
 
 
 class InstructorFileManager(AutograderModelManager['InstructorFile']):
     def validate_and_create(  # type: ignore [override]
-        self, *, file_obj: File, project: Project
+        self, *, file_obj: File[bytes], project: Project
     ) -> InstructorFile:
         if file_obj.size > const.MAX_INSTRUCTOR_FILE_SIZE:
             raise exceptions.ValidationError(
                 {'content': 'Instructor files cannot be bigger than {} bytes'.format(
                     const.MAX_INSTRUCTOR_FILE_SIZE)})
 
-        filename = os.path.basename(file_obj.name)
+        filename = os.path.basename(file_obj.name) if file_obj.name is not None else None
         core_ut.check_filename(filename)
+        assert file_obj.file is not None
 
         with transaction.atomic():
             instructor_file = super().validate_and_create(name=filename, project=project)
