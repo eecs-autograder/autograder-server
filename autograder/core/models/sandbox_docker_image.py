@@ -1,5 +1,5 @@
 import os
-from typing import Any, Collection, cast
+from typing import Any, Collection
 
 from django.conf import settings
 from django.contrib.postgres import fields as pg_fields
@@ -16,7 +16,7 @@ from .course import Course
 
 
 def get_default_image_pk() -> int:
-    return cast(int, SandboxDockerImage.objects.get(display_name='Default', course=None).pk)
+    return SandboxDockerImage.objects.get(display_name='Default', course=None).pk
 
 
 class SandboxDockerImage(AutograderModel):
@@ -110,6 +110,9 @@ class _BuildSandboxDockerImageManager(AutograderModelManager['BuildSandboxDocker
 
         for file_ in files:
             core_ut.check_filename(file_.name)
+            # check_filename checks for this. This is to appease
+            # the type checker
+            assert file_.name is not None
             build_task.filenames.append(file_.name)
             write_dest = os.path.join(
                 build_task.build_dir,

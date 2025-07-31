@@ -296,7 +296,7 @@ class ListSubmissionsWithResults(AGModelAPIView):
                                          data='Only admins can override feedback_category')
 
         submissions_queryset = ag_models.get_submissions_with_results_queryset(
-            base_manager=group.submissions)
+            base_queryset=group.submissions)
 
         ag_test_preloader = AGTestPreLoader(group.project)
         mutation_test_suite_preloader = MutationTestSuitePreLoader(group.project)

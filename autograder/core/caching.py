@@ -6,8 +6,10 @@ from autograder.core.submission_feedback import SubmissionResultFeedback
 
 
 def clear_submission_results_cache(project_pk: int) -> None:
-    keys = cache.client.iter_keys(f'project_{project_pk}_submission_normal_results_*',
-                                  itersize=5000)
+    keys = cache.iter_keys(  # type: ignore
+        f'project_{project_pk}_submission_normal_results_*',
+        itersize=5000,
+    )
     cache.delete_many(list(keys))
 
 

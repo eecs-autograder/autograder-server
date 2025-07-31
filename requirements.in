@@ -8,10 +8,10 @@ openapi
 python-gnupg
 uritemplate
 drf-composable-permissions
-psycopg2
+psycopg
 redis
 ipython
-Django<3.3.0
+Django>5.0.0,<6.0.0
 PyYAML
 gunicorn
 oauth2client

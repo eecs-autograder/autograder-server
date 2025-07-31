@@ -286,7 +286,7 @@ APIClassType = Union[
     Type[Model],
     Type[Enum]
 ]
-FieldType = Union[Field, ForeignObjectRel, property, cached_property]
+FieldType = Union['Field[Any, Any]', ForeignObjectRel, property, 'cached_property[Any]']
 
 
 class APIClassSchemaGenerator:
@@ -484,12 +484,12 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
         try:
             field = self._class._meta.get_field(field_name)
             return (
-                # Remove this cast once django-stubs fixes:
-                # https://github.com/typeddjango/django-stubs/issues/447
-                not cast('RelatedField[object, object]', field).many_to_many
-                and not cast('RelatedField[object, object]', field).is_relation
-                and not field.blank
-                and field.default == fields.NOT_PROVIDED
+                not field.many_to_many
+                and not field.is_relation
+                # For some reason, mypy thinks GenericForeignKey doesn't have
+                # "blank" or "default", even though it inherits from Field
+                and not field.blank  # type: ignore
+                and field.default == fields.NOT_PROVIDED  # type: ignore
             )
         except (FieldDoesNotExist, AttributeError):
             return False
@@ -534,11 +534,8 @@ class UserSchemaGenerator(APIClassSchemaGenerator):
         result = super().generate()
         for name, prop in result['properties'].items():
             if name == 'username':
-                # We know this wont be a ReferenceObject. Since this
-                # is a "faux recursive" SchemaObject context, we'll
-                # just cast to SchemaObject.
                 assert '$ref' not in prop
-                cast(SchemaObject, prop)['format'] = 'email'
+                prop['format'] = 'email'
 
         result['required'] = list(self._fields)
         return result
@@ -566,7 +563,10 @@ def _extract_field(field_name: str, api_class: APIClassType) -> FieldType:
     Otherwise, returns the class attribute named field_name using getattr.
     """
     try:
-        return cast(Type[AutograderModel], api_class)._meta.get_field(field_name)
+        return cast(
+            Type[AutograderModel],
+            api_class,
+        )._meta.get_field(field_name)  # type: ignore
     except (FieldDoesNotExist, AttributeError):
         return cast(property, getattr(api_class, field_name))
 
@@ -627,6 +627,7 @@ def _django_field(
             if isinstance(field, ForeignObjectRel):
                 result['nullable'] = False
             if field.name in api_class.get_serialize_related_fields():
+                assert not isinstance(related_field.related_model, str)
                 result.update({
                     'type': 'array',
                     'items': as_schema_ref(related_field.related_model),
@@ -640,6 +641,7 @@ def _django_field(
                 return result
 
         if field.name in api_class.get_serialize_related_fields():
+            assert not isinstance(related_field.related_model, str)
             result.update({
                 'allOf': [as_schema_ref(related_field.related_model)]
             })
@@ -853,7 +855,7 @@ def _get_py_type_schema(type_: type) -> OrRef[SchemaObject]:
         if len(union_args) == 1:
             py_type_schema = _get_py_type_schema(union_args[0])
             if '$ref' not in py_type_schema:
-                result.update(cast(SchemaObject, py_type_schema))
+                result.update(py_type_schema)
                 return result
 
         result['anyOf'] = [_get_py_type_schema(arg) for arg in union_args]

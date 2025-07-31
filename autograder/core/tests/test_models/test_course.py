@@ -67,7 +67,7 @@ class CourseTestCase(UnitTestBase):
         eecs183f16 = Course.objects.validate_and_create(
             name='EECS 183', semester=Semester.fall, year=2016)
 
-        self.assert_collection_equal(
+        self.assertCountEqual(
             [
                 eecs183f16,
                 eecs183w17,
@@ -85,7 +85,7 @@ class CourseTestCase(UnitTestBase):
                 eecs280su18,
                 eecs280f18,
             ],
-            Course.objects.all()
+            list(Course.objects.all())
         )
 
     def test_exception_on_empty_name(self) -> None:

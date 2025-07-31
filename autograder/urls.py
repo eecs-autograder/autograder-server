@@ -16,21 +16,21 @@ Including another URLconf
 """
 from django.contrib.staticfiles import views
 from django.conf import settings
-from django.conf.urls import include, url
+from django.urls import include, re_path
 
 urlpatterns = [
-    url(r'^api/', include('autograder.core.urls')),
-    url(r'^api/', include('autograder.rest_api.urls')),
-    url(r'^api/', include('autograder.handgrading.urls')),
-    url(r'^api/', include('autograder.mutant_hints.urls')),
+    re_path(r'^api/', include('autograder.core.urls')),
+    re_path(r'^api/', include('autograder.rest_api.urls')),
+    re_path(r'^api/', include('autograder.handgrading.urls')),
+    re_path(r'^api/', include('autograder.mutant_hints.urls')),
 ]
 
 if settings.IS_DEV_SERVER:
     urlpatterns += [
-        url(r'^static/(?P<path>.*)$', views.serve),
+        re_path(r'^static/(?P<path>.*)$', views.serve),
     ]
 
     import debug_toolbar
     urlpatterns = [
-        url(r'^__debug__/', include(debug_toolbar.urls)),
+        re_path(r'^__debug__/', include(debug_toolbar.urls)),
     ] + urlpatterns

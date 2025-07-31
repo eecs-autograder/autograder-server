@@ -73,12 +73,15 @@ class _SubmissionManager(ag_model_base.AutograderModelManager['Submission']):
             for file_ in submitted_files:
                 try:
                     core_ut.check_filename(file_.name)
+                    # check_filename checks for None, this is to appease
+                    # the type checker
+                    assert file_.name is not None
                 except exceptions.ValidationError:
-                    submission.discarded_files.append(file_.name)
+                    submission.discarded_files.append(str(file_.name))
                     continue
 
                 if self.file_is_extra(submission, file_.name):
-                    submission.discarded_files.append(file_.name)
+                    submission.discarded_files.append(str(file_.name))
                     continue
 
                 submission.submitted_filenames.append(file_.name)
@@ -200,7 +203,7 @@ class Submission(ag_model_base.AutograderModel):
         help_text="""The name of the user who made this submission""")
 
     @property
-    def submitted_files(self) -> Iterable[File]:
+    def submitted_files(self) -> Iterable[File[bytes]]:
         """
         An iterable of the files included in this submission.
         """
@@ -334,7 +337,7 @@ class Submission(ag_model_base.AutograderModel):
 
     # -------------------------------------------------------------------------
 
-    def get_file(self, filename: str) -> File:
+    def get_file(self, filename: str) -> File[bytes]:
         """
         Returns a Django File object containing the submitted file with
         the given name. The file is opened in 'rb mode'.
@@ -403,13 +406,13 @@ class Submission(ag_model_base.AutograderModel):
 
 
 def get_submissions_with_results_queryset(
-    base_manager: QuerySet[Submission] = Submission.objects
+    base_queryset: QuerySet[Submission] = Submission.objects.all()
 ) -> QuerySet[Submission]:
     mutation_suite_result_queryset = get_mutation_test_suite_results_queryset()
     prefetch_mutation_suite_results = Prefetch(
         'mutation_test_suite_results', mutation_suite_result_queryset)
 
-    return base_manager.prefetch_related(prefetch_mutation_suite_results)
+    return base_queryset.prefetch_related(prefetch_mutation_suite_results)
 
 
 def get_mutation_test_suite_results_queryset() -> QuerySet[MutationTestSuiteResult]:

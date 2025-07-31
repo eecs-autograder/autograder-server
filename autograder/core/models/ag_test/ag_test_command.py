@@ -383,7 +383,7 @@ class AGTestCommand(AutograderModel):
                   program's process limit.""")
 
     def clean(self) -> None:
-        error_dict = {}
+        error_dict: dict[str, Any] = {}
 
         try:
             super().clean()

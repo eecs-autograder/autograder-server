@@ -52,7 +52,7 @@ class ValidatedArrayField(pg_fields.ArrayField):  # type: ignore
 
         return value
 
-    def validate(self, value: Any, model_instance: models.Model) -> None:
+    def validate(self, value: Any, model_instance: models.Model | None) -> None:
         # The validate() function defined in ArrayField has the
         # behavior we want to get rid of, so we instead call
         # validate() on ArrayField's base class.
@@ -236,7 +236,7 @@ class ValidatedJSONField(Generic[_JSONObjType], models.JSONField):
 
         return self.serializable_class.from_dict(value)
 
-    def validate(self, value: Optional[_JSONObjType], model_instance: Model) -> None:
+    def validate(self, value: Optional[_JSONObjType], model_instance: Model | None) -> None:
         if value is None:
             super().validate(value, model_instance)
         else:
@@ -244,7 +244,7 @@ class ValidatedJSONField(Generic[_JSONObjType], models.JSONField):
 
     def from_db_value(self, value: Any, *args: Any, **kwargs: Any) -> Optional[_JSONObjType]:
         return self.to_python(
-            super().from_db_value(value, *args, **kwargs)  # type: ignore
+            super().from_db_value(value, *args, **kwargs)
         )
 
     def get_prep_value(

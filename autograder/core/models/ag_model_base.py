@@ -77,6 +77,7 @@ class AutograderModelManager(  # type: ignore
 
             related_model = instance._meta.get_field(field_name).related_model
             assert related_model is not None
+            assert not isinstance(related_model, str)
             many_to_many_to_set[field_name] = _load_related_to_many_objs(related_model, objs)
 
         with transaction.atomic():
@@ -127,10 +128,12 @@ def _load_related_to_many_objs(
     if isinstance(objs[0], related_model):
         return cast(Sequence[Model], objs)
     elif isinstance(objs[0], int):
-        return list(related_model.objects.filter(pk__in=objs))
+        # Type checker thinks "Model" doesn't have "objects"
+        return list(related_model.objects.filter(pk__in=objs))  # type: ignore
     elif isinstance(objs[0], dict):
         return list(
-            related_model.objects.filter(
+            # Type checker thinks "Model" doesn't have "objects"
+            related_model.objects.filter(  # type: ignore
                 pk__in=[obj['pk'] for obj in cast(Sequence[_HasPK], objs)]
             )
         )
@@ -576,6 +579,7 @@ class AutograderModel(ToDictMixin, models.Model):
 
             if field.many_to_many:
                 assert field.related_model is not None
+                assert not isinstance(field.related_model, str)
                 loaded_vals = _load_related_to_many_objs(
                     field.related_model, cast(Sequence[object], val))
                 getattr(self, field_name).set(loaded_vals, clear=True)
@@ -598,15 +602,18 @@ def _set_to_one_relationship(
 ) -> None:
     related_model = model_obj._meta.get_field(field_name).related_model
     assert related_model is not None
+    assert not isinstance(related_model, str)
 
     if value is None:
         related_obj = None
     elif isinstance(value, related_model):
         related_obj = value
     elif isinstance(value, int):
-        related_obj = related_model.objects.get(pk=value)
+        # Type checker thinks that "Model" doesn't have "objects"
+        related_obj = related_model.objects.get(pk=value)  # type: ignore
     elif isinstance(value, dict):
-        related_obj = related_model.objects.get(pk=value['pk'])
+        # Type checker thinks that "Model" doesn't have "objects"
+        related_obj = related_model.objects.get(pk=value['pk'])  # type: ignore
     else:
         raise ValueError('-to-one related objects must be represented as int, '
                          'dict, or the object itself')

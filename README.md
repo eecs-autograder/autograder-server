@@ -54,7 +54,7 @@ pip-sync requirements.txt requirements-dev.txt
 You can then run `pipenv shell` to start a shell in the virtual environment,
 or if you prefer you can prefix the python commands below with `pipenv run`.
 
-If you run into errors installing psycopg2, please refer to https://www.psycopg.org/docs/install.html#build-prerequisites for troubleshooting tips.
+If you run into errors installing psycopg, please refer to https://www.psycopg.org/docs/install.html#build-prerequisites for troubleshooting tips.
 
 ### Updating Packages
 This section contains some useful reference commands for pip-tools.

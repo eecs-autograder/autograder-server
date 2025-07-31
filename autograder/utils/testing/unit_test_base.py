@@ -51,19 +51,6 @@ class _TestCaseProtocol(Protocol):
 
 
 class _CustomAssertsMixin:
-    def assert_collection_equal(
-        self: _TestCaseProtocol,
-        first: Collection[Any],
-        second: Collection[Any]
-    ) -> None:
-        """
-        Use this method when comparing a QuerySet with another Collection.
-        Since QuerySets have their own implementation of count() that does
-        something different than Sequence.count(), assertSequenceEqual()
-        cannot be used with QuerySets.
-        """
-        self.assertSequenceEqual(cast(Sequence[Any], first), cast(Sequence[Any], second))
-
     def assert_dict_is_subset(
         self: _TestCaseProtocol,
         subset_dict: Mapping[str, object],

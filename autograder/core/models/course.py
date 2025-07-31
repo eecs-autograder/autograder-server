@@ -262,5 +262,5 @@ class LateDaysRemaining(AutograderModel):
 
 
 def clear_cached_user_roles(course_pk: int) -> None:
-    keys = cache.client.iter_keys(f'course_{course_pk}_user_*', itersize=5000)
+    keys = cache.iter_keys(f'course_{course_pk}_user_*', itersize=5000)  # type: ignore
     cache.delete_many(list(keys))

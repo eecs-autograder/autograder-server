@@ -6,7 +6,7 @@ import os
 import re
 import subprocess
 import typing
-from typing import List, Tuple, Type, TypeVar, cast
+from typing import List, Tuple, Type, TypeVar
 import zoneinfo
 
 from django.conf import settings
@@ -80,14 +80,14 @@ def get_24_hour_period(
     """
     start_date = contains_datetime.date()
     if contains_datetime.time() < start_time:
-        start_date += timezone.timedelta(days=-1)
+        start_date += datetime.timedelta(days=-1)
 
-    start_datetime = timezone.datetime.combine(
+    start_datetime = datetime.datetime.combine(
         start_date, start_time)
     start_datetime = start_datetime.replace(
         tzinfo=zoneinfo.ZoneInfo(str(contains_datetime.tzinfo))
     )
-    end_datetime = start_datetime + timezone.timedelta(days=1)
+    end_datetime = start_datetime + datetime.timedelta(days=1)
 
     if convert_result_to_utc:
         return (
@@ -98,7 +98,7 @@ def get_24_hour_period(
     return start_datetime, end_datetime
 
 
-def check_filename(filename: str) -> None:
+def check_filename(filename: str | None) -> None:
     """
     Verifies whether the given filename is valid according to the
     following requirements:
