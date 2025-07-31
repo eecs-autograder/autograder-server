@@ -1,4 +1,4 @@
-import lzma
+import gzip
 import os
 import shutil
 
@@ -115,5 +115,5 @@ def _compress_output_file(output_filename: str, new_filename: str | None = None)
         new_filename = output_filename + COMPRESSED_OUTPUT_SUFFIX
 
     with (open(output_filename, 'rb') as from_file,
-            lzma.open(new_filename, 'wb') as to_file):
+            gzip.open(new_filename, 'wb') as to_file):
         shutil.copyfileobj(from_file, to_file)

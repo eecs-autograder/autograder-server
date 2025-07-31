@@ -1,5 +1,5 @@
 import decimal
-import lzma
+import gzip
 import os
 import shutil
 from unittest import mock
@@ -405,9 +405,9 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             self.assertEqual(len(self.validity_check_stderr), fdbk.validity_check_stderr_size)
             getsize.assert_not_called()
 
-        with lzma.open(fdbk.validity_check_stdout_filename, 'rb') as f:
+        with gzip.open(fdbk.validity_check_stdout_filename, 'rb') as f:
             self.assertEqual(self.validity_check_stdout, f.read().decode())
-        with lzma.open(fdbk.validity_check_stderr_filename, 'rb') as f:
+        with gzip.open(fdbk.validity_check_stderr_filename, 'rb') as f:
             self.assertEqual(self.validity_check_stderr, f.read().decode())
 
     @tag('output_migration')
@@ -432,9 +432,9 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             self.assertEqual(len(self.validity_check_stderr), fdbk.validity_check_stderr_size)
             getsize.assert_not_called()
 
-        with lzma.open(fdbk.validity_check_stdout_filename, 'rb') as f:
+        with gzip.open(fdbk.validity_check_stdout_filename, 'rb') as f:
             self.assertEqual(self.validity_check_stdout, f.read().decode())
-        with lzma.open(fdbk.validity_check_stderr_filename, 'rb') as f:
+        with gzip.open(fdbk.validity_check_stderr_filename, 'rb') as f:
             self.assertEqual(self.validity_check_stderr, f.read().decode())
 
     @tag('output_migration')
@@ -482,9 +482,9 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
                 len(self.setup_stderr), fdbk.setup_stderr_size)
             getsize.assert_not_called()
 
-        with lzma.open(fdbk.setup_stdout_filename, 'rb') as f:
+        with gzip.open(fdbk.setup_stdout_filename, 'rb') as f:
             self.assertEqual(self.setup_stdout, f.read().decode())
-        with lzma.open(fdbk.setup_stderr_filename, 'rb') as f:
+        with gzip.open(fdbk.setup_stderr_filename, 'rb') as f:
             self.assertEqual(self.setup_stderr, f.read().decode())
 
     @tag('output_migration')
@@ -646,9 +646,9 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
                 len(self.get_test_names_stderr), fdbk.get_student_test_names_stderr_size)
             getsize.assert_not_called()
 
-        with lzma.open(fdbk.get_student_test_names_stdout_filename, 'rb') as f:
+        with gzip.open(fdbk.get_student_test_names_stdout_filename, 'rb') as f:
             self.assertEqual(self.get_test_names_stdout, f.read().decode())
-        with lzma.open(fdbk.get_student_test_names_stderr_filename, 'rb') as f:
+        with gzip.open(fdbk.get_student_test_names_stderr_filename, 'rb') as f:
             self.assertEqual(self.get_test_names_stderr, f.read().decode())
 
     @tag('output_migration')
@@ -783,9 +783,9 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             self.assertEqual(len(self.validity_check_stderr), fdbk.validity_check_stderr_size)
             getsize.assert_not_called()
 
-        with lzma.open(fdbk.validity_check_stdout_filename, 'rb') as f:
+        with gzip.open(fdbk.validity_check_stdout_filename, 'rb') as f:
             self.assertEqual(self.validity_check_stdout, f.read().decode())
-        with lzma.open(fdbk.validity_check_stderr_filename, 'rb') as f:
+        with gzip.open(fdbk.validity_check_stderr_filename, 'rb') as f:
             self.assertEqual(self.validity_check_stderr, f.read().decode())
 
     @tag('output_migration')
@@ -922,9 +922,9 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             self.assertEqual(len(self.grade_buggy_impls_stderr), fdbk.grade_buggy_impls_stderr_size)
             getsize.assert_not_called()
 
-        with lzma.open(fdbk.grade_buggy_impls_stdout_filename, 'rb') as f:
+        with gzip.open(fdbk.grade_buggy_impls_stdout_filename, 'rb') as f:
             self.assertEqual(self.grade_buggy_impls_stdout, f.read().decode())
-        with lzma.open(fdbk.grade_buggy_impls_stderr_filename, 'rb') as f:
+        with gzip.open(fdbk.grade_buggy_impls_stderr_filename, 'rb') as f:
             self.assertEqual(self.grade_buggy_impls_stderr, f.read().decode())
 
     @tag('output_migration')

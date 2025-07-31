@@ -1,5 +1,5 @@
 import itertools
-import lzma
+import gzip
 import os
 import shutil
 import tempfile
@@ -1026,9 +1026,9 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
             self.assertEqual(len(stderr), fdbk.stderr_size)
             getsize.assert_not_called()
 
-        with lzma.open(fdbk.stdout_filename, 'rb') as f:
+        with gzip.open(fdbk.stdout_filename, 'rb') as f:
             self.assertEqual(stdout, f.read().decode())
-        with lzma.open(fdbk.stderr_filename, 'rb') as f:
+        with gzip.open(fdbk.stderr_filename, 'rb') as f:
             self.assertEqual(stderr, f.read().decode())
 
     @tag('output_migration')
