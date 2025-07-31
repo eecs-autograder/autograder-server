@@ -629,9 +629,11 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         migrate_mutation_test_suite_result_output(self.result)
 
         self.assertNotEqual(
-            self.result.old_get_test_names_stdout_filename, self.result.get_test_names_stdout_filename)
+            self.result.old_get_test_names_stdout_filename,
+            self.result.get_test_names_stdout_filename)
         self.assertNotEqual(
-            self.result.old_get_test_names_stderr_filename, self.result.get_test_names_stderr_filename)
+            self.result.old_get_test_names_stderr_filename,
+            self.result.get_test_names_stderr_filename)
 
         # After migration checks
         fdbk = self.result.get_fdbk(
@@ -918,8 +920,10 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             '.mutation_test_suite_result.os.path.getsize',
             new=mock.Mock(wraps=os.path.getsize),
         ) as getsize:
-            self.assertEqual(len(self.grade_buggy_impls_stdout), fdbk.grade_buggy_impls_stdout_size)
-            self.assertEqual(len(self.grade_buggy_impls_stderr), fdbk.grade_buggy_impls_stderr_size)
+            self.assertEqual(
+                len(self.grade_buggy_impls_stdout), fdbk.grade_buggy_impls_stdout_size)
+            self.assertEqual(
+                len(self.grade_buggy_impls_stderr), fdbk.grade_buggy_impls_stderr_size)
             getsize.assert_not_called()
 
         with gzip.open(fdbk.grade_buggy_impls_stdout_filename, 'rb') as f:

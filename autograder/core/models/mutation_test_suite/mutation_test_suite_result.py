@@ -196,7 +196,8 @@ class MutationTestSuiteResult(AutograderModel):
 
     student_test_names_stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="""The size in bytes of the student test name discovery command's stdout. None indicates:
+        help_text="""The size in bytes of the student test name discovery command's stdout.
+            None indicates:
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
@@ -209,7 +210,8 @@ class MutationTestSuiteResult(AutograderModel):
     )
     student_test_names_stderr_size = models.IntegerField(
         blank=True, null=True, default=None,
-        help_text="""The size in bytes of the student test name discovery command's stderr. None indicates:
+        help_text="""The size in bytes of the student test name discovery command's stderr.
+            None indicates:
             - The 2025.08.0 output storage compression hasn't been applied to this object
               (i.e., the output is uncompressed)
             - The output size should be retrieved from the filesystem
@@ -484,9 +486,9 @@ class MutationTestSuiteResult(AutograderModel):
                 return None
 
             return (
-                self._mutation_test_suite_result.get_test_names_stdout_filename
+                Path(self._mutation_test_suite_result.get_test_names_stdout_filename)
                 if self._mutation_test_suite_result.student_test_names_stdout_size is not None
-                else self._mutation_test_suite_result.old_get_test_names_stdout_filename
+                else Path(self._mutation_test_suite_result.old_get_test_names_stdout_filename)
             )
 
         @property
@@ -508,9 +510,9 @@ class MutationTestSuiteResult(AutograderModel):
                 return None
 
             return (
-                self._mutation_test_suite_result.get_test_names_stderr_filename
+                Path(self._mutation_test_suite_result.get_test_names_stderr_filename)
                 if self._mutation_test_suite_result.student_test_names_stderr_size is not None
-                else self._mutation_test_suite_result.old_get_test_names_stderr_filename
+                else Path(self._mutation_test_suite_result.old_get_test_names_stderr_filename)
             )
 
         @property
