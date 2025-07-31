@@ -2,7 +2,6 @@ import os
 from typing import Any, Optional, TypedDict, cast
 
 from django.contrib.auth.models import User
-from django.contrib.postgres.fields import ArrayField
 from django.core import validators
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
