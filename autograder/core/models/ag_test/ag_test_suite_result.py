@@ -3,6 +3,7 @@ from typing import Dict
 
 from django.db import models
 
+from autograder.core.constants import COMPRESSED_OUTPUT_SUFFIX
 import autograder.core.utils as core_ut
 
 from ..ag_model_base import AutograderModel, AutograderModelManager
@@ -39,13 +40,26 @@ class AGTestSuiteResult(AutograderModel):
 
     @property
     def setup_stdout_filename(self) -> str:
-        return os.path.join(core_ut.get_result_output_dir(self.submission),
-                            'suite_result_{}_setup_stdout'.format(self.pk))
+        filename = os.path.join(
+            core_ut.get_result_output_dir(self.submission),
+            'suite_result_{}_setup_stdout'.format(self.pk)
+        )
+        return (
+            filename + COMPRESSED_OUTPUT_SUFFIX
+            if self.setup_stdout_size is not None else filename
+        )
 
     @property
     def setup_stderr_filename(self) -> str:
-        return os.path.join(core_ut.get_result_output_dir(self.submission),
-                            'suite_result_{}_setup_stderr'.format(self.pk))
+        filename = os.path.join(
+            core_ut.get_result_output_dir(self.submission),
+            'suite_result_{}_setup_stderr'.format(self.pk)
+
+        )
+        return (
+            filename + COMPRESSED_OUTPUT_SUFFIX
+            if self.setup_stderr_size is not None else filename
+        )
 
     setup_stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
@@ -86,6 +100,8 @@ class AGTestSuiteResult(AutograderModel):
         'setup_timed_out',
         'setup_stdout_truncated',
         'setup_stderr_truncated',
+        'setup_stdout_size',
+        'setup_stderr_size',
     )
 
     def to_dict(self) -> Dict[str, object]:

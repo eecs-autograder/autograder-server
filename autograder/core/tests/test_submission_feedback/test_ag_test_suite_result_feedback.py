@@ -1,5 +1,10 @@
+import lzma
 import os
+import shutil
+from tkinter import N
+from unittest import mock
 
+from autograder.core.migrate_output import migrate_ag_test_command_result_output, migrate_ag_test_suite_result_output
 import autograder.core.models as ag_models
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_suite_fdbk, get_case_fdbk, get_cmd_fdbk)
@@ -39,6 +44,10 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.ag_test_suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
             submission=submission, ag_test_suite=self.ag_test_suite
         )  # type: ag_models.AGTestSuiteResult
+        with open(self.ag_test_suite_result.setup_stdout_filename, 'w') as f:
+            pass
+        with open(self.ag_test_suite_result.setup_stderr_filename, 'w') as f:
+            pass
 
         self.ag_test_case_result1 = ag_models.AGTestCaseResult.objects.validate_and_create(
             ag_test_case=self.ag_test_case1, ag_test_suite_result=self.ag_test_suite_result
@@ -167,11 +176,13 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.ag_test_suite.setup_suite_cmd_name, fdbk.setup_name)
         self.assertEqual(setup_return_code, fdbk.setup_return_code)
         self.assertEqual(setup_timed_out, fdbk.setup_timed_out)
-        self.assertEqual(setup_stdout, fdbk.setup_stdout.read().decode())
-        self.assertEqual(len(setup_stdout), fdbk.get_setup_stdout_size())
+        with open(fdbk.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(setup_stdout, f.read().decode())
+        self.assertEqual(len(setup_stdout), fdbk.setup_stdout_size)
         self.assertTrue(fdbk.setup_stdout_truncated)
-        self.assertEqual(setup_stderr, fdbk.setup_stderr.read().decode())
-        self.assertEqual(len(setup_stderr), fdbk.get_setup_stderr_size())
+        with open(fdbk.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(setup_stderr, f.read().decode())
+        self.assertEqual(len(setup_stderr), fdbk.setup_stderr_size)
         self.assertFalse(fdbk.setup_stderr_truncated)
 
         self.ag_test_suite.validate_and_update(
@@ -181,11 +192,12 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
             }
         )
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
-        self.assertEqual(setup_stdout, fdbk.setup_stdout.read().decode())
-        self.assertEqual(len(setup_stdout), fdbk.get_setup_stdout_size())
+        with open(fdbk.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(setup_stdout, f.read().decode())
+        self.assertEqual(len(setup_stdout), fdbk.setup_stdout_size)
         self.assertTrue(fdbk.setup_stdout_truncated)
         self.assertIsNone(fdbk.setup_stderr)
-        self.assertIsNone(fdbk.get_setup_stderr_size())
+        self.assertIsNone(fdbk.setup_stderr_size)
         self.assertIsNone(fdbk.setup_stderr_truncated)
 
         self.ag_test_suite.validate_and_update(
@@ -196,10 +208,11 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         )
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_stdout)
-        self.assertIsNone(fdbk.get_setup_stdout_size())
+        self.assertIsNone(fdbk.setup_stdout_size)
         self.assertIsNone(fdbk.setup_stdout_truncated)
-        self.assertEqual(setup_stderr, fdbk.setup_stderr.read().decode())
-        self.assertEqual(len(setup_stderr), fdbk.get_setup_stderr_size())
+        with open(fdbk.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(setup_stderr, f.read().decode())
+        self.assertEqual(len(setup_stderr), fdbk.setup_stderr_size)
         self.assertFalse(fdbk.setup_stderr_truncated)
 
         self.ag_test_suite.validate_and_update(
@@ -215,11 +228,106 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNone(fdbk.setup_timed_out)
         self.assertIsNone(fdbk.setup_stdout)
-        self.assertIsNone(fdbk.get_setup_stdout_size())
+        self.assertIsNone(fdbk.setup_stdout_size)
         self.assertIsNone(fdbk.setup_stdout_truncated)
         self.assertIsNone(fdbk.setup_stderr)
-        self.assertIsNone(fdbk.get_setup_stderr_size())
+        self.assertIsNone(fdbk.setup_stderr_size)
         self.assertIsNone(fdbk.setup_stderr_truncated)
+
+    def test_setup_output_migrated(self) -> None:
+        self.ag_test_suite_result.setup_return_code = 0
+        self.ag_test_suite_result.save()
+
+        setup_stdout = 'onzx,cmntvoritaniretnrc'
+        setup_stderr = 'noirstnowufhtnoiesrtnoeflpnofiuetn'
+        with open(self.ag_test_suite_result.setup_stdout_filename, 'w') as f:
+            f.write(setup_stdout)
+        with open(self.ag_test_suite_result.setup_stderr_filename, 'w') as f:
+            f.write(setup_stderr)
+
+        # Before migration checks
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize)
+        ) as getsize:
+            actual_size = fdbk.setup_stdout_size
+            getsize.assert_called_once_with(self.ag_test_suite_result.setup_stdout_filename)
+            self.assertEqual(len(setup_stdout), actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.setup_stderr_size
+            getsize.assert_called_once_with(self.ag_test_suite_result.setup_stderr_filename)
+            self.assertEqual(len(setup_stderr), actual_size)
+
+        with open(fdbk.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(setup_stdout, f.read().decode())
+        with open(fdbk.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(setup_stderr, f.read().decode())
+
+        migrate_ag_test_suite_result_output(self.ag_test_suite_result)
+
+        # After migration checks
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_suite_result.os.path.getsize'
+        ) as getsize:
+            self.assertEqual(len(setup_stdout), fdbk.setup_stdout_size)
+            self.assertEqual(len(setup_stderr), fdbk.setup_stderr_size)
+            getsize.assert_not_called()
+
+        with lzma.open(fdbk.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(setup_stdout, f.read().decode())
+        with lzma.open(fdbk.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(setup_stderr, f.read().decode())
+
+    def test_setup_stdout_empty_migrated(self) -> None:
+        self.ag_test_suite_result.setup_return_code = 0
+        self.ag_test_suite_result.save()
+
+        original_stdout_filename = self.ag_test_suite_result.setup_stdout_filename
+        original_stderr_filename = self.ag_test_suite_result.setup_stderr_filename
+
+        # Before migration checks
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize)
+        ) as getsize:
+            actual_size = fdbk.setup_stdout_size
+            getsize.assert_called_once_with(self.ag_test_suite_result.setup_stdout_filename)
+            self.assertEqual(0, actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.setup_stderr_size
+            getsize.assert_called_once_with(self.ag_test_suite_result.setup_stderr_filename)
+            self.assertEqual(0, actual_size)
+
+        with open(fdbk.setup_stdout_filename) as f:
+            self.assertEqual('', f.read())
+        with open(fdbk.setup_stderr_filename) as f:
+            self.assertEqual('', f.read())
+
+        migrate_ag_test_suite_result_output(self.ag_test_suite_result)
+        # Simulate deleting the old files
+        shutil.move(original_stdout_filename, original_stdout_filename + '_deleted')
+        shutil.move(original_stderr_filename, original_stderr_filename + '_deleted')
+
+        # After migration checks
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_suite_result.os.path.getsize'
+        ) as getsize:
+            self.assertEqual(0, fdbk.setup_stdout_size)
+            self.assertEqual(0, fdbk.setup_stderr_size)
+            getsize.assert_not_called()
+
+        self.assertFalse(os.path.exists(original_stdout_filename))
+        self.assertFalse(os.path.exists(original_stderr_filename))
+        self.assertFalse(os.path.exists(self.ag_test_suite_result.setup_stdout_filename))
+        self.assertFalse(os.path.exists(self.ag_test_suite_result.setup_stderr_filename))
 
     def test_show_setup_name_with_return_code_non_null_and_timed_out_false(self) -> None:
         self.ag_test_suite.validate_and_update(

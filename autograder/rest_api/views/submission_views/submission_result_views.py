@@ -191,9 +191,9 @@ class AGTestSuiteResultOutputSizeView(SubmissionResultsViewBase):
         if suite_fdbk is None:
             return response.Response(None)
         return response.Response({
-            'setup_stdout_size': suite_fdbk.get_setup_stdout_size(),
+            'setup_stdout_size': suite_fdbk.setup_stdout_size,
             'setup_stdout_truncated': suite_fdbk.setup_stdout_truncated,
-            'setup_stderr_size': suite_fdbk.get_setup_stderr_size(),
+            'setup_stderr_size': suite_fdbk.setup_stderr_size,
             'setup_stderr_truncated': suite_fdbk.setup_stderr_truncated,
         })
 
@@ -598,8 +598,8 @@ class MutationTestSuiteOutputSizeView(SubmissionResultsViewBase):
             return response.Response(None)
 
         return response.Response({
-            'setup_stdout_size': result.get_setup_stdout_size(),
-            'setup_stderr_size': result.get_setup_stderr_size(),
+            'setup_stdout_size': result.setup_stdout_size,
+            'setup_stderr_size': result.setup_stderr_size,
             'get_student_test_names_stdout_size': result.get_student_test_names_stdout_size(),
             'get_student_test_names_stderr_size': result.get_student_test_names_stderr_size(),
             'validity_check_stdout_size': result.get_validity_check_stdout_size(),

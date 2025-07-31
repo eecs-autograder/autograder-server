@@ -639,20 +639,14 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return self._ag_test_suite_result.setup_timed_out
 
     @property
-    def setup_stdout(self) -> Optional[BinaryIO]:
-        if (filename := self.setup_stdout_filename) is None:
-            return None
-
-        return open(filename, 'rb')
-
-    @property
     def setup_stdout_filename(self) -> Path | None:
         if not self._fdbk.show_setup_stdout:
             return None
 
         return Path(self._ag_test_suite_result.setup_stdout_filename)
 
-    def get_setup_stdout_size(self) -> Optional[int]:
+    @property
+    def setup_stdout_size(self) -> Optional[int]:
         if not self._fdbk.show_setup_stdout:
             return None
 
@@ -670,20 +664,14 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return self._ag_test_suite_result.setup_stdout_truncated
 
     @property
-    def setup_stderr(self) -> Optional[BinaryIO]:
-        if (filename := self.setup_stderr_filename) is None:
-            return None
-
-        return open(filename, 'rb')
-
-    @property
     def setup_stderr_filename(self) -> Path | None:
         if not self._fdbk.show_setup_stderr:
             return None
 
         return Path(self._ag_test_suite_result.setup_stderr_filename)
 
-    def get_setup_stderr_size(self) -> Optional[int]:
+    @property
+    def setup_stderr_size(self) -> Optional[int]:
         if not self._fdbk.show_setup_stderr:
             return None
 
@@ -1069,10 +1057,14 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return None
 
     def get_stdout_size(self) -> Optional[int]:
-        if self._show_actual_stdout:
-            return os.path.getsize(self._ag_test_command_result.stdout_filename)
+        if not self._show_actual_stdout:
+            return None
 
-        return None
+        return (
+            self._ag_test_command_result.stdout_size
+            if self._ag_test_command_result.stdout_size is not None
+            else os.path.getsize(self._ag_test_command_result.stdout_filename)
+        )
 
     @property
     def _show_actual_stdout(self) -> bool:
@@ -1169,10 +1161,14 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return None
 
     def get_stderr_size(self) -> Optional[int]:
-        if self._show_actual_stderr:
-            return os.path.getsize(self._ag_test_command_result.stderr_filename)
+        if not self._show_actual_stderr:
+            return None
 
-        return None
+        return (
+            self._ag_test_command_result.stderr_size
+            if self._ag_test_command_result.stderr_size is not None
+            else os.path.getsize(self._ag_test_command_result.stderr_filename)
+        )
 
     @property
     def _show_actual_stderr(self) -> bool:

@@ -163,8 +163,8 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
             self.assertIsNone(response.data)
         else:
             expected = {
-                'setup_stdout_size': fdbk.get_setup_stdout_size(),
-                'setup_stderr_size': fdbk.get_setup_stderr_size(),
+                'setup_stdout_size': fdbk.setup_stdout_size,
+                'setup_stderr_size': fdbk.setup_stderr_size,
                 'setup_stdout_truncated': fdbk.setup_stdout_truncated,
                 'setup_stderr_truncated': fdbk.setup_stderr_truncated,
             }
