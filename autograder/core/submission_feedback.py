@@ -1043,20 +1043,14 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return self._ag_test_command_result.stdout_correct
 
     @property
-    def stdout(self) -> Optional[BinaryIO]:
-        if (filename := self.stdout_filename) is not None:
-            return open(filename, 'rb')
-
-        return None
-
-    @property
     def stdout_filename(self) -> Path | None:
         if self._show_actual_stdout:
             return Path(self._ag_test_command_result.stdout_filename)
 
         return None
 
-    def get_stdout_size(self) -> Optional[int]:
+    @property
+    def stdout_size(self) -> Optional[int]:
         if not self._show_actual_stdout:
             return None
 
@@ -1147,20 +1141,14 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return self._ag_test_command_result.stderr_correct
 
     @property
-    def stderr(self) -> Optional[BinaryIO]:
-        if (filename := self.stderr_filename) is not None:
-            return open(filename, 'rb')
-
-        return None
-
-    @property
     def stderr_filename(self) -> Path | None:
         if self._show_actual_stderr:
             return Path(self._ag_test_command_result.stderr_filename)
 
         return None
 
-    def get_stderr_size(self) -> Optional[int]:
+    @property
+    def stderr_size(self) -> Optional[int]:
         if not self._show_actual_stderr:
             return None
 

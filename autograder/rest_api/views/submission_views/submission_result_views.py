@@ -307,9 +307,9 @@ class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
         if cmd_fdbk is None:
             return response.Response(None)
         return response.Response({
-            'stdout_size': cmd_fdbk.get_stdout_size(),
+            'stdout_size': cmd_fdbk.stdout_size,
             'stdout_truncated': cmd_fdbk.stdout_truncated,
-            'stderr_size': cmd_fdbk.get_stderr_size(),
+            'stderr_size': cmd_fdbk.stderr_size,
             'stderr_truncated': cmd_fdbk.stderr_truncated,
             'stdout_diff_size': cmd_fdbk.get_stdout_diff_size(),
             'stderr_diff_size': cmd_fdbk.get_stderr_diff_size(),

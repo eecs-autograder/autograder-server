@@ -2,6 +2,7 @@ import os
 
 from django.db import models
 
+from autograder.core.constants import COMPRESSED_OUTPUT_SUFFIX
 from autograder.core.models.ag_model_base import AutograderModelManager
 import autograder.core.utils as core_ut
 
@@ -50,15 +51,29 @@ class AGTestCommandResult(AGCommandResultBase):
 
     @property
     def stdout_filename(self) -> str:
-        result_output_dir = core_ut.get_result_output_dir(
-            self.ag_test_case_result.ag_test_suite_result.submission)
-        return os.path.join(result_output_dir, 'cmd_result_{}_stdout'.format(self.pk))
+        filename = os.path.join(
+            core_ut.get_result_output_dir(
+                self.ag_test_case_result.ag_test_suite_result.submission),
+            'cmd_result_{}_stdout'.format(self.pk)
+        )
+        return (
+            filename + COMPRESSED_OUTPUT_SUFFIX
+            if self.stdout_size is not None else filename
+        )
+
 
     @property
     def stderr_filename(self) -> str:
-        result_output_dir = core_ut.get_result_output_dir(
-            self.ag_test_case_result.ag_test_suite_result.submission)
-        return os.path.join(result_output_dir, 'cmd_result_{}_stderr'.format(self.pk))
+        filename = os.path.join(
+            core_ut.get_result_output_dir(
+                self.ag_test_case_result.ag_test_suite_result.submission),
+            'cmd_result_{}_stderr'.format(self.pk)
+        )
+        return (
+            filename + COMPRESSED_OUTPUT_SUFFIX
+            if self.stderr_size is not None else filename
+        )
+
 
     stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
@@ -106,6 +121,9 @@ class AGTestCommandResult(AGCommandResultBase):
 
         'stdout_truncated',
         'stderr_truncated',
+
+        'stdout_size',
+        'stderr_size',
 
         'custom_scoring_used',
         'custom_scoring_points',

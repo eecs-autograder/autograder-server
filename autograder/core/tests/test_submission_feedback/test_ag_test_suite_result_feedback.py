@@ -4,6 +4,8 @@ import shutil
 from tkinter import N
 from unittest import mock
 
+from django.test import tag
+
 from autograder.core.migrate_output import migrate_ag_test_command_result_output, migrate_ag_test_suite_result_output
 import autograder.core.models as ag_models
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
@@ -234,6 +236,7 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_stderr_size)
         self.assertIsNone(fdbk.setup_stderr_truncated)
 
+    @tag('output_migration')
     def test_setup_output_migrated(self) -> None:
         self.ag_test_suite_result.setup_return_code = 0
         self.ag_test_suite_result.save()
@@ -282,7 +285,8 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         with lzma.open(fdbk.setup_stderr_filename, 'rb') as f:
             self.assertEqual(setup_stderr, f.read().decode())
 
-    def test_setup_stdout_empty_migrated(self) -> None:
+    @tag('output_migration')
+    def test_setup_output_empty_migrated(self) -> None:
         self.ag_test_suite_result.setup_return_code = 0
         self.ag_test_suite_result.save()
 
@@ -328,6 +332,10 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertFalse(os.path.exists(original_stderr_filename))
         self.assertFalse(os.path.exists(self.ag_test_suite_result.setup_stdout_filename))
         self.assertFalse(os.path.exists(self.ag_test_suite_result.setup_stderr_filename))
+        self.assertNotEqual(
+            original_stdout_filename, self.ag_test_suite_result.setup_stdout_filename)
+        self.assertNotEqual(
+            original_stderr_filename, self.ag_test_suite_result.setup_stderr_filename)
 
     def test_show_setup_name_with_return_code_non_null_and_timed_out_false(self) -> None:
         self.ag_test_suite.validate_and_update(

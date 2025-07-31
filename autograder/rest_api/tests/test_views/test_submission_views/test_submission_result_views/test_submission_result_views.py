@@ -94,8 +94,12 @@ class _FeedbackTestsBase(UnitTestBase):
         stderr_url = make_result_output_url(
             'ag-test-cmd-result-stderr', submission, cmd_result, fdbk_category)
 
-        self.do_get_output_test(client, stdout_url, cmd_fdbk.stdout)
-        self.do_get_output_test(client, stderr_url, cmd_fdbk.stderr)
+        with open(cmd_fdbk.stdout_filename, 'rb') as f:
+            expected_stdout = f.read()
+        self.do_get_output_test(client, stdout_url, expected_stdout)
+        with open(cmd_fdbk.stderr_filename, 'rb') as f:
+            expected_stderr = f.read()
+        self.do_get_output_test(client, stderr_url, expected_stderr)
 
         stdout_diff_url = make_result_output_url(
             'ag-test-cmd-result-stdout-diff', submission, cmd_result, fdbk_category)
@@ -110,8 +114,8 @@ class _FeedbackTestsBase(UnitTestBase):
         response = client.get(cmd_output_size_url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         expected = {
-            'stdout_size': cmd_fdbk.get_stdout_size(),
-            'stderr_size': cmd_fdbk.get_stderr_size(),
+            'stdout_size': cmd_fdbk.stdout_size,
+            'stderr_size': cmd_fdbk.stderr_size,
             'stdout_truncated': cmd_fdbk.stdout_truncated,
             'stderr_truncated': cmd_fdbk.stderr_truncated,
             'stdout_diff_size': cmd_fdbk.get_stdout_diff_size(),
@@ -119,14 +123,14 @@ class _FeedbackTestsBase(UnitTestBase):
         }
         self.assertEqual(expected, response.data)
 
-    def do_get_output_test(self, client, url, expected: Optional[BinaryIO]):
+    def do_get_output_test(self, client, url, expected: Optional[bytes]):
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         if expected is None:
             self.assertIsNone(response.data)
         else:
             self.assertIn('Content-Length', response)
-            self.assertEqual(expected.read(), b''.join(response.streaming_content))
+            self.assertEqual(expected, b''.join(response.streaming_content))
 
     def do_get_diff_test(self, client, url, expected: Optional[core_ut.DiffResult]):
         response = client.get(url)

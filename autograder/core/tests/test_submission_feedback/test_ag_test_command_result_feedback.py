@@ -1,9 +1,14 @@
 import itertools
+import lzma
 import os
+import shutil
 import tempfile
 from typing import Union
 from unittest import mock
 
+from django.test import tag
+
+from autograder.core.migrate_output import migrate_ag_test_command_result_output
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -766,7 +771,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         result.stdout_truncated = True
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
-        self.assertEqual(len(_stdout_text(result)), fdbk.get_stdout_size())
+        self.assertEqual(len(_stdout_text(result)), fdbk.stdout_size)
         self.assertEqual(_stdout_text(result), _stdout_text(fdbk))
         self.assertIsNone(fdbk.stdout_correct)
         self.assertTrue(fdbk.stdout_truncated)
@@ -783,8 +788,8 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         result = self.make_correct_result()
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
-        self.assertIsNone(fdbk.get_stdout_size())
-        self.assertIsNone(fdbk.stdout)
+        self.assertIsNone(fdbk.stdout_size)
+        self.assertIsNone(fdbk.stdout_filename)
         self.assertTrue(fdbk.stdout_correct)
         self.assertIsNone(fdbk.stdout_truncated)
         self.assertIsNone(fdbk.get_stdout_diff_size())
@@ -806,8 +811,8 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
 
         self.assertIsNotNone(fdbk.get_stdout_diff_size())
         self.assertIsNotNone(fdbk.stdout_diff)
-        self.assertIsNotNone(fdbk.get_stdout_size())
-        self.assertIsNotNone(fdbk.stdout)
+        self.assertIsNotNone(fdbk.stdout_size)
+        self.assertIsNotNone(fdbk.stdout_filename)
         self.assertIsNotNone(fdbk.stdout_truncated)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
                          fdbk.stdout_points)
@@ -931,7 +936,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         result.stderr_truncated = True
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
-        self.assertEqual(len(_stderr_text(result)), fdbk.get_stderr_size())
+        self.assertEqual(len(_stderr_text(result)), fdbk.stderr_size)
         self.assertEqual(_stderr_text(result), _stderr_text(fdbk))
         self.assertIsNone(fdbk.stderr_correct)
         self.assertTrue(fdbk.stderr_truncated)
@@ -948,8 +953,8 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         result = self.make_correct_result()
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
-        self.assertIsNone(fdbk.stderr)
-        self.assertIsNone(fdbk.get_stderr_size())
+        self.assertIsNone(fdbk.stderr_filename)
+        self.assertIsNone(fdbk.stderr_size)
         self.assertIsNone(fdbk.stderr_truncated)
         self.assertTrue(fdbk.stderr_correct)
         self.assertIsNone(fdbk.stderr_diff)
@@ -971,11 +976,115 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
 
         self.assertIsNotNone(fdbk.stderr_diff)
         self.assertIsNotNone(fdbk.get_stderr_diff_size())
-        self.assertIsNotNone(fdbk.stderr)
-        self.assertIsNotNone(fdbk.get_stderr_size())
+        self.assertIsNotNone(fdbk.stderr_filename)
+        self.assertIsNotNone(fdbk.stderr_size)
         self.assertFalse(fdbk.stderr_truncated)
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
                          fdbk.stderr_points)
+
+    @tag('output_migration')
+    def test_output_migrated(self) -> None:
+        result = obj_build.make_incorrect_ag_test_command_result(
+            self.ag_test_command, ag_test_case_result=self.ag_test_case_result)
+
+        stdout = 'nowmktfenoricennoreisatonriesato'
+        stderr = 'nrstonaenroste'
+        with open(result.stdout_filename, 'w') as f:
+            f.write(stdout)
+        with open(result.stderr_filename, 'w') as f:
+            f.write(stderr)
+
+        # Before migration checks
+        fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.max)
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_command_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize)
+        ) as getsize:
+            actual_size = fdbk.stdout_size
+            getsize.assert_called_once_with(result.stdout_filename)
+            self.assertEqual(len(stdout), actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.stderr_size
+            getsize.assert_called_once_with(result.stderr_filename)
+            self.assertEqual(len(stderr), actual_size)
+
+        with open(fdbk.stdout_filename, 'rb') as f:
+            self.assertEqual(stdout, f.read().decode())
+        with open(fdbk.stderr_filename, 'rb') as f:
+            self.assertEqual(stderr, f.read().decode())
+
+        migrate_ag_test_command_result_output(result)
+
+        # After migration checks
+        fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.max)
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_command_result.os.path.getsize'
+        ) as getsize:
+            self.assertEqual(len(stdout), fdbk.stdout_size)
+            self.assertEqual(len(stderr), fdbk.stderr_size)
+            getsize.assert_not_called()
+
+        with lzma.open(fdbk.stdout_filename, 'rb') as f:
+            self.assertEqual(stdout, f.read().decode())
+        with lzma.open(fdbk.stderr_filename, 'rb') as f:
+            self.assertEqual(stderr, f.read().decode())
+
+    @tag('output_migration')
+    def test_output_empty_migrated(self) -> None:
+        result = obj_build.make_incorrect_ag_test_command_result(
+            self.ag_test_command, ag_test_case_result=self.ag_test_case_result)
+
+        # Set output files to empty
+        with open(result.stdout_filename, 'w'):
+            pass
+        with open(result.stderr_filename, 'w'):
+            pass
+
+        original_stdout_filename = result.stdout_filename
+        original_stderr_filename = result.stderr_filename
+
+        # Before migration checks
+        fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.max)
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_command_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize)
+        ) as getsize:
+            actual_size = fdbk.stdout_size
+            getsize.assert_called_once_with(result.stdout_filename)
+            self.assertEqual(0, actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.stderr_size
+            getsize.assert_called_once_with(result.stderr_filename)
+            self.assertEqual(0, actual_size)
+
+        with open(fdbk.stdout_filename) as f:
+            self.assertEqual('', f.read())
+        with open(fdbk.stderr_filename) as f:
+            self.assertEqual('', f.read())
+
+        migrate_ag_test_command_result_output(result)
+
+        # Simulate deleting the old files
+        shutil.move(original_stdout_filename, original_stdout_filename + '_deleted')
+        shutil.move(original_stderr_filename, original_stderr_filename + '_deleted')
+
+        # After migration checks
+        fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.max)
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_command_result.os.path.getsize'
+        ) as getsize:
+            self.assertEqual(0, fdbk.stdout_size)
+            self.assertEqual(0, fdbk.stderr_size)
+            getsize.assert_not_called()
+
+        self.assertFalse(os.path.exists(original_stdout_filename))
+        self.assertFalse(os.path.exists(original_stderr_filename))
+        self.assertFalse(os.path.exists(result.stdout_filename))
+        self.assertFalse(os.path.exists(result.stderr_filename))
 
     def _do_points_visibility_test(self):
         correct_result = self.make_correct_result()
@@ -1431,30 +1540,14 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
 
 def _stdout_text(result_or_fdbk: Union[ag_models.AGTestCommandResult,
                                        AGTestCommandResultFeedback]) -> str:
-    if isinstance(result_or_fdbk, ag_models.AGTestCommandResult):
-        with open(result_or_fdbk.stdout_filename) as f:
-            return f.read()
-    elif isinstance(result_or_fdbk, AGTestCommandResultFeedback):
-        return result_or_fdbk.stdout.read().decode()
+    with open(result_or_fdbk.stdout_filename) as f:
+        return f.read()
 
 
 def _stderr_text(result_or_fdbk: Union[ag_models.AGTestCommandResult,
                                        AGTestCommandResultFeedback]) -> str:
-    if isinstance(result_or_fdbk, ag_models.AGTestCommandResult):
-        with open(result_or_fdbk.stderr_filename) as f:
-            return f.read()
-    elif isinstance(result_or_fdbk, AGTestCommandResultFeedback):
-        return result_or_fdbk.stderr.read().decode()
-
-
-def _write_stdout(result, stdout):
-    with open(result.stdout_filename, 'w') as f:
-        f.write(stdout)
-
-
-def _write_stderr(result, stderr):
-    with open(result.stderr_filename, 'w') as f:
-        f.write(stderr)
+    with open(result_or_fdbk.stderr_filename) as f:
+        return f.read()
 
 
 def _get_expected_diff(expected_text: str, actual_output_filename: str):
