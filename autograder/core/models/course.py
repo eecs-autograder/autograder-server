@@ -261,6 +261,24 @@ class LateDaysRemaining(AutograderModel):
         blank=True, default=0, validators=[MinValueValidator(0)])
 
 
+class LateDayUsage(AutograderModel):
+    """
+    Represents a record of a student's use of a late day, and all subsequent
+    associated submissions.
+    """
+    objects = AutograderModelManager['LateDayUsage']()
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+
+    user_pk = models.IntegerField()
+    group_pk = models.IntegerField()
+    project_pk = models.IntegerField()
+    submission_pk = models.IntegerField()
+
+    timestamp = models.DateTimeField()
+    num_late_days_used = models.IntegerField()
+
+
 def clear_cached_user_roles(course_pk: int) -> None:
     keys = cache.iter_keys(f'course_{course_pk}_user_*', itersize=5000)  # type: ignore
     cache.delete_many(list(keys))
