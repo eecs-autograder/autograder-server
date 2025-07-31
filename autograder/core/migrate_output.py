@@ -57,39 +57,63 @@ def migrate_mutation_test_suite_result_output(
     ):
         return
 
-    _compress_output_file(mutation_test_suite_result.setup_result.stdout_filename)
-    _compress_output_file(mutation_test_suite_result.setup_result.stderr_filename)
-    _compress_output_file(mutation_test_suite_result.get_test_names_result.stdout_filename)
-    _compress_output_file(mutation_test_suite_result.get_test_names_result.stderr_filename)
+    if mutation_test_suite_result.setup_result is not None:
+        _compress_output_file(
+            mutation_test_suite_result.old_setup_stdout_filename,
+            mutation_test_suite_result.setup_stdout_filename,
+        )
+        _compress_output_file(
+            mutation_test_suite_result.old_setup_stderr_filename,
+            mutation_test_suite_result.setup_stderr_filename,
+        )
+
+    _compress_output_file(
+        mutation_test_suite_result.old_get_test_names_stdout_filename,
+        mutation_test_suite_result.get_test_names_stdout_filename,
+    )
+    _compress_output_file(
+        mutation_test_suite_result.old_get_test_names_stderr_filename,
+        mutation_test_suite_result.get_test_names_stderr_filename,
+    )
     _compress_output_file(mutation_test_suite_result.validity_check_stdout_filename)
     _compress_output_file(mutation_test_suite_result.validity_check_stderr_filename)
     _compress_output_file(mutation_test_suite_result.grade_buggy_impls_stdout_filename)
     _compress_output_file(mutation_test_suite_result.grade_buggy_impls_stderr_filename)
 
     with transaction.atomic():
-        mutation_test_suite_result.setup_stdout_size = os.path.getsize(
-            mutation_test_suite_result.setup_stdout_filename)
-        mutation_test_suite_result.setup_stderr_size = os.path.getsize(
-            mutation_test_suite_result.setup_stderr_filename)
+        if mutation_test_suite_result.setup_result is not None:
+            mutation_test_suite_result.setup_stdout_size = os.path.getsize(
+                mutation_test_suite_result.old_setup_stdout_filename)
+            mutation_test_suite_result.setup_stderr_size = os.path.getsize(
+                mutation_test_suite_result.old_setup_stderr_filename)
+
         mutation_test_suite_result.student_test_names_stdout_size = os.path.getsize(
-            mutation_test_suite_result.student_test_names_stdout_filename)
+            mutation_test_suite_result.old_get_test_names_stdout_filename)
         mutation_test_suite_result.student_test_names_stderr_size = os.path.getsize(
-            mutation_test_suite_result.student_test_names_stderr_filename)
+            mutation_test_suite_result.old_get_test_names_stderr_filename)
+
         mutation_test_suite_result.validity_check_stdout_size = os.path.getsize(
             mutation_test_suite_result.validity_check_stdout_filename)
         mutation_test_suite_result.validity_check_stderr_size = os.path.getsize(
             mutation_test_suite_result.validity_check_stderr_filename)
+
         mutation_test_suite_result.grade_buggy_impls_stdout_size = os.path.getsize(
             mutation_test_suite_result.grade_buggy_impls_stdout_filename)
+
         mutation_test_suite_result.grade_buggy_impls_stderr_size = os.path.getsize(
             mutation_test_suite_result.grade_buggy_impls_stderr_filename)
         mutation_test_suite_result.save()
 
 
-def _compress_output_file(output_filename: str):
+def _compress_output_file(output_filename: str, new_filename: str | None = None):
     if os.path.getsize(output_filename) == 0:
         return
 
+    # If new_filename is provided, it should have
+    # COMPRESSED_OUTPUT_SUFFIX already appended
+    if new_filename is None:
+        new_filename = output_filename + COMPRESSED_OUTPUT_SUFFIX
+
     with (open(output_filename, 'rb') as from_file,
-            lzma.open(output_filename + COMPRESSED_OUTPUT_SUFFIX, 'wb') as to_file):
+            lzma.open(new_filename, 'wb') as to_file):
         shutil.copyfileobj(from_file, to_file)

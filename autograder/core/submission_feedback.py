@@ -5,7 +5,7 @@ import tempfile
 from decimal import Decimal
 from pathlib import Path
 from typing import (
-    BinaryIO, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, TypedDict, Union, cast
+    Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, TypedDict, Union, cast
 )
 
 from django.db import transaction
@@ -160,6 +160,16 @@ class AGTestSuiteResultProtocol(Protocol):
     def setup_stderr_filename(self) -> str:
         ...
 
+    # Note: None vs non-None for these _size fields has the name
+    # meaning as those values in the actual DB object.
+    @property
+    def setup_stdout_size(self) -> int | None:
+        ...
+
+    @property
+    def setup_stderr_size(self) -> int | None:
+        ...
+
 
 class SerializedAGTestSuiteResultWrapper:
     def __init__(self, suite_result_dict: Mapping[str, object]):
@@ -202,6 +212,16 @@ class SerializedAGTestSuiteResultWrapper:
     @property
     def setup_stderr_filename(self) -> str:
         return self._ag_test_suite_result.setup_stderr_filename
+
+    # Note: None vs non-None for these _size fields has the name
+    # meaning as those values in the actual DB object.
+    @property
+    def setup_stdout_size(self) -> int | None:
+        return cast(int | None, self._suite_result_dict.get('setup_stdout_size'))
+
+    @property
+    def setup_stderr_size(self) -> int | None:
+        return cast(int | None, self._suite_result_dict.get('setup_stderr_size'))
 
     @cached_property
     def _ag_test_suite_result(self) -> AGTestSuiteResult:
@@ -288,6 +308,16 @@ class AGTestCommandResultProtocol(Protocol):
     def stderr_filename(self) -> str:
         ...
 
+    # Note: None vs non-None for these _size fields has the name
+    # meaning as those values in the actual DB object.
+    @property
+    def stdout_size(self) -> int | None:
+        ...
+
+    @property
+    def stderr_size(self) -> int | None:
+        ...
+
     @property
     def custom_scoring_used(self) -> bool:
         ...
@@ -332,6 +362,16 @@ class SerializedAGTestCommandResultWrapper:
     @property
     def stderr_correct(self) -> bool:
         return cast(bool, self._cmd_result_dict['stderr_correct'])
+
+    # Note: None vs non-None for these _size fields has the name
+    # meaning as those values in the actual DB object.
+    @property
+    def stdout_size(self) -> int | None:
+        return cast(int | None, self._cmd_result_dict.get('stdout_size'))
+
+    @property
+    def stderr_size(self) -> int | None:
+        return cast(int | None, self._cmd_result_dict.get('stderr_size'))
 
     @property
     def timed_out(self) -> bool:

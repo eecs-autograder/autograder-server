@@ -15,6 +15,13 @@ class AGCommandResult(AGCommandResultBase):
     """
     objects = AutograderModelManager['AGCommandResult']()
 
+    # DEPRECATED as of 2025.08.0
+    # The only place this is currently used is by MutationTestSuiteResult.
+    # The output migration in 2025.08.0 moves the output files that this
+    # class manages for MutationTestSuiteResult to the same directory
+    # as the rest of the output for the submission that MutationTestSuiteResult
+    # belongs to.
+    # The goal is to eventually replace this with validated JSON fields.
     @property
     def stdout_filename(self) -> str:
         if not self.pk:
@@ -23,6 +30,13 @@ class AGCommandResult(AGCommandResultBase):
 
         return os.path.join(core_ut.misc_cmd_output_dir(), 'cmd_result_{}_stdout'.format(self.pk))
 
+    # DEPRECATED as of 2025.08.0
+    # The only place this is currently used is by MutationTestSuiteResult.
+    # The output migration in 2025.08.0 moves the output files that this
+    # class manages for MutationTestSuiteResult to the same directory
+    # as the rest of the output for the submission that MutationTestSuiteResult
+    # belongs to.
+    # The goal is to eventually replace this with validated JSON fields.
     @property
     def stderr_filename(self) -> str:
         if not self.pk:

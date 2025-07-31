@@ -600,12 +600,12 @@ class MutationTestSuiteOutputSizeView(SubmissionResultsViewBase):
         return response.Response({
             'setup_stdout_size': result.setup_stdout_size,
             'setup_stderr_size': result.setup_stderr_size,
-            'get_student_test_names_stdout_size': result.get_student_test_names_stdout_size(),
-            'get_student_test_names_stderr_size': result.get_student_test_names_stderr_size(),
-            'validity_check_stdout_size': result.get_validity_check_stdout_size(),
-            'validity_check_stderr_size': result.get_validity_check_stderr_size(),
-            'grade_buggy_impls_stdout_size': result.get_grade_buggy_impls_stdout_size(),
-            'grade_buggy_impls_stderr_size': result.get_grade_buggy_impls_stderr_size(),
+            'get_student_test_names_stdout_size': result.get_student_test_names_stdout_size,
+            'get_student_test_names_stderr_size': result.get_student_test_names_stderr_size,
+            'validity_check_stdout_size': result.validity_check_stdout_size,
+            'validity_check_stderr_size': result.validity_check_stderr_size,
+            'grade_buggy_impls_stdout_size': result.grade_buggy_impls_stdout_size,
+            'grade_buggy_impls_stderr_size': result.grade_buggy_impls_stderr_size,
         })
 
 

@@ -61,7 +61,6 @@ class AGTestCommandResult(AGCommandResultBase):
             if self.stdout_size is not None else filename
         )
 
-
     @property
     def stderr_filename(self) -> str:
         filename = os.path.join(
@@ -74,7 +73,6 @@ class AGTestCommandResult(AGCommandResultBase):
             if self.stderr_size is not None else filename
         )
 
-
     stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
         help_text="""The size in bytes of the command's stdout. None indicates:
@@ -83,7 +81,7 @@ class AGTestCommandResult(AGCommandResultBase):
             - The output size should be retrieved from the filesystem
 
             When non-None, stores the size in bytes of the output and indicates
-            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+            that the output is compressed using gzip: https://docs.python.org/3/library/gzep.html
 
             When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
@@ -97,7 +95,7 @@ class AGTestCommandResult(AGCommandResultBase):
             - The output size should be retrieved from the filesystem
 
             When non-None, stores the size in bytes of the output and indicates
-            that the output is compressed using LZMA: https://docs.python.org/3/library/lzma.html
+            that the output is compressed using gzip: https://docs.python.org/3/library/gzip.html
 
             When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
