@@ -306,6 +306,11 @@ class Submission(ag_model_base.AutograderModel):
         """
     )
 
+    # True when all the results for this submission have had their output
+    # migrated to the 2025.08.0 format.
+    # Only use in the migrate_output management command.
+    _output_migrated = models.BooleanField(default=False)
+
     @property
     def position_in_queue(self) -> int:
         """
