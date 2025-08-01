@@ -11,12 +11,13 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from autograder.core.migrate_output.migrate_output import migrate_ag_test_command_result_output, migrate_ag_test_suite_result_output
+from autograder.core.migrate_output.migrate_output import (
+    migrate_ag_test_command_result_output, migrate_ag_test_suite_result_output)
 import autograder.core.models as ag_models
-from autograder.core.models.ag_test.feedback_category import FeedbackCategory
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.submission_feedback import update_denormalized_ag_test_results
-from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import get_cmd_fdbk, get_suite_fdbk
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
+    get_cmd_fdbk, get_suite_fdbk)
 from autograder.utils.testing import UnitTestBase
 
 from .get_output_and_diff_test_urls import get_output_and_diff_test_urls, make_result_output_url
@@ -263,8 +264,8 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
         fdbk_category,
         expected_stdout: bytes | None = b'adkjfaksdjf;akjsdf;',
         expected_stderr: bytes | None = b'qewiruqpewpuir',
-        migrate_output = False,
-        update_denormalization = False,
+        migrate_output=False,
+        update_denormalization=False,
     ):
         if expected_stdout is not None:
             with open(suite_result.setup_stdout_filename, 'w') as f:
@@ -538,10 +539,10 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         submission,
         cmd_result,
         fdbk_category,
-        expected_stdout = b'adkjfaksdjf;akjsdf;',
-        expected_stderr = b'qewiruqpewpuir',
-        migrate_output = False,
-        update_denormalization = False,
+        expected_stdout=b'adkjfaksdjf;akjsdf;',
+        expected_stderr=b'qewiruqpewpuir',
+        migrate_output=False,
+        update_denormalization=False,
     ):
         if expected_stdout is not None:
             with open(cmd_result.stdout_filename, 'w') as f:

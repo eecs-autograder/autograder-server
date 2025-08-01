@@ -1151,7 +1151,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
     def stdout_diff(self) -> Optional[core_ut.DiffResult]:
         if (self._cmd.expected_stdout_source == ExpectedOutputSource.none
                 or self._fdbk.stdout_fdbk_level != ValueFeedbackLevel.expected_and_actual):
-            return
+            return None
 
         cached_diff_filename = self._ag_test_command_result.stdout_diff_filename
         if self._ag_test_command_result.stdout_diff_size is not None:

@@ -27,7 +27,7 @@ class DiffResult:
         self.diff_pass = diff_pass
         self.diff_content = diff_content
 
-    def to_dict(self) -> dict:
+    def to_dict(self):  # type: ignore
         return {
             'diff_pass': self.diff_pass,
             'diff_content': self.diff_content
@@ -74,7 +74,7 @@ def get_diff(first_filename: str, second_filename: str,
     return DiffResult(diff_result.returncode == 0, diff_list)
 
 
-def get_diff_size(diff_content: list[str]):
+def get_diff_size(diff_content: list[str]) -> int:
     return sum((len(line) for line in diff_content))
 
 
