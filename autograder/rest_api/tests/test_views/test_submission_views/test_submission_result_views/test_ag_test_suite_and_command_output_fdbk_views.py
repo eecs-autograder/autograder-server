@@ -153,14 +153,14 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
 
     @skip("We'll migrate entire submission within a transaction to avoid this situation")
     @tag('output_migration')
-    def test_setup_stdout_empty_migrated_no_denormalization_updated(self) -> None:
+    def test_setup_stderr_empty_migrated_no_denormalization_updated(self) -> None:
         self.client.force_authenticate(self.staff)
         self._do_suite_result_output_test(
             self.client,
             self.staff_submission,
             self.staff_cmd_result.ag_test_case_result.ag_test_suite_result,
             ag_models.FeedbackCategory.max,
-            expected_stdout=b'',
+            expected_stderr=b'',
             migrate_output=True,
         )
 
@@ -491,7 +491,7 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
 
     @skip("We'll migrate entire submission within a transaction to avoid this situation")
     @tag('output_migration')
-    def test_cmd_stdout_empty_migrated_no_denormalization_updated(self) -> None:
+    def test_cmd_stderr_empty_migrated_no_denormalization_updated(self) -> None:
         self.client.force_authenticate(self.staff)
         self._do_cmd_result_output_test(
             self.client,

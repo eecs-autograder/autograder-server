@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import gzip
+import json
 import os
 import tempfile
 from decimal import Decimal
@@ -320,6 +322,22 @@ class AGTestCommandResultProtocol(Protocol):
         ...
 
     @property
+    def stdout_diff_size(self) -> int | None:
+        ...
+
+    @property
+    def stderr_diff_size(self) -> int | None:
+        ...
+
+    @property
+    def stdout_diff_filename(self) -> str:
+        ...
+
+    @property
+    def stderr_diff_filename(self) -> str:
+        ...
+
+    @property
     def custom_scoring_used(self) -> bool:
         ...
 
@@ -375,6 +393,14 @@ class SerializedAGTestCommandResultWrapper:
         return cast(int | None, self._cmd_result_dict.get('stderr_size'))
 
     @property
+    def stdout_diff_size(self) -> int | None:
+        return cast(int | None, self._cmd_result_dict.get('stdout_diff_size'))
+
+    @property
+    def stderr_diff_size(self) -> int | None:
+        return cast(int | None, self._cmd_result_dict.get('stderr_diff_size'))
+
+    @property
     def timed_out(self) -> bool:
         return cast(bool, self._cmd_result_dict['timed_out'])
 
@@ -408,6 +434,14 @@ class SerializedAGTestCommandResultWrapper:
     @property
     def stderr_filename(self) -> str:
         return self._ag_test_command_result.stderr_filename
+
+    @property
+    def stdout_diff_filename(self) -> str:
+        return self._ag_test_command_result.stdout_diff_filename
+
+    @property
+    def stderr_diff_filename(self) -> str:
+        return self._ag_test_command_result.stderr_diff_filename
 
     @cached_property
     def _ag_test_command_result(self) -> AGTestCommandResult:
@@ -1117,7 +1151,12 @@ class AGTestCommandResultFeedback(ToDictMixin):
     def stdout_diff(self) -> Optional[core_ut.DiffResult]:
         if (self._cmd.expected_stdout_source == ExpectedOutputSource.none
                 or self._fdbk.stdout_fdbk_level != ValueFeedbackLevel.expected_and_actual):
-            return None
+            return
+
+        cached_diff_filename = self._ag_test_command_result.stdout_diff_filename
+        if self._ag_test_command_result.stdout_diff_size is not None:
+            with gzip.open(cached_diff_filename, 'rt') as f:
+                return core_ut.DiffResult(**json.load(f))
 
         stdout_filename = self._ag_test_command_result.stdout_filename
         diff_whitespace_kwargs = {
@@ -1144,11 +1183,14 @@ class AGTestCommandResultFeedback(ToDictMixin):
                 'Invalid expected stdout source: {}'.format(self._cmd.expected_stdout_source))
 
     def get_stdout_diff_size(self) -> Optional[int]:
+        if self._ag_test_command_result.stdout_diff_size is not None:
+            return self._ag_test_command_result.stdout_diff_size
+
         diff = self.stdout_diff
         if diff is None:
             return None
 
-        return sum((len(line) for line in diff.diff_content))
+        return core_ut.get_diff_size(diff.diff_content)
 
     @property
     def stdout_points(self) -> int:
@@ -1217,6 +1259,11 @@ class AGTestCommandResultFeedback(ToDictMixin):
                 or self._fdbk.stderr_fdbk_level != ValueFeedbackLevel.expected_and_actual):
             return None
 
+        cached_diff_filename = self._ag_test_command_result.stderr_diff_filename
+        if self._ag_test_command_result.stderr_diff_size is not None:
+            with gzip.open(cached_diff_filename, 'rt') as f:
+                return core_ut.DiffResult(**json.load(f))
+
         stderr_filename = self._ag_test_command_result.stderr_filename
         diff_whitespace_kwargs = {
             'ignore_blank_lines': self._cmd.ignore_blank_lines,
@@ -1241,11 +1288,14 @@ class AGTestCommandResultFeedback(ToDictMixin):
                 'Invalid expected stderr source: {}'.format(self._cmd.expected_stdout_source))
 
     def get_stderr_diff_size(self) -> Optional[int]:
+        if self._ag_test_command_result.stderr_diff_size is not None:
+            return self._ag_test_command_result.stderr_diff_size
+
         diff = self.stderr_diff
         if diff is None:
             return None
 
-        return sum((len(line) for line in diff.diff_content))
+        return core_ut.get_diff_size(diff.diff_content)
 
     @property
     def stderr_points(self) -> int:

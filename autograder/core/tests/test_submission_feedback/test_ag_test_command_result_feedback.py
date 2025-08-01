@@ -734,7 +734,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
                          fdbk.stdout_points_possible)
 
     def _compute_diff_size(self, diff: core_ut.DiffResult) -> int:
-        return sum((len(line) for line in diff.diff_content))
+        return core_ut.get_diff_size(diff.diff_content)
 
     def test_stdout_correctness_show_diff_from_file(self):
         instructor_file = obj_build.make_instructor_file(self.project)
@@ -996,6 +996,19 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
 
         # Before migration checks
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.max)
+
+        stdout_diff = fdbk.stdout_diff.diff_content
+        assert stdout_diff is not None
+
+        stdout_diff_size = fdbk.get_stdout_diff_size()
+        assert stdout_diff_size is not None
+
+        stderr_diff = fdbk.stderr_diff.diff_content
+        assert stderr_diff is not None
+
+        stderr_diff_size = fdbk.get_stderr_diff_size()
+        assert stderr_diff_size is not None
+
         with mock.patch(
             'autograder.core.models.ag_test.ag_test_command_result.os.path.getsize',
             new=mock.Mock(wraps=os.path.getsize)
@@ -1020,11 +1033,23 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         # After migration checks
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.max)
         with mock.patch(
-            'autograder.core.models.ag_test.ag_test_command_result.os.path.getsize'
+            'autograder.core.models.ag_test.ag_test_command_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
         ) as getsize:
             self.assertEqual(len(stdout), fdbk.stdout_size)
             self.assertEqual(len(stderr), fdbk.stderr_size)
             getsize.assert_not_called()
+
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_command_result.core_ut.get_diff',
+            new=mock.Mock(wraps=core_ut.get_diff)
+        ) as get_diff:
+            self.assertEqual(stdout_diff, fdbk.stdout_diff.diff_content)
+            self.assertEqual(stderr_diff, fdbk.stderr_diff.diff_content)
+            self.assertEqual(stdout_diff_size, fdbk.get_stdout_diff_size())
+            self.assertEqual(stderr_diff_size, fdbk.get_stderr_diff_size())
+
+            get_diff.assert_not_called()
 
         with gzip.open(fdbk.stdout_filename, 'rb') as f:
             self.assertEqual(stdout, f.read().decode())

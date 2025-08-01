@@ -1,3 +1,6 @@
+import gzip
+import json
+import os
 import re
 import shutil
 import tempfile
@@ -171,11 +174,15 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     suite_result.setup_timed_out = setup_result.timed_out
     suite_result.setup_stdout_truncated = setup_result.stdout_truncated
     suite_result.setup_stderr_truncated = setup_result.stderr_truncated
+    suite_result.setup_stdout_size = os.path.getsize(setup_result.stdout)
+    suite_result.setup_stderr_size = os.path.getsize(setup_result.stderr)
 
-    with open(suite_result.setup_stdout_filename, 'wb') as f:
-        shutil.copyfileobj(setup_result.stdout, f)
-    with open(suite_result.setup_stderr_filename, 'wb') as f:
-        shutil.copyfileobj(setup_result.stderr, f)
+    if suite_result.setup_stdout_size != 0:
+        with gzip.open(suite_result.setup_stdout_filename, 'wb') as f:
+            shutil.copyfileobj(setup_result.stdout, f)
+    if suite_result.setup_stderr_size != 0:
+        with gzip.open(suite_result.setup_stderr_filename, 'wb') as f:
+            shutil.copyfileobj(setup_result.stderr, f)
 
     mocking_hook_delete_suite_during_setup()  # FOR TESTING. LEAVE THIS HERE
     _save_suite_result()
@@ -224,6 +231,8 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
             'timed_out': run_result.timed_out,
             'stdout_truncated': run_result.stdout_truncated,
             'stderr_truncated': run_result.stderr_truncated,
+            'stdout_size': os.path.getsize(run_result.stdout),
+            'stderr_size': os.path.getsize(run_result.stderr),
         }
 
         if ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.zero:
@@ -234,26 +243,30 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
         expected_stdout, expected_stdout_filename = _get_expected_stdout_file_and_name(ag_test_cmd)
         file_closer.register_file(expected_stdout)
 
+        stdout_diff = None
         if expected_stdout_filename is not None:
-            diff = core_ut.get_diff(
+            stdout_diff = core_ut.get_diff(
                 expected_stdout_filename, run_result.stdout.name,
                 ignore_case=ag_test_cmd.ignore_case,
                 ignore_whitespace=ag_test_cmd.ignore_whitespace,
                 ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
                 ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
-            result_data['stdout_correct'] = diff.diff_pass
+            result_data['stdout_correct'] = stdout_diff.diff_pass
+            result_data['stdout_diff_size'] = core_ut.get_diff_size(stdout_diff.diff_content)
 
         expected_stderr, expected_stderr_filename = _get_expected_stderr_file_and_name(ag_test_cmd)
         file_closer.register_file(expected_stderr)
 
+        stderr_diff = None
         if expected_stderr_filename is not None:
-            diff = core_ut.get_diff(
+            stderr_diff = core_ut.get_diff(
                 expected_stderr_filename, run_result.stderr.name,
                 ignore_case=ag_test_cmd.ignore_case,
                 ignore_whitespace=ag_test_cmd.ignore_whitespace,
                 ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
                 ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
-            result_data['stderr_correct'] = diff.diff_pass
+            result_data['stderr_correct'] = stderr_diff.diff_pass
+            result_data['stderr_diff_size'] = core_ut.get_diff_size(stderr_diff.diff_content)
 
         if (ag_test_cmd.custom_scoring_source != ag_models.CustomScoringSource.none
                 and run_result.timed_out is False):
@@ -264,7 +277,7 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
             else:
                 custom_scoring_source = run_result.stderr
 
-            regex_pattern = re.compile(ag_test_cmd.custom_scoring_regex,)
+            regex_pattern = re.compile(ag_test_cmd.custom_scoring_regex)
 
             custom_scoring_points_match = None
             with open(custom_scoring_source.name, errors='surrogateescape') as f:
@@ -298,10 +311,21 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                         ag_test_command=ag_test_cmd,
                         ag_test_case_result=case_result)[0]  # type: ag_models.AGTestCommandResult
 
-                    with open(cmd_result.stdout_filename, 'wb') as f:
-                        shutil.copyfileobj(run_result.stdout, f)
-                    with open(cmd_result.stderr_filename, 'wb') as f:
-                        shutil.copyfileobj(run_result.stderr, f)
+                    if cmd_result.stdout_size != 0:
+                        with gzip.open(cmd_result.stdout_filename, 'wb') as f:
+                            shutil.copyfileobj(run_result.stdout, f)
+                    if cmd_result.stderr_size != 0:
+                        with gzip.open(cmd_result.stderr_filename, 'wb') as f:
+                            shutil.copyfileobj(run_result.stderr, f)
+
+                    if stdout_diff is not None:
+                        with gzip.open(cmd_result.stdout_diff_filename, 'wt') as f:
+                            json.dump(stdout_diff.to_dict(), f)
+
+                    if stderr_diff is not None:
+                        with gzip.open(cmd_result.stderr_diff_filename, 'wt') as f:
+                            json.dump(stderr_diff.to_dict(), f)
+
             except IntegrityError:
                 # The command or case result has likely been deleted
                 return

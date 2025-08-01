@@ -101,6 +101,38 @@ class AGTestCommandResult(AGCommandResultBase):
         """
     )
 
+    stdout_diff_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="""New in 2025.08.0.
+            The size in bytes of the diff result for this stdout.
+            When None, fall back to the previous logic for computing diff size.
+        """
+    )
+
+    stderr_diff_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="""New in 2025.08.0.
+            The size in bytes of the diff result for this stderr.
+            When None, fall back to the previous logic for computing diff size.
+        """
+    )
+
+    @property
+    def stdout_diff_filename(self) -> str:
+        return os.path.join(
+            core_ut.get_result_output_dir(
+                self.ag_test_case_result.ag_test_suite_result.submission),
+            'cmd_result_{}_stdout_diff'.format(self.pk)
+        ) + COMPRESSED_OUTPUT_SUFFIX
+
+    @property
+    def stderr_diff_filename(self) -> str:
+        return os.path.join(
+            core_ut.get_result_output_dir(
+                self.ag_test_case_result.ag_test_suite_result.submission),
+            'cmd_result_{}_stderr_diff'.format(self.pk)
+        ) + COMPRESSED_OUTPUT_SUFFIX
+
     # Serializing AGTestCommandResults should be used for DENORMALIZATION
     # ONLY.
     SERIALIZABLE_FIELDS = (
@@ -122,6 +154,9 @@ class AGTestCommandResult(AGCommandResultBase):
 
         'stdout_size',
         'stderr_size',
+
+        'stdout_diff_size',
+        'stderr_diff_size',
 
         'custom_scoring_used',
         'custom_scoring_points',

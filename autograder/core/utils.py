@@ -27,6 +27,12 @@ class DiffResult:
         self.diff_pass = diff_pass
         self.diff_content = diff_content
 
+    def to_dict(self) -> dict:
+        return {
+            'diff_pass': self.diff_pass,
+            'diff_content': self.diff_content
+        }
+
 
 _DIFF_LINE_REGEX = re.compile(r'^(?:  |\+ |- ).*\n+'.encode(), flags=re.MULTILINE)
 
@@ -66,6 +72,10 @@ def get_diff(first_filename: str, second_filename: str,
     diff_list = [match.group()[:-1].decode('utf-8', 'surrogateescape')
                  for match in _DIFF_LINE_REGEX.finditer(diff_result.stdout)]
     return DiffResult(diff_result.returncode == 0, diff_list)
+
+
+def get_diff_size(diff_content: list[str]):
+    return sum((len(line) for line in diff_content))
 
 
 def get_24_hour_period(
