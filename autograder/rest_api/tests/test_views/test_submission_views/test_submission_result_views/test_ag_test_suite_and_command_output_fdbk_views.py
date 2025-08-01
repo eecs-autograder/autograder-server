@@ -72,6 +72,12 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
         self._do_suite_result_output_test(self.client, suite_res.submission, suite_res,
                                           ag_models.FeedbackCategory.normal)
 
+    def test_setup_stdout_empty(self) -> None:
+        self.fail()
+
+    def test_setup_stderr_empty(self) -> None:
+        self.fail()
+
     def test_get_suite_result_setup_output_hidden(self):
         self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_setup_stdout': False})
         self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': False})
@@ -169,6 +175,9 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
                 'setup_stderr_truncated': fdbk.setup_stderr_truncated,
             }
             self.assertEqual(expected, response.data)
+
+    def _do_suite_result_output_empty_test(self, client, submission, suite_result):
+        self.fail()
 
 
 class AGTestCommandOutputFeedbackTestCase(_SetUp):
@@ -272,6 +281,12 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         response = self.client.get(size_url)
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
+    def test_cmd_stdout_empty(self) -> None:
+        self.fail()
+
+    def test_cmd_stderr_empty(self) -> None:
+        self.fail()
+
     def do_get_output_and_diff_on_hidden_ag_test_test(self, client,
                                                       submission: ag_models.Submission,
                                                       cmd_result: ag_models.AGTestCommandResult,
@@ -289,6 +304,8 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertIsNone(response.data)
 
+    def do_output_size_empty_test(self, client, submission, cmd_result):
+        self.fail()
 
 class OutputWithXAccelTestCase(_SetUp):
     def test_get_output_with_x_accel(self) -> None:
@@ -332,6 +349,9 @@ class OutputWithXAccelTestCase(_SetUp):
             }
         ) + query_str
         self.do_get_output_x_accel_test(url, self.student_cmd_result.stderr_filename)
+
+    def test_doesthisneedatest(self) -> None:
+        self.fail()
 
     def do_get_output_x_accel_test(self, url: str, output_filename: str) -> None:
         with override_settings(USE_NGINX_X_ACCEL=True):

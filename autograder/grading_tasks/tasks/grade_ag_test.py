@@ -154,13 +154,9 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     if not ag_test_suite.setup_suite_cmd:
         suite_result.setup_return_code = None
         suite_result.setup_timed_out = False
+        suite_result.setup_stdout_size = 0
+        suite_result.setup_stderr_size = 0
         _save_suite_result()
-
-        # Erase the setup output files.
-        with open(suite_result.setup_stdout_filename, 'wb') as f:
-            pass
-        with open(suite_result.setup_stderr_filename, 'wb') as f:
-            pass
 
         on_suite_setup_finished(suite_result)
         return

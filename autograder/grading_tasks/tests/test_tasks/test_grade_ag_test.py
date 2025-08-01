@@ -806,10 +806,8 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         )
 
         suite_result.refresh_from_db()
-        with open(suite_result.setup_stdout_filename, 'r') as f:
-            self.assertEqual('', f.read())
-        with open(suite_result.setup_stderr_filename, 'r') as f:
-            self.assertEqual('', f.read())
+        self.assertEqual(0, suite_result.setup_stdout_size)
+        self.assertEqual(0, suite_result.setup_stderr_size)
 
         self.assertIsNone(suite_result.setup_return_code)
         self.assertFalse(suite_result.setup_timed_out)

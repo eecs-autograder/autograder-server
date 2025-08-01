@@ -6,7 +6,7 @@ from unittest import mock
 
 from django.test import tag
 
-from autograder.core.migrate_output import migrate_mutation_test_suite_result_output
+from autograder.core.migrate_output.migrate_output import migrate_mutation_test_suite_result_output
 import autograder.core.models as ag_models
 from autograder.core.submission_feedback import MutationTestSuitePreLoader
 from autograder.utils.testing import UnitTestBase

@@ -1,10 +1,15 @@
+import gzip
 from pathlib import Path
 
 from django.conf import settings
 from django.http import FileResponse, HttpResponse
 
 
-def serve_file(path: Path, content_type: str = 'application/octet-stream') -> HttpResponse:
+def serve_file(
+    path: Path,
+    content_type: str = 'application/octet-stream',
+    is_migrated: bool = False
+) -> HttpResponse:
     """
     Returns a response that serves the file specified by "path".
     "path" must be an absolute path that starts with settings.MEDIA_ROOT.
@@ -16,6 +21,9 @@ def serve_file(path: Path, content_type: str = 'application/octet-stream') -> Ht
     (when DEBUG is True) and defaults to False in development mode
     (when DEBUG is False. This allows us to run our existing unit tests
     unchanged (since the unit tests don't use a live server or nginx).
+
+    When is_migrated is True and USE_NGINX_X_ACCEL is False, assumes
+    the file is compressed and decompresses it with gzip.
     """
     if settings.USE_NGINX_X_ACCEL:
         assert path.is_absolute()
@@ -25,4 +33,7 @@ def serve_file(path: Path, content_type: str = 'application/octet-stream') -> Ht
         response['X-Accel-Redirect'] = '/protected/' + str(path.relative_to(settings.MEDIA_ROOT))
         return response
     else:
-        return FileResponse(open(path, 'rb'), content_type=content_type)
+        return FileResponse(
+            gzip.open(path) if is_migrated else open(path, 'rb'),
+            content_type=content_type,
+        )

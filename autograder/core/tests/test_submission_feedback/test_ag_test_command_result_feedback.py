@@ -8,7 +8,7 @@ from unittest import mock
 
 from django.test import tag
 
-from autograder.core.migrate_output import migrate_ag_test_command_result_output
+from autograder.core.migrate_output.migrate_output import migrate_ag_test_command_result_output
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.utils.testing.model_obj_builders as obj_build
