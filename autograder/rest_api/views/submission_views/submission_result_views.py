@@ -214,11 +214,11 @@ def _get_setup_output(
         return response.Response(None)
 
     size, path = get_output_file_info_fn(suite_fdbk)
-    if size == 0:
-        return response.Response('')
-
     if path is None:
         return response.Response(None)
+
+    if size == 0 and isinstance(size, MigratedOutputSize):
+        return response.Response('')
 
     return serve_file(path, is_migrated=isinstance(size, MigratedOutputSize))
 
@@ -340,11 +340,11 @@ def _get_cmd_result_output(
         return response.Response(None)
 
     size, path = get_output_file_info_fn(cmd_fdbk)
-    if size == 0:
-        return response.Response('')
-
     if path is None:
         return response.Response(None)
+
+    if size == 0 and isinstance(size, MigratedOutputSize):
+        return response.Response('')
 
     return serve_file(path, is_migrated=isinstance(size, MigratedOutputSize))
 
@@ -661,11 +661,11 @@ def _get_mutation_suite_result_output_field(
         return response.Response(None)
 
     size, path = get_output_file_info_fn(result)
-    if size == 0:
-        return response.Response('')
-
     if path is None:
         return response.Response(None)
+
+    if size == 0 and isinstance(size, MigratedOutputSize):
+        return response.Response('')
 
     return serve_file(path, is_migrated=isinstance(size, MigratedOutputSize))
 
