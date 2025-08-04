@@ -391,7 +391,8 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(text, open(res.stdout_filename).read())
+        with gzip.open(res.stdout_filename, 'rt') as f:
+            self.assertEqual(text, f.read())
 
     def test_stdin_source_instructor_file(self, *args):
         text = ',vnaejfal;skjdf;lakjsdfklajsl;dkjf;'
@@ -406,27 +407,8 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
         tasks.grade_submission_task(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(text, open(res.stdout_filename).read())
-
-    def test_stdin_source_setup_stdout(self, *args):
-        cmd = obj_build.make_full_ag_test_command(
-            self.ag_test_case,
-            cmd='cat',
-            stdin_source=ag_models.StdinSource.setup_stdout)
-        tasks.grade_submission_task(self.submission.pk)
-
-        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(self.setup_stdout, open(res.stdout_filename).read())
-
-    def test_stdin_source_setup_stderr(self, *args):
-        cmd = obj_build.make_full_ag_test_command(
-            self.ag_test_case,
-            cmd='cat',
-            stdin_source=ag_models.StdinSource.setup_stderr)
-        tasks.grade_submission_task(self.submission.pk)
-
-        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(self.setup_stderr, open(res.stdout_filename).read())
+        with gzip.open(res.stdout_filename, 'rt') as f:
+            self.assertEqual(text, f.read())
 
 
 @tag('slow', 'sandbox')

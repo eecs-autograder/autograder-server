@@ -2,7 +2,7 @@ import fnmatch
 import os
 import tempfile
 from io import FileIO
-from typing import List, Optional, Union
+from typing import IO, List, Optional, Union
 
 from autograder_sandbox import SANDBOX_USERNAME, AutograderSandbox, CompletedCommand
 from django import db
@@ -13,6 +13,19 @@ import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from autograder.utils.retry import retry_should_recover
+
+
+def get_tempfile_size(file_: IO[bytes]) -> int:
+    """
+    Returns the size of the given file object.
+    Does not assume anything about the initial file spool position,
+    but seeks to the beginning of the file before returning.
+    """
+    # See https://docs.python.org/3.10/tutorial/inputoutput.html#methods-of-file-objects
+    file_.seek(0, 2)  # seek to end
+    size = file_.tell()  # get current file position
+    file_.seek(0)  # seek back to beginning
+    return size
 
 
 @retry_should_recover
@@ -112,16 +125,6 @@ def get_stdin_file(cmd: ag_models.AGTestCommand,
         return stdin
     elif cmd.stdin_source == ag_models.StdinSource.instructor_file:
         return cmd.stdin_instructor_file.open('rb')
-    elif cmd.stdin_source == ag_models.StdinSource.setup_stdout:
-        if ag_test_suite_result is None:
-            raise Exception('Expected ag test suite result, but got None.')
-
-        return open(ag_test_suite_result.setup_stdout_filename, 'rb')
-    elif cmd.stdin_source == ag_models.StdinSource.setup_stderr:
-        if ag_test_suite_result is None:
-            raise Exception('Expected ag test suite result, but got None.')
-
-        return open(ag_test_suite_result.setup_stderr_filename, 'rb')
     else:
         return None
 
