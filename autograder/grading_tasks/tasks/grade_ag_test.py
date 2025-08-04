@@ -239,8 +239,8 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
             'timed_out': run_result.timed_out,
             'stdout_truncated': run_result.stdout_truncated,
             'stderr_truncated': run_result.stderr_truncated,
-            'stdout_size': os.path.getsize(run_result.stdout),
-            'stderr_size': os.path.getsize(run_result.stderr),
+            'stdout_size': _get_tempfile_size(run_result.stdout),
+            'stderr_size': _get_tempfile_size(run_result.stderr),
         }
 
         if ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.zero:

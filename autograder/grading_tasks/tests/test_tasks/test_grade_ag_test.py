@@ -1,3 +1,4 @@
+import gzip
 import os
 import random
 import tempfile
@@ -565,10 +566,14 @@ sys.stderr.flush()
         self.assertFalse(res.timed_out)
         self.assertTrue(res.stdout_truncated)
         self.assertTrue(res.stderr_truncated)
-        self.assertEqual(
-            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.stdout_filename))
-        self.assertEqual(
-            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.stderr_filename))
+
+        with gzip.open(res.stdout_filename) as f:
+            f.seek(0, 2)
+            self.assertEqual(constants.MAX_RECORDED_OUTPUT_LENGTH, f.tell())
+
+        with gzip.open(res.stderr_filename) as f:
+            f.seek(0, 2)
+            self.assertEqual(constants.MAX_RECORDED_OUTPUT_LENGTH, f.tell())
 
     def test_program_prints_non_unicode_chars(self, *args):
         cmd = obj_build.make_full_ag_test_command(
@@ -581,10 +586,10 @@ sys.stderr.flush()
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(0, res.return_code)
 
-        with open(res.stdout_filename, 'rb') as f:
+        with gzip.open(res.stdout_filename, 'rb') as f:
             self.assertEqual(self.non_utf_bytes, f.read())
 
-        with open(res.stderr_filename, 'rb') as f:
+        with gzip.open(res.stderr_filename, 'rb') as f:
             self.assertEqual(self.non_utf_bytes, f.read())
 
     def test_suite_setup_return_code_set(self, *args):
@@ -610,10 +615,19 @@ sys.stderr.flush()
         self.assertTrue(res.setup_stdout_truncated)
         self.assertTrue(res.setup_stderr_truncated)
 
-        self.assertEqual(
-            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.setup_stdout_filename))
-        self.assertEqual(
-            constants.MAX_RECORDED_OUTPUT_LENGTH, os.path.getsize(res.setup_stderr_filename))
+        self.assertEqual(constants.MAX_RECORDED_OUTPUT_LENGTH, res.setup_stdout_size)
+        self.assertEqual(constants.MAX_RECORDED_OUTPUT_LENGTH, res.setup_stderr_size)
+
+        print(res.setup_stdout_filename)
+        print(res.setup_stderr_filename)
+
+        with gzip.open(res.setup_stdout_filename) as f:
+            f.seek(0, 2)
+            self.assertEqual(constants.MAX_RECORDED_OUTPUT_LENGTH, f.tell())
+
+        with gzip.open(res.setup_stderr_filename) as f:
+            f.seek(0, 2)
+            self.assertEqual(constants.MAX_RECORDED_OUTPUT_LENGTH, f.tell())
 
     def test_setup_print_non_unicode_chars(self, *args):
         self.ag_test_suite.validate_and_update(
@@ -621,10 +635,10 @@ sys.stderr.flush()
         tasks.grade_submission_task(self.submission.pk)
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
 
-        with open(res.setup_stdout_filename, 'rb') as f:
+        with gzip.open(res.setup_stdout_filename, 'rb') as f:
             self.assertEqual(self.non_utf_bytes, f.read())
 
-        with open(res.setup_stderr_filename, 'rb') as f:
+        with gzip.open(res.setup_stderr_filename, 'rb') as f:
             self.assertEqual(self.non_utf_bytes, f.read())
 
     # Remove process and stack limit tests in version 5.0.0
