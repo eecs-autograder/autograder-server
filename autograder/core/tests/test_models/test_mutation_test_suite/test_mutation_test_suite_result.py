@@ -588,7 +588,7 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        with fdbk.get_student_test_names_stderr_filename as f:
+        with open(fdbk.get_student_test_names_stderr_filename) as f:
             self.assertEqual(self.get_test_names_stderr, f.read())
         self.assertEqual(len(self.get_test_names_stderr),
                          fdbk.get_student_test_names_stderr_size)

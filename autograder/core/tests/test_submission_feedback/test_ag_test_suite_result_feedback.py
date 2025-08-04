@@ -198,7 +198,7 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
             self.assertEqual(setup_stdout, f.read().decode())
         self.assertEqual(len(setup_stdout), fdbk.setup_stdout_size)
         self.assertTrue(fdbk.setup_stdout_truncated)
-        self.assertIsNone(fdbk.setup_stderr)
+        self.assertIsNone(fdbk.setup_stderr_filename)
         self.assertIsNone(fdbk.setup_stderr_size)
         self.assertIsNone(fdbk.setup_stderr_truncated)
 
@@ -209,7 +209,7 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
             }
         )
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
-        self.assertIsNone(fdbk.setup_stdout)
+        self.assertIsNone(fdbk.setup_stdout_filename)
         self.assertIsNone(fdbk.setup_stdout_size)
         self.assertIsNone(fdbk.setup_stdout_truncated)
         with open(fdbk.setup_stderr_filename, 'rb') as f:
@@ -229,10 +229,10 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_name)
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNone(fdbk.setup_timed_out)
-        self.assertIsNone(fdbk.setup_stdout)
+        self.assertIsNone(fdbk.setup_stdout_filename)
         self.assertIsNone(fdbk.setup_stdout_size)
         self.assertIsNone(fdbk.setup_stdout_truncated)
-        self.assertIsNone(fdbk.setup_stderr)
+        self.assertIsNone(fdbk.setup_stderr_filename)
         self.assertIsNone(fdbk.setup_stderr_size)
         self.assertIsNone(fdbk.setup_stderr_truncated)
 

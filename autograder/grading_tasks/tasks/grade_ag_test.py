@@ -174,8 +174,8 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     suite_result.setup_timed_out = setup_result.timed_out
     suite_result.setup_stdout_truncated = setup_result.stdout_truncated
     suite_result.setup_stderr_truncated = setup_result.stderr_truncated
-    suite_result.setup_stdout_size = os.path.getsize(setup_result.stdout)
-    suite_result.setup_stderr_size = os.path.getsize(setup_result.stderr)
+    suite_result.setup_stdout_size = _get_tempfile_size(setup_result.stdout)
+    suite_result.setup_stderr_size = _get_tempfile_size(setup_result.stderr)
 
     if suite_result.setup_stdout_size != 0:
         with gzip.open(suite_result.setup_stdout_filename, 'wb') as f:
@@ -191,6 +191,14 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     setup_failed = suite_result.setup_return_code != 0 or suite_result.setup_timed_out
     if ag_test_suite.reject_submission_if_setup_fails and setup_failed:
         raise SubmissionRejected
+
+
+def _get_tempfile_size(file_: IO[bytes]) -> int:
+    # See https://docs.python.org/3.10/tutorial/inputoutput.html#methods-of-file-objects
+    file_.seek(0, 2)  # seek to end
+    size = file_.tell()  # get current file position
+    file_.seek(0)  # seek back to beginning
+    return size
 
 
 def grade_ag_test_case_impl(sandbox: AutograderSandbox,

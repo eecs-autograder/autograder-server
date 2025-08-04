@@ -94,12 +94,8 @@ class _FeedbackTestsBase(UnitTestBase):
         stderr_url = make_result_output_url(
             'ag-test-cmd-result-stderr', submission, cmd_result, fdbk_category)
 
-        with open(cmd_fdbk.stdout_filename, 'rb') as f:
-            expected_stdout = f.read()
-        self.do_get_output_test(client, stdout_url, expected_stdout)
-        with open(cmd_fdbk.stderr_filename, 'rb') as f:
-            expected_stderr = f.read()
-        self.do_get_output_test(client, stderr_url, expected_stderr)
+        self.do_get_output_test(client, stdout_url, cmd_fdbk.stdout_filename)
+        self.do_get_output_test(client, stderr_url, cmd_fdbk.stderr_filename)
 
         stdout_diff_url = make_result_output_url(
             'ag-test-cmd-result-stdout-diff', submission, cmd_result, fdbk_category)
@@ -123,14 +119,15 @@ class _FeedbackTestsBase(UnitTestBase):
         }
         self.assertEqual(expected, response.data)
 
-    def do_get_output_test(self, client, url, expected: Optional[bytes]):
+    def do_get_output_test(self, client, url, expected_filename: Optional[bytes]):
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        if expected is None:
+        if expected_filename is None:
             self.assertIsNone(response.data)
         else:
             self.assertIn('Content-Length', response)
-            self.assertEqual(expected, b''.join(response.streaming_content))
+            with open(expected_filename, 'rb') as f:
+                self.assertEqual(f.read(), b''.join(response.streaming_content))
 
     def do_get_diff_test(self, client, url, expected: Optional[core_ut.DiffResult]):
         response = client.get(url)
