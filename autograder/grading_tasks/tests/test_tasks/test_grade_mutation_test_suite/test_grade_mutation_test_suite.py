@@ -123,38 +123,38 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
         self.assertEqual(0, result.get_test_names_result.return_code)
 
     def _print_mutation_result_output(self, result: ag_models.MutationTestSuiteResult) -> None:
-        print('setup_result stdout,', result.setup_stdout_size, bytes)
+        print('setup_result stdout,', result.setup_stdout_size, 'bytes')
         if result.setup_stdout_size != 0:
             with gzip.open(result.setup_stdout_filename, 'rt') as f:
                 print(f.read(), flush=True)
-        print('setup_result stderr,', result.setup_stderr_size, bytes)
+        print('setup_result stderr,', result.setup_stderr_size, 'bytes')
         if result.setup_stderr_size != 0:
             with gzip.open(result.setup_stderr_filename, 'rt') as f:
                 print(f.read(), flush=True)
 
-        print('get_test_names stdout,', result.student_test_names_stdout_size, bytes)
+        print('get_test_names stdout,', result.student_test_names_stdout_size, 'bytes')
         if result.student_test_names_stdout_size != 0:
             with gzip.open(result.get_test_names_stdout_filename, 'rt') as f:
                 print(f.read(), flush=True)
-        print('get_test_names stderr,', result.student_test_names_stderr_size, bytes)
+        print('get_test_names stderr,', result.student_test_names_stderr_size, 'bytes')
         if result.student_test_names_stderr_size != 0:
             with gzip.open(result.get_test_names_stderr_filename, 'rt') as f:
                 print(f.read(), flush=True)
 
-        print('open_validity_check_stdout,', result.validity_check_stdout_size, bytes)
+        print('open_validity_check_stdout,', result.validity_check_stdout_size, 'bytes')
         if result.validity_check_stdout_size != 0:
             with gzip.open(result.validity_check_stdout_filename, 'rt') as f:
                 print(f.read(), flush=True)
-        print('open_validity_check_stderr,', result.validity_check_stderr_size, bytes)
+        print('open_validity_check_stderr,', result.validity_check_stderr_size, 'bytes')
         if result.validity_check_stderr_size != 0:
             with gzip.open(result.validity_check_stderr_filename, 'rt') as f:
                 print(f.read(), flush=True)
 
-        print('open_grade_buggy_impls_stdout,', result.grade_buggy_impls_stdout_size, bytes)
+        print('open_grade_buggy_impls_stdout,', result.grade_buggy_impls_stdout_size, 'bytes')
         if result.grade_buggy_impls_stdout_size != 0:
             with gzip.open(result.grade_buggy_impls_stdout_filename, 'rt') as f:
                 print(f.read(), flush=True)
-        print('open_grade_buggy_impls_stderr,', result.grade_buggy_impls_stderr_size, bytes)
+        print('open_grade_buggy_impls_stderr,', result.grade_buggy_impls_stderr_size, 'bytes')
         if result.grade_buggy_impls_stderr_size != 0:
             with gzip.open(result.grade_buggy_impls_stderr_filename, 'rt') as f:
                 print(f.read(), flush=True)

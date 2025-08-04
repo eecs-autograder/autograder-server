@@ -45,19 +45,6 @@ class AGCommandResult(AGCommandResultBase):
 
         return os.path.join(core_ut.misc_cmd_output_dir(), 'cmd_result_{}_stderr'.format(self.pk))
 
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        is_create = self.pk is None
-
-        with transaction.atomic():
-            super().save(*args, **kwargs)
-
-            if is_create:
-                os.makedirs(core_ut.misc_cmd_output_dir(), exist_ok=True)
-                open(self.stdout_filename, 'w').close()
-                open(self.stderr_filename, 'w').close()
-
-                self.save()
-
     # We won't define any serialization settings here because run results
     # are typically processed through some sort of "result feedback" class
     # before being serialized.

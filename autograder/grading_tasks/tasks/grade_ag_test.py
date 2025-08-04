@@ -22,7 +22,7 @@ from autograder.core.submission_feedback import update_denormalized_ag_test_resu
 from autograder.utils.retry import retry_ag_test_cmd, retry_should_recover
 
 from .exceptions import SubmissionRejected, TestDeleted
-from .utils import (FileCloser, add_files_to_sandbox, load_queryset_with_retry,
+from .utils import (FileCloser, add_files_to_sandbox, get_tempfile_size, load_queryset_with_retry,
                     mark_submission_as_error, run_ag_test_command, run_command_from_args)
 
 
@@ -174,8 +174,8 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     suite_result.setup_timed_out = setup_result.timed_out
     suite_result.setup_stdout_truncated = setup_result.stdout_truncated
     suite_result.setup_stderr_truncated = setup_result.stderr_truncated
-    suite_result.setup_stdout_size = _get_tempfile_size(setup_result.stdout)
-    suite_result.setup_stderr_size = _get_tempfile_size(setup_result.stderr)
+    suite_result.setup_stdout_size = get_tempfile_size(setup_result.stdout)
+    suite_result.setup_stderr_size = get_tempfile_size(setup_result.stderr)
 
     if suite_result.setup_stdout_size != 0:
         with gzip.open(suite_result.setup_stdout_filename, 'wb') as f:
@@ -191,14 +191,6 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     setup_failed = suite_result.setup_return_code != 0 or suite_result.setup_timed_out
     if ag_test_suite.reject_submission_if_setup_fails and setup_failed:
         raise SubmissionRejected
-
-
-def _get_tempfile_size(file_: IO[bytes]) -> int:
-    # See https://docs.python.org/3.10/tutorial/inputoutput.html#methods-of-file-objects
-    file_.seek(0, 2)  # seek to end
-    size = file_.tell()  # get current file position
-    file_.seek(0)  # seek back to beginning
-    return size
 
 
 def grade_ag_test_case_impl(sandbox: AutograderSandbox,
@@ -239,8 +231,8 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
             'timed_out': run_result.timed_out,
             'stdout_truncated': run_result.stdout_truncated,
             'stderr_truncated': run_result.stderr_truncated,
-            'stdout_size': _get_tempfile_size(run_result.stdout),
-            'stderr_size': _get_tempfile_size(run_result.stderr),
+            'stdout_size': get_tempfile_size(run_result.stdout),
+            'stderr_size': get_tempfile_size(run_result.stderr),
         }
 
         if ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.zero:
