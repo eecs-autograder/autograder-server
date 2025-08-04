@@ -787,9 +787,9 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         suite_result = ag_models.AGTestSuiteResult.objects.get(ag_test_suite=self.ag_test_suite)
         suite_result.setup_timed_out = True  # So that we know this value gets reset
         suite_result.save()
-        with open(suite_result.setup_stdout_filename, 'r') as f:
+        with gzip.open(suite_result.setup_stdout_filename, 'rt') as f:
             self.assertNotEqual('', f.read())
-        with open(suite_result.setup_stderr_filename, 'r') as f:
+        with gzip.open(suite_result.setup_stderr_filename, 'rt') as f:
             self.assertNotEqual('', f.read())
 
         self.assertEqual(0, suite_result.setup_return_code)

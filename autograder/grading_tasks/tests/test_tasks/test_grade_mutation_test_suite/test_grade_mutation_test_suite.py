@@ -1,3 +1,4 @@
+import gzip
 import os
 from unittest import mock
 
@@ -122,40 +123,41 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
         self.assertEqual(0, result.get_test_names_result.return_code)
 
     def _print_mutation_result_output(self, result: ag_models.MutationTestSuiteResult) -> None:
-        with open(result.get_test_names_result.stdout_filename) as f:
-            print('get_test_names_result.stdout_filename')
-            print(f.read(), flush=True)
-        with open(result.get_test_names_result.stderr_filename) as f:
-            print('get_test_names_result.stderr_filename')
-            print(f.read(), flush=True)
+        print('setup_result stdout,', result.setup_stdout_size, bytes)
+        if result.setup_stdout_size != 0:
+            with gzip.open(result.setup_stdout_filename, 'rt') as f:
+                print(f.read(), flush=True)
+        print('setup_result stderr,', result.setup_stderr_size, bytes)
+        if result.setup_stderr_size != 0:
+            with gzip.open(result.setup_stderr_filename, 'rt') as f:
+                print(f.read(), flush=True)
 
-        with open(result.setup_result.stdout_filename) as f:
-            print('setup_result stdout')
-            print(f.read(), flush=True)
-        with open(result.setup_result.stderr_filename) as f:
-            print('setup_result stderr')
-            print(f.read(), flush=True)
+        print('get_test_names stdout,', result.student_test_names_stdout_size, bytes)
+        if result.student_test_names_stdout_size != 0:
+            with gzip.open(result.get_test_names_stdout_filename, 'rt') as f:
+                print(f.read(), flush=True)
+        print('get_test_names stderr,', result.student_test_names_stderr_size, bytes)
+        if result.student_test_names_stderr_size != 0:
+            with gzip.open(result.get_test_names_stderr_filename, 'rt') as f:
+                print(f.read(), flush=True)
 
-        with open(result.get_test_names_result.stdout_filename) as f:
-            print('get_test_names_result stdout')
-            print(f.read(), flush=True)
-        with open(result.get_test_names_result.stderr_filename) as f:
-            print('get_test_names_result stderr')
-            print(f.read(), flush=True)
+        print('open_validity_check_stdout,', result.validity_check_stdout_size, bytes)
+        if result.validity_check_stdout_size != 0:
+            with gzip.open(result.validity_check_stdout_filename, 'rt') as f:
+                print(f.read(), flush=True)
+        print('open_validity_check_stderr,', result.validity_check_stderr_size, bytes)
+        if result.validity_check_stderr_size != 0:
+            with gzip.open(result.validity_check_stderr_filename, 'rt') as f:
+                print(f.read(), flush=True)
 
-        with open(result.validity_check_stdout_filename) as f:
-            print('open_validity_check_stdout')
-            print(f.read(), flush=True)
-        with open(result.validity_check_stderr_filename) as f:
-            print('open_validity_check_stderr')
-            print(f.read(), flush=True)
-
-        with open(result.grade_buggy_impls_stdout_filename) as f:
-            print('open_grade_buggy_impls_stdout')
-            print(f.read(), flush=True)
-        with open(result.grade_buggy_impls_stderr_filename) as f:
-            print('open_grade_buggy_impls_stderr')
-            print(f.read(), flush=True)
+        print('open_grade_buggy_impls_stdout,', result.grade_buggy_impls_stdout_size, bytes)
+        if result.grade_buggy_impls_stdout_size != 0:
+            with gzip.open(result.grade_buggy_impls_stdout_filename, 'rt') as f:
+                print(f.read(), flush=True)
+        print('open_grade_buggy_impls_stderr,', result.grade_buggy_impls_stderr_size, bytes)
+        if result.grade_buggy_impls_stderr_size != 0:
+            with gzip.open(result.grade_buggy_impls_stderr_filename, 'rt') as f:
+                print(f.read(), flush=True)
 
     def test_grade_deferred(self, *args):
         self.mutation_suite.validate_and_update(deferred=True)
@@ -187,19 +189,19 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
         self.assertEqual([], result.invalid_tests)
         self.assertEqual([], result.timed_out_tests)
 
-        with open(result.get_test_names_result.stdout_filename) as f:
+        with gzip.open(result.get_test_names_stdout_filename, 'rt') as f:
             self.assertEqual('', f.read())
-        with open(result.get_test_names_result.stderr_filename) as f:
-            self.assertEqual('', f.read())
-
-        with open(result.validity_check_stdout_filename) as f:
-            self.assertEqual('', f.read())
-        with open(result.validity_check_stderr_filename) as f:
+        with gzip.open(result.get_test_names_stderr_filename, 'rt') as f:
             self.assertEqual('', f.read())
 
-        with open(result.grade_buggy_impls_stdout_filename) as f:
+        with gzip.open(result.validity_check_stdout_filename, 'rt') as f:
             self.assertEqual('', f.read())
-        with open(result.grade_buggy_impls_stderr_filename) as f:
+        with gzip.open(result.validity_check_stderr_filename, 'rt') as f:
+            self.assertEqual('', f.read())
+
+        with gzip.open(result.grade_buggy_impls_stdout_filename, 'rt') as f:
+            self.assertEqual('', f.read())
+        with gzip.open(result.grade_buggy_impls_stderr_filename, 'rt') as f:
             self.assertEqual('', f.read())
 
     def test_setup_command_times_out_no_tests_discovered(self, *args):
@@ -216,19 +218,19 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
             self.assertEqual([], result.invalid_tests)
             self.assertEqual([], result.timed_out_tests)
 
-            with open(result.get_test_names_result.stdout_filename) as f:
+            with gzip.open(result.get_test_names_stdout_filename, 'rt') as f:
                 self.assertEqual('', f.read())
-            with open(result.get_test_names_result.stderr_filename) as f:
-                self.assertEqual('', f.read())
-
-            with open(result.validity_check_stdout_filename) as f:
-                self.assertEqual('', f.read())
-            with open(result.validity_check_stderr_filename) as f:
+            with gzip.open(result.get_test_names_stderr_filename, 'rt') as f:
                 self.assertEqual('', f.read())
 
-            with open(result.grade_buggy_impls_stdout_filename) as f:
+            with gzip.open(result.validity_check_stdout_filename, 'rt') as f:
                 self.assertEqual('', f.read())
-            with open(result.grade_buggy_impls_stderr_filename) as f:
+            with gzip.open(result.validity_check_stderr_filename, 'rt') as f:
+                self.assertEqual('', f.read())
+
+            with gzip.open(result.grade_buggy_impls_stdout_filename, 'rt') as f:
+                self.assertEqual('', f.read())
+            with gzip.open(result.grade_buggy_impls_stderr_filename, 'rt') as f:
                 self.assertEqual('', f.read())
 
 
@@ -331,10 +333,10 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
         self.assertEqual(0, result.get_test_names_result.return_code)
         self.assertSequenceEqual(test_names.split(), result.student_tests)
 
-        with open(result.get_test_names_result.stdout_filename) as f:
+        with gzip.open(result.get_test_names_stdout_filename, 'rt') as f:
             self.assertEqual(test_names, f.read())
 
-        with open(result.get_test_names_result.stderr_filename) as f:
+        with gzip.open(result.get_test_names_stderr_filename, 'rt') as f:
             self.assertEqual(stderr, f.read())
 
     def test_get_test_names_return_code_nonzero(self, *args):
@@ -356,23 +358,23 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
         self.assertNotEqual(0, result.get_test_names_result.return_code)
         self.assertSequenceEqual([], result.student_tests)
 
-        with open(result.get_test_names_result.stdout_filename) as f:
+        with gzip.open(result.get_test_names_stdout_filename, 'rt') as f:
             self.assertEqual(test_names, f.read())
 
-        with open(result.get_test_names_result.stderr_filename) as f:
+        with gzip.open(result.get_test_names_stderr_filename, 'rt') as f:
             self.assertEqual(stderr, f.read())
 
         # Make sure that validity check and buggy impl grading didn't happen
-        with open(result.validity_check_stdout_filename) as f:
+        with gzip.open(result.validity_check_stdout_filename, 'rt') as f:
             self.assertEqual('', f.read())
 
-        with open(result.validity_check_stderr_filename) as f:
+        with gzip.open(result.validity_check_stderr_filename, 'rt') as f:
             self.assertEqual('', f.read())
 
-        with open(result.grade_buggy_impls_stdout_filename) as f:
+        with gzip.open(result.grade_buggy_impls_stdout_filename, 'rt') as f:
             self.assertEqual('', f.read())
 
-        with open(result.grade_buggy_impls_stderr_filename) as f:
+        with gzip.open(result.grade_buggy_impls_stderr_filename, 'rt') as f:
             self.assertEqual('', f.read())
 
     def test_non_default_docker_image(self, *args):
