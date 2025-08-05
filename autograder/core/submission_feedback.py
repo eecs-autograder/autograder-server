@@ -226,6 +226,10 @@ class SerializedAGTestSuiteResultWrapper:
     def setup_stderr_size(self) -> int | None:
         return cast(int | None, self._suite_result_dict.get('setup_stderr_size'))
 
+    @property
+    def has_setup_result(self) -> bool:
+        return self.setup_return_code is not None or self.setup_timed_out
+
     @cached_property
     def _ag_test_suite_result(self) -> AGTestSuiteResult:
         return AGTestSuiteResult.objects.get(pk=self.pk)
