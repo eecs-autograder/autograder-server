@@ -140,6 +140,10 @@ class AGTestSuiteResultProtocol(Protocol):
         ...
 
     @property
+    def has_setup_result(self) -> bool:
+        ...
+
+    @property
     def setup_return_code(self) -> int:
         ...
 
