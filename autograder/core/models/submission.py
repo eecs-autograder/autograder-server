@@ -372,6 +372,8 @@ class Submission(ag_model_base.AutograderModel):
         if self.pk is None:
             self._output_migrated = True
 
+        # This directory will be removed once the new output format
+        # introduced in 2025.08.0 becomes the default.
         # Some tests still depend on this directory existing, so
         # we'll do that here instead of in ag_command_result.py.
         legacy_misc_output_dir = core_ut.misc_cmd_output_dir()
