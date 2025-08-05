@@ -1,3 +1,4 @@
+import gzip
 from unittest import mock
 
 from django.conf import settings
@@ -65,12 +66,12 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd_result = ag_models.AGTestCommandResult.objects.get(
             ag_test_command=cmd,
             ag_test_case_result__ag_test_suite_result__submission=self.submission)
-        with open(cmd_result.stderr_filename) as f:
+        with gzip.open(cmd_result.stderr_filename) as f:
             output = f.read()
         print(output)
         self.assertEqual(0, cmd_result.return_code, msg=output)
-        self.assertEqual('hello', open(cmd_result.stdout_filename).read())
-        self.assertEqual('whoops', open(cmd_result.stderr_filename).read())
+        self.assertEqual('hello', gzip.open(cmd_result.stdout_filename).read())
+        self.assertEqual('whoops', gzip.open(cmd_result.stderr_filename).read())
         self.assertTrue(cmd_result.stdout_correct)
         self.assertTrue(cmd_result.stderr_correct)
 
@@ -180,8 +181,8 @@ class GradeSubmissionTestCase(UnitTestBase):
 
         for res in cmd_results:
             self.assertEqual(0, res.return_code)
-            self.assertEqual('hello', open(res.stdout_filename).read())
-            self.assertEqual('whoops', open(res.stderr_filename).read())
+            self.assertEqual('hello', gzip.open(res.stdout_filename).read())
+            self.assertEqual('whoops', gzip.open(res.stderr_filename).read())
             self.assertTrue(res.stdout_correct)
             self.assertTrue(res.stderr_correct)
 
@@ -280,13 +281,13 @@ void file2() {
 
         tasks.grade_submission_task(self.submission.pk)
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual('hello', open(res.stdout_filename).read())
+        self.assertEqual('hello', gzip.open(res.stdout_filename).read())
 
         cmd.cmd = 'printf weee'
         cmd.save()
         tasks.grade_submission_task(self.submission.pk)
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual('weee', open(res.stdout_filename).read())
+        self.assertEqual('weee', gzip.open(res.stdout_filename).read())
 
     @tag('fix_on_ci')
     def test_network_access_allowed_in_suite(self, *args):
@@ -308,7 +309,7 @@ void file2() {
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(' '.join(self.submission.group.member_names),
-                         open(res.stdout_filename).read())
+                         gzip.open(res.stdout_filename).read())
 
     def test_one_ag_suite_deferred_one_mutation_suite_deferred(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, deferred=False)

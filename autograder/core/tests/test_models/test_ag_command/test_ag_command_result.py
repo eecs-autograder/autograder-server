@@ -7,6 +7,8 @@ import autograder.core.utils as core_ut
 
 class AGCommandResultTestCase(UnitTestBase):
     def test_default_init(self):
+        os.makedirs(core_ut.misc_cmd_output_dir(), exist_ok=True)
+
         result = ag_models.AGCommandResult.objects.validate_and_create()
         result.refresh_from_db()
 
