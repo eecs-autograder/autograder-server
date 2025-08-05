@@ -17,7 +17,8 @@ from django.db import IntegrityError, transaction
 import autograder.core.models as ag_models
 from autograder.utils.retry import retry_should_recover
 
-from .utils import add_files_to_sandbox, get_tempfile_size, mark_submission_as_error, run_ag_command
+from .utils import (
+    add_files_to_sandbox, get_tempfile_size, mark_submission_as_error, run_ag_command)
 
 
 @celery.shared_task(max_retries=1, acks_late=True)

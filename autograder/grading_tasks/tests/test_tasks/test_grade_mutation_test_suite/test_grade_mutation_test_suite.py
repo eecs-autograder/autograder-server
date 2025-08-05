@@ -387,7 +387,6 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
         self.assertFalse(os.path.exists(result.grade_buggy_impls_stdout_filename))
         self.assertFalse(os.path.exists(result.grade_buggy_impls_stderr_filename))
 
-
     def test_non_default_docker_image(self, *args):
         eecs490_image = ag_models.SandboxDockerImage.objects.get_or_create(
             name='eecs490_image', display_name='EECS 490', tag='jameslp/eecs490')[0]
