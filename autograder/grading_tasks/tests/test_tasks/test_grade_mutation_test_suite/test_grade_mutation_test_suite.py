@@ -189,20 +189,26 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
         self.assertEqual([], result.invalid_tests)
         self.assertEqual([], result.timed_out_tests)
 
-        with gzip.open(result.get_test_names_stdout_filename, 'rt') as f:
-            self.assertEqual('', f.read())
-        with gzip.open(result.get_test_names_stderr_filename, 'rt') as f:
-            self.assertEqual('', f.read())
+        self.assertEqual(0, result.setup_stdout_size)
+        self.assertEqual(0, result.setup_stderr_size)
+        self.assertEqual(0, result.student_test_names_stdout_size)
+        self.assertEqual(0, result.student_test_names_stderr_size)
+        self.assertEqual(0, result.validity_check_stdout_size)
+        self.assertEqual(0, result.validity_check_stderr_size)
+        self.assertEqual(0, result.grade_buggy_impls_stdout_size)
+        self.assertEqual(0, result.grade_buggy_impls_stderr_size)
 
-        with gzip.open(result.validity_check_stdout_filename, 'rt') as f:
-            self.assertEqual('', f.read())
-        with gzip.open(result.validity_check_stderr_filename, 'rt') as f:
-            self.assertEqual('', f.read())
+        self.assertFalse(os.path.exists(result.setup_stdout_filename))
+        self.assertFalse(os.path.exists(result.setup_stderr_filename))
 
-        with gzip.open(result.grade_buggy_impls_stdout_filename, 'rt') as f:
-            self.assertEqual('', f.read())
-        with gzip.open(result.grade_buggy_impls_stderr_filename, 'rt') as f:
-            self.assertEqual('', f.read())
+        self.assertFalse(os.path.exists(result.get_test_names_stdout_filename))
+        self.assertFalse(os.path.exists(result.get_test_names_stderr_filename))
+
+        self.assertFalse(os.path.exists(result.validity_check_stdout_filename))
+        self.assertFalse(os.path.exists(result.validity_check_stderr_filename))
+
+        self.assertFalse(os.path.exists(result.grade_buggy_impls_stdout_filename))
+        self.assertFalse(os.path.exists(result.grade_buggy_impls_stderr_filename))
 
     def test_setup_command_times_out_no_tests_discovered(self, *args):
         self.mutation_suite.validate_and_update(setup_command={'cmd': 'sleep 10'})
@@ -218,20 +224,26 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
             self.assertEqual([], result.invalid_tests)
             self.assertEqual([], result.timed_out_tests)
 
-            with gzip.open(result.get_test_names_stdout_filename, 'rt') as f:
-                self.assertEqual('', f.read())
-            with gzip.open(result.get_test_names_stderr_filename, 'rt') as f:
-                self.assertEqual('', f.read())
+        self.assertEqual(0, result.setup_stdout_size)
+        self.assertEqual(0, result.setup_stderr_size)
+        self.assertEqual(0, result.student_test_names_stdout_size)
+        self.assertEqual(0, result.student_test_names_stderr_size)
+        self.assertEqual(0, result.validity_check_stdout_size)
+        self.assertEqual(0, result.validity_check_stderr_size)
+        self.assertEqual(0, result.grade_buggy_impls_stdout_size)
+        self.assertEqual(0, result.grade_buggy_impls_stderr_size)
 
-            with gzip.open(result.validity_check_stdout_filename, 'rt') as f:
-                self.assertEqual('', f.read())
-            with gzip.open(result.validity_check_stderr_filename, 'rt') as f:
-                self.assertEqual('', f.read())
+        self.assertFalse(os.path.exists(result.setup_stdout_filename))
+        self.assertFalse(os.path.exists(result.setup_stderr_filename))
 
-            with gzip.open(result.grade_buggy_impls_stdout_filename, 'rt') as f:
-                self.assertEqual('', f.read())
-            with gzip.open(result.grade_buggy_impls_stderr_filename, 'rt') as f:
-                self.assertEqual('', f.read())
+        self.assertFalse(os.path.exists(result.get_test_names_stdout_filename))
+        self.assertFalse(os.path.exists(result.get_test_names_stderr_filename))
+
+        self.assertFalse(os.path.exists(result.validity_check_stdout_filename))
+        self.assertFalse(os.path.exists(result.validity_check_stderr_filename))
+
+        self.assertFalse(os.path.exists(result.grade_buggy_impls_stdout_filename))
+        self.assertFalse(os.path.exists(result.grade_buggy_impls_stderr_filename))
 
 
 @tag('slow', 'sandbox')

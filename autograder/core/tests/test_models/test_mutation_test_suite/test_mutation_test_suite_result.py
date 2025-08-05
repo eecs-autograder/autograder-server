@@ -37,6 +37,15 @@ class MutationTestSuiteResultTestCase(UnitTestBase):
         self.assertIsNone(result.setup_result)
         self.assertIsInstance(result.get_test_names_result, ag_models.AGCommandResult)
 
+        self.assertEqual(0, result.setup_stdout_size)
+        self.assertEqual(0, result.setup_stderr_size)
+        self.assertEqual(0, result.student_test_names_stdout_size)
+        self.assertEqual(0, result.student_test_names_stderr_size)
+        self.assertEqual(0, result.validity_check_stdout_size)
+        self.assertEqual(0, result.validity_check_stderr_size)
+        self.assertEqual(0, result.grade_buggy_impls_stdout_size)
+        self.assertEqual(0, result.grade_buggy_impls_stderr_size)
+
     def test_output_filenames(self):
         result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
             mutation_test_suite=self.mutation_suite, submission=self.submission)
@@ -91,11 +100,6 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             return_code=0
         )  # type: ag_models.AGCommandResult
 
-        with open(self.setup_result.stdout_filename, 'w') as f:
-            f.write(self.setup_stdout)
-        with open(self.setup_result.stderr_filename, 'w') as f:
-            f.write(self.setup_stderr)
-
         self.valid_tests = ['test{}'.format(i) for i in range(3)]
         self.invalid_tests = ['bad{}'.format(i) for i in range(4)]
         self.timeout_tests = ['not_sanic{}'.format(i) for i in range(2)]
@@ -108,10 +112,6 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.get_test_names_result = ag_models.AGCommandResult.objects.validate_and_create(
             return_code=self.get_test_names_return_code
         )  # type: ag_models.AGCommandResult
-        with open(self.get_test_names_result.stdout_filename, 'w') as f:
-            f.write(self.get_test_names_stdout)
-        with open(self.get_test_names_result.stderr_filename, 'w') as f:
-            f.write(self.get_test_names_stderr)
 
         self.bugs_exposed = self.bug_names
         self.points_awarded = len(self.bugs_exposed) * self.points_per_exposed_bug
@@ -125,6 +125,16 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             setup_result=self.setup_result,
             get_test_names_result=self.get_test_names_result
         )  # type: ag_models.MutationTestSuiteResult
+
+        with open(self.result.setup_stdout_filename, 'w') as f:
+            f.write(self.setup_stdout)
+        with open(self.result.setup_stderr_filename, 'w') as f:
+            f.write(self.setup_stderr)
+
+        with open(self.result.get_test_names_stdout_filename, 'w') as f:
+            f.write(self.get_test_names_stdout)
+        with open(self.result.get_test_names_stderr_filename, 'w') as f:
+            f.write(self.get_test_names_stderr)
 
         with open(self.result.validity_check_stdout_filename, 'w') as f:
             f.write(self.validity_check_stdout)

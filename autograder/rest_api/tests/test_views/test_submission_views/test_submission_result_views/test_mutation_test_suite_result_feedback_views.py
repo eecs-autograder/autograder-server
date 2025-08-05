@@ -47,18 +47,10 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
         setup_result = ag_models.AGCommandResult.objects.validate_and_create(
             return_code=0
         )  # type: ag_models.AGCommandResult
-        with open(setup_result.stdout_filename, 'w') as f:
-            f.write(self.setup_stdout)
-        with open(setup_result.stderr_filename, 'w') as f:
-            f.write(self.setup_stderr)
 
         get_test_names_result = ag_models.AGCommandResult.objects.validate_and_create(
             return_code=0
         )  # type: ag_models.AGCommandResult
-        with open(get_test_names_result.stdout_filename, 'w') as f:
-            f.write(self.get_test_names_stdout)
-        with open(get_test_names_result.stderr_filename, 'w') as f:
-            f.write(self.get_test_names_stderr)
 
         student_tests = ['test{}'.format(i) for i in range(5)]
         self.mutation_suite_result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
@@ -72,10 +64,21 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
             get_test_names_result=get_test_names_result
         )  # type: ag_models.MutationTestSuiteResult
 
+        with open(self.mutation_suite_result.setup_stdout_filename, 'w') as f:
+            f.write(self.setup_stdout)
+        with open(self.mutation_suite_result.setup_stderr_filename, 'w') as f:
+            f.write(self.setup_stderr)
+
+        with open(self.mutation_suite_result.get_test_names_stdout_filename, 'w') as f:
+            f.write(self.get_test_names_stdout)
+        with open(self.mutation_suite_result.get_test_names_stderr_filename, 'w') as f:
+            f.write(self.get_test_names_stderr)
+
         with open(self.mutation_suite_result.validity_check_stdout_filename, 'w') as f:
             f.write(self.validity_check_stdout)
         with open(self.mutation_suite_result.validity_check_stderr_filename, 'w') as f:
             f.write(self.validity_check_stderr)
+
         with open(self.mutation_suite_result.grade_buggy_impls_stdout_filename, 'w') as f:
             f.write(self.buggy_impls_stdout)
         with open(self.mutation_suite_result.grade_buggy_impls_stderr_filename, 'w') as f:
