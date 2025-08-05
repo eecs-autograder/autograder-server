@@ -376,18 +376,17 @@ class MutationTestSuiteGradingEdgeCaseTestCase(UnitTestBase):
         with gzip.open(result.get_test_names_stderr_filename, 'rt') as f:
             self.assertEqual(stderr, f.read())
 
-        # Make sure that validity check and buggy impl grading didn't happen
-        with gzip.open(result.validity_check_stdout_filename, 'rt') as f:
-            self.assertEqual('', f.read())
+        self.assertEqual(0, result.validity_check_stdout_size)
+        self.assertEqual(0, result.validity_check_stderr_size)
+        self.assertEqual(0, result.grade_buggy_impls_stdout_size)
+        self.assertEqual(0, result.grade_buggy_impls_stderr_size)
 
-        with gzip.open(result.validity_check_stderr_filename, 'rt') as f:
-            self.assertEqual('', f.read())
+        self.assertFalse(os.path.exists(result.validity_check_stdout_filename))
+        self.assertFalse(os.path.exists(result.validity_check_stderr_filename))
 
-        with gzip.open(result.grade_buggy_impls_stdout_filename, 'rt') as f:
-            self.assertEqual('', f.read())
+        self.assertFalse(os.path.exists(result.grade_buggy_impls_stdout_filename))
+        self.assertFalse(os.path.exists(result.grade_buggy_impls_stderr_filename))
 
-        with gzip.open(result.grade_buggy_impls_stderr_filename, 'rt') as f:
-            self.assertEqual('', f.read())
 
     def test_non_default_docker_image(self, *args):
         eecs490_image = ag_models.SandboxDockerImage.objects.get_or_create(
