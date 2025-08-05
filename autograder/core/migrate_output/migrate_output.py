@@ -11,9 +11,9 @@ from autograder.core.utils import get_diff_size
 
 
 def migrate_ag_test_suite_result_output(ag_test_suite_result: ag_models.AGTestSuiteResult):
-    if (ag_test_suite_result.setup_stdout_size is not None
-            and ag_test_suite_result.setup_stderr_size is not None):
-        return
+    # Force the _filename fields to give us the old filenames
+    ag_test_suite_result.setup_stdout_size = None
+    ag_test_suite_result.setup_stderr_size = None
 
     if ag_test_suite_result.has_setup_result:
         _compress_output_file(ag_test_suite_result.setup_stdout_filename)
@@ -32,11 +32,11 @@ def migrate_ag_test_suite_result_output(ag_test_suite_result: ag_models.AGTestSu
 
 
 def migrate_ag_test_command_result_output(ag_test_command_result: ag_models.AGTestCommandResult):
-    if (ag_test_command_result.stdout_size is not None
-            and ag_test_command_result.stderr_size is not None
-            and ag_test_command_result.stdout_diff_size is not None
-            and ag_test_command_result.stderr_diff_size is not None):
-        return
+    # Force the _filename fields to give us the old filenames
+    ag_test_command_result.stdout_size = None
+    ag_test_command_result.stderr_size = None
+    ag_test_command_result.stdout_diff_size = None
+    ag_test_command_result.stderr_diff_size = None
 
     _compress_output_file(ag_test_command_result.stdout_filename)
     _compress_output_file(ag_test_command_result.stderr_filename)
@@ -78,17 +78,15 @@ def migrate_ag_test_command_result_output(ag_test_command_result: ag_models.AGTe
 def migrate_mutation_test_suite_result_output(
     mutation_test_suite_result: ag_models.MutationTestSuiteResult
 ):
-    if (
-        mutation_test_suite_result.setup_stdout_size is not None
-        and mutation_test_suite_result.setup_stderr_size is not None
-        and mutation_test_suite_result.get_student_test_names_stdout_size is not None
-        and mutation_test_suite_result.get_student_test_names_stderr_size is not None
-        and mutation_test_suite_result.validity_check_stdout_size is not None
-        and mutation_test_suite_result.validity_check_stderr_size is not None
-        and mutation_test_suite_result.grade_buggy_impls_stdout_size is not None
-        and mutation_test_suite_result.grade_buggy_impls_stderr_size is not None
-    ):
-        return
+    # Force the _filename fields to give us the old filenames
+    mutation_test_suite_result.setup_stdout_size = None
+    mutation_test_suite_result.setup_stderr_size = None
+    mutation_test_suite_result.get_student_test_names_stdout_size = None
+    mutation_test_suite_result.get_student_test_names_stderr_size = None
+    mutation_test_suite_result.validity_check_stdout_size = None
+    mutation_test_suite_result.validity_check_stderr_size = None
+    mutation_test_suite_result.grade_buggy_impls_stdout_size = None
+    mutation_test_suite_result.grade_buggy_impls_stderr_size = None
 
     if mutation_test_suite_result.setup_result is not None:
         _compress_output_file(
