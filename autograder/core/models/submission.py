@@ -369,6 +369,15 @@ class Submission(ag_model_base.AutograderModel):
         return self.submitted_filenames
 
     def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk is None:
+            self._output_migrated = True
+
+        # Some tests still depend on this directory existing, so
+        # we'll do that here instead of in ag_command_result.py.
+        legacy_misc_output_dir = core_ut.misc_cmd_output_dir()
+        if not os.path.isdir(legacy_misc_output_dir):
+            os.makedirs(legacy_misc_output_dir, exist_ok=True)
+
         super().save(*args, **kwargs)
 
         # result_output_dir is a subdir of the submission dir

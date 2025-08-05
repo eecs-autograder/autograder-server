@@ -272,6 +272,15 @@ def _save_results(mutation_test_suite: ag_models.MutationTestSuite,
                 'invalid_tests': invalid_tests,
                 'timed_out_tests': timed_out_tests,
                 'bugs_exposed': bugs_exposed,
+
+                'setup_stdout_size': 0,
+                'setup_stderr_size': 0,
+                'student_test_names_stdout_size': 0,
+                'student_test_names_stderr_size': 0,
+                'validity_check_stdout_size': 0,
+                'validity_check_stderr_size': 0,
+                'grade_buggy_impls_stdout_size': 0,
+                'grade_buggy_impls_stderr_size': 0,
             }
             result = ag_models.MutationTestSuiteResult.objects.update_or_create(
                 defaults=result_kwargs,

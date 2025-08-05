@@ -278,28 +278,6 @@ class MutationTestSuiteResult(AutograderModel):
         """
     )
 
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        is_create = self.pk is None
-
-        if is_create:
-            # We initialize these here because the migration that adds
-            # these fields sets them to None.
-            # Whenever we create a new object, we want these initialized
-            # to zero.
-            # AGTestSuiteResult and AGTestCommandResult don't need this
-            # because they aren't created until grading them is finished,
-            # so they never have unset values.
-            self.setup_stdout_size = 0
-            self.setup_stderr_size = 0
-            self.student_test_names_stdout_size = 0
-            self.student_test_names_stderr_size = 0
-            self.validity_check_stdout_size = 0
-            self.validity_check_stderr_size = 0
-            self.grade_buggy_impls_stdout_size = 0
-            self.grade_buggy_impls_stderr_size = 0
-
-        super().save(*args, **kwargs)
-
     def get_fdbk(
         self,
         fdbk_category: FeedbackCategory,

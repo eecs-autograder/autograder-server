@@ -64,14 +64,14 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
             get_test_names_result=get_test_names_result
         )  # type: ag_models.MutationTestSuiteResult
 
-        with open(self.mutation_suite_result.setup_stdout_filename, 'w') as f:
+        with open(self.mutation_suite_result.old_setup_stdout_filename, 'w') as f:
             f.write(self.setup_stdout)
-        with open(self.mutation_suite_result.setup_stderr_filename, 'w') as f:
+        with open(self.mutation_suite_result.old_setup_stderr_filename, 'w') as f:
             f.write(self.setup_stderr)
 
-        with open(self.mutation_suite_result.get_test_names_stdout_filename, 'w') as f:
+        with open(self.mutation_suite_result.old_get_test_names_stdout_filename, 'w') as f:
             f.write(self.get_test_names_stdout)
-        with open(self.mutation_suite_result.get_test_names_stderr_filename, 'w') as f:
+        with open(self.mutation_suite_result.old_get_test_names_stderr_filename, 'w') as f:
             f.write(self.get_test_names_stderr)
 
         with open(self.mutation_suite_result.validity_check_stdout_filename, 'w') as f:

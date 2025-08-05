@@ -37,14 +37,15 @@ class MutationTestSuiteResultTestCase(UnitTestBase):
         self.assertIsNone(result.setup_result)
         self.assertIsInstance(result.get_test_names_result, ag_models.AGCommandResult)
 
-        self.assertEqual(0, result.setup_stdout_size)
-        self.assertEqual(0, result.setup_stderr_size)
-        self.assertEqual(0, result.student_test_names_stdout_size)
-        self.assertEqual(0, result.student_test_names_stderr_size)
-        self.assertEqual(0, result.validity_check_stdout_size)
-        self.assertEqual(0, result.validity_check_stderr_size)
-        self.assertEqual(0, result.grade_buggy_impls_stdout_size)
-        self.assertEqual(0, result.grade_buggy_impls_stderr_size)
+        # In a future version, we'll initialize these to zero instead
+        self.assertIsNone(result.setup_stdout_size)
+        self.assertIsNone(result.setup_stderr_size)
+        self.assertIsNone(result.student_test_names_stdout_size)
+        self.assertIsNone(result.student_test_names_stderr_size)
+        self.assertIsNone(result.validity_check_stdout_size)
+        self.assertIsNone(result.validity_check_stderr_size)
+        self.assertIsNone(result.grade_buggy_impls_stdout_size)
+        self.assertIsNone(result.grade_buggy_impls_stderr_size)
 
     def test_output_filenames(self):
         result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
@@ -126,14 +127,14 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             get_test_names_result=self.get_test_names_result
         )  # type: ag_models.MutationTestSuiteResult
 
-        with open(self.result.setup_stdout_filename, 'w') as f:
+        with open(self.result.old_setup_stdout_filename, 'w') as f:
             f.write(self.setup_stdout)
-        with open(self.result.setup_stderr_filename, 'w') as f:
+        with open(self.result.old_setup_stderr_filename, 'w') as f:
             f.write(self.setup_stderr)
 
-        with open(self.result.get_test_names_stdout_filename, 'w') as f:
+        with open(self.result.old_get_test_names_stdout_filename, 'w') as f:
             f.write(self.get_test_names_stdout)
-        with open(self.result.get_test_names_stderr_filename, 'w') as f:
+        with open(self.result.old_get_test_names_stderr_filename, 'w') as f:
             f.write(self.get_test_names_stderr)
 
         with open(self.result.validity_check_stdout_filename, 'w') as f:
