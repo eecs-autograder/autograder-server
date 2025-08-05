@@ -132,12 +132,12 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
             with gzip.open(result.setup_stderr_filename, 'rt') as f:
                 print(f.read(), flush=True)
 
-        print('get_test_names stdout,', result.student_test_names_stdout_size, 'bytes')
-        if result.student_test_names_stdout_size != 0:
+        print('get_test_names stdout,', result.get_student_test_names_stdout_size, 'bytes')
+        if result.get_student_test_names_stdout_size != 0:
             with gzip.open(result.get_test_names_stdout_filename, 'rt') as f:
                 print(f.read(), flush=True)
-        print('get_test_names stderr,', result.student_test_names_stderr_size, 'bytes')
-        if result.student_test_names_stderr_size != 0:
+        print('get_test_names stderr,', result.get_student_test_names_stderr_size, 'bytes')
+        if result.get_student_test_names_stderr_size != 0:
             with gzip.open(result.get_test_names_stderr_filename, 'rt') as f:
                 print(f.read(), flush=True)
 
@@ -191,8 +191,8 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
 
         self.assertEqual(0, result.setup_stdout_size)
         self.assertEqual(0, result.setup_stderr_size)
-        self.assertEqual(0, result.student_test_names_stdout_size)
-        self.assertEqual(0, result.student_test_names_stderr_size)
+        self.assertEqual(0, result.get_student_test_names_stdout_size)
+        self.assertEqual(0, result.get_student_test_names_stderr_size)
         self.assertEqual(0, result.validity_check_stdout_size)
         self.assertEqual(0, result.validity_check_stderr_size)
         self.assertEqual(0, result.grade_buggy_impls_stdout_size)
@@ -226,8 +226,8 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
 
         self.assertEqual(0, result.setup_stdout_size)
         self.assertEqual(0, result.setup_stderr_size)
-        self.assertEqual(0, result.student_test_names_stdout_size)
-        self.assertEqual(0, result.student_test_names_stderr_size)
+        self.assertEqual(0, result.get_student_test_names_stdout_size)
+        self.assertEqual(0, result.get_student_test_names_stderr_size)
         self.assertEqual(0, result.validity_check_stdout_size)
         self.assertEqual(0, result.validity_check_stderr_size)
         self.assertEqual(0, result.grade_buggy_impls_stdout_size)

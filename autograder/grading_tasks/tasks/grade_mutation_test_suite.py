@@ -276,8 +276,8 @@ def _save_results(mutation_test_suite: ag_models.MutationTestSuite,
 
                 'setup_stdout_size': 0,
                 'setup_stderr_size': 0,
-                'student_test_names_stdout_size': 0,
-                'student_test_names_stderr_size': 0,
+                'get_student_test_names_stdout_size': 0,
+                'get_student_test_names_stderr_size': 0,
                 'validity_check_stdout_size': 0,
                 'validity_check_stderr_size': 0,
                 'grade_buggy_impls_stdout_size': 0,
@@ -311,19 +311,19 @@ def _save_results(mutation_test_suite: ag_models.MutationTestSuite,
                 result.save()
 
             if completed_get_test_names_cmd is not None:
-                result.student_test_names_stdout_size = get_tempfile_size(
+                result.get_student_test_names_stdout_size = get_tempfile_size(
                     completed_get_test_names_cmd.stdout)
-                result.student_test_names_stderr_size = get_tempfile_size(
+                result.get_student_test_names_stderr_size = get_tempfile_size(
                     completed_get_test_names_cmd.stderr)
 
                 result.get_test_names_result.return_code = completed_get_test_names_cmd.return_code
                 result.get_test_names_result.timed_out = completed_get_test_names_cmd.timed_out
 
-                if result.student_test_names_stdout_size != 0:
+                if result.get_student_test_names_stdout_size != 0:
                     with gzip.open(result.get_test_names_stdout_filename, 'wb') as f:
                         shutil.copyfileobj(completed_get_test_names_cmd.stdout, f)
 
-                if result.student_test_names_stderr_size != 0:
+                if result.get_student_test_names_stderr_size != 0:
                     with gzip.open(result.get_test_names_stderr_filename, 'wb') as f:
                         shutil.copyfileobj(completed_get_test_names_cmd.stderr, f)
 

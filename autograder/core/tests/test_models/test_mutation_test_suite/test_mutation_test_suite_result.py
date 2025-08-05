@@ -40,8 +40,8 @@ class MutationTestSuiteResultTestCase(UnitTestBase):
         # In a future version, we'll initialize these to zero instead
         self.assertIsNone(result.setup_stdout_size)
         self.assertIsNone(result.setup_stderr_size)
-        self.assertIsNone(result.student_test_names_stdout_size)
-        self.assertIsNone(result.student_test_names_stderr_size)
+        self.assertIsNone(result.get_student_test_names_stdout_size)
+        self.assertIsNone(result.get_student_test_names_stderr_size)
         self.assertIsNone(result.validity_check_stdout_size)
         self.assertIsNone(result.validity_check_stderr_size)
         self.assertIsNone(result.grade_buggy_impls_stdout_size)

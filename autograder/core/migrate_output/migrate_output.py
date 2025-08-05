@@ -1,6 +1,7 @@
 import gzip
 import json
 import os
+from pathlib import Path
 import shutil
 
 from autograder.core.constants import COMPRESSED_OUTPUT_SUFFIX
@@ -14,14 +15,19 @@ def migrate_ag_test_suite_result_output(ag_test_suite_result: ag_models.AGTestSu
             and ag_test_suite_result.setup_stderr_size is not None):
         return
 
-    _compress_output_file(ag_test_suite_result.setup_stdout_filename)
-    _compress_output_file(ag_test_suite_result.setup_stderr_filename)
+    if ag_test_suite_result.has_setup_result:
+        _compress_output_file(ag_test_suite_result.setup_stdout_filename)
+        _compress_output_file(ag_test_suite_result.setup_stderr_filename)
 
-    stdout_size = os.path.getsize(ag_test_suite_result.setup_stdout_filename)
-    stderr_size = os.path.getsize(ag_test_suite_result.setup_stderr_filename)
+        stdout_size = os.path.getsize(ag_test_suite_result.setup_stdout_filename)
+        stderr_size = os.path.getsize(ag_test_suite_result.setup_stderr_filename)
 
-    ag_test_suite_result.setup_stdout_size = stdout_size
-    ag_test_suite_result.setup_stderr_size = stderr_size
+        ag_test_suite_result.setup_stdout_size = stdout_size
+        ag_test_suite_result.setup_stderr_size = stderr_size
+    else:
+        ag_test_suite_result.setup_stdout_size = 0
+        ag_test_suite_result.setup_stderr_size = 0
+
     ag_test_suite_result.save()
 
 
@@ -75,8 +81,8 @@ def migrate_mutation_test_suite_result_output(
     if (
         mutation_test_suite_result.setup_stdout_size is not None
         and mutation_test_suite_result.setup_stderr_size is not None
-        and mutation_test_suite_result.student_test_names_stdout_size is not None
-        and mutation_test_suite_result.student_test_names_stderr_size is not None
+        and mutation_test_suite_result.get_student_test_names_stdout_size is not None
+        and mutation_test_suite_result.get_student_test_names_stderr_size is not None
         and mutation_test_suite_result.validity_check_stdout_size is not None
         and mutation_test_suite_result.validity_check_stderr_size is not None
         and mutation_test_suite_result.grade_buggy_impls_stdout_size is not None
@@ -113,9 +119,9 @@ def migrate_mutation_test_suite_result_output(
         mutation_test_suite_result.setup_stderr_size = os.path.getsize(
             mutation_test_suite_result.old_setup_stderr_filename)
 
-    mutation_test_suite_result.student_test_names_stdout_size = os.path.getsize(
+    mutation_test_suite_result.get_student_test_names_stdout_size = os.path.getsize(
         mutation_test_suite_result.old_get_test_names_stdout_filename)
-    mutation_test_suite_result.student_test_names_stderr_size = os.path.getsize(
+    mutation_test_suite_result.get_student_test_names_stderr_size = os.path.getsize(
         mutation_test_suite_result.old_get_test_names_stderr_filename)
 
     mutation_test_suite_result.validity_check_stdout_size = os.path.getsize(
@@ -140,6 +146,8 @@ def _compress_output_file(output_filename: str, new_filename: str | None = None)
     # COMPRESSED_OUTPUT_SUFFIX already appended
     if new_filename is None:
         new_filename = output_filename + COMPRESSED_OUTPUT_SUFFIX
+
+    Path(new_filename).parent.mkdir(parents=True, exist_ok=True)
 
     with (open(output_filename, 'rb') as from_file,
             gzip.open(new_filename, 'wb') as to_file):

@@ -195,7 +195,7 @@ class MutationTestSuiteResult(AutograderModel):
         """
     )
 
-    student_test_names_stdout_size = models.IntegerField(
+    get_student_test_names_stdout_size = models.IntegerField(
         blank=True, null=True, default=None,
         help_text="""The size in bytes of the student test name discovery command's stdout.
             None indicates:
@@ -209,7 +209,7 @@ class MutationTestSuiteResult(AutograderModel):
             When zero, there will be NO ACTUAL FILE stored in the filesystem
         """
     )
-    student_test_names_stderr_size = models.IntegerField(
+    get_student_test_names_stderr_size = models.IntegerField(
         blank=True, null=True, default=None,
         help_text="""The size in bytes of the student test name discovery command's stderr.
             None indicates:
@@ -477,7 +477,7 @@ class MutationTestSuiteResult(AutograderModel):
 
             return (
                 Path(self._mutation_test_suite_result.get_test_names_stdout_filename)
-                if self._mutation_test_suite_result.student_test_names_stdout_size is not None
+                if self._mutation_test_suite_result.get_student_test_names_stdout_size is not None
                 else Path(self._mutation_test_suite_result.old_get_test_names_stdout_filename)
             )
 
@@ -486,7 +486,7 @@ class MutationTestSuiteResult(AutograderModel):
             if not self._fdbk.show_get_test_names_stdout:
                 return None
 
-            size = self._mutation_test_suite_result.student_test_names_stdout_size
+            size = self._mutation_test_suite_result.get_student_test_names_stdout_size
             return (
                 MigratedOutputSize(size) if size is not None
                 else os.path.getsize(
@@ -501,7 +501,7 @@ class MutationTestSuiteResult(AutograderModel):
 
             return (
                 Path(self._mutation_test_suite_result.get_test_names_stderr_filename)
-                if self._mutation_test_suite_result.student_test_names_stderr_size is not None
+                if self._mutation_test_suite_result.get_student_test_names_stderr_size is not None
                 else Path(self._mutation_test_suite_result.old_get_test_names_stderr_filename)
             )
 
@@ -510,7 +510,7 @@ class MutationTestSuiteResult(AutograderModel):
             if not self._fdbk.show_get_test_names_stderr:
                 return None
 
-            size = self._mutation_test_suite_result.student_test_names_stderr_size
+            size = self._mutation_test_suite_result.get_student_test_names_stderr_size
             return (
                 MigratedOutputSize(size) if size is not None
                 else os.path.getsize(

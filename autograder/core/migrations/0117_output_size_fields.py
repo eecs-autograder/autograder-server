@@ -52,12 +52,12 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='mutationtestsuiteresult',
-            name='student_test_names_stderr_size',
+            name='get_student_test_names_stderr_size',
             field=models.IntegerField(blank=True, default=None, help_text="The size in bytes of the student test name discovery command's stderr. None indicates:\n            - The 2025.08.0 output storage compression hasn't been applied to this object\n              (i.e., the output is uncompressed)\n            - The output size should be retrieved from the filesystem\n\n            When non-None, stores the size in bytes of the output and indicates\n            that the output is compressed using LZMA: https://docs.python.org/3/library/gzip.html\n\n            When zero, there will be NO ACTUAL FILE stored in the filesystem\n        ", null=True),
         ),
         migrations.AddField(
             model_name='mutationtestsuiteresult',
-            name='student_test_names_stdout_size',
+            name='get_student_test_names_stdout_size',
             field=models.IntegerField(blank=True, default=None, help_text="The size in bytes of the student test name discovery command's stdout. None indicates:\n            - The 2025.08.0 output storage compression hasn't been applied to this object\n              (i.e., the output is uncompressed)\n            - The output size should be retrieved from the filesystem\n\n            When non-None, stores the size in bytes of the output and indicates\n            that the output is compressed using LZMA: https://docs.python.org/3/library/gzip.html\n\n            When zero, there will be NO ACTUAL FILE stored in the filesystem\n        ", null=True),
         ),
         migrations.AddField(

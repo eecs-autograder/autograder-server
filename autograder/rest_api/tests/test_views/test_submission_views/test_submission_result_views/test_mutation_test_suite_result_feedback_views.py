@@ -239,7 +239,7 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
 
     @tag('output_migration')
     def test_get_test_names_stdout_empty(self) -> None:
-        self.mutation_suite_result.student_test_names_stdout_size = 0
+        self.mutation_suite_result.get_student_test_names_stdout_size = 0
         self.mutation_suite_result.save()
 
         self.do_get_output_test(
@@ -249,7 +249,7 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
 
     @tag('output_migration')
     def test_get_test_names_stderr_empty(self) -> None:
-        self.mutation_suite_result.student_test_names_stderr_size = 0
+        self.mutation_suite_result.get_student_test_names_stderr_size = 0
         self.mutation_suite_result.save()
 
         self.do_get_output_test(
@@ -438,14 +438,14 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
 
     @tag('output_migration')
     def test_get_student_test_names_stdout_size_empty(self):
-        self.mutation_suite_result.student_test_names_stdout_size = 0
+        self.mutation_suite_result.get_student_test_names_stdout_size = 0
         self.mutation_suite_result.save()
 
         self.do_output_size_empty_test('get_student_test_names_stdout_size')
 
     @tag('output_migration')
     def test_get_student_test_names_stderr_size_empty(self):
-        self.mutation_suite_result.student_test_names_stderr_size = 0
+        self.mutation_suite_result.get_student_test_names_stderr_size = 0
         self.mutation_suite_result.save()
 
         self.do_output_size_empty_test('get_student_test_names_stderr_size')

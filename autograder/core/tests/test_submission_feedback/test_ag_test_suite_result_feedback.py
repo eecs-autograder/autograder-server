@@ -3,6 +3,7 @@ import os
 import shutil
 from tkinter import N
 from unittest import mock
+from wsgiref.headers import tspecials
 
 from django.test import tag
 
@@ -290,6 +291,8 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.ag_test_suite_result.setup_return_code = 0
         self.ag_test_suite_result.save()
 
+        self.assertTrue(self.ag_test_suite_result.has_setup_result)
+
         original_stdout_filename = self.ag_test_suite_result.setup_stdout_filename
         original_stderr_filename = self.ag_test_suite_result.setup_stderr_filename
 
@@ -336,6 +339,27 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
             original_stdout_filename, self.ag_test_suite_result.setup_stdout_filename)
         self.assertNotEqual(
             original_stderr_filename, self.ag_test_suite_result.setup_stderr_filename)
+
+    @tag('output_migration')
+    def test_migrate_output_no_setup_command(self) -> None:
+        self.ag_test_suite_result.setup_return_code = None
+        self.ag_test_suite_result.setup_timed_out = False
+
+        self.assertFalse(self.ag_test_suite_result.has_setup_result)
+
+        # Simulate scenario where suite ran with no setup
+        shutil.move(self.ag_test_suite_result.setup_stdout_filename,
+                    self.ag_test_suite_result.setup_stdout_filename + '_deleted')
+        shutil.move(self.ag_test_suite_result.setup_stderr_filename,
+                    self.ag_test_suite_result.setup_stderr_filename + '_deleted')
+
+        migrate_ag_test_suite_result_output(self.ag_test_suite_result)
+
+        self.assertEqual(0, self.ag_test_suite_result.setup_stdout_size)
+        self.assertEqual(0, self.ag_test_suite_result.setup_stderr_size)
+
+        self.assertFalse(os.path.exists(self.ag_test_suite_result.setup_stdout_filename))
+        self.assertFalse(os.path.exists(self.ag_test_suite_result.setup_stderr_filename))
 
     def test_show_setup_name_with_return_code_non_null_and_timed_out_false(self) -> None:
         self.ag_test_suite.validate_and_update(

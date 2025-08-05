@@ -39,6 +39,10 @@ class AGTestSuiteResult(AutograderModel):
         blank=True, default=False, help_text="Whether the setup command's stderr was truncated")
 
     @property
+    def has_setup_result(self) -> bool:
+        return self.setup_return_code is not None or self.setup_timed_out
+
+    @property
     def setup_stdout_filename(self) -> str:
         filename = os.path.join(
             core_ut.get_result_output_dir(self.submission),
