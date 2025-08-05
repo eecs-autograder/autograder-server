@@ -11,7 +11,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from autograder.core.migrate_output.migrate_output import (
+from autograder.core.migrate_output import (
     migrate_ag_test_command_result_output, migrate_ag_test_suite_result_output)
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -269,8 +269,6 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
 
             if expected is None or not fdbk.fdbk_conf.visible:
                 self.assertIsNone(response.data)
-            elif len(expected) == 0 and migrate_output and update_denormalization:
-                self.assertEqual('', response.data)
             else:
                 self.assertEqual(expected, b''.join(response.streaming_content))
 
@@ -522,8 +520,6 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
 
             if expected is None or not fdbk.fdbk_conf.visible:
                 self.assertIsNone(response.data)
-            elif len(expected) == 0 and migrate_output and update_denormalization:
-                self.assertEqual('', response.data)
             else:
                 self.assertEqual(expected, b''.join(response.streaming_content))
 

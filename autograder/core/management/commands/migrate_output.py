@@ -4,7 +4,7 @@ import sys
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from autograder.core.migrate_output.migrate_output import (
+from autograder.core.migrate_output import (
     migrate_ag_test_command_result_output,
     migrate_ag_test_suite_result_output,
     migrate_mutation_test_suite_result_output

@@ -14,7 +14,6 @@ from django.db import transaction
 from django.db.models import Prefetch
 from django.utils.functional import cached_property
 
-from autograder.core.migrate_output.migrated_output_size import MigratedOutputSize
 from autograder.core.models import (AGTestCommandResult, MutationTestSuiteResult, Submission,
                                     CustomScoringSource, CustomScoringError)
 from autograder.core.models.ag_model_base import ToDictMixin
@@ -734,7 +733,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
             return None
 
         return (
-            MigratedOutputSize(self._ag_test_suite_result.setup_stdout_size)
+            self._ag_test_suite_result.setup_stdout_size
             if self._ag_test_suite_result.setup_stdout_size is not None
             else os.path.getsize(self._ag_test_suite_result.setup_stdout_filename)
         )
@@ -759,7 +758,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
             return None
 
         return (
-            MigratedOutputSize(self._ag_test_suite_result.setup_stderr_size)
+            self._ag_test_suite_result.setup_stderr_size
             if self._ag_test_suite_result.setup_stderr_size is not None
             else os.path.getsize(self._ag_test_suite_result.setup_stderr_filename)
         )
@@ -1136,7 +1135,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
             return None
 
         return (
-            MigratedOutputSize(self._ag_test_command_result.stdout_size)
+            self._ag_test_command_result.stdout_size
             if self._ag_test_command_result.stdout_size is not None
             else os.path.getsize(self._ag_test_command_result.stdout_filename)
         )
@@ -1242,7 +1241,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
             return None
 
         return (
-            MigratedOutputSize(self._ag_test_command_result.stderr_size)
+            self._ag_test_command_result.stderr_size
             if self._ag_test_command_result.stderr_size is not None
             else os.path.getsize(self._ag_test_command_result.stderr_filename)
         )

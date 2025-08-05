@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, BinaryIO, Callable, Optional
 
+from django.http import FileResponse
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from rest_framework import response
 
-from autograder.core.migrate_output.migrated_output_size import MigratedOutputSize
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.rest_api.permissions as ag_permissions
@@ -217,10 +218,10 @@ def _get_setup_output(
     if path is None:
         return response.Response(None)
 
-    if size == 0 and isinstance(size, MigratedOutputSize):
-        return response.Response('')
+    if size == 0:
+        return FileResponse(os.devnull)
 
-    return serve_file(path, is_migrated=isinstance(size, MigratedOutputSize))
+    return serve_file(path)
 
 
 def _find_ag_suite_result(submission_fdbk: SubmissionResultFeedback,
@@ -343,10 +344,10 @@ def _get_cmd_result_output(
     if path is None:
         return response.Response(None)
 
-    if size == 0 and isinstance(size, MigratedOutputSize):
-        return response.Response('')
+    if size == 0:
+        return FileResponse(os.devnull)
 
-    return serve_file(path, is_migrated=isinstance(size, MigratedOutputSize))
+    return serve_file(path)
 
 
 class _DiffViewSchema(CustomViewSchema):
@@ -664,10 +665,10 @@ def _get_mutation_suite_result_output_field(
     if path is None:
         return response.Response(None)
 
-    if size == 0 and isinstance(size, MigratedOutputSize):
-        return response.Response('')
+    if size == 0:
+        return FileResponse(os.devnull)
 
-    return serve_file(path, is_migrated=isinstance(size, MigratedOutputSize))
+    return serve_file(path)
 
 
 def _find_mutation_suite_result(

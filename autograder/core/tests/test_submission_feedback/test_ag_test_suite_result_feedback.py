@@ -7,7 +7,7 @@ from wsgiref.headers import tspecials
 
 from django.test import tag
 
-from autograder.core.migrate_output.migrate_output import migrate_ag_test_suite_result_output
+from autograder.core.migrate_output import migrate_ag_test_suite_result_output
 import autograder.core.models as ag_models
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_suite_fdbk, get_case_fdbk, get_cmd_fdbk)

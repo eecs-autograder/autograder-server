@@ -7,7 +7,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from autograder.core.migrate_output.migrate_output import migrate_mutation_test_suite_result_output
+from autograder.core.migrate_output import migrate_mutation_test_suite_result_output
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.submission_feedback import MutationTestSuitePreLoader

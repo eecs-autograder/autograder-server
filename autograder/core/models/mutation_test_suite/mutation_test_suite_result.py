@@ -3,12 +3,11 @@ from __future__ import annotations
 import os
 from decimal import Decimal
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
 from django.contrib.postgres import fields as pg_fields
 from django.db import models
 
-from autograder.core.migrate_output.migrated_output_size import MigratedOutputSize
 import autograder.core.utils as core_ut
 from autograder.core.constants import COMPRESSED_OUTPUT_SUFFIX, MAX_CHAR_FIELD_LEN
 
@@ -392,7 +391,7 @@ class MutationTestSuiteResult(AutograderModel):
                 return None
 
             if (size := self._mutation_test_suite_result.setup_stdout_size) is not None:
-                return MigratedOutputSize(size)
+                return size
 
             old_path = self._mutation_test_suite_result.old_setup_stdout_filename
             assert old_path is not None
@@ -423,7 +422,7 @@ class MutationTestSuiteResult(AutograderModel):
                 return None
 
             if (size := self._mutation_test_suite_result.setup_stderr_size) is not None:
-                return MigratedOutputSize(size)
+                return size
 
             old_path = self._mutation_test_suite_result.old_setup_stderr_filename
             assert old_path is not None
@@ -488,7 +487,7 @@ class MutationTestSuiteResult(AutograderModel):
 
             size = self._mutation_test_suite_result.get_student_test_names_stdout_size
             return (
-                MigratedOutputSize(size) if size is not None
+                size if size is not None
                 else os.path.getsize(
                     self._mutation_test_suite_result.old_get_test_names_stdout_filename
                 )
@@ -512,7 +511,7 @@ class MutationTestSuiteResult(AutograderModel):
 
             size = self._mutation_test_suite_result.get_student_test_names_stderr_size
             return (
-                MigratedOutputSize(size) if size is not None
+                size if size is not None
                 else os.path.getsize(
                     self._mutation_test_suite_result.old_get_test_names_stderr_filename
                 )
@@ -558,7 +557,7 @@ class MutationTestSuiteResult(AutograderModel):
 
             size = self._mutation_test_suite_result.validity_check_stdout_size
             return (
-                MigratedOutputSize(size) if size is not None
+                size if size is not None
                 else os.path.getsize(
                     self._mutation_test_suite_result.validity_check_stdout_filename
                 )
@@ -583,7 +582,7 @@ class MutationTestSuiteResult(AutograderModel):
 
             size = self._mutation_test_suite_result.validity_check_stderr_size
             return (
-                MigratedOutputSize(size) if size is not None
+                size if size is not None
                 else os.path.getsize(
                     self._mutation_test_suite_result.validity_check_stderr_filename
                 )
@@ -608,7 +607,7 @@ class MutationTestSuiteResult(AutograderModel):
 
             size = self._mutation_test_suite_result.grade_buggy_impls_stdout_size
             return (
-                MigratedOutputSize(size) if size is not None
+                size if size is not None
                 else os.path.getsize(
                     self._mutation_test_suite_result.grade_buggy_impls_stdout_filename
                 )
@@ -633,7 +632,7 @@ class MutationTestSuiteResult(AutograderModel):
 
             size = self._mutation_test_suite_result.grade_buggy_impls_stderr_size
             return (
-                MigratedOutputSize(size) if size is not None
+                size if size is not None
                 else os.path.getsize(
                     self._mutation_test_suite_result.grade_buggy_impls_stderr_filename
                 )
