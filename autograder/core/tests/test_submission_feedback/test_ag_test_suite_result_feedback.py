@@ -1,9 +1,7 @@
 import gzip
 import os
 import shutil
-from tkinter import N
 from unittest import mock
-from wsgiref.headers import tspecials
 
 from django.test import tag
 
