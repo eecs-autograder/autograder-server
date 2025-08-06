@@ -66,6 +66,13 @@ class _SetUp(UnitTestBase):
 
 
 class AGTestSuiteOutputFeedbackTestCase(_SetUp):
+    def setUp(self):
+        super().setUp()
+        self.staff_ag_test_suite_result = (
+            self.staff_cmd_result.ag_test_case_result.ag_test_suite_result)
+        self.staff_ag_test_suite_result.setup_return_code = 0
+        self.staff_ag_test_suite_result.save()
+
     def test_get_suite_result_setup_output_visible(self):
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_stdout)
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_stderr)

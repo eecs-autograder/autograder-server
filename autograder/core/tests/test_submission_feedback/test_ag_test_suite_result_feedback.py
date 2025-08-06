@@ -285,6 +285,56 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
             self.assertEqual(setup_stderr, f.read().decode())
 
     @tag('output_migration')
+    def test_setup_output_migrated_setup_timed_out(self) -> None:
+        self.ag_test_suite_result.setup_return_code = None
+        self.ag_test_suite_result.setup_timed_out = True
+        self.ag_test_suite_result.save()
+
+        setup_stdout = 'onzx,cmntvoritaniretnrc'
+        setup_stderr = 'noirstnowufhtnoiesrtnoeflpnofiuetn'
+        with open(self.ag_test_suite_result.setup_stdout_filename, 'w') as f:
+            f.write(setup_stdout)
+        with open(self.ag_test_suite_result.setup_stderr_filename, 'w') as f:
+            f.write(setup_stderr)
+
+        # Before migration checks
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize)
+        ) as getsize:
+            actual_size = fdbk.setup_stdout_size
+            getsize.assert_called_once_with(self.ag_test_suite_result.setup_stdout_filename)
+            self.assertEqual(len(setup_stdout), actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.setup_stderr_size
+            getsize.assert_called_once_with(self.ag_test_suite_result.setup_stderr_filename)
+            self.assertEqual(len(setup_stderr), actual_size)
+
+        with open(fdbk.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(setup_stdout, f.read().decode())
+        with open(fdbk.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(setup_stderr, f.read().decode())
+
+        migrate_ag_test_suite_result_output(self.ag_test_suite_result)
+
+        # After migration checks
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
+        with mock.patch(
+            'autograder.core.models.ag_test.ag_test_suite_result.os.path.getsize'
+        ) as getsize:
+            self.assertEqual(len(setup_stdout), fdbk.setup_stdout_size)
+            self.assertEqual(len(setup_stderr), fdbk.setup_stderr_size)
+            getsize.assert_not_called()
+
+        with gzip.open(fdbk.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(setup_stdout, f.read().decode())
+        with gzip.open(fdbk.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(setup_stderr, f.read().decode())
+
+    @tag('output_migration')
     def test_setup_output_empty_migrated(self) -> None:
         self.ag_test_suite_result.setup_return_code = 0
         self.ag_test_suite_result.save()
@@ -340,6 +390,11 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
 
     @tag('output_migration')
     def test_migrate_output_no_setup_command(self) -> None:
+        with open(self.ag_test_suite_result.setup_stdout_filename, 'w') as f:
+            f.write('noirestanoiresatonrest')
+        with open(self.ag_test_suite_result.setup_stderr_filename, 'w') as f:
+            f.write('noirestanoiresatonrest')
+
         self.ag_test_suite_result.setup_return_code = None
         self.ag_test_suite_result.setup_timed_out = False
 
