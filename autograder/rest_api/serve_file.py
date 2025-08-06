@@ -35,6 +35,6 @@ def serve_file(
         # become the default. Some output (e.g., image buliding)
         # is still not compressed.
         try:
-            return FileResponse(gzip.open(path), content_type=content_type)
+            return FileResponse(gzip.open(path, 'rb'), content_type=content_type)
         except gzip.BadGzipFile:
-            return FileResponse(open(path), content_type=content_type)
+            return FileResponse(open(path, 'rb'), content_type=content_type)
