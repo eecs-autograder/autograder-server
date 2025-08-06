@@ -219,7 +219,7 @@ def _get_setup_output(
         return response.Response(None)
 
     if size == 0:
-        return FileResponse(os.devnull)
+        return FileResponse(open(os.devnull, 'rb'))
 
     return serve_file(path)
 
@@ -345,7 +345,7 @@ def _get_cmd_result_output(
         return response.Response(None)
 
     if size == 0:
-        return FileResponse(os.devnull)
+        return FileResponse(open(os.devnull, 'rb'))
 
     return serve_file(path)
 
@@ -666,7 +666,7 @@ def _get_mutation_suite_result_output_field(
         return response.Response(None)
 
     if size == 0:
-        return FileResponse(os.devnull)
+        return FileResponse(open(os.devnull, 'rb'))
 
     return serve_file(path)
 

@@ -566,8 +566,6 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
 
         if expected_output is None:
             self.assertIsNone(response.data)
-        elif expected_output == '':
-            self.assertEqual(expected_output, response.data)
         else:
             self.assertEqual(expected_output,
                              ''.join((chunk.decode() for chunk in response.streaming_content)))
