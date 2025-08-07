@@ -1,4 +1,4 @@
-autograder-sandbox==6.0.0a4
+autograder-sandbox==6.0.*
 celery<5.0.0
 django-extensions
 django-redis
