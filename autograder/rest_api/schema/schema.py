@@ -34,7 +34,7 @@ class AGSchemaGenerator(SchemaGenerator):
 
 ### Authenticating
 To obtain an API token linked to your account, visit
-[https://autograder.io/web/\\_\\_apitoken\\_\\_](https://autograder.io/web/__apitoken__).
+the [token download page](../web/__apitoken__).
 After you've logged in, you will automatically be prompted to download
 a text file containing the token. If you are using a custom
 deployment of autograder.io, replace "autograder.io" in the
