@@ -10,7 +10,7 @@ asgiref==3.9.1
     # via django
 attrs==20.3.0
     # via jsonschema
-autograder-sandbox==6.0.0a4
+autograder-sandbox==6.0.0
     # via -r requirements.in
 backcall==0.2.0
     # via ipython
