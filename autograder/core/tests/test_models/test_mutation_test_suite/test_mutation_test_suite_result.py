@@ -1,6 +1,12 @@
 import decimal
+import gzip
 import os
+import shutil
+from unittest import mock
 
+from django.test import tag
+
+from autograder.core.migrate_output import migrate_mutation_test_suite_result_output
 import autograder.core.models as ag_models
 from autograder.core.submission_feedback import MutationTestSuitePreLoader
 from autograder.utils.testing import UnitTestBase
@@ -30,6 +36,16 @@ class MutationTestSuiteResultTestCase(UnitTestBase):
         self.assertSequenceEqual([], result.bugs_exposed)
         self.assertIsNone(result.setup_result)
         self.assertIsInstance(result.get_test_names_result, ag_models.AGCommandResult)
+
+        # In a future version, we'll initialize these to zero instead
+        self.assertIsNone(result.setup_stdout_size)
+        self.assertIsNone(result.setup_stderr_size)
+        self.assertIsNone(result.get_student_test_names_stdout_size)
+        self.assertIsNone(result.get_student_test_names_stderr_size)
+        self.assertIsNone(result.validity_check_stdout_size)
+        self.assertIsNone(result.validity_check_stderr_size)
+        self.assertIsNone(result.grade_buggy_impls_stdout_size)
+        self.assertIsNone(result.grade_buggy_impls_stderr_size)
 
     def test_output_filenames(self):
         result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
@@ -77,18 +93,13 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.setup_stdout = 'adskfja;nrstslekjaf'
         self.setup_stderr = 'amnak;sdjvaie'
         self.validity_check_stdout = 'aasdf'
-        self.validity_check_stderr = 'lknrstjll'
+        self.validity_check_stderr = 'lknrstjllnoiwfepaonwiefpanrpnrosip'
         self.grade_buggy_impls_stdout = 'aoenrstnrtsnwij'
         self.grade_buggy_impls_stderr = 'cvasdop;f'
 
         self.setup_result = ag_models.AGCommandResult.objects.validate_and_create(
             return_code=0
         )  # type: ag_models.AGCommandResult
-
-        with open(self.setup_result.stdout_filename, 'w') as f:
-            f.write(self.setup_stdout)
-        with open(self.setup_result.stderr_filename, 'w') as f:
-            f.write(self.setup_stderr)
 
         self.valid_tests = ['test{}'.format(i) for i in range(3)]
         self.invalid_tests = ['bad{}'.format(i) for i in range(4)]
@@ -102,10 +113,6 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.get_test_names_result = ag_models.AGCommandResult.objects.validate_and_create(
             return_code=self.get_test_names_return_code
         )  # type: ag_models.AGCommandResult
-        with open(self.get_test_names_result.stdout_filename, 'w') as f:
-            f.write(self.get_test_names_stdout)
-        with open(self.get_test_names_result.stderr_filename, 'w') as f:
-            f.write(self.get_test_names_stderr)
 
         self.bugs_exposed = self.bug_names
         self.points_awarded = len(self.bugs_exposed) * self.points_per_exposed_bug
@@ -119,6 +126,16 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
             setup_result=self.setup_result,
             get_test_names_result=self.get_test_names_result
         )  # type: ag_models.MutationTestSuiteResult
+
+        with open(self.result.old_setup_stdout_filename, 'w') as f:
+            f.write(self.setup_stdout)
+        with open(self.result.old_setup_stderr_filename, 'w') as f:
+            f.write(self.setup_stderr)
+
+        with open(self.result.old_get_test_names_stdout_filename, 'w') as f:
+            f.write(self.get_test_names_stdout)
+        with open(self.result.old_get_test_names_stderr_filename, 'w') as f:
+            f.write(self.get_test_names_stderr)
 
         with open(self.result.validity_check_stdout_filename, 'w') as f:
             f.write(self.validity_check_stdout)
@@ -317,30 +334,32 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertEqual(self.setup_stdout, fdbk.setup_stdout.read().decode())
-        self.assertEqual(len(self.setup_stdout), fdbk.get_setup_stdout_size())
+        with open(fdbk.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(self.setup_stdout, f.read().decode())
+        self.assertEqual(len(self.setup_stdout), fdbk.setup_stdout_size)
 
         self.mutation_suite.validate_and_update(normal_fdbk_config={'show_setup_stdout': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertIsNone(fdbk.setup_stdout)
-        self.assertIsNone(fdbk.get_setup_stdout_size())
+        self.assertIsNone(fdbk.setup_stdout_filename)
+        self.assertIsNone(fdbk.setup_stdout_size)
 
     def test_show_and_hide_setup_stderr(self):
         self.mutation_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': True})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertEqual(self.setup_stderr, fdbk.setup_stderr.read().decode())
-        self.assertEqual(len(self.setup_stderr), fdbk.get_setup_stderr_size())
+        with open(fdbk.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(self.setup_stderr, f.read().decode())
+        self.assertEqual(len(self.setup_stderr), fdbk.setup_stderr_size)
 
         self.mutation_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertIsNone(fdbk.setup_stderr)
-        self.assertIsNone(fdbk.get_setup_stderr_size())
+        self.assertIsNone(fdbk.setup_stderr_filename)
+        self.assertIsNone(fdbk.setup_stderr_size)
 
     def test_show_setup_stdout_and_stderr_with_setup_result_but_no_setup_cmd(self):
         self.mutation_suite.validate_and_update(use_setup_command=False)
@@ -349,10 +368,12 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertEqual(self.setup_stdout, fdbk.setup_stdout.read().decode())
-        self.assertEqual(len(self.setup_stdout), fdbk.get_setup_stdout_size())
-        self.assertEqual(self.setup_stderr, fdbk.setup_stderr.read().decode())
-        self.assertEqual(len(self.setup_stderr), fdbk.get_setup_stderr_size())
+        with open(fdbk.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(self.setup_stdout, f.read().decode())
+        self.assertEqual(len(self.setup_stdout), fdbk.setup_stdout_size)
+        with open(fdbk.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(self.setup_stderr, f.read().decode())
+        self.assertEqual(len(self.setup_stderr), fdbk.setup_stderr_size)
 
     def test_show_setup_stdout_and_stderr_with_setup_cmd_but_no_setup_result(self):
         self.assertIsNotNone(self.mutation_suite.setup_command)
@@ -364,10 +385,174 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertIsNone(fdbk.setup_stdout)
-        self.assertIsNone(fdbk.get_setup_stderr_size())
-        self.assertIsNone(fdbk.setup_stderr)
-        self.assertIsNone(fdbk.get_setup_stderr_size())
+        self.assertIsNone(fdbk.setup_stdout_filename)
+        self.assertIsNone(fdbk.setup_stderr_size)
+        self.assertIsNone(fdbk.setup_stderr_filename)
+        self.assertIsNone(fdbk.setup_stderr_size)
+
+    @tag('output_migration')
+    def test_output_migration_no_setup(self) -> None:
+        self.mutation_suite.use_setup_command = False
+        self.mutation_suite.save()
+
+        shutil.move(self.result.old_setup_stdout_filename,
+                    self.result.old_setup_stdout_filename + '_deleted')
+        shutil.move(self.result.old_setup_stderr_filename,
+                    self.result.old_setup_stderr_filename + '_deleted')
+        self.result.setup_result = None
+        self.result.save()
+
+        migrate_mutation_test_suite_result_output(self.result)
+
+        # Sanity check that the rest of the migration worked
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
+        ) as getsize:
+            self.assertEqual(len(self.validity_check_stdout), fdbk.validity_check_stdout_size)
+            self.assertEqual(len(self.validity_check_stderr), fdbk.validity_check_stderr_size)
+            getsize.assert_not_called()
+
+        with gzip.open(fdbk.validity_check_stdout_filename, 'rb') as f:
+            self.assertEqual(self.validity_check_stdout, f.read().decode())
+        with gzip.open(fdbk.validity_check_stderr_filename, 'rb') as f:
+            self.assertEqual(self.validity_check_stderr, f.read().decode())
+
+    @tag('output_migration')
+    def test_output_migration_no_setup_edge_case(self) -> None:
+        self.mutation_suite.use_setup_command = False
+        self.mutation_suite.save()
+        self.result.setup_result = None
+        self.result.save()
+        # Don't delete the setup output, which can happen after a rerun
+
+        migrate_mutation_test_suite_result_output(self.result)
+
+        # Sanity check that the rest of the migration worked
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
+        ) as getsize:
+            self.assertEqual(len(self.validity_check_stdout), fdbk.validity_check_stdout_size)
+            self.assertEqual(len(self.validity_check_stderr), fdbk.validity_check_stderr_size)
+            getsize.assert_not_called()
+
+        with gzip.open(fdbk.validity_check_stdout_filename, 'rb') as f:
+            self.assertEqual(self.validity_check_stdout, f.read().decode())
+        with gzip.open(fdbk.validity_check_stderr_filename, 'rb') as f:
+            self.assertEqual(self.validity_check_stderr, f.read().decode())
+
+    @tag('output_migration')
+    def test_setup_output_migrated(self) -> None:
+        # Before migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize)
+        ) as getsize:
+            actual_size = fdbk.setup_stdout_size
+            getsize.assert_called_once_with(self.result.old_setup_stdout_filename)
+            self.assertEqual(len(self.setup_stdout), actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.setup_stderr_size
+            getsize.assert_called_once_with(self.result.old_setup_stderr_filename)
+            self.assertEqual(len(self.setup_stderr), actual_size)
+
+        with open(fdbk.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(self.setup_stdout, f.read().decode())
+        with open(fdbk.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(self.setup_stderr, f.read().decode())
+
+        migrate_mutation_test_suite_result_output(self.result)
+
+        self.assertNotEqual(
+            self.result.old_setup_stdout_filename, self.result.setup_stdout_filename)
+        self.assertNotEqual(
+            self.result.old_setup_stderr_filename, self.result.setup_stderr_filename)
+
+        # After migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+        ) as getsize:
+            self.assertEqual(
+                len(self.setup_stdout), fdbk.setup_stdout_size)
+            self.assertEqual(
+                len(self.setup_stderr), fdbk.setup_stderr_size)
+            getsize.assert_not_called()
+
+        with gzip.open(fdbk.setup_stdout_filename, 'rb') as f:
+            self.assertEqual(self.setup_stdout, f.read().decode())
+        with gzip.open(fdbk.setup_stderr_filename, 'rb') as f:
+            self.assertEqual(self.setup_stderr, f.read().decode())
+
+    @tag('output_migration')
+    def test_setup_output_empty_migrated(self) -> None:
+        # Set output files to empty
+        with open(self.result.old_setup_stdout_filename, 'w'):
+            pass
+        with open(self.result.old_setup_stderr_filename, 'w'):
+            pass
+
+        original_stdout_filename = self.result.old_setup_stdout_filename
+        original_stderr_filename = self.result.old_setup_stderr_filename
+
+        # Before migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize)
+        ) as getsize:
+            actual_size = fdbk.setup_stdout_size
+            getsize.assert_called_once_with(self.result.old_setup_stdout_filename)
+            self.assertEqual(0, actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.setup_stderr_size
+            getsize.assert_called_once_with(self.result.old_setup_stderr_filename)
+            self.assertEqual(0, actual_size)
+
+        with open(fdbk.setup_stdout_filename) as f:
+            self.assertEqual('', f.read())
+        with open(fdbk.setup_stderr_filename) as f:
+            self.assertEqual('', f.read())
+
+        migrate_mutation_test_suite_result_output(self.result)
+
+        # Simulate deleting the old files
+        shutil.move(original_stdout_filename, original_stdout_filename + '_deleted')
+        shutil.move(original_stderr_filename, original_stderr_filename + '_deleted')
+
+        # After migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+        ) as getsize:
+            self.assertEqual(0, fdbk.setup_stdout_size)
+            self.assertEqual(0, fdbk.setup_stderr_size)
+            getsize.assert_not_called()
+
+        self.assertFalse(os.path.exists(original_stdout_filename))
+        self.assertFalse(os.path.exists(original_stderr_filename))
+        self.assertFalse(os.path.exists(self.result.setup_stdout_filename))
+        self.assertFalse(os.path.exists(self.result.setup_stderr_filename))
 
     def test_show_and_hide_get_test_names_return_code(self):
         self.mutation_suite.validate_and_update(
@@ -395,18 +580,18 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertEqual(self.get_test_names_stdout,
-                         fdbk.get_student_test_names_stdout.read().decode())
+        with open(fdbk.get_student_test_names_stdout_filename) as f:
+            self.assertEqual(self.get_test_names_stdout, f.read())
         self.assertEqual(len(self.get_test_names_stdout),
-                         fdbk.get_student_test_names_stdout_size())
+                         fdbk.get_student_test_names_stdout_size)
 
         self.mutation_suite.validate_and_update(
             normal_fdbk_config={'show_get_test_names_stdout': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertIsNone(fdbk.get_student_test_names_stdout)
-        self.assertIsNone(fdbk.get_student_test_names_stdout_size())
+        self.assertIsNone(fdbk.get_student_test_names_stdout_filename)
+        self.assertIsNone(fdbk.get_student_test_names_stdout_size)
 
     def test_show_and_hide_get_test_names_stderr(self):
         self.mutation_suite.validate_and_update(
@@ -414,18 +599,127 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertEqual(self.get_test_names_stderr,
-                         fdbk.get_student_test_names_stderr.read().decode())
+        with open(fdbk.get_student_test_names_stderr_filename) as f:
+            self.assertEqual(self.get_test_names_stderr, f.read())
         self.assertEqual(len(self.get_test_names_stderr),
-                         fdbk.get_student_test_names_stderr_size())
+                         fdbk.get_student_test_names_stderr_size)
 
         self.mutation_suite.validate_and_update(
             normal_fdbk_config={'show_get_test_names_stderr': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertIsNone(fdbk.get_student_test_names_stderr)
-        self.assertIsNone(fdbk.get_student_test_names_stderr_size())
+        self.assertIsNone(fdbk.get_student_test_names_stderr_filename)
+        self.assertIsNone(fdbk.get_student_test_names_stderr_size)
+
+    @tag('output_migration')
+    def test_get_student_test_names_output_migrated(self) -> None:
+        # Before migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize)
+        ) as getsize:
+            actual_size = fdbk.get_student_test_names_stdout_size
+            getsize.assert_called_once_with(self.result.old_get_test_names_stdout_filename)
+            self.assertEqual(len(self.get_test_names_stdout), actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.get_student_test_names_stderr_size
+            getsize.assert_called_once_with(self.result.old_get_test_names_stderr_filename)
+            self.assertEqual(len(self.get_test_names_stderr), actual_size)
+
+        with open(fdbk.get_student_test_names_stdout_filename, 'rb') as f:
+            self.assertEqual(self.get_test_names_stdout, f.read().decode())
+        with open(fdbk.get_student_test_names_stderr_filename, 'rb') as f:
+            self.assertEqual(self.get_test_names_stderr, f.read().decode())
+
+        migrate_mutation_test_suite_result_output(self.result)
+
+        self.assertNotEqual(
+            self.result.old_get_test_names_stdout_filename,
+            self.result.get_test_names_stdout_filename)
+        self.assertNotEqual(
+            self.result.old_get_test_names_stderr_filename,
+            self.result.get_test_names_stderr_filename)
+
+        # After migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+        ) as getsize:
+            self.assertEqual(
+                len(self.get_test_names_stdout), fdbk.get_student_test_names_stdout_size)
+            self.assertEqual(
+                len(self.get_test_names_stderr), fdbk.get_student_test_names_stderr_size)
+            getsize.assert_not_called()
+
+        with gzip.open(fdbk.get_student_test_names_stdout_filename, 'rb') as f:
+            self.assertEqual(self.get_test_names_stdout, f.read().decode())
+        with gzip.open(fdbk.get_student_test_names_stderr_filename, 'rb') as f:
+            self.assertEqual(self.get_test_names_stderr, f.read().decode())
+
+    @tag('output_migration')
+    def test_get_student_test_names_output_empty_migrated(self) -> None:
+        # Set output files to empty
+        with open(self.result.old_get_test_names_stdout_filename, 'w'):
+            pass
+        with open(self.result.old_get_test_names_stderr_filename, 'w'):
+            pass
+
+        original_stdout_filename = self.result.old_get_test_names_stdout_filename
+        original_stderr_filename = self.result.old_get_test_names_stderr_filename
+
+        # Before migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
+        ) as getsize:
+            actual_size = fdbk.get_student_test_names_stdout_size
+            getsize.assert_called_once_with(self.result.old_get_test_names_stdout_filename)
+            self.assertEqual(0, actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.get_student_test_names_stderr_size
+            getsize.assert_called_once_with(self.result.old_get_test_names_stderr_filename)
+            self.assertEqual(0, actual_size)
+
+        with open(fdbk.get_student_test_names_stdout_filename) as f:
+            self.assertEqual('', f.read())
+        with open(fdbk.get_student_test_names_stderr_filename) as f:
+            self.assertEqual('', f.read())
+
+        migrate_mutation_test_suite_result_output(self.result)
+
+        # Simulate deleting the old files
+        shutil.move(original_stdout_filename, original_stdout_filename + '_deleted')
+        shutil.move(original_stderr_filename, original_stderr_filename + '_deleted')
+
+        # After migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
+        ) as getsize:
+            self.assertEqual(0, fdbk.get_student_test_names_stdout_size)
+            self.assertEqual(0, fdbk.get_student_test_names_stderr_size)
+            getsize.assert_not_called()
+
+        self.assertFalse(os.path.exists(original_stdout_filename))
+        self.assertFalse(os.path.exists(original_stderr_filename))
+        self.assertFalse(os.path.exists(self.result.get_test_names_stdout_filename))
+        self.assertFalse(os.path.exists(self.result.get_test_names_stderr_filename))
 
     def test_show_and_hide_validity_check_stdout(self):
         self.mutation_suite.validate_and_update(
@@ -433,16 +727,17 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertEqual(self.validity_check_stdout, fdbk.validity_check_stdout.read().decode())
-        self.assertEqual(len(self.validity_check_stdout), fdbk.get_validity_check_stdout_size())
+        with open(fdbk.validity_check_stdout_filename) as f:
+            self.assertEqual(self.validity_check_stdout, f.read())
+        self.assertEqual(len(self.validity_check_stdout), fdbk.validity_check_stdout_size)
 
         self.mutation_suite.validate_and_update(
             normal_fdbk_config={'show_validity_check_stdout': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertIsNone(fdbk.validity_check_stdout)
-        self.assertIsNone(fdbk.get_validity_check_stdout_size())
+        self.assertIsNone(fdbk.validity_check_stdout_filename)
+        self.assertIsNone(fdbk.validity_check_stdout_size)
 
     def test_show_and_hide_validity_check_stderr(self):
         self.mutation_suite.validate_and_update(
@@ -450,16 +745,118 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertEqual(self.validity_check_stderr, fdbk.validity_check_stderr.read().decode())
-        self.assertEqual(len(self.validity_check_stderr), fdbk.get_validity_check_stderr_size())
+        with open(fdbk.validity_check_stderr_filename) as f:
+            self.assertEqual(self.validity_check_stderr, f.read())
+        self.assertEqual(len(self.validity_check_stderr), fdbk.validity_check_stderr_size)
 
         self.mutation_suite.validate_and_update(
             normal_fdbk_config={'show_validity_check_stderr': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertIsNone(fdbk.validity_check_stderr)
-        self.assertIsNone(fdbk.get_validity_check_stdout_size())
+        self.assertIsNone(fdbk.validity_check_stderr_filename)
+        self.assertIsNone(fdbk.validity_check_stdout_size)
+
+    @tag('output_migration')
+    def test_validity_check_output_migrated(self) -> None:
+        # Before migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize)
+        ) as getsize:
+            actual_size = fdbk.validity_check_stdout_size
+            getsize.assert_called_once_with(self.result.validity_check_stdout_filename)
+            self.assertEqual(len(self.validity_check_stdout), actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.validity_check_stderr_size
+            getsize.assert_called_once_with(self.result.validity_check_stderr_filename)
+            self.assertEqual(len(self.validity_check_stderr), actual_size)
+
+        with open(fdbk.validity_check_stdout_filename, 'rb') as f:
+            self.assertEqual(self.validity_check_stdout, f.read().decode())
+        with open(fdbk.validity_check_stderr_filename, 'rb') as f:
+            self.assertEqual(self.validity_check_stderr, f.read().decode())
+
+        migrate_mutation_test_suite_result_output(self.result)
+
+        # After migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
+        ) as getsize:
+            self.assertEqual(len(self.validity_check_stdout), fdbk.validity_check_stdout_size)
+            self.assertEqual(len(self.validity_check_stderr), fdbk.validity_check_stderr_size)
+            getsize.assert_not_called()
+
+        with gzip.open(fdbk.validity_check_stdout_filename, 'rb') as f:
+            self.assertEqual(self.validity_check_stdout, f.read().decode())
+        with gzip.open(fdbk.validity_check_stderr_filename, 'rb') as f:
+            self.assertEqual(self.validity_check_stderr, f.read().decode())
+
+    @tag('output_migration')
+    def test_validity_check_output_empty_migrated(self) -> None:
+        # Set output files to empty
+        with open(self.result.validity_check_stdout_filename, 'w'):
+            pass
+        with open(self.result.validity_check_stderr_filename, 'w'):
+            pass
+
+        original_stdout_filename = self.result.validity_check_stdout_filename
+        original_stderr_filename = self.result.validity_check_stderr_filename
+
+        # Before migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
+        ) as getsize:
+            actual_size = fdbk.validity_check_stdout_size
+            getsize.assert_called_once_with(self.result.validity_check_stdout_filename)
+            self.assertEqual(0, actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.validity_check_stderr_size
+            getsize.assert_called_once_with(self.result.validity_check_stderr_filename)
+            self.assertEqual(0, actual_size)
+
+        with open(fdbk.validity_check_stdout_filename) as f:
+            self.assertEqual('', f.read())
+        with open(fdbk.validity_check_stderr_filename) as f:
+            self.assertEqual('', f.read())
+
+        migrate_mutation_test_suite_result_output(self.result)
+
+        # Simulate deleting the old files
+        shutil.move(original_stdout_filename, original_stdout_filename + '_deleted')
+        shutil.move(original_stderr_filename, original_stderr_filename + '_deleted')
+
+        # After migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
+        ) as getsize:
+            self.assertEqual(0, fdbk.validity_check_stdout_size)
+            self.assertEqual(0, fdbk.validity_check_stderr_size)
+            getsize.assert_not_called()
+
+        self.assertFalse(os.path.exists(original_stdout_filename))
+        self.assertFalse(os.path.exists(original_stderr_filename))
+        self.assertFalse(os.path.exists(self.result.validity_check_stdout_filename))
+        self.assertFalse(os.path.exists(self.result.validity_check_stderr_filename))
 
     def test_show_and_hide_grade_impl_stdout(self):
         self.mutation_suite.validate_and_update(
@@ -467,18 +864,18 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertEqual(self.grade_buggy_impls_stdout,
-                         fdbk.grade_buggy_impls_stdout.read().decode())
+        with open(fdbk.grade_buggy_impls_stdout_filename) as f:
+            self.assertEqual(self.grade_buggy_impls_stdout, f.read())
         self.assertEqual(len(self.grade_buggy_impls_stdout),
-                         fdbk.get_grade_buggy_impls_stdout_size())
+                         fdbk.grade_buggy_impls_stdout_size)
 
         self.mutation_suite.validate_and_update(
             normal_fdbk_config={'show_grade_buggy_impls_stdout': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertIsNone(fdbk.grade_buggy_impls_stdout)
-        self.assertIsNone(fdbk.get_grade_buggy_impls_stdout_size())
+        self.assertIsNone(fdbk.grade_buggy_impls_stdout_filename)
+        self.assertIsNone(fdbk.grade_buggy_impls_stdout_size)
 
     def test_show_and_hide_grade_impl_stderr(self):
         self.mutation_suite.validate_and_update(
@@ -486,18 +883,121 @@ class MutationTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertEqual(self.grade_buggy_impls_stderr,
-                         fdbk.grade_buggy_impls_stderr.read().decode())
+        with open(fdbk.grade_buggy_impls_stderr_filename) as f:
+            self.assertEqual(self.grade_buggy_impls_stderr, f.read())
         self.assertEqual(len(self.grade_buggy_impls_stderr),
-                         fdbk.get_grade_buggy_impls_stderr_size())
+                         fdbk.grade_buggy_impls_stderr_size)
 
         self.mutation_suite.validate_and_update(
             normal_fdbk_config={'show_grade_buggy_impls_stderr': False})
         fdbk = self.result.get_fdbk(
             ag_models.FeedbackCategory.normal,
             MutationTestSuitePreLoader(self.project))
-        self.assertIsNone(fdbk.grade_buggy_impls_stderr)
-        self.assertIsNone(fdbk.get_grade_buggy_impls_stderr_size())
+        self.assertIsNone(fdbk.grade_buggy_impls_stderr_filename)
+        self.assertIsNone(fdbk.grade_buggy_impls_stderr_size)
+
+    @tag('output_migration')
+    def test_grade_impl_output_migrated(self) -> None:
+        # Before migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize)
+        ) as getsize:
+            actual_size = fdbk.grade_buggy_impls_stdout_size
+            getsize.assert_called_once_with(self.result.grade_buggy_impls_stdout_filename)
+            self.assertEqual(len(self.grade_buggy_impls_stdout), actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.grade_buggy_impls_stderr_size
+            getsize.assert_called_once_with(self.result.grade_buggy_impls_stderr_filename)
+            self.assertEqual(len(self.grade_buggy_impls_stderr), actual_size)
+
+        with open(fdbk.grade_buggy_impls_stdout_filename, 'rb') as f:
+            self.assertEqual(self.grade_buggy_impls_stdout, f.read().decode())
+        with open(fdbk.grade_buggy_impls_stderr_filename, 'rb') as f:
+            self.assertEqual(self.grade_buggy_impls_stderr, f.read().decode())
+
+        migrate_mutation_test_suite_result_output(self.result)
+
+        # After migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
+        ) as getsize:
+            self.assertEqual(
+                len(self.grade_buggy_impls_stdout), fdbk.grade_buggy_impls_stdout_size)
+            self.assertEqual(
+                len(self.grade_buggy_impls_stderr), fdbk.grade_buggy_impls_stderr_size)
+            getsize.assert_not_called()
+
+        with gzip.open(fdbk.grade_buggy_impls_stdout_filename, 'rb') as f:
+            self.assertEqual(self.grade_buggy_impls_stdout, f.read().decode())
+        with gzip.open(fdbk.grade_buggy_impls_stderr_filename, 'rb') as f:
+            self.assertEqual(self.grade_buggy_impls_stderr, f.read().decode())
+
+    @tag('output_migration')
+    def test_grade_impl_output_empty_migrated(self) -> None:
+        # Set output files to empty
+        with open(self.result.grade_buggy_impls_stdout_filename, 'w'):
+            pass
+        with open(self.result.grade_buggy_impls_stderr_filename, 'w'):
+            pass
+
+        original_stdout_filename = self.result.grade_buggy_impls_stdout_filename
+        original_stderr_filename = self.result.grade_buggy_impls_stderr_filename
+
+        # Before migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
+        ) as getsize:
+            actual_size = fdbk.grade_buggy_impls_stdout_size
+            getsize.assert_called_once_with(self.result.grade_buggy_impls_stdout_filename)
+            self.assertEqual(0, actual_size)
+
+            getsize.reset_mock()
+
+            actual_size = fdbk.grade_buggy_impls_stderr_size
+            getsize.assert_called_once_with(self.result.grade_buggy_impls_stderr_filename)
+            self.assertEqual(0, actual_size)
+
+        with open(fdbk.grade_buggy_impls_stdout_filename) as f:
+            self.assertEqual('', f.read())
+        with open(fdbk.grade_buggy_impls_stderr_filename) as f:
+            self.assertEqual('', f.read())
+
+        migrate_mutation_test_suite_result_output(self.result)
+
+        # Simulate deleting the old files
+        shutil.move(original_stdout_filename, original_stdout_filename + '_deleted')
+        shutil.move(original_stderr_filename, original_stderr_filename + '_deleted')
+
+        # After migration checks
+        fdbk = self.result.get_fdbk(
+            ag_models.FeedbackCategory.max, MutationTestSuitePreLoader(self.project))
+        with mock.patch(
+            'autograder.core.models.mutation_test_suite'
+            '.mutation_test_suite_result.os.path.getsize',
+            new=mock.Mock(wraps=os.path.getsize),
+        ) as getsize:
+            self.assertEqual(0, fdbk.grade_buggy_impls_stdout_size)
+            self.assertEqual(0, fdbk.grade_buggy_impls_stderr_size)
+            getsize.assert_not_called()
+
+        self.assertFalse(os.path.exists(original_stdout_filename))
+        self.assertFalse(os.path.exists(original_stderr_filename))
+        self.assertFalse(os.path.exists(self.result.grade_buggy_impls_stdout_filename))
+        self.assertFalse(os.path.exists(self.result.grade_buggy_impls_stderr_filename))
 
     def test_show_and_hide_invalid_and_timed_out_test_names(self):
         self.mutation_suite.validate_and_update(

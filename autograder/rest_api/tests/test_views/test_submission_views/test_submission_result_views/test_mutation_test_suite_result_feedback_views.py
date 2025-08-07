@@ -2,11 +2,12 @@ from pathlib import Path
 
 from django.conf import settings
 from django.http import QueryDict
-from django.test.utils import override_settings
+from django.test.utils import override_settings, tag
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from autograder.core.migrate_output import migrate_mutation_test_suite_result_output
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.submission_feedback import MutationTestSuitePreLoader
@@ -46,18 +47,10 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
         setup_result = ag_models.AGCommandResult.objects.validate_and_create(
             return_code=0
         )  # type: ag_models.AGCommandResult
-        with open(setup_result.stdout_filename, 'w') as f:
-            f.write(self.setup_stdout)
-        with open(setup_result.stderr_filename, 'w') as f:
-            f.write(self.setup_stderr)
 
         get_test_names_result = ag_models.AGCommandResult.objects.validate_and_create(
             return_code=0
         )  # type: ag_models.AGCommandResult
-        with open(get_test_names_result.stdout_filename, 'w') as f:
-            f.write(self.get_test_names_stdout)
-        with open(get_test_names_result.stderr_filename, 'w') as f:
-            f.write(self.get_test_names_stderr)
 
         student_tests = ['test{}'.format(i) for i in range(5)]
         self.mutation_suite_result = ag_models.MutationTestSuiteResult.objects.validate_and_create(
@@ -71,10 +64,21 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
             get_test_names_result=get_test_names_result
         )  # type: ag_models.MutationTestSuiteResult
 
+        with open(self.mutation_suite_result.old_setup_stdout_filename, 'w') as f:
+            f.write(self.setup_stdout)
+        with open(self.mutation_suite_result.old_setup_stderr_filename, 'w') as f:
+            f.write(self.setup_stderr)
+
+        with open(self.mutation_suite_result.old_get_test_names_stdout_filename, 'w') as f:
+            f.write(self.get_test_names_stdout)
+        with open(self.mutation_suite_result.old_get_test_names_stderr_filename, 'w') as f:
+            f.write(self.get_test_names_stderr)
+
         with open(self.mutation_suite_result.validity_check_stdout_filename, 'w') as f:
             f.write(self.validity_check_stdout)
         with open(self.mutation_suite_result.validity_check_stderr_filename, 'w') as f:
             f.write(self.validity_check_stderr)
+
         with open(self.mutation_suite_result.grade_buggy_impls_stdout_filename, 'w') as f:
             f.write(self.buggy_impls_stdout)
         with open(self.mutation_suite_result.grade_buggy_impls_stderr_filename, 'w') as f:
@@ -159,6 +163,18 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
             self.client, self.admin, ag_models.FeedbackCategory.normal,
             status.HTTP_200_OK, None, self.setup_stderr_base_url)
 
+    @tag('output_migration')
+    def test_get_setup_output_migrated(self) -> None:
+        migrate_mutation_test_suite_result_output(self.mutation_suite_result)
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.setup_stdout, self.setup_stdout_base_url)
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.setup_stderr, self.setup_stderr_base_url)
+
     def test_get_setup_output_no_setup_cmd(self):
         self.mutation_suite.validate_and_update(use_setup_command=False)
         self.mutation_suite_result.setup_result = None
@@ -171,6 +187,26 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
         self.do_get_output_test(
             self.client, self.admin, ag_models.FeedbackCategory.max,
             status.HTTP_200_OK, None, self.setup_stderr_base_url)
+
+    @tag('output_migration')
+    def test_setup_stdout_empty(self) -> None:
+        self.mutation_suite_result.setup_stdout_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, '', self.setup_stdout_base_url
+        )
+
+    @tag('output_migration')
+    def test_setup_stderr_empty(self) -> None:
+        self.mutation_suite_result.setup_stderr_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, '', self.setup_stderr_base_url
+        )
 
     def test_get_get_test_names_result_output(self):
         self.do_get_output_test(
@@ -189,6 +225,38 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
             self.client, self.admin, ag_models.FeedbackCategory.normal,
             status.HTTP_200_OK, None, self.get_test_names_stderr_base_url)
 
+    @tag('output_migration')
+    def test_get_get_test_names_output_migrated(self) -> None:
+        migrate_mutation_test_suite_result_output(self.mutation_suite_result)
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.get_test_names_stdout, self.get_test_names_stdout_base_url)
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.get_test_names_stderr, self.get_test_names_stderr_base_url)
+
+    @tag('output_migration')
+    def test_get_test_names_stdout_empty(self) -> None:
+        self.mutation_suite_result.get_student_test_names_stdout_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, '', self.get_test_names_stdout_base_url
+        )
+
+    @tag('output_migration')
+    def test_get_test_names_stderr_empty(self) -> None:
+        self.mutation_suite_result.get_student_test_names_stderr_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, '', self.get_test_names_stderr_base_url
+        )
+
     def test_get_validity_check_output(self):
         self.do_get_output_test(
             self.client, self.admin, ag_models.FeedbackCategory.max,
@@ -206,6 +274,38 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
             self.client, self.admin, ag_models.FeedbackCategory.normal,
             status.HTTP_200_OK, None, self.validity_check_stderr_base_url)
 
+    @tag('output_migration')
+    def test_get_validity_check_output_migrated(self) -> None:
+        migrate_mutation_test_suite_result_output(self.mutation_suite_result)
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.validity_check_stdout, self.validity_check_stdout_base_url)
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.validity_check_stderr, self.validity_check_stderr_base_url)
+
+    @tag('output_migration')
+    def test_validity_check_stdout_empty(self) -> None:
+        self.mutation_suite_result.validity_check_stdout_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, '', self.validity_check_stdout_base_url
+        )
+
+    @tag('output_migration')
+    def test_validity_check_stder_empty(self) -> None:
+        self.mutation_suite_result.validity_check_stderr_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, '', self.validity_check_stderr_base_url
+        )
+
     def test_get_buggy_impls_output(self):
         self.do_get_output_test(
             self.client, self.admin, ag_models.FeedbackCategory.max,
@@ -222,6 +322,38 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
         self.do_get_output_test(
             self.client, self.admin, ag_models.FeedbackCategory.normal,
             status.HTTP_200_OK, None, self.buggy_impls_stderr_base_url)
+
+    @tag('output_migration')
+    def test_get_buggy_impls_output_migrated(self) -> None:
+        migrate_mutation_test_suite_result_output(self.mutation_suite_result)
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.buggy_impls_stdout, self.buggy_impls_stdout_base_url)
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.buggy_impls_stderr, self.buggy_impls_stderr_base_url)
+
+    @tag('output_migration')
+    def test_buggy_impls_stdout_empty(self) -> None:
+        self.mutation_suite_result.grade_buggy_impls_stdout_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, '', self.buggy_impls_stdout_base_url
+        )
+
+    @tag('output_migration')
+    def test_buggy_impls_stderr_empty(self) -> None:
+        self.mutation_suite_result.grade_buggy_impls_stderr_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_get_output_test(
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, '', self.buggy_impls_stderr_base_url
+        )
 
     def test_get_output_suite_hidden(self):
         self.maxDiff = None
@@ -288,6 +420,82 @@ class MutationTestSuiteResultsTestCase(UnitTestBase):
             'grade_buggy_impls_stdout_size': len(self.buggy_impls_stdout),
             'grade_buggy_impls_stderr_size': len(self.buggy_impls_stderr),
         }
+        self.assertEqual(expected, response.data)
+
+    @tag('output_migration')
+    def test_setup_stdout_size_empty(self):
+        self.mutation_suite_result.setup_stdout_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_output_size_empty_test('setup_stdout_size')
+
+    @tag('output_migration')
+    def test_setup_stderr_size_empty(self):
+        self.mutation_suite_result.setup_stderr_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_output_size_empty_test('setup_stderr_size')
+
+    @tag('output_migration')
+    def test_get_student_test_names_stdout_size_empty(self):
+        self.mutation_suite_result.get_student_test_names_stdout_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_output_size_empty_test('get_student_test_names_stdout_size')
+
+    @tag('output_migration')
+    def test_get_student_test_names_stderr_size_empty(self):
+        self.mutation_suite_result.get_student_test_names_stderr_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_output_size_empty_test('get_student_test_names_stderr_size')
+
+    @tag('output_migration')
+    def test_validity_check_stdout_size_empty(self):
+        self.mutation_suite_result.validity_check_stdout_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_output_size_empty_test('validity_check_stdout_size')
+
+    @tag('output_migration')
+    def test_validity_check_stderr_size_empty(self):
+        self.mutation_suite_result.validity_check_stderr_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_output_size_empty_test('validity_check_stderr_size')
+
+    @tag('output_migration')
+    def test_grade_buggy_impls_stdout_size_empty(self):
+        self.mutation_suite_result.grade_buggy_impls_stdout_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_output_size_empty_test('grade_buggy_impls_stdout_size')
+
+    @tag('output_migration')
+    def test_grade_buggy_impls_stderr_size_empty(self):
+        self.mutation_suite_result.grade_buggy_impls_stderr_size = 0
+        self.mutation_suite_result.save()
+
+        self.do_output_size_empty_test('grade_buggy_impls_stderr_size')
+
+    def do_output_size_empty_test(self, empty_key: str):
+        self.client.force_authenticate(self.admin)
+
+        url = self.make_output_size_url(ag_models.FeedbackCategory.max)
+        response = self.client.get(url)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        expected = {
+            'setup_stdout_size': len(self.setup_stdout),
+            'setup_stderr_size': len(self.setup_stderr),
+            'get_student_test_names_stdout_size': len(self.get_test_names_stdout),
+            'get_student_test_names_stderr_size': len(self.get_test_names_stderr),
+            'validity_check_stdout_size': len(self.validity_check_stdout),
+            'validity_check_stderr_size': len(self.validity_check_stderr),
+            'grade_buggy_impls_stdout_size': len(self.buggy_impls_stdout),
+            'grade_buggy_impls_stderr_size': len(self.buggy_impls_stderr),
+        }
+        expected[empty_key] = 0
         self.assertEqual(expected, response.data)
 
     def test_get_output_x_accel(self) -> None:

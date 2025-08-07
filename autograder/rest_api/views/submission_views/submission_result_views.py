@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, BinaryIO, Callable, Optional
 
+from django.http import FileResponse
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -128,22 +130,24 @@ class AGTestSuiteResultStdoutView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getAGTestSuiteResultStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         suite_result_pk = self.kwargs['result_pk']
-        return _get_setup_output(submission_fdbk,
-                                 suite_result_pk,
-                                 lambda fdbk_calc: fdbk_calc.setup_stdout_filename)
+        return _get_setup_output(
+            submission_fdbk,
+            suite_result_pk,
+            lambda fdbk_calc: (fdbk_calc.setup_stdout_size, fdbk_calc.setup_stdout_filename))
 
 
 class AGTestSuiteResultStderrView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getAGTestSuiteResultStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         suite_result_pk = self.kwargs['result_pk']
-        return _get_setup_output(submission_fdbk,
-                                 suite_result_pk,
-                                 lambda fdbk_calc: fdbk_calc.setup_stderr_filename)
+        return _get_setup_output(
+            submission_fdbk,
+            suite_result_pk,
+            lambda fdbk_calc: (fdbk_calc.setup_stderr_size, fdbk_calc.setup_stderr_filename))
 
 
 class AGTestSuiteResultOutputSizeView(SubmissionResultsViewBase):
@@ -191,9 +195,9 @@ class AGTestSuiteResultOutputSizeView(SubmissionResultsViewBase):
         if suite_fdbk is None:
             return response.Response(None)
         return response.Response({
-            'setup_stdout_size': suite_fdbk.get_setup_stdout_size(),
+            'setup_stdout_size': suite_fdbk.setup_stdout_size,
             'setup_stdout_truncated': suite_fdbk.setup_stdout_truncated,
-            'setup_stderr_size': suite_fdbk.get_setup_stderr_size(),
+            'setup_stderr_size': suite_fdbk.setup_stderr_size,
             'setup_stderr_truncated': suite_fdbk.setup_stderr_truncated,
         })
 
@@ -201,14 +205,22 @@ class AGTestSuiteResultOutputSizeView(SubmissionResultsViewBase):
 def _get_setup_output(
     submission_fdbk: SubmissionResultFeedback,
     suite_result_pk: int,
-    get_output_filename_fn: Callable[[AGTestSuiteResultFeedback], Path | None]
+    get_output_file_info_fn: Callable[
+        [AGTestSuiteResultFeedback],
+        tuple[int | None, Path | None]  # Returns (size, filename)
+    ]
 ) -> HttpResponse:
     suite_fdbk = _find_ag_suite_result(submission_fdbk, suite_result_pk)
     if suite_fdbk is None:
         return response.Response(None)
-    path = get_output_filename_fn(suite_fdbk)
+
+    size, path = get_output_file_info_fn(suite_fdbk)
     if path is None:
         return response.Response(None)
+
+    if size == 0:
+        return FileResponse(open(os.devnull, 'rb'))
+
     return serve_file(path)
 
 
@@ -234,24 +246,24 @@ class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getAGTestCommandResultStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         cmd_result_pk = self.kwargs['result_pk']
         return _get_cmd_result_output(
             submission_fdbk,
             cmd_result_pk,
-            lambda fdbk_calc: fdbk_calc.stdout_filename)
+            lambda fdbk_calc: (fdbk_calc.stdout_size, fdbk_calc.stdout_filename))
 
 
 class AGTestCommandResultStderrView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getAGTestCommandResultStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         cmd_result_pk = self.kwargs['result_pk']
         return _get_cmd_result_output(
             submission_fdbk,
             cmd_result_pk,
-            lambda fdbk_calc: fdbk_calc.stderr_filename)
+            lambda fdbk_calc: (fdbk_calc.stderr_size, fdbk_calc.stderr_filename))
 
 
 class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
@@ -301,15 +313,15 @@ class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
     })
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         cmd_result_pk = self.kwargs['result_pk']
         cmd_fdbk = _find_ag_test_cmd_result(submission_fdbk, cmd_result_pk)
         if cmd_fdbk is None:
             return response.Response(None)
         return response.Response({
-            'stdout_size': cmd_fdbk.get_stdout_size(),
+            'stdout_size': cmd_fdbk.stdout_size,
             'stdout_truncated': cmd_fdbk.stdout_truncated,
-            'stderr_size': cmd_fdbk.get_stderr_size(),
+            'stderr_size': cmd_fdbk.stderr_size,
             'stderr_truncated': cmd_fdbk.stderr_truncated,
             'stdout_diff_size': cmd_fdbk.get_stdout_diff_size(),
             'stderr_diff_size': cmd_fdbk.get_stderr_diff_size(),
@@ -319,14 +331,22 @@ class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
 def _get_cmd_result_output(
     submission_fdbk: SubmissionResultFeedback,
     cmd_result_pk: int,
-    get_output_filename_fn: Callable[[AGTestCommandResultFeedback], Path | None]
+    get_output_file_info_fn: Callable[
+        [AGTestCommandResultFeedback],
+        tuple[int | None, Path | None]  # Returns (size, filename)
+    ]
 ) -> HttpResponse:
     cmd_fdbk = _find_ag_test_cmd_result(submission_fdbk, cmd_result_pk)
     if cmd_fdbk is None:
         return response.Response(None)
-    path = get_output_filename_fn(cmd_fdbk)
+
+    size, path = get_output_file_info_fn(cmd_fdbk)
     if path is None:
         return response.Response(None)
+
+    if size == 0:
+        return FileResponse(open(os.devnull, 'rb'))
+
     return serve_file(path)
 
 
@@ -369,7 +389,7 @@ class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
     schema = _DiffViewSchema('getAGTestCommandResultStdoutDiff')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         cmd_result_pk = self.kwargs['result_pk']
         return _get_cmd_result_diff(
             submission_fdbk,
@@ -381,7 +401,7 @@ class AGTestCommandResultStderrDiffView(SubmissionResultsViewBase):
     schema = _DiffViewSchema('getAGTestCommandResultStderrDiff')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         cmd_result_pk = self.kwargs['result_pk']
         return _get_cmd_result_diff(
             submission_fdbk,
@@ -436,104 +456,120 @@ class MutationTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getMutationTestSuiteResultSetupStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         mutation_suite_result_pk = self.kwargs['result_pk']
         return _get_mutation_suite_result_output_field(
             submission_fdbk,
-            fdbk_category,
             mutation_suite_result_pk,
-            lambda fdbk_calc: fdbk_calc.setup_stdout_filename)
+            lambda fdbk_calc: (fdbk_calc.setup_stdout_size, fdbk_calc.setup_stdout_filename))
 
 
 class MutationTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getMutationTestSuiteResultSetupStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         mutation_suite_result_pk = self.kwargs['result_pk']
         return _get_mutation_suite_result_output_field(
             submission_fdbk,
-            fdbk_category,
             mutation_suite_result_pk,
-            lambda fdbk_calc: fdbk_calc.setup_stderr_filename)
+            lambda fdbk_calc: (fdbk_calc.setup_stderr_size, fdbk_calc.setup_stderr_filename))
 
 
 class MutationTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getMutationTestSuiteResultTestDiscoveryStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         mutation_suite_result_pk = self.kwargs['result_pk']
         return _get_mutation_suite_result_output_field(
             submission_fdbk,
-            fdbk_category,
             mutation_suite_result_pk,
-            lambda fdbk_calc: fdbk_calc.get_student_test_names_stdout_filename)
+            lambda fdbk_calc: (
+                fdbk_calc.get_student_test_names_stdout_size,
+                fdbk_calc.get_student_test_names_stdout_filename
+            )
+        )
 
 
 class MutationTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getMutationTestSuiteResultTestDiscoveryStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         mutation_suite_result_pk = self.kwargs['result_pk']
         return _get_mutation_suite_result_output_field(
             submission_fdbk,
-            fdbk_category,
             mutation_suite_result_pk,
-            lambda fdbk_calc: fdbk_calc.get_student_test_names_stderr_filename)
+            lambda fdbk_calc: (
+                fdbk_calc.get_student_test_names_stderr_size,
+                fdbk_calc.get_student_test_names_stderr_filename
+            )
+        )
 
 
 class MutationTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getMutationTestSuiteResultValidityCheckStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         mutation_suite_result_pk = self.kwargs['result_pk']
         return _get_mutation_suite_result_output_field(
             submission_fdbk,
-            fdbk_category,
             mutation_suite_result_pk,
-            lambda fdbk_calc: fdbk_calc.validity_check_stdout_filename)
+            lambda fdbk_calc: (
+                fdbk_calc.validity_check_stdout_size,
+                fdbk_calc.validity_check_stdout_filename
+            )
+        )
 
 
 class MutationTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getMutationTestSuiteResultValidityCheckStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         mutation_suite_result_pk = self.kwargs['result_pk']
         return _get_mutation_suite_result_output_field(
             submission_fdbk,
-            fdbk_category,
             mutation_suite_result_pk,
-            lambda fdbk_calc: fdbk_calc.validity_check_stderr_filename)
+            lambda fdbk_calc: (
+                fdbk_calc.validity_check_stderr_size,
+                fdbk_calc.validity_check_stderr_filename
+            )
+        )
 
 
 class MutationTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getMutationTestSuiteResultGradeBuggyImplsStdout')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         mutation_suite_result_pk = self.kwargs['result_pk']
         return _get_mutation_suite_result_output_field(
             submission_fdbk,
-            fdbk_category,
             mutation_suite_result_pk,
-            lambda fdbk_calc: fdbk_calc.grade_buggy_impls_stdout_filename)
+            lambda fdbk_calc: (
+                fdbk_calc.grade_buggy_impls_stdout_size,
+                fdbk_calc.grade_buggy_impls_stdout_filename
+            )
+        )
 
 
 class MutationTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase):
     schema = _OutputViewSchema('getMutationTestSuiteResultGradeBuggyImplsStderr')
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         mutation_suite_result_pk = self.kwargs['result_pk']
         return _get_mutation_suite_result_output_field(
             submission_fdbk,
-            fdbk_category,
             mutation_suite_result_pk,
-            lambda fdbk_calc: fdbk_calc.grade_buggy_impls_stderr_filename)
+            lambda fdbk_calc: (
+                fdbk_calc.grade_buggy_impls_stderr_size,
+                fdbk_calc.grade_buggy_impls_stderr_filename
+            )
+        )
 
 
 class MutationTestSuiteOutputSizeView(SubmissionResultsViewBase):
@@ -591,21 +627,21 @@ class MutationTestSuiteOutputSizeView(SubmissionResultsViewBase):
     })
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
-                       fdbk_category: ag_models.FeedbackCategory) -> HttpResponse:
+                       _: ag_models.FeedbackCategory) -> HttpResponse:
         mutation_suite_result_pk = self.kwargs['result_pk']
         result = _find_mutation_suite_result(submission_fdbk, mutation_suite_result_pk)
         if result is None:
             return response.Response(None)
 
         return response.Response({
-            'setup_stdout_size': result.get_setup_stdout_size(),
-            'setup_stderr_size': result.get_setup_stderr_size(),
-            'get_student_test_names_stdout_size': result.get_student_test_names_stdout_size(),
-            'get_student_test_names_stderr_size': result.get_student_test_names_stderr_size(),
-            'validity_check_stdout_size': result.get_validity_check_stdout_size(),
-            'validity_check_stderr_size': result.get_validity_check_stderr_size(),
-            'grade_buggy_impls_stdout_size': result.get_grade_buggy_impls_stdout_size(),
-            'grade_buggy_impls_stderr_size': result.get_grade_buggy_impls_stderr_size(),
+            'setup_stdout_size': result.setup_stdout_size,
+            'setup_stderr_size': result.setup_stderr_size,
+            'get_student_test_names_stdout_size': result.get_student_test_names_stdout_size,
+            'get_student_test_names_stderr_size': result.get_student_test_names_stderr_size,
+            'validity_check_stdout_size': result.validity_check_stdout_size,
+            'validity_check_stderr_size': result.validity_check_stderr_size,
+            'grade_buggy_impls_stdout_size': result.grade_buggy_impls_stdout_size,
+            'grade_buggy_impls_stderr_size': result.grade_buggy_impls_stderr_size,
         })
 
 
@@ -615,19 +651,22 @@ GetMutationTestSuiteOutputFnType = Callable[
 
 def _get_mutation_suite_result_output_field(
     submission_fdbk: SubmissionResultFeedback,
-    fdbk_category: ag_models.FeedbackCategory,
     mutation_suite_result_pk: int,
-    get_output_filename_fn: Callable[
-        [ag_models.MutationTestSuiteResult.FeedbackCalculator], Path | None
+    get_output_file_info_fn: Callable[
+        [ag_models.MutationTestSuiteResult.FeedbackCalculator],
+        tuple[int | None, Path | None]  # Returns (size, filename)
     ]
 ) -> HttpResponse:
     result = _find_mutation_suite_result(submission_fdbk, mutation_suite_result_pk)
     if result is None:
         return response.Response(None)
 
-    path = get_output_filename_fn(result)
+    size, path = get_output_file_info_fn(result)
     if path is None:
         return response.Response(None)
+
+    if size == 0:
+        return FileResponse(open(os.devnull, 'rb'))
 
     return serve_file(path)
 

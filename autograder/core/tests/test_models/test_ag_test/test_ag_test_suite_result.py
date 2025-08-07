@@ -58,6 +58,9 @@ class AGTestSuiteResultTestCase(UnitTestBase):
             'setup_stdout_truncated',
             'setup_stderr_truncated',
 
+            'setup_stdout_size',
+            'setup_stderr_size',
+
             'ag_test_case_results'
         ]
 

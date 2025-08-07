@@ -1,3 +1,4 @@
+import gzip
 import shutil
 import tempfile
 import traceback
@@ -16,7 +17,8 @@ from django.db import IntegrityError, transaction
 import autograder.core.models as ag_models
 from autograder.utils.retry import retry_should_recover
 
-from .utils import add_files_to_sandbox, mark_submission_as_error, run_ag_command
+from .utils import (
+    add_files_to_sandbox, get_tempfile_size, mark_submission_as_error, run_ag_command)
 
 
 @celery.shared_task(max_retries=1, acks_late=True)
@@ -58,11 +60,12 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
 
             if mutation_test_suite.use_setup_command:
                 print('Running setup for', mutation_test_suite.name)
-                setup_run_result = run_ag_command(mutation_test_suite.setup_command, sandbox)
-                if setup_run_result.return_code != 0:
+                completed_setup_cmd = run_ag_command(mutation_test_suite.setup_command, sandbox)
+                if completed_setup_cmd.return_code != 0:
                     _save_results(
                         mutation_test_suite,
-                        submission, setup_run_result,
+                        submission,
+                        completed_setup_cmd,
                         student_tests=[],
                         discarded_tests=[],
                         invalid_tests=[],
@@ -71,7 +74,7 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
                     )
                     return
             else:
-                setup_run_result = None
+                completed_setup_cmd = None
 
             get_test_names_result = run_ag_command(
                 mutation_test_suite.get_student_test_names_command, sandbox)
@@ -80,13 +83,13 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
                 _save_results(
                     mutation_test_suite,
                     submission,
-                    setup_run_result,
+                    completed_setup_cmd,
                     student_tests=[],
                     discarded_tests=[],
+                    completed_get_test_names_cmd=get_test_names_result,
                     invalid_tests=[],
                     timed_out_tests=[],
                     bugs_exposed=[],
-                    get_test_names_run_result=get_test_names_result
                 )
                 return
 
@@ -152,10 +155,10 @@ def grade_mutation_test_suite_impl(mutation_test_suite: ag_models.MutationTestSu
             _save_results(
                 mutation_test_suite,
                 submission,
-                setup_run_result,
+                completed_setup_cmd,
                 student_tests, discarded_tests,
                 invalid_tests, timed_out_tests, exposed_bugs,
-                get_test_names_run_result=get_test_names_result,
+                completed_get_test_names_cmd=get_test_names_result,
                 validity_check_stdout=validity_check_stdout,
                 validity_check_stderr=validity_check_stderr,
                 buggy_impls_stdout=buggy_impls_stdout,
@@ -251,13 +254,13 @@ def _run_test_batches_against_mutants(
 @retry_should_recover
 def _save_results(mutation_test_suite: ag_models.MutationTestSuite,
                   submission: ag_models.Submission,
-                  setup_run_result: CompletedCommand,
+                  completed_setup_cmd: CompletedCommand,
                   student_tests: List[str],
                   discarded_tests: List[str],
                   invalid_tests: List[str],
                   timed_out_tests: List[str],
                   bugs_exposed: List[str],
-                  get_test_names_run_result: CompletedCommand = None,
+                  completed_get_test_names_cmd: CompletedCommand = None,
                   validity_check_stdout: FileIO = None,
                   validity_check_stderr: FileIO = None,
                   buggy_impls_stdout: FileIO = None,
@@ -269,57 +272,91 @@ def _save_results(mutation_test_suite: ag_models.MutationTestSuite,
                 'discarded_tests': discarded_tests,
                 'invalid_tests': invalid_tests,
                 'timed_out_tests': timed_out_tests,
-                'bugs_exposed': bugs_exposed
+                'bugs_exposed': bugs_exposed,
+
+                'setup_stdout_size': 0,
+                'setup_stderr_size': 0,
+                'get_student_test_names_stdout_size': 0,
+                'get_student_test_names_stderr_size': 0,
+                'validity_check_stdout_size': 0,
+                'validity_check_stderr_size': 0,
+                'grade_buggy_impls_stdout_size': 0,
+                'grade_buggy_impls_stderr_size': 0,
             }
             result = ag_models.MutationTestSuiteResult.objects.update_or_create(
                 defaults=result_kwargs,
                 mutation_test_suite=mutation_test_suite,
                 submission=submission)[0]  # type: ag_models.MutationTestSuiteResult
 
-            if setup_run_result is not None:
+            if completed_setup_cmd is not None:
                 setup_result = ag_models.AGCommandResult.objects.validate_and_create(
-                    return_code=setup_run_result.return_code,
-                    timed_out=setup_run_result.timed_out,
-                    stdout_truncated=setup_run_result.stdout_truncated,
-                    stderr_truncated=setup_run_result.stderr_truncated
+                    return_code=completed_setup_cmd.return_code,
+                    timed_out=completed_setup_cmd.timed_out,
+                    stdout_truncated=completed_setup_cmd.stdout_truncated,
+                    stderr_truncated=completed_setup_cmd.stderr_truncated
                 )  # type: ag_models.AGCommandResult
 
-                with open(setup_result.stdout_filename, 'wb') as f:
-                    shutil.copyfileobj(setup_run_result.stdout, f)
-
-                with open(setup_result.stderr_filename, 'wb') as f:
-                    shutil.copyfileobj(setup_run_result.stderr, f)
-
                 result.setup_result = setup_result
+                result.setup_stdout_size = get_tempfile_size(completed_setup_cmd.stdout)
+                result.setup_stderr_size = get_tempfile_size(completed_setup_cmd.stderr)
+
+                if result.setup_stdout_size != 0:
+                    with gzip.open(result.setup_stdout_filename, 'wb') as f:
+                        shutil.copyfileobj(completed_setup_cmd.stdout, f)
+
+                if result.setup_stderr_size != 0:
+                    with gzip.open(result.setup_stderr_filename, 'wb') as f:
+                        shutil.copyfileobj(completed_setup_cmd.stderr, f)
+
                 result.save()
 
-            if get_test_names_run_result is not None:
-                result.get_test_names_result.return_code = get_test_names_run_result.return_code
-                result.get_test_names_result.timed_out = get_test_names_run_result.timed_out
+            if completed_get_test_names_cmd is not None:
+                result.get_student_test_names_stdout_size = get_tempfile_size(
+                    completed_get_test_names_cmd.stdout)
+                result.get_student_test_names_stderr_size = get_tempfile_size(
+                    completed_get_test_names_cmd.stderr)
+
+                result.get_test_names_result.return_code = completed_get_test_names_cmd.return_code
+                result.get_test_names_result.timed_out = completed_get_test_names_cmd.timed_out
+
+                if result.get_student_test_names_stdout_size != 0:
+                    with gzip.open(result.get_test_names_stdout_filename, 'wb') as f:
+                        shutil.copyfileobj(completed_get_test_names_cmd.stdout, f)
+
+                if result.get_student_test_names_stderr_size != 0:
+                    with gzip.open(result.get_test_names_stderr_filename, 'wb') as f:
+                        shutil.copyfileobj(completed_get_test_names_cmd.stderr, f)
+
                 result.get_test_names_result.save()
-                with open(result.get_test_names_result.stdout_filename, 'wb') as f:
-                    get_test_names_run_result.stdout.seek(0)
-                    shutil.copyfileobj(get_test_names_run_result.stdout, f)
-                with open(result.get_test_names_result.stderr_filename, 'wb') as f:
-                    get_test_names_run_result.stderr.seek(0)
-                    shutil.copyfileobj(get_test_names_run_result.stderr, f)
+                result.save()
 
             if validity_check_stdout is not None:
-                validity_check_stdout.seek(0)
-                with open(result.validity_check_stdout_filename, 'wb') as f:
-                    shutil.copyfileobj(validity_check_stdout, f)
+                result.validity_check_stdout_size = get_tempfile_size(validity_check_stdout)
+                if result.validity_check_stdout_size != 0:
+                    with gzip.open(result.validity_check_stdout_filename, 'wb') as f:
+                        shutil.copyfileobj(validity_check_stdout, f)
+
             if validity_check_stderr is not None:
-                validity_check_stderr.seek(0)
-                with open(result.validity_check_stderr_filename, 'wb') as f:
-                    shutil.copyfileobj(validity_check_stderr, f)
+                result.validity_check_stderr_size = get_tempfile_size(validity_check_stderr)
+                if result.validity_check_stderr_size != 0:
+                    with gzip.open(result.validity_check_stderr_filename, 'wb') as f:
+                        shutil.copyfileobj(validity_check_stderr, f)
+
+            result.save()
+
             if buggy_impls_stdout is not None:
-                buggy_impls_stdout.seek(0)
-                with open(result.grade_buggy_impls_stdout_filename, 'wb') as f:
-                    shutil.copyfileobj(buggy_impls_stdout, f)
+                result.grade_buggy_impls_stdout_size = get_tempfile_size(buggy_impls_stdout)
+                if result.grade_buggy_impls_stdout_size != 0:
+                    with gzip.open(result.grade_buggy_impls_stdout_filename, 'wb') as f:
+                        shutil.copyfileobj(buggy_impls_stdout, f)
+
             if buggy_impls_stderr is not None:
-                buggy_impls_stderr.seek(0)
-                with open(result.grade_buggy_impls_stderr_filename, 'wb') as f:
-                    shutil.copyfileobj(buggy_impls_stderr, f)
+                result.grade_buggy_impls_stderr_size = get_tempfile_size(buggy_impls_stderr)
+                if result.grade_buggy_impls_stderr_size != 0:
+                    with gzip.open(result.grade_buggy_impls_stderr_filename, 'wb') as f:
+                        shutil.copyfileobj(buggy_impls_stderr, f)
+
+            result.save()
     except IntegrityError:
         # The mutation test suite has likely been deleted, so do nothing
         pass

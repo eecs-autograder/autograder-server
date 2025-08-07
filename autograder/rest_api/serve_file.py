@@ -1,10 +1,14 @@
+import gzip
 from pathlib import Path
 
 from django.conf import settings
 from django.http import FileResponse, HttpResponse
 
 
-def serve_file(path: Path, content_type: str = 'application/octet-stream') -> HttpResponse:
+def serve_file(
+    path: Path,
+    content_type: str = 'application/octet-stream',
+) -> HttpResponse:
     """
     Returns a response that serves the file specified by "path".
     "path" must be an absolute path that starts with settings.MEDIA_ROOT.
@@ -25,4 +29,12 @@ def serve_file(path: Path, content_type: str = 'application/octet-stream') -> Ht
         response['X-Accel-Redirect'] = '/protected/' + str(path.relative_to(settings.MEDIA_ROOT))
         return response
     else:
-        return FileResponse(open(path, 'rb'), content_type=content_type)
+        # This branch is only used in tests, so we don't have to
+        # worry about the performance implications of this.
+        # Keep this even after the output storage changes in 2025.08.0
+        # become the default. Some output (e.g., image buliding)
+        # is still not compressed.
+        try:
+            return FileResponse(gzip.open(path, 'rb'), content_type=content_type)
+        except gzip.BadGzipFile:
+            return FileResponse(open(path, 'rb'), content_type=content_type)

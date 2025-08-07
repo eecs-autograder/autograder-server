@@ -2,6 +2,7 @@ import os
 
 from django.db import models
 
+from autograder.core.constants import COMPRESSED_OUTPUT_SUFFIX
 from autograder.core.models.ag_model_base import AutograderModelManager
 import autograder.core.utils as core_ut
 
@@ -50,15 +51,87 @@ class AGTestCommandResult(AGCommandResultBase):
 
     @property
     def stdout_filename(self) -> str:
-        result_output_dir = core_ut.get_result_output_dir(
-            self.ag_test_case_result.ag_test_suite_result.submission)
-        return os.path.join(result_output_dir, 'cmd_result_{}_stdout'.format(self.pk))
+        filename = os.path.join(
+            core_ut.get_result_output_dir(
+                self.ag_test_case_result.ag_test_suite_result.submission),
+            'cmd_result_{}_stdout'.format(self.pk)
+        )
+        return (
+            filename + COMPRESSED_OUTPUT_SUFFIX
+            if self.stdout_size is not None else filename
+        )
 
     @property
     def stderr_filename(self) -> str:
-        result_output_dir = core_ut.get_result_output_dir(
-            self.ag_test_case_result.ag_test_suite_result.submission)
-        return os.path.join(result_output_dir, 'cmd_result_{}_stderr'.format(self.pk))
+        filename = os.path.join(
+            core_ut.get_result_output_dir(
+                self.ag_test_case_result.ag_test_suite_result.submission),
+            'cmd_result_{}_stderr'.format(self.pk)
+        )
+        return (
+            filename + COMPRESSED_OUTPUT_SUFFIX
+            if self.stderr_size is not None else filename
+        )
+
+    stdout_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="""The size in bytes of the command's stdout. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using gzip: https://docs.python.org/3/library/gzep.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
+        """
+    )
+
+    stderr_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="""The size in bytes of the command's stderr. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using gzip: https://docs.python.org/3/library/gzip.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
+        """
+    )
+
+    stdout_diff_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="""New in 2025.08.0.
+            The size in bytes of the diff result for this stdout.
+            When None, fall back to the previous logic for computing diff size.
+        """
+    )
+
+    stderr_diff_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="""New in 2025.08.0.
+            The size in bytes of the diff result for this stderr.
+            When None, fall back to the previous logic for computing diff size.
+        """
+    )
+
+    @property
+    def stdout_diff_filename(self) -> str:
+        return os.path.join(
+            core_ut.get_result_output_dir(
+                self.ag_test_case_result.ag_test_suite_result.submission),
+            'cmd_result_{}_stdout_diff'.format(self.pk)
+        ) + COMPRESSED_OUTPUT_SUFFIX
+
+    @property
+    def stderr_diff_filename(self) -> str:
+        return os.path.join(
+            core_ut.get_result_output_dir(
+                self.ag_test_case_result.ag_test_suite_result.submission),
+            'cmd_result_{}_stderr_diff'.format(self.pk)
+        ) + COMPRESSED_OUTPUT_SUFFIX
 
     # Serializing AGTestCommandResults should be used for DENORMALIZATION
     # ONLY.
@@ -78,6 +151,12 @@ class AGTestCommandResult(AGCommandResultBase):
 
         'stdout_truncated',
         'stderr_truncated',
+
+        'stdout_size',
+        'stderr_size',
+
+        'stdout_diff_size',
+        'stderr_diff_size',
 
         'custom_scoring_used',
         'custom_scoring_points',

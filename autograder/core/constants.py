@@ -1,7 +1,7 @@
 import enum
-import autograder_sandbox
 from django.contrib.auth.models import User
 
+COMPRESSED_OUTPUT_SUFFIX = '.gz'
 
 MAX_USERNAME_LEN = User._meta.get_field('username').max_length
 

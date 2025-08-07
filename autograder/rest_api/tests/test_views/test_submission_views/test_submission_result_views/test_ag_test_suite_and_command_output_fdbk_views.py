@@ -1,18 +1,23 @@
 import datetime
 import json
 from pathlib import Path
+from unittest import skip
 
 from django.conf import settings
+from django.test import tag
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from autograder.core.migrate_output import (
+    migrate_ag_test_command_result_output, migrate_ag_test_suite_result_output)
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.submission_feedback import update_denormalized_ag_test_results
-from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import get_suite_fdbk
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
+    get_cmd_fdbk, get_suite_fdbk)
 from autograder.utils.testing import UnitTestBase
 
 from .get_output_and_diff_test_urls import get_output_and_diff_test_urls, make_result_output_url
@@ -61,6 +66,13 @@ class _SetUp(UnitTestBase):
 
 
 class AGTestSuiteOutputFeedbackTestCase(_SetUp):
+    def setUp(self):
+        super().setUp()
+        self.staff_ag_test_suite_result = (
+            self.staff_cmd_result.ag_test_case_result.ag_test_suite_result)
+        self.staff_ag_test_suite_result.setup_return_code = 0
+        self.staff_ag_test_suite_result.save()
+
     def test_get_suite_result_setup_output_visible(self):
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_stdout)
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_stderr)
@@ -72,16 +84,114 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
         self._do_suite_result_output_test(self.client, suite_res.submission, suite_res,
                                           ag_models.FeedbackCategory.normal)
 
-    def test_get_suite_result_setup_output_hidden(self):
+    @skip("We'll migrate entire submission within a transaction to avoid this situation")
+    @tag('output_migration')
+    def test_setup_output_migrated_no_denormalization_update(self) -> None:
+        pass
+
+    @tag('output_migration')
+    def test_setup_output_migrated_with_denormalization_update(self) -> None:
+        self.client.force_authenticate(self.staff)
+        self._do_suite_result_output_test(
+            self.client,
+            self.staff_submission,
+            self.staff_cmd_result.ag_test_case_result.ag_test_suite_result,
+            ag_models.FeedbackCategory.max,
+            migrate_output=True,
+            update_denormalization=True,
+        )
+
+    @tag('output_migration')
+    def test_setup_stdout_empty_not_migrated(self) -> None:
+        self.client.force_authenticate(self.staff)
+        self._do_suite_result_output_test(
+            self.client,
+            self.staff_submission,
+            self.staff_cmd_result.ag_test_case_result.ag_test_suite_result,
+            ag_models.FeedbackCategory.max,
+            expected_stdout=b'',
+            migrate_output=False,
+        )
+
+    @tag('output_migration')
+    def test_setup_stderr_empty_not_migrated(self) -> None:
+        self.client.force_authenticate(self.staff)
+        self._do_suite_result_output_test(
+            self.client,
+            self.staff_submission,
+            self.staff_cmd_result.ag_test_case_result.ag_test_suite_result,
+            ag_models.FeedbackCategory.max,
+            expected_stderr=b'',
+            migrate_output=False,
+        )
+
+    @skip("We'll migrate entire submission within a transaction to avoid this situation")
+    @tag('output_migration')
+    def test_setup_stdout_empty_migrated_no_denormalization_updated(self) -> None:
+        pass
+
+    @tag('output_migration')
+    def test_setup_stdout_empty_migrated_and_denormalization_updated(self) -> None:
+        self.client.force_authenticate(self.staff)
+        self._do_suite_result_output_test(
+            self.client,
+            self.staff_submission,
+            self.staff_cmd_result.ag_test_case_result.ag_test_suite_result,
+            ag_models.FeedbackCategory.max,
+            expected_stdout=b'',
+            migrate_output=True,
+            update_denormalization=True,
+        )
+
+    @skip("We'll migrate entire submission within a transaction to avoid this situation")
+    @tag('output_migration')
+    def test_setup_stderr_empty_migrated_no_denormalization_updated(self) -> None:
+        pass
+
+    @tag('output_migration')
+    def test_setup_stderr_empty_migrated_and_denormalization_updated(self) -> None:
+        self.client.force_authenticate(self.staff)
+        self._do_suite_result_output_test(
+            self.client,
+            self.staff_submission,
+            self.staff_cmd_result.ag_test_case_result.ag_test_suite_result,
+            ag_models.FeedbackCategory.max,
+            expected_stderr=b'',
+            migrate_output=True,
+            update_denormalization=True,
+        )
+
+    def test_get_suite_result_setup_stdout_hidden(self):
         self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_setup_stdout': False})
+        self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': True})
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.visible)
+
+        self.client.force_authenticate(self.student1)
+
+        suite_res = self.student_cmd_result.ag_test_case_result.ag_test_suite_result
+        self._do_suite_result_output_test(
+            self.client,
+            suite_res.submission,
+            suite_res,
+            ag_models.FeedbackCategory.normal,
+            expected_stdout=None,
+        )
+
+    def test_get_suite_result_setup_stderr_hidden(self):
+        self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_setup_stdout': True})
         self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': False})
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.visible)
 
         self.client.force_authenticate(self.student1)
 
         suite_res = self.student_cmd_result.ag_test_case_result.ag_test_suite_result
-        self._do_suite_result_output_test(self.client, suite_res.submission, suite_res,
-                                          ag_models.FeedbackCategory.normal)
+        self._do_suite_result_output_test(
+            self.client,
+            suite_res.submission,
+            suite_res,
+            ag_models.FeedbackCategory.normal,
+            expected_stderr=None,
+        )
 
     def test_suite_result_output_requested_on_not_visible_suite(self):
         self.ag_test_suite.validate_and_update(normal_fdbk_config={'visible': False})
@@ -129,31 +239,45 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
         response = self.client.get(url)
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
-    def _do_suite_result_output_test(self, client, submission, suite_result, fdbk_category):
-        with open(suite_result.setup_stdout_filename, 'w') as f:
-            f.write('adkjfaksdjf;akjsdf;')
-        with open(suite_result.setup_stderr_filename, 'w') as f:
-            f.write('qewiruqpewpuir')
+    def _do_suite_result_output_test(
+        self,
+        client,
+        submission,
+        suite_result,
+        fdbk_category,
+        expected_stdout: bytes | None = b'adkjfaksdjf;akjsdf;',
+        expected_stderr: bytes | None = b'qewiruqpewpuir',
+        migrate_output=False,
+        update_denormalization=False,
+    ):
+        if expected_stdout is not None:
+            with open(suite_result.setup_stdout_filename, 'w') as f:
+                f.write(expected_stdout.decode())
+        if expected_stderr is not None:
+            with open(suite_result.setup_stderr_filename, 'w') as f:
+                f.write(expected_stderr.decode())
+
+        if migrate_output:
+            migrate_ag_test_suite_result_output(suite_result)
+            if update_denormalization:
+                update_denormalized_ag_test_results(submission.pk)
 
         fdbk = get_suite_fdbk(suite_result, fdbk_category)
 
-        field_names = ['setup_stdout', 'setup_stderr']
-        url_lookups = [
-            'ag-test-suite-result-stdout',
-            'ag-test-suite-result-stderr'
-        ]
         url_kwargs = {'pk': submission.pk, 'result_pk': suite_result.pk}
         url_query_str = '?feedback_category={}'.format(fdbk_category.value)
-        for field_name, url_lookup in zip(field_names, url_lookups):
+        for url_lookup, expected in [
+            ('ag-test-suite-result-stdout', expected_stdout),
+            ('ag-test-suite-result-stderr', expected_stderr),
+        ]:
             print(url_lookup)
             url = reverse(url_lookup, kwargs=url_kwargs) + url_query_str
             response = client.get(url)
 
-            expected = getattr(fdbk, field_name)
             if expected is None or not fdbk.fdbk_conf.visible:
                 self.assertIsNone(response.data)
             else:
-                self.assertEqual(expected.read(), b''.join(response.streaming_content))
+                self.assertEqual(expected, b''.join(response.streaming_content))
 
         # Output size endpoint
         url = reverse('ag-test-suite-result-output-size', kwargs=url_kwargs) + url_query_str
@@ -163,8 +287,8 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
             self.assertIsNone(response.data)
         else:
             expected = {
-                'setup_stdout_size': fdbk.get_setup_stdout_size(),
-                'setup_stderr_size': fdbk.get_setup_stderr_size(),
+                'setup_stdout_size': fdbk.setup_stdout_size,
+                'setup_stderr_size': fdbk.setup_stderr_size,
                 'setup_stdout_truncated': fdbk.setup_stdout_truncated,
                 'setup_stderr_truncated': fdbk.setup_stderr_truncated,
             }
@@ -272,6 +396,83 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         response = self.client.get(size_url)
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
+    @skip("We'll migrate entire submission within a transaction to avoid this situation")
+    @tag('output_migration')
+    def test_cmd_output_migrated_no_denormalization_update(self) -> None:
+        pass
+
+    @tag('output_migration')
+    def test_cmd_output_migrated_with_denormalization_update(self) -> None:
+        self.client.force_authenticate(self.staff)
+        self._do_cmd_result_output_test(
+            self.client,
+            self.staff_submission,
+            self.staff_cmd_result,
+            ag_models.FeedbackCategory.max,
+            migrate_output=True,
+            update_denormalization=True,
+        )
+
+    @tag('output_migration')
+    def test_cmd_stdout_empty_not_migrated(self) -> None:
+        self.client.force_authenticate(self.staff)
+        self._do_cmd_result_output_test(
+            self.client,
+            self.staff_submission,
+            self.staff_cmd_result,
+            ag_models.FeedbackCategory.max,
+            expected_stdout=b'',
+            migrate_output=False,
+        )
+
+    @tag('output_migration')
+    def test_cmd_stderr_empty_not_migrated(self) -> None:
+        self.client.force_authenticate(self.staff)
+        self._do_cmd_result_output_test(
+            self.client,
+            self.staff_submission,
+            self.staff_cmd_result,
+            ag_models.FeedbackCategory.max,
+            expected_stderr=b'',
+            migrate_output=False,
+        )
+
+    @skip("We'll migrate entire submission within a transaction to avoid this situation")
+    @tag('output_migration')
+    def test_cmd_stdout_empty_migrated_no_denormalization_updated(self) -> None:
+        pass
+
+    @tag('output_migration')
+    def test_cmd_stdout_empty_migrated_and_denormalization_updated(self) -> None:
+        self.client.force_authenticate(self.staff)
+        self._do_cmd_result_output_test(
+            self.client,
+            self.staff_submission,
+            self.staff_cmd_result,
+            ag_models.FeedbackCategory.max,
+            expected_stdout=b'',
+            migrate_output=True,
+            update_denormalization=True,
+        )
+
+    @skip("We'll migrate entire submission within a transaction to avoid this situation")
+    @tag('output_migration')
+    def test_cmd_stderr_empty_migrated_no_denormalization_updated(self) -> None:
+        pass
+
+    @tag('output_migration')
+    def test_cmd_stderr_empty_migrated_and_denormalization_updated(self) -> None:
+        self.client.force_authenticate(self.staff)
+        self._do_cmd_result_output_test(
+            self.client,
+            self.staff_submission,
+            self.staff_cmd_result,
+            ag_models.FeedbackCategory.max,
+            expected_stderr=b'',
+            migrate_output=True,
+            update_denormalization=True,
+        )
+
     def do_get_output_and_diff_on_hidden_ag_test_test(self, client,
                                                       submission: ag_models.Submission,
                                                       cmd_result: ag_models.AGTestCommandResult,
@@ -288,6 +489,63 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         response = client.get(size_url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertIsNone(response.data)
+
+    def _do_cmd_result_output_test(
+        self,
+        client,
+        submission,
+        cmd_result,
+        fdbk_category,
+        expected_stdout=b'adkjfaksdjf;akjsdf;',
+        expected_stderr=b'qewiruqpewpuir',
+        migrate_output=False,
+        update_denormalization=False,
+    ):
+        if expected_stdout is not None:
+            with open(cmd_result.stdout_filename, 'w') as f:
+                f.write(expected_stdout.decode())
+        if expected_stderr is not None:
+            with open(cmd_result.stderr_filename, 'w') as f:
+                f.write(expected_stderr.decode())
+
+        if migrate_output:
+            migrate_ag_test_command_result_output(cmd_result)
+            if update_denormalization:
+                update_denormalized_ag_test_results(submission.pk)
+
+        fdbk = get_cmd_fdbk(cmd_result, fdbk_category)
+
+        url_kwargs = {'pk': submission.pk, 'result_pk': cmd_result.pk}
+        url_query_str = '?feedback_category={}'.format(fdbk_category.value)
+        for url_lookup, expected in [
+            ('ag-test-cmd-result-stdout', expected_stdout),
+            ('ag-test-cmd-result-stderr', expected_stderr),
+        ]:
+            print(url_lookup)
+            url = reverse(url_lookup, kwargs=url_kwargs) + url_query_str
+            response = client.get(url)
+
+            if expected is None or not fdbk.fdbk_conf.visible:
+                self.assertIsNone(response.data)
+            else:
+                self.assertEqual(expected, b''.join(response.streaming_content))
+
+        # Output size endpoint
+        url = reverse('ag-test-cmd-result-output-size', kwargs=url_kwargs) + url_query_str
+        response = client.get(url)
+
+        if not fdbk.fdbk_conf.visible:
+            self.assertIsNone(response.data)
+        else:
+            expected = {
+                'stdout_size': fdbk.stdout_size,
+                'stderr_size': fdbk.stderr_size,
+                'stdout_truncated': fdbk.stdout_truncated,
+                'stderr_truncated': fdbk.stderr_truncated,
+                'stdout_diff_size': fdbk.get_stdout_diff_size(),
+                'stderr_diff_size': fdbk.get_stderr_diff_size(),
+            }
+            self.assertEqual(expected, response.data)
 
 
 class OutputWithXAccelTestCase(_SetUp):

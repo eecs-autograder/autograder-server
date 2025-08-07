@@ -3,6 +3,7 @@ from typing import Dict
 
 from django.db import models
 
+from autograder.core.constants import COMPRESSED_OUTPUT_SUFFIX
 import autograder.core.utils as core_ut
 
 from ..ag_model_base import AutograderModel, AutograderModelManager
@@ -38,14 +39,59 @@ class AGTestSuiteResult(AutograderModel):
         blank=True, default=False, help_text="Whether the setup command's stderr was truncated")
 
     @property
+    def has_setup_result(self) -> bool:
+        return self.setup_return_code is not None or self.setup_timed_out
+
+    @property
     def setup_stdout_filename(self) -> str:
-        return os.path.join(core_ut.get_result_output_dir(self.submission),
-                            'suite_result_{}_setup_stdout'.format(self.pk))
+        filename = os.path.join(
+            core_ut.get_result_output_dir(self.submission),
+            'suite_result_{}_setup_stdout'.format(self.pk)
+        )
+        return (
+            filename + COMPRESSED_OUTPUT_SUFFIX
+            if self.setup_stdout_size is not None else filename
+        )
 
     @property
     def setup_stderr_filename(self) -> str:
-        return os.path.join(core_ut.get_result_output_dir(self.submission),
-                            'suite_result_{}_setup_stderr'.format(self.pk))
+        filename = os.path.join(
+            core_ut.get_result_output_dir(self.submission),
+            'suite_result_{}_setup_stderr'.format(self.pk)
+
+        )
+        return (
+            filename + COMPRESSED_OUTPUT_SUFFIX
+            if self.setup_stderr_size is not None else filename
+        )
+
+    setup_stdout_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="""The size in bytes of the setup command's stdout. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/gzip.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
+        """
+    )
+
+    setup_stderr_size = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="""The size in bytes of the setup command's stderr. None indicates:
+            - The 2025.08.0 output storage compression hasn't been applied to this object
+              (i.e., the output is uncompressed)
+            - The output size should be retrieved from the filesystem
+
+            When non-None, stores the size in bytes of the output and indicates
+            that the output is compressed using LZMA: https://docs.python.org/3/library/gzip.html
+
+            When zero, there will be NO ACTUAL FILE stored in the filesystem
+        """
+    )
 
     # Serializing AGTestSuiteResults should be used for DENORMALIZATION
     # ONLY.
@@ -58,6 +104,8 @@ class AGTestSuiteResult(AutograderModel):
         'setup_timed_out',
         'setup_stdout_truncated',
         'setup_stderr_truncated',
+        'setup_stdout_size',
+        'setup_stderr_size',
     )
 
     def to_dict(self) -> Dict[str, object]:

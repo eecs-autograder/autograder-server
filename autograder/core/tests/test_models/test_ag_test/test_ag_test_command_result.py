@@ -88,6 +88,12 @@ class AGTestCommandResultTestCase(UnitTestBase):
             'stdout_truncated',
             'stderr_truncated',
 
+            'stdout_size',
+            'stderr_size',
+
+            'stdout_diff_size',
+            'stderr_diff_size',
+
             'custom_scoring_used',
             'custom_scoring_points',
             'custom_scoring_error',

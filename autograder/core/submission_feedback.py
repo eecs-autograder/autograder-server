@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import gzip
+import json
 import os
 import tempfile
 from decimal import Decimal
 from pathlib import Path
 from typing import (
-    BinaryIO, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, TypedDict, Union, cast
+    Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, TypedDict, Union, cast
 )
 
 from django.db import transaction
@@ -137,6 +139,10 @@ class AGTestSuiteResultProtocol(Protocol):
         ...
 
     @property
+    def has_setup_result(self) -> bool:
+        ...
+
+    @property
     def setup_return_code(self) -> int:
         ...
 
@@ -158,6 +164,16 @@ class AGTestSuiteResultProtocol(Protocol):
 
     @property
     def setup_stderr_filename(self) -> str:
+        ...
+
+    # Note: None vs non-None for these _size fields has the name
+    # meaning as those values in the actual DB object.
+    @property
+    def setup_stdout_size(self) -> int | None:
+        ...
+
+    @property
+    def setup_stderr_size(self) -> int | None:
         ...
 
 
@@ -202,6 +218,20 @@ class SerializedAGTestSuiteResultWrapper:
     @property
     def setup_stderr_filename(self) -> str:
         return self._ag_test_suite_result.setup_stderr_filename
+
+    # Note: None vs non-None for these _size fields has the name
+    # meaning as those values in the actual DB object.
+    @property
+    def setup_stdout_size(self) -> int | None:
+        return cast(int | None, self._suite_result_dict.get('setup_stdout_size'))
+
+    @property
+    def setup_stderr_size(self) -> int | None:
+        return cast(int | None, self._suite_result_dict.get('setup_stderr_size'))
+
+    @property
+    def has_setup_result(self) -> bool:
+        return self.setup_return_code is not None or self.setup_timed_out
 
     @cached_property
     def _ag_test_suite_result(self) -> AGTestSuiteResult:
@@ -288,6 +318,32 @@ class AGTestCommandResultProtocol(Protocol):
     def stderr_filename(self) -> str:
         ...
 
+    # Note: None vs non-None for these _size fields has the name
+    # meaning as those values in the actual DB object.
+    @property
+    def stdout_size(self) -> int | None:
+        ...
+
+    @property
+    def stderr_size(self) -> int | None:
+        ...
+
+    @property
+    def stdout_diff_size(self) -> int | None:
+        ...
+
+    @property
+    def stderr_diff_size(self) -> int | None:
+        ...
+
+    @property
+    def stdout_diff_filename(self) -> str:
+        ...
+
+    @property
+    def stderr_diff_filename(self) -> str:
+        ...
+
     @property
     def custom_scoring_used(self) -> bool:
         ...
@@ -333,6 +389,24 @@ class SerializedAGTestCommandResultWrapper:
     def stderr_correct(self) -> bool:
         return cast(bool, self._cmd_result_dict['stderr_correct'])
 
+    # Note: None vs non-None for these _size fields has the name
+    # meaning as those values in the actual DB object.
+    @property
+    def stdout_size(self) -> int | None:
+        return cast(int | None, self._cmd_result_dict.get('stdout_size'))
+
+    @property
+    def stderr_size(self) -> int | None:
+        return cast(int | None, self._cmd_result_dict.get('stderr_size'))
+
+    @property
+    def stdout_diff_size(self) -> int | None:
+        return cast(int | None, self._cmd_result_dict.get('stdout_diff_size'))
+
+    @property
+    def stderr_diff_size(self) -> int | None:
+        return cast(int | None, self._cmd_result_dict.get('stderr_diff_size'))
+
     @property
     def timed_out(self) -> bool:
         return cast(bool, self._cmd_result_dict['timed_out'])
@@ -367,6 +441,14 @@ class SerializedAGTestCommandResultWrapper:
     @property
     def stderr_filename(self) -> str:
         return self._ag_test_command_result.stderr_filename
+
+    @property
+    def stdout_diff_filename(self) -> str:
+        return self._ag_test_command_result.stdout_diff_filename
+
+    @property
+    def stderr_diff_filename(self) -> str:
+        return self._ag_test_command_result.stderr_diff_filename
 
     @cached_property
     def _ag_test_command_result(self) -> AGTestCommandResult:
@@ -639,24 +721,22 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return self._ag_test_suite_result.setup_timed_out
 
     @property
-    def setup_stdout(self) -> Optional[BinaryIO]:
-        if (filename := self.setup_stdout_filename) is None:
-            return None
-
-        return open(filename, 'rb')
-
-    @property
     def setup_stdout_filename(self) -> Path | None:
         if not self._fdbk.show_setup_stdout:
             return None
 
         return Path(self._ag_test_suite_result.setup_stdout_filename)
 
-    def get_setup_stdout_size(self) -> Optional[int]:
+    @property
+    def setup_stdout_size(self) -> Optional[int]:
         if not self._fdbk.show_setup_stdout:
             return None
 
-        return os.path.getsize(self._ag_test_suite_result.setup_stdout_filename)
+        return (
+            self._ag_test_suite_result.setup_stdout_size
+            if self._ag_test_suite_result.setup_stdout_size is not None
+            else os.path.getsize(self._ag_test_suite_result.setup_stdout_filename)
+        )
 
     @property
     def setup_stdout_truncated(self) -> Optional[bool]:
@@ -666,24 +746,22 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return self._ag_test_suite_result.setup_stdout_truncated
 
     @property
-    def setup_stderr(self) -> Optional[BinaryIO]:
-        if (filename := self.setup_stderr_filename) is None:
-            return None
-
-        return open(filename, 'rb')
-
-    @property
     def setup_stderr_filename(self) -> Path | None:
         if not self._fdbk.show_setup_stderr:
             return None
 
         return Path(self._ag_test_suite_result.setup_stderr_filename)
 
-    def get_setup_stderr_size(self) -> Optional[int]:
+    @property
+    def setup_stderr_size(self) -> Optional[int]:
         if not self._fdbk.show_setup_stderr:
             return None
 
-        return os.path.getsize(self._ag_test_suite_result.setup_stderr_filename)
+        return (
+            self._ag_test_suite_result.setup_stderr_size
+            if self._ag_test_suite_result.setup_stderr_size is not None
+            else os.path.getsize(self._ag_test_suite_result.setup_stderr_filename)
+        )
 
     @property
     def setup_stderr_truncated(self) -> Optional[bool]:
@@ -694,8 +772,6 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 
     @property
     def _show_setup_name(self) -> bool:
-        has_setup_result = (self._ag_test_suite_result.setup_return_code is not None
-                            or self._ag_test_suite_result.setup_timed_out)
         setup_info_is_available = (
             self._fdbk.show_setup_stdout
             or self._fdbk.show_setup_stderr
@@ -703,7 +779,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
             or self._fdbk.show_setup_timed_out
         )
 
-        return has_setup_result and setup_info_is_available
+        return self._ag_test_suite_result.has_setup_result and setup_info_is_available
 
     @property
     def total_points(self) -> int:
@@ -1047,24 +1123,22 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return self._ag_test_command_result.stdout_correct
 
     @property
-    def stdout(self) -> Optional[BinaryIO]:
-        if (filename := self.stdout_filename) is not None:
-            return open(filename, 'rb')
-
-        return None
-
-    @property
     def stdout_filename(self) -> Path | None:
         if self._show_actual_stdout:
             return Path(self._ag_test_command_result.stdout_filename)
 
         return None
 
-    def get_stdout_size(self) -> Optional[int]:
-        if self._show_actual_stdout:
-            return os.path.getsize(self._ag_test_command_result.stdout_filename)
+    @property
+    def stdout_size(self) -> Optional[int]:
+        if not self._show_actual_stdout:
+            return None
 
-        return None
+        return (
+            self._ag_test_command_result.stdout_size
+            if self._ag_test_command_result.stdout_size is not None
+            else os.path.getsize(self._ag_test_command_result.stdout_filename)
+        )
 
     @property
     def _show_actual_stdout(self) -> bool:
@@ -1083,6 +1157,11 @@ class AGTestCommandResultFeedback(ToDictMixin):
         if (self._cmd.expected_stdout_source == ExpectedOutputSource.none
                 or self._fdbk.stdout_fdbk_level != ValueFeedbackLevel.expected_and_actual):
             return None
+
+        cached_diff_filename = self._ag_test_command_result.stdout_diff_filename
+        if self._ag_test_command_result.stdout_diff_size is not None:
+            with gzip.open(cached_diff_filename, 'rt') as f:
+                return core_ut.DiffResult(**json.load(f))
 
         stdout_filename = self._ag_test_command_result.stdout_filename
         diff_whitespace_kwargs = {
@@ -1109,11 +1188,14 @@ class AGTestCommandResultFeedback(ToDictMixin):
                 'Invalid expected stdout source: {}'.format(self._cmd.expected_stdout_source))
 
     def get_stdout_diff_size(self) -> Optional[int]:
+        if self._ag_test_command_result.stdout_diff_size is not None:
+            return self._ag_test_command_result.stdout_diff_size
+
         diff = self.stdout_diff
         if diff is None:
             return None
 
-        return sum((len(line) for line in diff.diff_content))
+        return core_ut.get_diff_size(diff.diff_content)
 
     @property
     def stdout_points(self) -> int:
@@ -1147,24 +1229,22 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return self._ag_test_command_result.stderr_correct
 
     @property
-    def stderr(self) -> Optional[BinaryIO]:
-        if (filename := self.stderr_filename) is not None:
-            return open(filename, 'rb')
-
-        return None
-
-    @property
     def stderr_filename(self) -> Path | None:
         if self._show_actual_stderr:
             return Path(self._ag_test_command_result.stderr_filename)
 
         return None
 
-    def get_stderr_size(self) -> Optional[int]:
-        if self._show_actual_stderr:
-            return os.path.getsize(self._ag_test_command_result.stderr_filename)
+    @property
+    def stderr_size(self) -> Optional[int]:
+        if not self._show_actual_stderr:
+            return None
 
-        return None
+        return (
+            self._ag_test_command_result.stderr_size
+            if self._ag_test_command_result.stderr_size is not None
+            else os.path.getsize(self._ag_test_command_result.stderr_filename)
+        )
 
     @property
     def _show_actual_stderr(self) -> bool:
@@ -1183,6 +1263,11 @@ class AGTestCommandResultFeedback(ToDictMixin):
         if (self._cmd.expected_stderr_source == ExpectedOutputSource.none
                 or self._fdbk.stderr_fdbk_level != ValueFeedbackLevel.expected_and_actual):
             return None
+
+        cached_diff_filename = self._ag_test_command_result.stderr_diff_filename
+        if self._ag_test_command_result.stderr_diff_size is not None:
+            with gzip.open(cached_diff_filename, 'rt') as f:
+                return core_ut.DiffResult(**json.load(f))
 
         stderr_filename = self._ag_test_command_result.stderr_filename
         diff_whitespace_kwargs = {
@@ -1208,11 +1293,14 @@ class AGTestCommandResultFeedback(ToDictMixin):
                 'Invalid expected stderr source: {}'.format(self._cmd.expected_stdout_source))
 
     def get_stderr_diff_size(self) -> Optional[int]:
+        if self._ag_test_command_result.stderr_diff_size is not None:
+            return self._ag_test_command_result.stderr_diff_size
+
         diff = self.stderr_diff
         if diff is None:
             return None
 
-        return sum((len(line) for line in diff.diff_content))
+        return core_ut.get_diff_size(diff.diff_content)
 
     @property
     def stderr_points(self) -> int:
