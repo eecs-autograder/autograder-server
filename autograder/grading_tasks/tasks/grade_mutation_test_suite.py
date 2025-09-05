@@ -14,6 +14,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.db import IntegrityError, transaction
 
+from autograder.core.constants import COMPRESSED_OUTPUT_SUFFIX
 import autograder.core.models as ag_models
 from autograder.utils.retry import retry_should_recover
 
@@ -333,13 +334,17 @@ def _save_results(mutation_test_suite: ag_models.MutationTestSuite,
             if validity_check_stdout is not None:
                 result.validity_check_stdout_size = get_tempfile_size(validity_check_stdout)
                 if result.validity_check_stdout_size != 0:
-                    with gzip.open(result.validity_check_stdout_filename, 'wb') as f:
+                    with gzip.open(
+                        result.validity_check_stdout_filename + COMPRESSED_OUTPUT_SUFFIX, 'wb'
+                    ) as f:
                         shutil.copyfileobj(validity_check_stdout, f)
 
             if validity_check_stderr is not None:
                 result.validity_check_stderr_size = get_tempfile_size(validity_check_stderr)
                 if result.validity_check_stderr_size != 0:
-                    with gzip.open(result.validity_check_stderr_filename, 'wb') as f:
+                    with gzip.open(
+                        result.validity_check_stderr_filename + COMPRESSED_OUTPUT_SUFFIX, 'wb'
+                    ) as f:
                         shutil.copyfileobj(validity_check_stderr, f)
 
             result.save()
@@ -347,13 +352,17 @@ def _save_results(mutation_test_suite: ag_models.MutationTestSuite,
             if buggy_impls_stdout is not None:
                 result.grade_buggy_impls_stdout_size = get_tempfile_size(buggy_impls_stdout)
                 if result.grade_buggy_impls_stdout_size != 0:
-                    with gzip.open(result.grade_buggy_impls_stdout_filename, 'wb') as f:
+                    with gzip.open(
+                        result.grade_buggy_impls_stdout_filename + COMPRESSED_OUTPUT_SUFFIX, 'wb'
+                    ) as f:
                         shutil.copyfileobj(buggy_impls_stdout, f)
 
             if buggy_impls_stderr is not None:
                 result.grade_buggy_impls_stderr_size = get_tempfile_size(buggy_impls_stderr)
                 if result.grade_buggy_impls_stderr_size != 0:
-                    with gzip.open(result.grade_buggy_impls_stderr_filename, 'wb') as f:
+                    with gzip.open(
+                        result.grade_buggy_impls_stderr_filename + COMPRESSED_OUTPUT_SUFFIX, 'wb'
+                    ) as f:
                         shutil.copyfileobj(buggy_impls_stderr, f)
 
             result.save()

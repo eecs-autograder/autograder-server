@@ -6,6 +6,7 @@ from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings, tag
 
+from autograder.core.constants import COMPRESSED_OUTPUT_SUFFIX
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core import constants
@@ -143,20 +144,28 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
 
         print('open_validity_check_stdout,', result.validity_check_stdout_size, 'bytes')
         if result.validity_check_stdout_size != 0:
-            with gzip.open(result.validity_check_stdout_filename, 'rt') as f:
+            with gzip.open(
+                result.validity_check_stdout_filename + COMPRESSED_OUTPUT_SUFFIX, 'rt'
+            ) as f:
                 print(f.read(), flush=True)
         print('open_validity_check_stderr,', result.validity_check_stderr_size, 'bytes')
         if result.validity_check_stderr_size != 0:
-            with gzip.open(result.validity_check_stderr_filename, 'rt') as f:
+            with gzip.open(
+                result.validity_check_stderr_filename + COMPRESSED_OUTPUT_SUFFIX, 'rt'
+            ) as f:
                 print(f.read(), flush=True)
 
         print('open_grade_buggy_impls_stdout,', result.grade_buggy_impls_stdout_size, 'bytes')
         if result.grade_buggy_impls_stdout_size != 0:
-            with gzip.open(result.grade_buggy_impls_stdout_filename, 'rt') as f:
+            with gzip.open(
+                result.grade_buggy_impls_stdout_filename + COMPRESSED_OUTPUT_SUFFIX, 'rt'
+            ) as f:
                 print(f.read(), flush=True)
         print('open_grade_buggy_impls_stderr,', result.grade_buggy_impls_stderr_size, 'bytes')
         if result.grade_buggy_impls_stderr_size != 0:
-            with gzip.open(result.grade_buggy_impls_stderr_filename, 'rt') as f:
+            with gzip.open(
+                result.grade_buggy_impls_stderr_filename + COMPRESSED_OUTPUT_SUFFIX, 'rt'
+            ) as f:
                 print(f.read(), flush=True)
 
     def test_grade_deferred(self, *args):
@@ -204,11 +213,15 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
         self.assertFalse(os.path.exists(result.get_test_names_stdout_filename))
         self.assertFalse(os.path.exists(result.get_test_names_stderr_filename))
 
-        self.assertFalse(os.path.exists(result.validity_check_stdout_filename))
-        self.assertFalse(os.path.exists(result.validity_check_stderr_filename))
+        self.assertFalse(os.path.exists(
+            result.validity_check_stdout_filename + COMPRESSED_OUTPUT_SUFFIX))
+        self.assertFalse(os.path.exists(
+            result.validity_check_stderr_filename + COMPRESSED_OUTPUT_SUFFIX))
 
-        self.assertFalse(os.path.exists(result.grade_buggy_impls_stdout_filename))
-        self.assertFalse(os.path.exists(result.grade_buggy_impls_stderr_filename))
+        self.assertFalse(os.path.exists(
+            result.grade_buggy_impls_stdout_filename + COMPRESSED_OUTPUT_SUFFIX))
+        self.assertFalse(os.path.exists(
+            result.grade_buggy_impls_stderr_filename + COMPRESSED_OUTPUT_SUFFIX))
 
     def test_setup_command_times_out_no_tests_discovered(self, *args):
         self.mutation_suite.validate_and_update(setup_command={'cmd': 'sleep 10'})
@@ -239,11 +252,15 @@ class EECS280StyleMutationTestGradingIntegrationTestCase(UnitTestBase):
         self.assertFalse(os.path.exists(result.get_test_names_stdout_filename))
         self.assertFalse(os.path.exists(result.get_test_names_stderr_filename))
 
-        self.assertFalse(os.path.exists(result.validity_check_stdout_filename))
-        self.assertFalse(os.path.exists(result.validity_check_stderr_filename))
+        self.assertFalse(os.path.exists(
+            result.validity_check_stdout_filename + COMPRESSED_OUTPUT_SUFFIX))
+        self.assertFalse(os.path.exists(
+            result.validity_check_stderr_filename + COMPRESSED_OUTPUT_SUFFIX))
 
-        self.assertFalse(os.path.exists(result.grade_buggy_impls_stdout_filename))
-        self.assertFalse(os.path.exists(result.grade_buggy_impls_stderr_filename))
+        self.assertFalse(os.path.exists(
+            result.grade_buggy_impls_stdout_filename + COMPRESSED_OUTPUT_SUFFIX))
+        self.assertFalse(os.path.exists(
+            result.grade_buggy_impls_stderr_filename + COMPRESSED_OUTPUT_SUFFIX))
 
 
 @tag('slow', 'sandbox')
