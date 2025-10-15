@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: Autograder.io API
-  version: 2025.08.0
+  version: 2025.08.1.rc1
   description: "\n[View docs with ReDoc](/api/docs/redoc)\n\n[View docs with Swagger](/api/docs)\n\
     \n### Authenticating\nTo obtain an API token linked to your account, visit\nthe\
     \ [token download page](../web/__apitoken__).\nAfter you've logged in, you will\
