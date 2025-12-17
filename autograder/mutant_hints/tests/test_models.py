@@ -25,7 +25,6 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
         self.assertEqual({}, config.hints_by_mutant_name)
         self.assertIsNone(config.num_hints_per_day)
         self.assertEqual(datetime.time(0, 0, 0, 0), config.hint_limit_reset_time)
-        self.assertEqual('UTC', config.hint_limit_reset_timezone)
         self.assertIsNone(config.num_hints_per_submission)
         self.assertEqual(MutantNameObfuscationChoices.none, config.obfuscate_mutant_names)
 
@@ -36,7 +35,6 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
             hints_by_mutant_name={'mutant_spam': ['hint1', 'bad hint'], 'mutant_egg': []},
             num_hints_per_day=43,
             hint_limit_reset_time=reset_time,
-            hint_limit_reset_timezone='America/New_York',
             num_hints_per_submission=41,
             obfuscate_mutant_names=MutantNameObfuscationChoices.hash,
         )
@@ -45,7 +43,6 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
                          config.hints_by_mutant_name)
         self.assertEqual(43, config.num_hints_per_day)
         self.assertEqual(reset_time, config.hint_limit_reset_time)
-        self.assertEqual('America/New_York', config.hint_limit_reset_timezone)
         self.assertEqual(41, config.num_hints_per_submission)
         self.assertEqual(MutantNameObfuscationChoices.hash, config.obfuscate_mutant_names)
 
@@ -101,15 +98,6 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
                 )
             self.assertIn('hints_by_mutant_name', cm.exception.message_dict)
 
-    def test_error_invalid_reset_timezone(self) -> None:
-        with self.assertRaises(ValidationError) as cm:
-            MutationTestSuiteHintConfig.objects.validate_and_create(
-                mutation_test_suite=self.mutation_test_suite,
-                hint_limit_reset_timezone='nope'
-            )
-
-        self.assertIn('hint_limit_reset_timezone', cm.exception.message_dict)
-
     def test_serialization(self) -> None:
         config = MutationTestSuiteHintConfig.objects.validate_and_create(
             mutation_test_suite=self.mutation_test_suite
@@ -125,7 +113,6 @@ class MutationTestSuiteHintConfigTestCase(UnitTestBase):
             'hints_by_mutant_name',
             'num_hints_per_day',
             'hint_limit_reset_time',
-            'hint_limit_reset_timezone',
             'num_hints_per_submission',
             'obfuscate_mutant_names',
             'obfuscated_mutant_name_prefix',

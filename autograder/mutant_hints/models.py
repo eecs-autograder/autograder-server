@@ -53,13 +53,6 @@ class MutationTestSuiteHintConfig(ag_models.AutograderModel):
         help_text="""The time at which the number of hints a group
                      has unlocked resets. Defaults to 00:00:00.""")
 
-    hint_limit_reset_timezone = models.TextField(
-        default='UTC',
-        help_text="""A string representing the timezone to use when computing
-            how many hints a group has unlocked in a 24 hour period.""",
-        validators=[core_ut.validate_timezone]
-    )
-
     num_hints_per_submission = models.IntegerField(
         blank=True, null=True, default=None,
         validators=[MinValueValidator(1)],
@@ -119,7 +112,6 @@ class MutationTestSuiteHintConfig(ag_models.AutograderModel):
         'hints_by_mutant_name',
         'num_hints_per_day',
         'hint_limit_reset_time',
-        'hint_limit_reset_timezone',
         'num_hints_per_submission',
         'obfuscate_mutant_names',
         'obfuscated_mutant_name_prefix',
@@ -132,7 +124,6 @@ class MutationTestSuiteHintConfig(ag_models.AutograderModel):
         'hints_by_mutant_name',
         'num_hints_per_day',
         'hint_limit_reset_time',
-        'hint_limit_reset_timezone',
         'num_hints_per_submission',
         'obfuscate_mutant_names',
         'obfuscated_mutant_name_prefix',

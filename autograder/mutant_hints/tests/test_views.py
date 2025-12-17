@@ -115,7 +115,6 @@ class MutationTestSuiteHintConfigDetailViewTestCase(AGViewTestBase):
                 'hints_by_mutant_name': {'mut1': ['hint1', 'hint2']},
                 'num_hints_per_day': 4,
                 'hint_limit_reset_time': time(11, 50, 00),
-                'hint_limit_reset_timezone': 'America/Chicago',
                 'num_hints_per_submission': 10,
                 'obfuscate_mutant_names': MutantNameObfuscationChoices.sequential,
             },

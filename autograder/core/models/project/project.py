@@ -150,10 +150,10 @@ class Project(AutograderModel):
             hour period during which submissions should be counted
             towards the daily limit. Defaults to 00:00:00.""")
 
-    submission_limit_reset_timezone = models.TextField(
+    timezone = models.TextField(
         default='UTC',
-        help_text="""A string representing the timezone to use when computing
-            how many submissions a group has made in a 24 hour period.""",
+        help_text="""A string representing the timezone to use when storing and
+            comparing dates and times for this project.""",
         validators=[core_ut.validate_timezone]
     )
 
@@ -268,6 +268,7 @@ class Project(AutograderModel):
         'last_modified',
         'course',
         'visible_to_students',
+        'timezone',
         'closing_time',
         'soft_closing_time',
         'disallow_student_submissions',
@@ -280,7 +281,6 @@ class Project(AutograderModel):
         'allow_submissions_past_limit',
         'groups_combine_daily_submissions',
         'submission_limit_reset_time',
-        'submission_limit_reset_timezone',
 
         'num_bonus_submissions',
 
@@ -311,6 +311,7 @@ class Project(AutograderModel):
     EDITABLE_FIELDS = (
         'name',
         'visible_to_students',
+        'timezone',
         'closing_time',
         'soft_closing_time',
         'disallow_student_submissions',
@@ -323,7 +324,6 @@ class Project(AutograderModel):
         'allow_submissions_past_limit',
         'groups_combine_daily_submissions',
         'submission_limit_reset_time',
-        'submission_limit_reset_timezone',
 
         'num_bonus_submissions',
 
