@@ -12,6 +12,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import QueryDict
 from django.urls import reverse
 from django.utils import timezone
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -995,6 +996,147 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
                 ag_models.LateDaysRemaining.objects.filter(user=user, course=self.course).exists())
             with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
                 self.get_most_recent_late_day_usage(user)
+
+
+    def test_correct_num_late_days_used_after_fall_back_time_change(self):
+        detroit_tz = pytz.timezone("America/Detroit")
+
+        closing_time = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=11,
+            day=1,
+            hour=23,
+            minute=59,
+        ))
+        self.project.validate_and_update(
+            timezone="America/Detroit",
+            closing_time=closing_time
+        )
+
+        # submit within the last hour of the next 1 calendar-day period after
+        # closing time
+        submit_time_1 = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=11,
+            day=2,
+            hour=23,
+            minute=1,
+        ))
+        self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time_1,
+            expect_failure=False
+        )
+
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self.assertEqual(1, self.group.late_days_used[user.username])
+
+            remaining = ag_models.LateDaysRemaining.objects.get(user=user, course=self.course)
+            self.assertEqual(self.num_late_days - 1, remaining.late_days_remaining)
+
+            usage = self.get_most_recent_late_day_usage(user)
+            self.assertEqual(1, usage.num_late_days_used)
+
+        # submit within the first hour of the 3rd calendar-day period after
+        # closing time
+        submit_time_2 = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=11,
+            day=4,
+            hour=0,
+            minute=1,
+        ))
+        self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time_2,
+            expect_failure=False
+        )
+
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self.assertEqual(3, self.group.late_days_used[user.username])
+
+            remaining = ag_models.LateDaysRemaining.objects.get(user=user, course=self.course)
+            self.assertEqual(self.num_late_days - 3, remaining.late_days_remaining)
+
+            usage = self.get_most_recent_late_day_usage(user)
+            self.assertEqual(3, usage.num_late_days_used)
+
+
+    def test_correct_num_late_days_after_spring_forward_time_change(self):
+        detroit_tz = pytz.timezone("America/Detroit")
+
+        closing_time = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=3,
+            day=8,
+            hour=23,
+            minute=59,
+        ))
+        self.project.validate_and_update(
+            timezone="America/Detroit",
+            closing_time=closing_time
+        )
+
+        # submit within the last hour of the next 1 calendar-day period after
+        # closing time
+        submit_time_1 = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=3,
+            day=9,
+            hour=23,
+            minute=1,
+        ))
+        self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time_1,
+            expect_failure=False
+        )
+
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self.assertEqual(1, self.group.late_days_used[user.username])
+
+            remaining = ag_models.LateDaysRemaining.objects.get(user=user, course=self.course)
+            self.assertEqual(self.num_late_days - 1, remaining.late_days_remaining)
+
+            usage = self.get_most_recent_late_day_usage(user)
+            self.assertEqual(1, usage.num_late_days_used)
+
+        # submit within the first hour of the 3rd calendar-day period after
+        # closing time
+        submit_time_2 = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=3,
+            day=11,
+            hour=0,
+            minute=1,
+        ))
+        self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time_2,
+            expect_failure=False
+        )
+
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self.assertEqual(3, self.group.late_days_used[user.username])
+
+            remaining = ag_models.LateDaysRemaining.objects.get(user=user, course=self.course)
+            self.assertEqual(self.num_late_days - 3, remaining.late_days_remaining)
+
+            usage = self.get_most_recent_late_day_usage(user)
+            self.assertEqual(3, usage.num_late_days_used)
+
 
     def submit(self, group: ag_models.Group, user: User, timestamp: datetime.datetime,
                *, expect_failure: bool) -> Optional[ag_models.Submission]:
