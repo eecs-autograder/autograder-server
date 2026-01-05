@@ -84,8 +84,8 @@ def get_24_hour_period(
     convert_result_to_utc: bool = True
 ) -> Tuple[datetime.datetime, datetime.datetime]:
     """
-    Returns a tuple (start_datetime, end_datetime) representing a 24
-    hour period that contains the current date and time and with the
+    Returns a tuple (start_datetime, end_datetime) representing a 1 calendar
+    day period that contains the current date and time and with the
     start and end time both being start_time.
     """
     start_date = contains_datetime.date()

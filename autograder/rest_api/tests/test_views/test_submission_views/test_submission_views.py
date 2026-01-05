@@ -12,7 +12,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import QueryDict
 from django.urls import reverse
 from django.utils import timezone
-from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -997,7 +996,6 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
             with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
                 self.get_most_recent_late_day_usage(user)
 
-
     def test_correct_num_late_days_used_after_fall_back_time_change(self):
         detroit_tz = pytz.timezone("America/Detroit")
 
@@ -1030,7 +1028,6 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
         )
 
         self.group.refresh_from_db()
-
         for user in self.group.members.all():
             self.assertEqual(1, self.group.late_days_used[user.username])
 
@@ -1064,9 +1061,10 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
             remaining = ag_models.LateDaysRemaining.objects.get(user=user, course=self.course)
             self.assertEqual(self.num_late_days - 3, remaining.late_days_remaining)
 
+            # this should be 2, because these log entries track how many
+            # additional late days were used by the associated submission
             usage = self.get_most_recent_late_day_usage(user)
-            self.assertEqual(3, usage.num_late_days_used)
-
+            self.assertEqual(2, usage.num_late_days_used)
 
     def test_correct_num_late_days_after_spring_forward_time_change(self):
         detroit_tz = pytz.timezone("America/Detroit")
@@ -1134,9 +1132,10 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
             remaining = ag_models.LateDaysRemaining.objects.get(user=user, course=self.course)
             self.assertEqual(self.num_late_days - 3, remaining.late_days_remaining)
 
+            # this should be 2, because these log entries track how many
+            # additional late days were used by the associated submission
             usage = self.get_most_recent_late_day_usage(user)
-            self.assertEqual(3, usage.num_late_days_used)
-
+            self.assertEqual(2, usage.num_late_days_used)
 
     def submit(self, group: ag_models.Group, user: User, timestamp: datetime.datetime,
                *, expect_failure: bool) -> Optional[ag_models.Submission]:
@@ -1252,7 +1251,7 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
 
         self.project.validate_and_update(
             submission_limit_reset_time=now_local - timezone.timedelta(minutes=5),
-            submission_limit_reset_timezone=local_timezone)
+            timezone=local_timezone)
 
         before_reset_time_submission = self._create_submission(
             group=self.group,
@@ -1264,13 +1263,13 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
         self.assertEqual(1, self.group.num_submits_towards_limit)
 
     def test_non_default_limit_reset_time_and_timezone(self):
-        reset_timezone = 'America/Detroit'
+        local_timezone = 'America/Detroit'
         reset_datetime = timezone.now().astimezone(
-            pytz.timezone(reset_timezone)
+            pytz.timezone(local_timezone)
         ) + timezone.timedelta(hours=2)
         self.project.validate_and_update(
             submission_limit_reset_time=reset_datetime.time(),
-            submission_limit_reset_timezone=reset_timezone,
+            timezone=local_timezone,
             submission_limit_per_day=1)
 
         within_limit_timestamp = reset_datetime + timezone.timedelta(hours=-23)

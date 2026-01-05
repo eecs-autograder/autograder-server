@@ -4880,6 +4880,11 @@ components:
             \ viewed by students."
           nullable: false
           type: boolean
+        timezone:
+          description: "A string representing the timezone to use when storing and\n\
+            \            comparing dates and times for this project."
+          nullable: false
+          type: string
         closing_time:
           description: "The date and time that this project should stop\n        \
             \    accepting submissions.\n            A value of None indicates that\
@@ -4953,11 +4958,6 @@ components:
           nullable: false
           type: string
           format: time
-        submission_limit_reset_timezone:
-          description: "A string representing the timezone to use when computing\n\
-            \            how many submissions a group has made in a 24 hour period."
-          nullable: false
-          type: string
         num_bonus_submissions:
           description: ''
           nullable: false
@@ -5031,6 +5031,7 @@ components:
       - last_modified
       - course
       - visible_to_students
+      - timezone
       - soft_closing_time
       - disallow_student_submissions
       - disallow_group_registration
@@ -5041,7 +5042,6 @@ components:
       - allow_submissions_past_limit
       - groups_combine_daily_submissions
       - submission_limit_reset_time
-      - submission_limit_reset_timezone
       - num_bonus_submissions
       - total_submission_limit
       - allow_late_days
@@ -5069,6 +5069,11 @@ components:
             \ viewed by students."
           nullable: false
           type: boolean
+        timezone:
+          description: "A string representing the timezone to use when storing and\n\
+            \            comparing dates and times for this project."
+          nullable: false
+          type: string
         closing_time:
           description: "The date and time that this project should stop\n        \
             \    accepting submissions.\n            A value of None indicates that\
@@ -5142,11 +5147,6 @@ components:
           nullable: false
           type: string
           format: time
-        submission_limit_reset_timezone:
-          description: "A string representing the timezone to use when computing\n\
-            \            how many submissions a group has made in a 24 hour period."
-          nullable: false
-          type: string
         num_bonus_submissions:
           description: ''
           nullable: false
@@ -5216,6 +5216,11 @@ components:
             \ viewed by students."
           nullable: false
           type: boolean
+        timezone:
+          description: "A string representing the timezone to use when storing and\n\
+            \            comparing dates and times for this project."
+          nullable: false
+          type: string
         closing_time:
           description: "The date and time that this project should stop\n        \
             \    accepting submissions.\n            A value of None indicates that\
@@ -5289,11 +5294,6 @@ components:
           nullable: false
           type: string
           format: time
-        submission_limit_reset_timezone:
-          description: "A string representing the timezone to use when computing\n\
-            \            how many submissions a group has made in a 24 hour period."
-          nullable: false
-          type: string
         num_bonus_submissions:
           description: ''
           nullable: false
@@ -9173,11 +9173,6 @@ components:
           nullable: false
           type: string
           format: time
-        hint_limit_reset_timezone:
-          description: "A string representing the timezone to use when computing\n\
-            \            how many hints a group has unlocked in a 24 hour period."
-          nullable: false
-          type: string
         num_hints_per_submission:
           description: The number of hints that can be unlocked for this mutation
             test suite on a single submission. None indicates no limit.
@@ -9224,7 +9219,6 @@ components:
       - hints_by_mutant_name
       - num_hints_per_day
       - hint_limit_reset_time
-      - hint_limit_reset_timezone
       - num_hints_per_submission
       - obfuscate_mutant_names
       - obfuscated_mutant_name_prefix
@@ -9248,11 +9242,6 @@ components:
           nullable: false
           type: string
           format: time
-        hint_limit_reset_timezone:
-          description: "A string representing the timezone to use when computing\n\
-            \            how many hints a group has unlocked in a 24 hour period."
-          nullable: false
-          type: string
         num_hints_per_submission:
           description: The number of hints that can be unlocked for this mutation
             test suite on a single submission. None indicates no limit.
@@ -9301,11 +9290,6 @@ components:
           nullable: false
           type: string
           format: time
-        hint_limit_reset_timezone:
-          description: "A string representing the timezone to use when computing\n\
-            \            how many hints a group has unlocked in a 24 hour period."
-          nullable: false
-          type: string
         num_hints_per_submission:
           description: The number of hints that can be unlocked for this mutation
             test suite on a single submission. None indicates no limit.

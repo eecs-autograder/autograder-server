@@ -1,6 +1,7 @@
 import copy
 import datetime
 from typing import List, Optional
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -110,8 +111,10 @@ class ListCreateSubmissionView(NestedModelView):
             if invalid_fields:
                 raise exceptions.ValidationError({'invalid_fields': invalid_fields})
 
-            timestamp = timezone.now()
             group: ag_models.Group = self.get_object()
+            timestamp = timezone.now().astimezone(
+                ZoneInfo(group.project.timezone)
+            )
             # Keep this mocking hook just after we call get_object()
             test_ut.mocking_hook()
 
@@ -172,15 +175,24 @@ class ListCreateSubmissionView(NestedModelView):
             course = group.project.course
             if course.num_late_days != 0 and group.project.allow_late_days:
                 for user in group.members.all():
-                    user_deadline = self._get_deadline_for_user(group, user)
+                    user_deadline = self._get_tz_aware_deadline_for_user(group, user)
                     assert group_deadline and user_deadline >= group_deadline
 
                     if user_deadline > timestamp:
                         continue
 
+                    full_days_past = (
+                        timestamp.date() - user_deadline.date()
+                    ).days
+
+                    if timestamp.time() > user_deadline.time():
+                        partial_days_past = 1
+                    else:
+                        partial_days_past = 0
+
                     remaining = ag_models.LateDaysRemaining.objects.get_or_create(
                         user=user, course=course)[0]
-                    late_days_needed = (timestamp - user_deadline).days + 1
+                    late_days_needed = full_days_past + partial_days_past
 
                     if remaining.late_days_remaining >= late_days_needed:
                         remaining.late_days_used += late_days_needed
@@ -244,16 +256,22 @@ class ListCreateSubmissionView(NestedModelView):
         return (group.extended_due_date if group.extended_due_date is not None
                 else project.closing_time)
 
-    def _get_deadline_for_user(
+    def _get_tz_aware_deadline_for_user(
         self, group: ag_models.Group,
         user: User
     ) -> datetime.datetime:
         group_deadline = self._get_deadline_for_group(group)
         assert group_deadline is not None
 
-        return group_deadline + datetime.timedelta(
+        tz_aware_group_deadline = group_deadline.astimezone(
+            ZoneInfo(group.project.timezone)
+        )
+
+        deadline_date = tz_aware_group_deadline.date() + datetime.timedelta(
             days=group.late_days_used.get(user.username, 0)
         )
+
+        return tz_aware_group_deadline.replace(day=deadline_date.day)
 
     def _create_submission(self, group: ag_models.Group,
                            timestamp: datetime.datetime,

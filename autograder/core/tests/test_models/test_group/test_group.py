@@ -139,11 +139,11 @@ class GroupTestCase(_SetUp):
         self.assertEqual(num_submissions, group.num_submits_towards_limit)
 
     def test_num_submits_towards_limit_dst_edge_case(self):
-        reset_timezone = 'US/Eastern'
+        local_timezone = 'US/Eastern'
         submissions_per_day = 3
         self.project.validate_and_update(
             submission_limit_reset_time=datetime.time(0, 0, 0),
-            submission_limit_reset_timezone=reset_timezone,
+            timezone=local_timezone,
             submission_limit_per_day=submissions_per_day
         )
 
