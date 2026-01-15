@@ -181,18 +181,18 @@ class ListCreateSubmissionView(NestedModelView):
                     if user_deadline > timestamp:
                         continue
 
-                    full_days_past = (
+                    # 3 cases to test:
+                    # - Time is after that of user deadline, date is same as user deadline
+                    # - Date is after that of user deadline, time is before
+                    # - Date is after that of user deadline, time is after
+                    late_days_needed = (
                         timestamp.date() - user_deadline.date()
-                    ).days
-
-                    if timestamp.time() > user_deadline.time():
-                        partial_days_past = 1
-                    else:
-                        partial_days_past = 0
+                    ).days + (
+                        1 if timestamp.time() > user_deadline.time() else 0
+                    )
 
                     remaining = ag_models.LateDaysRemaining.objects.get_or_create(
                         user=user, course=course)[0]
-                    late_days_needed = full_days_past + partial_days_past
 
                     if remaining.late_days_remaining >= late_days_needed:
                         remaining.late_days_used += late_days_needed
