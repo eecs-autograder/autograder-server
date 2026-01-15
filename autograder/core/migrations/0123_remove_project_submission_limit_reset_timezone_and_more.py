@@ -11,11 +11,12 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
+        migrations.RenameField(
             model_name="project",
-            name="submission_limit_reset_timezone",
+            old_name="submission_limit_reset_timezone",
+            new_name="timezone",
         ),
-        migrations.AddField(
+        migrations.AlterField(
             model_name="project",
             name="timezone",
             field=models.TextField(
