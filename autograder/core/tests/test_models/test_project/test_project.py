@@ -44,7 +44,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertEqual(True, new_project.allow_submissions_past_limit)
         self.assertEqual(datetime.time(),
                          new_project.submission_limit_reset_time)
-        self.assertEqual('UTC', new_project.submission_limit_reset_timezone)
+        self.assertEqual('UTC', new_project.timezone)
         self.assertEqual(0, new_project.num_bonus_submissions)
 
         self.assertIsNone(new_project.total_submission_limit)
@@ -73,6 +73,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'name': self.project_name,
             'course': self.course,
             'visible_to_students': True,
+            'timezone': 'America/Chicago',
             'closing_time': tomorrow_date,
             'soft_closing_time': soft_closing_time,
             'disallow_student_submissions': True,
@@ -85,7 +86,6 @@ class ProjectMiscTestCase(UnitTestBase):
             'groups_combine_daily_submissions': True,
             'allow_submissions_past_limit': False,
             'submission_limit_reset_time': reset_time,
-            'submission_limit_reset_timezone': 'America/Chicago',
             'num_bonus_submissions': 3,
 
             'allow_late_days': True,
@@ -137,6 +137,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'course',
             'last_modified',
             'visible_to_students',
+            'timezone',
             'closing_time',
             'soft_closing_time',
             'disallow_student_submissions',
@@ -149,7 +150,6 @@ class ProjectMiscTestCase(UnitTestBase):
             'allow_submissions_past_limit',
             'groups_combine_daily_submissions',
             'submission_limit_reset_time',
-            'submission_limit_reset_timezone',
             'num_bonus_submissions',
 
             'total_submission_limit',
@@ -171,7 +171,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'honor_pledge_text',
         ]
         self.assertCountEqual(expected_keys, project_dict.keys())
-        self.assertEqual('UTC', project_dict['submission_limit_reset_timezone'])
+        self.assertEqual('UTC', project_dict['timezone'])
 
         self.assertSequenceEqual([instructor_file.to_dict()], project_dict['instructor_files'])
         self.assertSequenceEqual([student_file.to_dict()],
@@ -191,9 +191,9 @@ class ProjectMiscTestCase(UnitTestBase):
         project.validate_and_update(**update_dict)
 
         other_timezone = 'America/Chicago'
-        project.validate_and_update(submission_limit_reset_timezone=other_timezone)
+        project.validate_and_update(timezone=other_timezone)
         project.refresh_from_db()
-        self.assertEqual(other_timezone, project.to_dict()['submission_limit_reset_timezone'])
+        self.assertEqual(other_timezone, project.to_dict()['timezone'])
 
 
 class HardAndSoftClosingTimeTestCase(UnitTestBase):
@@ -267,12 +267,12 @@ class ProjectMiscErrorTestCase(UnitTestBase):
 
         self.assertIn('num_bonus_submissions', cm.exception.message_dict)
 
-    def test_error_invalid_reset_timezone(self) -> None:
+    def test_error_invalid_timezone(self) -> None:
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
-                name='merp', course=self.course, submission_limit_reset_timezone='nope')
+                name='merp', course=self.course, timezone='nope')
 
-        self.assertIn('submission_limit_reset_timezone', cm.exception.message_dict)
+        self.assertIn('timezone', cm.exception.message_dict)
 
 
 class ProjectNameExceptionTestCase(UnitTestBase):

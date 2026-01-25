@@ -1,7 +1,7 @@
 import datetime
 import os
 import random
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Literal, Optional, overload
 from unittest import mock
 from urllib.parse import urlencode
 
@@ -996,6 +996,238 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
             with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
                 self.get_most_recent_late_day_usage(user)
 
+    def test_correct_num_late_days_used_after_fall_back_time_change(self):
+        detroit_tz = pytz.timezone("America/Detroit")
+
+        closing_time = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=11,
+            day=1,
+            hour=23,
+            minute=59,
+        ))
+        self.project.validate_and_update(
+            timezone="America/Detroit",
+            closing_time=closing_time
+        )
+
+        # submit within the last hour of the next 1 calendar-day period after
+        # closing time
+        submit_time_1 = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=11,
+            day=2,
+            hour=23,
+            minute=1,
+        ))
+        submission = self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time_1,
+            expect_failure=False
+        )
+
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self._check_late_day_usage(
+                self.group,
+                user,
+                submission,
+                total_late_days_used=1,
+                late_days_remaining=self.num_late_days - 1,
+                late_days_used_on_submission=1,
+            )
+
+        # submit within the first hour of the 3rd calendar-day period after
+        # closing time
+        submit_time_2 = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=11,
+            day=4,
+            hour=0,
+            minute=1,
+        ))
+        submission = self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time_2,
+            expect_failure=False
+        )
+
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self._check_late_day_usage(
+                self.group,
+                user,
+                submission,
+                total_late_days_used=3,
+                late_days_remaining=self.num_late_days - 3,
+                late_days_used_on_submission=2,
+            )
+
+    def test_correct_num_late_days_after_spring_forward_time_change(self):
+        detroit_tz = pytz.timezone("America/Detroit")
+
+        closing_time = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=3,
+            day=8,
+            hour=23,
+            minute=59,
+        ))
+        self.project.validate_and_update(
+            timezone="America/Detroit",
+            closing_time=closing_time
+        )
+
+        # submit within the last hour of the next 1 calendar-day period after
+        # closing time
+        submit_time_1 = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=3,
+            day=9,
+            hour=23,
+            minute=1,
+        ))
+        submission = self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time_1,
+            expect_failure=False
+        )
+
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self._check_late_day_usage(
+                self.group,
+                user,
+                submission,
+                total_late_days_used=1,
+                late_days_remaining=self.num_late_days - 1,
+                late_days_used_on_submission=1,
+            )
+
+        # submit within the first hour of the 3rd calendar-day period after
+        # closing time
+        submit_time_2 = detroit_tz.localize(datetime.datetime(
+            year=2025,
+            month=3,
+            day=11,
+            hour=0,
+            minute=1,
+        ))
+        submission = self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time_2,
+            expect_failure=False
+        )
+
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self._check_late_day_usage(
+                self.group,
+                user,
+                submission,
+                total_late_days_used=3,
+                late_days_remaining=self.num_late_days - 3,
+                late_days_used_on_submission=2,
+            )
+
+    def test_time_after_deadline_same_day(self):
+        closing_time = datetime.datetime(
+            year=2025,
+            month=1,
+            day=1,
+            hour=12,
+        )
+        self.project.validate_and_update(
+            closing_time=closing_time
+        )
+
+        submit_time = closing_time + datetime.timedelta(hours=1)
+        submission = self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time,
+            expect_failure=False
+        )
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self._check_late_day_usage(
+                self.group,
+                user,
+                submission,
+                total_late_days_used=1,
+                late_days_remaining=self.num_late_days - 1,
+                late_days_used_on_submission=1,
+            )
+
+    def test_time_before_deadline_next_day(self):
+        closing_time = datetime.datetime(
+            year=2025,
+            month=1,
+            day=1,
+            hour=12,
+        )
+        self.project.validate_and_update(
+            closing_time=closing_time
+        )
+
+        submit_time = closing_time + datetime.timedelta(hours=23)
+        submission = self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time,
+            expect_failure=False
+        )
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self._check_late_day_usage(
+                self.group,
+                user,
+                submission,
+                total_late_days_used=1,
+                late_days_remaining=self.num_late_days - 1,
+                late_days_used_on_submission=1,
+            )
+
+    def test_time_after_deadline_next_day(self):
+        closing_time = datetime.datetime(
+            year=2025,
+            month=1,
+            day=1,
+            hour=12,
+        )
+        self.project.validate_and_update(
+            closing_time=closing_time
+        )
+
+        submit_time = closing_time + datetime.timedelta(hours=25)
+        submission = self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time,
+            expect_failure=False
+        )
+        self.group.refresh_from_db()
+
+        for user in self.group.members.all():
+            self._check_late_day_usage(
+                self.group,
+                user,
+                submission,
+                total_late_days_used=2,
+                late_days_remaining=self.num_late_days - 2,
+                late_days_used_on_submission=2,
+            )
+
     def submit(self, group: ag_models.Group, user: User, timestamp: datetime.datetime,
                *, expect_failure: bool) -> Optional[ag_models.Submission]:
         with mock.patch('autograder.rest_api.views.submission_views.submission_views.timezone.now',
@@ -1014,6 +1246,27 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
                 submission.save()
 
                 return submission
+
+    def _check_late_day_usage(
+        self,
+        group: ag_models.Group,
+        user: User,
+        submission: ag_models.Submission,
+        *,
+        total_late_days_used: int,
+        late_days_remaining,
+        late_days_used_on_submission: int
+    ):
+        self.assertEqual(total_late_days_used, group.late_days_used[user.username])
+
+        remaining = ag_models.LateDaysRemaining.objects.get(user=user, course=group.project.course)
+        self.assertEqual(late_days_remaining, remaining.late_days_remaining)
+
+        usage = ag_models.LateDayUsage.objects.get(
+            submission_pk=submission.pk,
+            user_pk=user.pk,
+        )
+        self.assertEqual(late_days_used_on_submission, usage.num_late_days_used)
 
     def get_most_recent_late_day_usage(self, user):
         return ag_models.LateDayUsage.objects.filter(
@@ -1110,7 +1363,7 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
 
         self.project.validate_and_update(
             submission_limit_reset_time=now_local - timezone.timedelta(minutes=5),
-            submission_limit_reset_timezone=local_timezone)
+            timezone=local_timezone)
 
         before_reset_time_submission = self._create_submission(
             group=self.group,
@@ -1122,13 +1375,13 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
         self.assertEqual(1, self.group.num_submits_towards_limit)
 
     def test_non_default_limit_reset_time_and_timezone(self):
-        reset_timezone = 'America/Detroit'
+        local_timezone = 'America/Detroit'
         reset_datetime = timezone.now().astimezone(
-            pytz.timezone(reset_timezone)
+            pytz.timezone(local_timezone)
         ) + timezone.timedelta(hours=2)
         self.project.validate_and_update(
             submission_limit_reset_time=reset_datetime.time(),
-            submission_limit_reset_timezone=reset_timezone,
+            timezone=local_timezone,
             submission_limit_per_day=1)
 
         within_limit_timestamp = reset_datetime + timezone.timedelta(hours=-23)

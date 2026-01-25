@@ -394,7 +394,7 @@ def get_num_hints_for_submission(
 def get_num_hints_today(group: ag_models.Group, hint_config: MutationTestSuiteHintConfig) -> int:
     start_datetime, end_datetime = core_ut.get_24_hour_period(
         hint_config.hint_limit_reset_time,
-        timezone.now().astimezone(zoneinfo.ZoneInfo(hint_config.hint_limit_reset_timezone)),
+        timezone.now().astimezone(zoneinfo.ZoneInfo(group.project.timezone)),
     )
     return UnlockedHint.objects.filter(
         mutation_test_suite_result__submission__group=group,
