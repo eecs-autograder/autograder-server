@@ -8,7 +8,7 @@ openapi
 python-gnupg
 uritemplate
 drf-composable-permissions
-psycopg
+psycopg[binary]
 redis
 ipython
 Django>5.0.0,<6.0.0
