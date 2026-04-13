@@ -21,8 +21,8 @@ from .ag_test.ag_test_suite import AGTestSuiteFeedbackConfig as AGTestSuiteFeedb
 from .ag_test.ag_test_suite_result import AGTestSuiteResult as AGTestSuiteResult
 from .ag_test.feedback_category import FeedbackCategory as FeedbackCategory
 from .course import Course as Course
-from .course import LateDaysRemaining as LateDaysRemaining
-from .course import LateDayUsage as LateDayUsage
+from .late_days import LateDaysRemaining as LateDaysRemaining
+from .late_days import LateDayUsageRecord as LateDayUsageRecord
 from .course import Semester as Semester
 from .group import Group as Group
 from .group import GroupInvitation as GroupInvitation

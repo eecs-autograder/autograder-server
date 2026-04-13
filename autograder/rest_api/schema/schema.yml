@@ -64,8 +64,11 @@ paths:
       - users
   /api/users/{username_or_pk}/late_days/:
     get:
-      operationId: getUserLateDaysRemaining
-      description: ''
+      operationId: DeprecatedGetUserLateDaysRemaining
+      description: 'This endpoint has moved to /api/courses/{course_pk}/late_days/{user_pk}/
+        and this
+
+        URL will be removed in a future version.'
       parameters:
       - name: username_or_pk
         in: path
@@ -104,9 +107,13 @@ paths:
       tags:
       - courses
       - users
+      deprecated: true
     put:
-      operationId: setUserLateDaysRemaining
-      description: ''
+      operationId: DeprecatedSetUserLateDaysRemaining
+      description: 'This endpoint has moved to /api/courses/{course_pk}/late_days/{user_pk}/
+        and this
+
+        URL will be removed in a future version.'
       parameters:
       - name: username_or_pk
         in: path
@@ -156,6 +163,7 @@ paths:
       tags:
       - courses
       - users
+      deprecated: true
   /api/users/{id}/courses_is_admin_for/:
     get:
       operationId: coursesIsAdminFor
@@ -3334,6 +3342,162 @@ paths:
                     nullable: true
       tags:
       - submission_output
+  /api/courses/{course_pk}/late_day_usage_history/{username_or_pk}/:
+    get:
+      operationId: listUserLateDayUsageHistory
+      description: ''
+      parameters:
+      - name: course_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: username_or_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/LateDayUsageRecord'
+          description: ''
+      tags:
+      - courses
+      - users
+  /api/courses/{course_pk}/late_day_usage_history/:
+    get:
+      operationId: listLateDayUsageRecords
+      description: ''
+      parameters:
+      - name: course_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LateDayUsageRecord'
+          description: ''
+      tags:
+      - courses
+  /api/courses/{course_pk}/late_days/{username_or_pk}/:
+    get:
+      operationId: getUserLateDaysRemaining
+      description: ''
+      parameters:
+      - name: course_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: username_or_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: course_pk
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: id
+      - name: username_or_pk
+        in: path
+        required: true
+        description: The ID or username of the user.
+        schema:
+          oneOf:
+          - type: string
+            format: username
+          - type: integer
+            format: id
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - late_days_remaining
+                properties:
+                  late_days_remaining:
+                    type: integer
+          description: ''
+      tags:
+      - courses
+      - users
+    put:
+      operationId: setUserLateDaysRemaining
+      description: ''
+      parameters:
+      - name: course_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: username_or_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: course_pk
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: id
+      - name: username_or_pk
+        in: path
+        required: true
+        description: The ID or username of the user.
+        schema:
+          oneOf:
+          - type: string
+            format: username
+          - type: integer
+            format: id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - late_days_remaining
+              properties:
+                late_days_remaining:
+                  type: integer
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - late_days_remaining
+                properties:
+                  late_days_remaining:
+                    type: integer
+          description: ''
+      tags:
+      - courses
+      - users
   /api/projects/{project_pk}/handgrading_rubric/:
     get:
       operationId: getHandgradingRubricForProject
@@ -9377,6 +9541,46 @@ components:
       - hint_text
       - hint_rating
       - user_comment
+    LateDayUsageRecord:
+      type: object
+      properties:
+        course:
+          description: ''
+          nullable: false
+          type: integer
+        user_pk:
+          description: ''
+          nullable: false
+          type: integer
+        group_pk:
+          description: ''
+          nullable: false
+          type: integer
+        project_pk:
+          description: ''
+          nullable: false
+          type: integer
+        submission_pk:
+          description: ''
+          nullable: false
+          type: integer
+        timestamp:
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        num_late_days_used:
+          description: ''
+          nullable: false
+          type: integer
+      required:
+      - course
+      - user_pk
+      - group_pk
+      - project_pk
+      - submission_pk
+      - timestamp
+      - num_late_days_used
     UserRoles:
       type: object
       properties:
