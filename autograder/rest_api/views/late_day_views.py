@@ -50,7 +50,7 @@ class ListUserLateDayUsageHistoryView(NestedModelView):
         except ValueError:
             user = get_object_or_404(User.objects, username=self.kwargs['username_or_pk'])
 
-        return course.late_day_usages.filter(user_pk=user.pk)
+        return course.late_day_usage_records.filter(user_pk=user.pk)
 
     def get(self, *args, **kwargs):
         return self.do_list()
@@ -65,7 +65,7 @@ class ListLateDayUsageHistoryView(NestedModelView):
         ag_permissions.is_staff(),
     ]
     model_manager = ag_models.Course.objects
-    nested_field_name = 'late_day_usages'
+    nested_field_name = 'late_day_usage_records'
     pk_key = 'course_pk'
 
     def get(self, *args, **kwargs):

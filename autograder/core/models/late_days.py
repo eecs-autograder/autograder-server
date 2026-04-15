@@ -53,7 +53,9 @@ class LateDayUsageRecord(AutograderModel):
     """
     objects = AutograderModelManager['LateDayUsageRecord']()
 
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='late_day_usages',)
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name='late_day_usage_records'
+    )
 
     user_pk = models.IntegerField()
     group_pk = models.IntegerField()
