@@ -219,6 +219,8 @@ _API_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
     MutationTestSuiteHintConfig: MutationTestSuiteHintConfig.__name__,
     MutantNameObfuscationChoices: MutantNameObfuscationChoices.__name__,
     UnlockedHint: UnlockedHint.__name__,
+
+    ag_models.LateDayUsageRecord: ag_models.LateDayUsageRecord.__name__,
 }
 
 _API_CREATE_OBJ_TYPE_NAMES: Dict[APIClassType, str] = {
