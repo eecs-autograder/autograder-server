@@ -184,6 +184,11 @@ class GetUpdateDeleteHandgradingRubricTestCase(test_impls.GetObjectTest,
         self.do_patch_object_invalid_args_test(
             self.handgrading_rubric, self.client, admin, self.url, bad_data)
 
+    def test_admin_update_non_integer_max_points(self):
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        self.do_patch_object_invalid_args_test(
+            self.handgrading_rubric, self.client, admin, self.url, {'max_points': 10.5})
+
     def test_non_admin_update_permission_denied(self):
         patch_data = {
             'max_points': 30,

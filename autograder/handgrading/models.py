@@ -47,7 +47,7 @@ class HandgradingRubric(AutograderModel):
         help_text='''Determines how total_points and total_possible_points are calculated
                      for HandgradingResults.''')
 
-    max_points = models.FloatField(
+    max_points = models.IntegerField(
         blank=True, null=True, default=None, validators=[validators.MinValueValidator(0)],
         help_text='''The denominator of a handgrading score.
                      When points_style is "start_at_zero_and_add", this value
@@ -73,6 +73,19 @@ class HandgradingRubric(AutograderModel):
     handgraders_can_adjust_points = models.BooleanField(
         default=False, blank=True,
         help_text='''Whether handgraders can edit HandgradingResult.point_adjustment.''')
+
+    def clean_fields(self, exclude=None):
+        """
+        Checks that max_points is a whole number. Django's IntegerField
+        coerces values with int(), which would silently truncate a float
+        like 20.5 to 20 instead of rejecting it.
+        """
+        if ((exclude is None or 'max_points' not in exclude)
+                and isinstance(self.max_points, float)
+                and not self.max_points.is_integer()):
+            raise ValidationError({'max_points': 'Enter a whole number.'})
+
+        super().clean_fields(exclude=exclude)
 
     def clean(self):
         """

@@ -8584,7 +8584,7 @@ components:
             \       When points_style is \"start_at_max_and_subtract\", this field\n\
             \                     is REQUIRED."
           nullable: true
-          type: number
+          type: integer
         show_grades_and_rubric_to_students:
           description: "Whether students can see their handgrading scores,\n     \
             \                including information from the rubric."
@@ -8646,7 +8646,7 @@ components:
             \       When points_style is \"start_at_max_and_subtract\", this field\n\
             \                     is REQUIRED."
           nullable: true
-          type: number
+          type: integer
         show_grades_and_rubric_to_students:
           description: "Whether students can see their handgrading scores,\n     \
             \                including information from the rubric."
@@ -8684,7 +8684,7 @@ components:
             \       When points_style is \"start_at_max_and_subtract\", this field\n\
             \                     is REQUIRED."
           nullable: true
-          type: number
+          type: integer
         show_grades_and_rubric_to_students:
           description: "Whether students can see their handgrading scores,\n     \
             \                including information from the rubric."

@@ -66,6 +66,25 @@ class HandgradingRubricTestCase(UnitTestBase):
 
         self.assertIn('max_points', cm.exception.message_dict)
 
+    def test_invalid_non_integer_max_points(self):
+        """
+        Assert that a handgrading object cannot be created or updated with a
+        non-integer max points value.
+        """
+        with self.assertRaises(ValidationError) as cm:
+            handgrading_models.HandgradingRubric.objects.validate_and_create(
+                project=self.project, max_points=20.5)
+
+        self.assertIn('max_points', cm.exception.message_dict)
+
+        rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+            project=self.project, max_points=20)
+
+        with self.assertRaises(ValidationError) as cm:
+            rubric.validate_and_update(max_points=20.5)
+
+        self.assertIn('max_points', cm.exception.message_dict)
+
     def test_invalid_max_points_null_with_start_at_max_points_style(self):
         with self.assertRaises(ValidationError) as cm:
             handgrading_models.HandgradingRubric.objects.validate_and_create(
