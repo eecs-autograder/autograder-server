@@ -8,7 +8,7 @@ import sys
 from django.utils.crypto import get_random_string
 
 # Version number is set on release branches
-VERSION = '2026.08.0.rc1'
+VERSION = '2026.08.0.rc2'
 
 # This is the autograder-server directory
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
