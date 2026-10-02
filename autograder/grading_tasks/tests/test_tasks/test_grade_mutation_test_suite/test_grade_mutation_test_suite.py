@@ -1,20 +1,140 @@
 import gzip
+import io
 import os
 from unittest import mock
 
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import override_settings, tag
+from django.test import SimpleTestCase, override_settings, tag
 
 from autograder.core.constants import COMPRESSED_OUTPUT_SUFFIX
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core import constants
 from autograder.grading_tasks import tasks
+from autograder.grading_tasks.tasks.grade_mutation_test_suite import (
+    _run_individual_tests_against_mutants, _run_test_batches_against_mutants)
 from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
 from autograder_sandbox import AutograderSandbox, SandboxNotStopped, SandboxNotDestroyed
 from autograder_sandbox.autograder_sandbox import CompletedCommand
 import tempfile
+
+
+class MutationTestFeedbackTestCase(SimpleTestCase):
+    def setUp(self):
+        self.suite = mock.Mock(
+            buggy_impl_names=['X', 'Y', 'Z'],
+            grade_buggy_impl_command=mock.Mock(
+                cmd='run ${buggy_impl_name} ${student_test_name}'))
+        self.sandbox = mock.Mock()
+        patcher = mock.patch(
+            'autograder.grading_tasks.tasks.grade_mutation_test_suite.run_ag_command')
+        self.run_command = patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_reports_all_bugs_caught_by_each_test(self):
+        self.run_command.side_effect = [
+            mock.Mock(return_code=return_code,
+                      stdout=io.BytesIO(f'output {index}\n'.encode()),
+                      stderr=io.BytesIO(f'error {index}\n'.encode()))
+            for index, return_code in enumerate([0, 1, 0, 1, 1, 0, 0, 0, 0])
+        ]
+
+        exposed, stdout, stderr = _run_individual_tests_against_mutants(
+            self.sandbox, self.suite, ['test_A', 'test_B', 'test_C'])
+        self.addCleanup(stdout.close)
+        self.addCleanup(stderr.close)
+
+        self.assertEqual(['X', 'Y'], exposed)
+        self.assertEqual([
+            mock.call(self.suite.grade_buggy_impl_command, self.sandbox,
+                      cmd_str_override=f'run {bug} {test}')
+            for bug in ['X', 'Y', 'Z']
+            for test in ['test_A', 'test_B', 'test_C']
+        ], self.run_command.call_args_list)
+        stdout.seek(0)
+        self.assertEqual(
+            b'Test "test_A" caught Y\n'
+            b'Test "test_B" caught X, Y\n'
+            b'Test "test_C" caught no bugs\n', stdout.read())
+        stderr.seek(0)
+        self.assertEqual(b''.join(
+            (f'\n----- Bug "{bug}" with Test "{test}" -----\n'
+             f'output {index}\nerror {index}\n').encode()
+            for index, (bug, test) in enumerate(
+                (bug, test) for bug in ['X', 'Y', 'Z']
+                for test in ['test_A', 'test_B', 'test_C'])
+        ), stderr.read())
+
+    def test_nonzero_return_codes_still_count_as_exposed_bugs(self):
+        self.run_command.side_effect = [
+            mock.Mock(return_code=return_code, stdout=io.BytesIO(), stderr=io.BytesIO())
+            for return_code in [1, -9, 124]
+        ]
+        exposed, stdout, stderr = _run_individual_tests_against_mutants(
+            self.sandbox, self.suite, ['test_A'])
+        self.addCleanup(stdout.close)
+        self.addCleanup(stderr.close)
+
+        self.assertEqual(['X', 'Y', 'Z'], exposed)
+        stdout.seek(0)
+        self.assertEqual(b'Test "test_A" caught X, Y, Z\n', stdout.read())
+
+    def test_no_valid_tests(self):
+        exposed, stdout, stderr = _run_individual_tests_against_mutants(
+            self.sandbox, self.suite, [])
+        self.addCleanup(stdout.close)
+        self.addCleanup(stderr.close)
+
+        self.run_command.assert_not_called()
+        self.assertEqual([], exposed)
+        stdout.seek(0)
+        stderr.seek(0)
+        self.assertEqual(b'', stdout.read())
+        self.assertEqual(b'', stderr.read())
+
+    def test_no_buggy_implementations(self):
+        self.suite.buggy_impl_names = []
+        exposed, stdout, stderr = _run_individual_tests_against_mutants(
+            self.sandbox, self.suite, ['test_A'])
+        self.addCleanup(stdout.close)
+        self.addCleanup(stderr.close)
+
+        self.run_command.assert_not_called()
+        self.assertEqual([], exposed)
+        stdout.seek(0)
+        self.assertEqual(b'Test "test_A" caught no bugs\n', stdout.read())
+
+    def test_batch_output_is_unchanged(self):
+        self.suite.grade_buggy_impl_command.cmd = (
+            'run ${buggy_impl_name} ${all_valid_test_names}')
+        self.run_command.side_effect = [
+            mock.Mock(return_code=return_code,
+                      stdout=io.BytesIO(b'original output\n'),
+                      stderr=io.BytesIO(b'original error\n'))
+            for return_code in [0, 1, 0]
+        ]
+        exposed, stdout, stderr = _run_test_batches_against_mutants(
+            self.sandbox, self.suite, ['test_A', 'test_B'])
+        self.addCleanup(stdout.close)
+        self.addCleanup(stderr.close)
+
+        self.assertEqual(['Y'], exposed)
+        self.assertEqual([
+            mock.call(self.suite.grade_buggy_impl_command, self.sandbox,
+                      cmd_str_override=f'run {bug} "test_A" "test_B"')
+            for bug in ['X', 'Y', 'Z']
+        ], self.run_command.call_args_list)
+        stdout.seek(0)
+        stderr.seek(0)
+        self.assertEqual(b''.join(
+            f'\n----- Bug "{bug}" with all_valid_tests -----\noriginal output\n'.encode()
+            for bug in ['X', 'Y', 'Z']
+        ), stdout.read())
+        self.assertEqual(b''.join(
+            f'\n----- Bug "{bug}" with all_valid_tests -----\noriginal error\n'.encode()
+            for bug in ['X', 'Y', 'Z']
+        ), stderr.read())
 
 
 @tag('slow', 'sandbox')

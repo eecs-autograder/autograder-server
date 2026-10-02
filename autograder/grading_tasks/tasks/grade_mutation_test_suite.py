@@ -4,7 +4,7 @@ import tempfile
 import traceback
 import uuid
 from io import FileIO
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import celery
 from autograder_sandbox import AutograderSandbox, SandboxNotDestroyed, SandboxNotStopped
@@ -197,9 +197,11 @@ def _run_individual_tests_against_mutants(
     valid_tests: List[str],
 ) -> Tuple[List[str], tempfile.TemporaryFile, tempfile.TemporaryFile]:
     exposed_bugs: List[str] = []
+    bugs_by_test: Dict[str, List[str]] = {test: [] for test in valid_tests}
     buggy_impls_stdout = tempfile.TemporaryFile()
     buggy_impls_stderr = tempfile.TemporaryFile()
     for bug in mutation_test_suite.buggy_impl_names:
+        bug_exposed = False
         for valid_test in valid_tests:
             cmd_str = mutation_test_suite.grade_buggy_impl_command.cmd.replace(
                 ag_models.MutationTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, valid_test
@@ -211,14 +213,20 @@ def _run_individual_tests_against_mutants(
                 cmd_str_override=cmd_str
             )
             line = '\n----- Bug "{}" with Test "{}" -----\n'.format(bug, valid_test).encode()
-            buggy_impls_stdout.write(line)
             buggy_impls_stderr.write(line)
-            shutil.copyfileobj(buggy_impl_run_result.stdout, buggy_impls_stdout)
+            shutil.copyfileobj(buggy_impl_run_result.stdout, buggy_impls_stderr)
             shutil.copyfileobj(buggy_impl_run_result.stderr, buggy_impls_stderr)
 
             if buggy_impl_run_result.return_code != 0:
-                exposed_bugs.append(bug)
-                break
+                bugs_by_test[valid_test].append(bug)
+                bug_exposed = True
+
+        if bug_exposed:
+            exposed_bugs.append(bug)
+
+    for test, bugs in bugs_by_test.items():
+        buggy_impls_stdout.write(
+            f'Test "{test}" caught {", ".join(bugs) or "no bugs"}\n'.encode())
 
     return exposed_bugs, buggy_impls_stdout, buggy_impls_stderr
 
