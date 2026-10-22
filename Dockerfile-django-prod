@@ -5,10 +5,11 @@ RUN apt-get update && apt-get install -y --only-upgrade ca-certificates && rm -r
 ENV HTTPLIB2_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 ENV PIP_CERT=/etc/ssl/certs/ca-certificates.crt
 
-RUN pip install pip-tools
-
 COPY ./requirements.txt .
-RUN pip-sync requirements.txt
+# requirements.txt pins every package with a hash, so pip rejects any download
+# that doesn't match. --no-build-isolation builds source-only packages with the
+# image's setuptools instead of downloading unpinned build dependencies.
+RUN pip install --require-hashes --no-build-isolation -r requirements.txt
 
 WORKDIR /usr/src/app
 
