@@ -64,25 +64,28 @@ This section contains some useful reference commands for pip-tools.
 # Note: After running any of these variants of `pip-compile`, you should
 # run `pip-sync requirements.txt requirements-dev.txt`
 # (or `./install_pip_packages.sh`, which is an alias script for this command).
+#
+# Always pass --generate-hashes. The Docker images install with
+# --require-hashes, so pip rejects any package that doesn't match its hash.
 
 # Update one non-dev (listed in requirements.in) package
-pip-compile -P <package name>
+pip-compile --generate-hashes -P <package name>
 
 # Update one dev (listed in requirements-dev.in) package
-pip-compile requirements-dev.in -P <package name>
+pip-compile --generate-hashes requirements-dev.in -P <package name>
 
 # Update all non-dev packages
-pip-compile --upgrade
+pip-compile --generate-hashes --upgrade
 
 # Update all dev packages
-pip-compile requirements-dev.in --upgrade
+pip-compile --generate-hashes requirements-dev.in --upgrade
 ```
 
 To install a new non-dev package, add it to requirements.in and then run
-`pip-compile` and `./install_pip_packages.sh`.
+`pip-compile --generate-hashes` and `./install_pip_packages.sh`.
 
 To install a new dev package, add it to requirements-dev.in and then run
-`pip-compile requirements-dev.in` and `./install_pip_packages.sh`.
+`pip-compile --generate-hashes requirements-dev.in` and `./install_pip_packages.sh`.
 
 ## Generate Secrets
 Run the following command to generate Django and GPG secrets.
