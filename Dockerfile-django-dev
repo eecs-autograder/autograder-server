@@ -1,10 +1,17 @@
 FROM python:3.10
 
-RUN pip install pip-tools
+RUN apt-get update && apt-get install -y --only-upgrade ca-certificates && rm -rf /var/lib/apt/lists/*
+# httplib2 (used by oauth2client) otherwise uses its own outdated CA bundle.
+ENV HTTPLIB2_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+ENV PIP_CERT=/etc/ssl/certs/ca-certificates.crt
 
 COPY ./requirements.txt .
-RUN pip-sync requirements.txt
-RUN pip install django-debug-toolbar==6.0.0
+# requirements.txt pins every package with a hash, so pip rejects any download
+# that doesn't match. --no-build-isolation builds source-only packages with the
+# image's setuptools instead of downloading unpinned build dependencies.
+RUN pip install --require-hashes --no-build-isolation -r requirements.txt
+RUN printf 'django-debug-toolbar==6.0.0 --hash=sha256:0cf2cac5c307b77d6e143c914e5c6592df53ffe34642d93929e5ef095ae56841\n' > /tmp/requirements-debug.txt && \
+    pip install --require-hashes -r /tmp/requirements-debug.txt
 
 WORKDIR /usr/src/app
 
