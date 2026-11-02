@@ -267,11 +267,9 @@ class ListCreateSubmissionView(NestedModelView):
             ZoneInfo(group.project.timezone)
         )
 
-        deadline_date = tz_aware_group_deadline.date() + datetime.timedelta(
+        return tz_aware_group_deadline + datetime.timedelta(
             days=group.late_days_used.get(user.username, 0)
         )
-
-        return tz_aware_group_deadline.replace(day=deadline_date.day)
 
     def _create_submission(self, group: ag_models.Group,
                            timestamp: datetime.datetime,
