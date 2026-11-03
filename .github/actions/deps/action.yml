@@ -5,7 +5,7 @@ description: 'Install Python dependencies for the autograder-server actions'
 inputs:
   python-version:
     description: 'Python version'
-    default: 3.10
+    default: "3.10"
   include-dev:
     description: 'Set to true to also install dev dependencies'
     required: true
