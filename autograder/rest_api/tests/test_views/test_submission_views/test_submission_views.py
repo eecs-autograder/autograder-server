@@ -1228,6 +1228,33 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
                 late_days_used_on_submission=2,
             )
 
+    def test_submit_twice_with_late_day_after_month_boundary(self):
+        closing_time = datetime.datetime(
+            year=2026,
+            month=10,
+            day=31,
+            hour=23,
+            minute=59
+        )
+        self.project.validate_and_update(
+            closing_time=closing_time
+        )
+
+        submit_time = closing_time + datetime.timedelta(hours=1)
+        submission = self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time,
+            expect_failure=False
+        )
+
+        submission = self.submit(
+            self.group,
+            self.group.members.first(),
+            submit_time,
+            expect_failure=False
+        )
+
     def submit(self, group: ag_models.Group, user: User, timestamp: datetime.datetime,
                *, expect_failure: bool) -> Optional[ag_models.Submission]:
         with mock.patch('autograder.rest_api.views.submission_views.submission_views.timezone.now',
