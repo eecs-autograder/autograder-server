@@ -8,9 +8,49 @@ on:
         required: true
 
 jobs:
+  lint:
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+        node-version: [16.x]
+
+    # Required for checking migrations and schema
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+      redis:
+        image: redis
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+      - run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+
+      - uses: ./.github/actions/deps.yml
+        with:
+          include-dev: true
+      - uses: ./.github/actions/lint.yml
+
   full-release:
     name: Create GitHub Release
     runs-on: ubuntu-24.04
+
+    needs:
+      - lint
 
     steps:
       # See https://github.com/organizations/eecs-autograder/settings/apps
