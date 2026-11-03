@@ -39,10 +39,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/deps.yml
+      - uses: ./.github/actions/deps
         with:
           include-dev: true
-      - uses: ./.github/actions/lint.yml
+      - uses: ./.github/actions/lint
 
   test:
     runs-on: ubuntu-24.04
@@ -55,10 +55,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/deps.yml
+      - uses: ./.github/actions/deps
         with:
           include-dev: false
-      - uses: ./.github/actions/test.yml
+      - uses: ./.github/actions/test
 
   slow_tests:
     runs-on: ubuntu-24.04
@@ -71,7 +71,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/deps.yml
+      - uses: ./.github/actions/deps
         with:
           include-dev: false
-      - uses: ./.github/actions/slow_tests.yml
+      - uses: ./.github/actions/slow_tests

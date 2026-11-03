@@ -40,10 +40,10 @@ jobs:
       - uses: actions/checkout@v6
       - run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
 
-      - uses: ./.github/actions/deps.yml
+      - uses: ./.github/actions/deps
         with:
           include-dev: true
-      - uses: ./.github/actions/lint.yml
+      - uses: ./.github/actions/lint
 
   full-release:
     name: Create GitHub Release
