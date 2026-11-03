@@ -37,7 +37,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
 
       - uses: ./.github/actions/deps.yml
