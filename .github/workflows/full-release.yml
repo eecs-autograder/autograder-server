@@ -95,7 +95,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          fetch-depth: 0  # fetch all branch and tag history
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Get GitHub App User ID
@@ -110,7 +110,7 @@ jobs:
       - name: Checkout or create release branch
         run: |
           branch=$(./dev_scripts/ci/release_branch_from_version.sh "${{ inputs.version }}")
-          git checkout -b $branch --guess
+          git checkout -b $branch --track origin/$branch
           git push -u origin $branch || echo "Remote branch already exists"
 
       - name: Update version number
@@ -119,8 +119,11 @@ jobs:
           git add -u
           git commit -m "Version ${{ inputs.version }}"
           git push
-          git tag ${{ inputs.version }}
-          git push --tags
+          if git tag ${{ inputs.version }}; then
+            git push --tags
+          else
+            echo "Tag already exists"
+          fi
 
       # Note: gh release create by default targets the tag name passed
       # as the first argument, which we created on the proper branch in the
