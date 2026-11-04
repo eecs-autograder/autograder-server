@@ -1,0 +1,23 @@
+name: Lint Autograder Server
+
+description: |
+  Run linters for the autograder-server code.
+  Requires running the "deps" action first with include-dev set to true.
+
+inputs:
+  node-version:
+    description: 'Node version for REST API schema validation'
+    default: 16.x
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Use Node.js ${{ inputs.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ inputs.node-version }}
+    - name: Lint code style, type check, check migrations are up to date, validate schema
+      shell: bash
+      run: |
+        bash lint.sh

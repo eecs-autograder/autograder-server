@@ -1,0 +1,152 @@
+name: Full Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number for release'
+        required: true
+
+jobs:
+  # lint:
+  #   runs-on: ubuntu-24.04
+
+  #   # Required for checking migrations and schema
+  #   services: &shared_services
+  #     postgres:
+  #       image: postgres:14
+  #       env:
+  #         POSTGRES_USER: postgres
+  #         POSTGRES_PASSWORD: postgres
+  #         POSTGRES_DB: postgres
+  #       ports: ['5432:5432']
+  #       options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+  #     redis:
+  #       image: redis
+  #       ports: ['6379:6379']
+  #       options: >-
+  #         --health-cmd "redis-cli ping"
+  #         --health-interval 10s
+  #         --health-timeout 5s
+  #         --health-retries 5
+
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+
+  #     - uses: ./.github/actions/deps
+  #       with:
+  #         include-dev: true
+  #     - uses: ./.github/actions/lint
+  #     - uses: ./.github/actions/slow_tests
+
+  # test:
+  #   services: *shared_services
+  #   runs-on: ubuntu-24.04
+  #   needs: lint
+
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+  #     - uses: ./.github/actions/deps
+  #       with:
+  #         include-dev: false
+  #     - uses: ./.github/actions/test
+
+  # slow_tests:
+  #   services: *shared_services
+  #   runs-on: ubuntu-24.04
+  #   needs: lint
+
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+  #     - uses: ./.github/actions/deps
+  #       with:
+  #         include-dev: false
+  #     - uses: ./.github/actions/slow_tests
+
+  full-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-24.04
+
+    # needs:
+    #   - lint
+      # - test
+      # - slow_tests
+
+    steps:
+      # See https://github.com/organizations/eecs-autograder/settings/apps
+      # and https://github.com/orgs/community/discussions/25305#discussioncomment-8256560
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          client-id: ${{ vars.VERSION_BUMPER_APPID }}
+          private-key: ${{ secrets.VERSION_BUMPER_SECRET }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            autograder-server
+            ag-client-typescript
+
+          permission-contents: write
+          permission-actions: write
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # fetch all branch and tag history
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+
+      - name: Checkout or create release branch
+        run: |
+          branch=$(./dev_scripts/ci/release_branch_from_version.sh "${{ inputs.version }}")
+          git checkout -b $branch --track origin/$branch || git checkout -b $branch
+          git push -u origin $branch || echo "Remote branch already exists"
+
+      - name: Update version number
+        run: |
+          ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+          git add -u
+          if git commit -m "Version ${{ inputs.version }}"; then
+            git push
+          else
+            echo "Version already updated"
+          fi
+
+          if git tag ${{ inputs.version }}; then
+            git push --tags
+          else
+            echo "Tag already exists"
+          fi
+
+      # Note: gh release create by default targets the tag name passed
+      # as the first argument, which we created on the proper branch in the
+      # previous two steps.
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: >-
+          gh release create
+          "${{ inputs.version }}"
+          --repo "$GITHUB_REPOSITORY"
+          --notes ""
+
+      - name: Start the ag-client-typescript release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh workflow run \
+            --repo eecs-autograder/ag-client-typescript \
+            'Full Release' \
+            --raw-field version="${{ inputs.version }}" \
+            --ref actions/release-flow
