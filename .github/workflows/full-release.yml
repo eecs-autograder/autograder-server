@@ -110,9 +110,10 @@ jobs:
       - name: Start the autograder-server release
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          gh workflow run \
-            --repo eecs-autograder/ag-client-typescript \
-            'Full Release' \
-            --raw-field version="${{ inputs.version }}" \
-            --ref actions/release-flow
+        run: echo "re-enable later"
+        # run: |
+        #   gh workflow run \
+        #     --repo eecs-autograder/ag-client-typescript \
+        #     'Full Release' \
+        #     --raw-field version="${{ inputs.version }}" \
+        #     --ref actions/release-flow
