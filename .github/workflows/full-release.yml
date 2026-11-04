@@ -134,7 +134,7 @@ jobs:
       # previous two steps.
       - name: Create GitHub Release
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: >-
           gh release create
           "${{ inputs.version }}"
