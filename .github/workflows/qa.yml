@@ -6,25 +6,6 @@ on:
   pull_request:
   workflow_dispatch: # for testing changes before making a PR
 
-x-services: &shared_services
-  postgres:
-    image: postgres:14
-    env:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    ports: ['5432:5432']
-    options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
-  redis:
-    image: redis
-    ports: ['6379:6379']
-    options: >-
-      --health-cmd "redis-cli ping"
-      --health-interval 10s
-      --health-timeout 5s
-      --health-retries 5
-
 jobs:
   lint:
     runs-on: ubuntu-24.04
@@ -35,7 +16,24 @@ jobs:
         node-version: [16.x]
 
     # Required for checking migrations and schema
-    services: *shared_services
+    services: &shared_services
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+      redis:
+        image: redis
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
