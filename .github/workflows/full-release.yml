@@ -103,6 +103,9 @@ jobs:
         run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
 
       - name: Create or checkout release branch
         run: |
@@ -122,18 +125,17 @@ jobs:
           git tag ${{ inputs.version }}
           git push --tags
 
-      - run: |
-          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
-          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
-
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create
-          "${{ inputs.version }}"
-          --repo "$GITHUB_REPOSITORY"
-          --notes ""
+      # Note: gh release create by default targets the tag name passed
+      # as the first argument, which we created on the proper branch in the
+      # previous two steps.
+      # - name: Create GitHub Release
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}
+      #   run: >-
+      #     gh release create
+      #     "${{ inputs.version }}"
+      #     --repo "$GITHUB_REPOSITORY"
+      #     --notes ""
 
       # - name: Start the ag-client-typescript release
       #   env:
