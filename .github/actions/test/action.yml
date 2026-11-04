@@ -1,0 +1,14 @@
+name: Unit Test Autograder Server
+
+description: |
+  Run unit tests for the autograder-server code'
+  Requires running the "deps" action first with include-dev set to false.
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Run unit tests
+      shell: bash
+      run: |
+        python3 manage.py test -v2 --exclude-tag fix_on_ci --exclude-tag slow --exclude-tag sandbox
