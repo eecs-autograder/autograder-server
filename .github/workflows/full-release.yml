@@ -11,13 +11,8 @@ jobs:
   lint:
     runs-on: ubuntu-24.04
 
-    strategy:
-      matrix:
-        python-version: ["3.10"]
-        node-version: [16.x]
-
     # Required for checking migrations and schema
-    services:
+    services: &shared_services
       postgres:
         image: postgres:14
         env:
@@ -44,6 +39,33 @@ jobs:
         with:
           include-dev: true
       - uses: ./.github/actions/lint
+      - uses: ./.github/actions/slow_tests
+
+  test:
+    services: *shared_services
+    runs-on: ubuntu-24.04
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v6
+      - run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+      - uses: ./.github/actions/deps
+        with:
+          include-dev: false
+      - uses: ./.github/actions/test
+
+  slow_tests:
+    services: *shared_services
+    runs-on: ubuntu-24.04
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v6
+      - run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+      - uses: ./.github/actions/deps
+        with:
+          include-dev: false
+      - uses: ./.github/actions/slow_tests
 
   full-release:
     name: Create GitHub Release
@@ -51,6 +73,8 @@ jobs:
 
     needs:
       - lint
+      - test
+      - slow_tests
 
     steps:
       # See https://github.com/organizations/eecs-autograder/settings/apps
