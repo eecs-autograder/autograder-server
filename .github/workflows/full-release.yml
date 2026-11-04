@@ -119,7 +119,10 @@ jobs:
           git add -u
           if git commit -m "Version ${{ inputs.version }}"; then
             git push
+          else
+            echo "Version already updated"
           fi
+
           if git tag ${{ inputs.version }}; then
             git push --tags
           else
