@@ -109,7 +109,7 @@ jobs:
 
       - name: Create or checkout release branch
         run: |
-          branch=./dev_scripts/ci/release_branch_from_version "${{ inputs.version }}"
+          branch=./dev_scripts/ci/release_branch_from_version.sh "${{ inputs.version }}"
           if  git checkout -b $branch; then
             git push -u origin $branch
           else
