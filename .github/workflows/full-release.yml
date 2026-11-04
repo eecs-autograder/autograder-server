@@ -132,21 +132,21 @@ jobs:
       # Note: gh release create by default targets the tag name passed
       # as the first argument, which we created on the proper branch in the
       # previous two steps.
-      # - name: Create GitHub Release
-      #   env:
-      #     GITHUB_TOKEN: ${{ github.token }}
-      #   run: >-
-      #     gh release create
-      #     "${{ inputs.version }}"
-      #     --repo "$GITHUB_REPOSITORY"
-      #     --notes ""
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create
+          "${{ inputs.version }}"
+          --repo "$GITHUB_REPOSITORY"
+          --notes ""
 
-      # - name: Start the ag-client-typescript release
-      #   env:
-      #     GH_TOKEN: ${{ steps.app-token.outputs.token }}
-      #   run: |
-      #     gh workflow run \
-      #       --repo eecs-autograder/ag-client-typescript \
-      #       'Full Release' \
-      #       --raw-field version="${{ inputs.version }}" \
-      #       --ref actions/release-flow
+      - name: Start the ag-client-typescript release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh workflow run \
+            --repo eecs-autograder/ag-client-typescript \
+            'Full Release' \
+            --raw-field version="${{ inputs.version }}" \
+            --ref actions/release-flow
