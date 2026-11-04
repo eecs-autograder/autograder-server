@@ -117,8 +117,9 @@ jobs:
         run: |
           ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
           git add -u
-          git commit -m "Version ${{ inputs.version }}"
-          git push
+          if git commit -m "Version ${{ inputs.version }}"; then
+            git push
+          fi
           if git tag ${{ inputs.version }}; then
             git push --tags
           else
