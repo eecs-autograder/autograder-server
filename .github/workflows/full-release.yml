@@ -110,11 +110,8 @@ jobs:
       - name: Create or checkout release branch
         run: |
           branch=$(./dev_scripts/ci/release_branch_from_version.sh "${{ inputs.version }}")
-          if  git checkout -b $branch; then
-            git push -u origin $branch
-          else
-            git checkout $branch
-          fi
+          git checkout -b $branch
+          git push -u origin $branch || "Remote branch already exists"
 
       - name: Update version number
         run: |
