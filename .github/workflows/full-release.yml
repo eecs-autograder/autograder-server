@@ -118,7 +118,7 @@ jobs:
 
       - name: Update version number
         run: |
-          run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
+          ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
           git add -u
           git commit -m "Version ${{ inputs.version }}"
           git push
