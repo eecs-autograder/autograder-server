@@ -110,7 +110,7 @@ jobs:
       - name: Checkout or create release branch
         run: |
           branch=$(./dev_scripts/ci/release_branch_from_version.sh "${{ inputs.version }}")
-          git checkout -b $branch --track origin/$branch || git checkout -b $branch
+          git checkout -b $branch || git checkout $branch
           git push -u origin $branch || echo "Remote branch already exists"
 
       - name: Update version number
@@ -149,4 +149,4 @@ jobs:
             --repo eecs-autograder/ag-client-typescript \
             'Full Release' \
             --raw-field version="${{ inputs.version }}" \
-            --ref actions/release-flow
+            --ref develop
