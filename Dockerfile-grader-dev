@@ -9,7 +9,7 @@ RUN wget https://get.docker.com -q -O /tmp/getdocker && \
     chmod +x /tmp/getdocker && \
     sh /tmp/getdocker
 
-RUN pip install pip-tools
+RUN pip install pip-tools==7.6.2
 
 COPY ./requirements.txt .
 RUN pip-sync requirements.txt
