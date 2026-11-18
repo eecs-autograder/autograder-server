@@ -54,7 +54,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install pip==24.0
-          python -m pip install pip-tools
+          python -m pip install pip-tools==7.6.2
           pip-sync requirements.txt requirements-dev.txt
           python3 generate_secrets.py
       - name: Use Node.js ${{ matrix.node-version }}
@@ -107,7 +107,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install pip==24.0
-          python -m pip install pip-tools
+          python -m pip install pip-tools==7.6.2
           pip-sync requirements.txt requirements-dev.txt
           python3 generate_secrets.py
       - name: Run tests
@@ -156,7 +156,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install pip==24.0
-          python -m pip install pip-tools
+          python -m pip install pip-tools==7.6.2
           pip-sync requirements.txt requirements-dev.txt
           python3 generate_secrets.py
       - name: Run tests
