@@ -1,9 +1,10 @@
-name: Python package
+name: Lint & Test Autograder Server
 
 on: [push]
 
 jobs:
   lint:
+    name: lint
     runs-on: ubuntu-24.04
 
     strategy:
@@ -51,6 +52,7 @@ jobs:
           bash lint.sh
 
   test:
+    name: test
     runs-on: ubuntu-24.04
     strategy:
       matrix:
@@ -92,6 +94,7 @@ jobs:
           python3 manage.py test -v2 --exclude-tag fix_on_ci --exclude-tag slow --exclude-tag sandbox
 
   slow_tests:
+    name: slow_tests
     runs-on: ubuntu-24.04
     strategy:
       matrix:
