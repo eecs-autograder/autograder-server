@@ -6,6 +6,7 @@ on:
 
 jobs:
   lint:
+    name: lint
     runs-on: ubuntu-24.04
 
     # Required for checking migrations and schema
@@ -36,6 +37,7 @@ jobs:
       - uses: ./.github/actions/lint
 
   test:
+    name: test
     runs-on: ubuntu-24.04
     needs: lint
 
@@ -49,6 +51,7 @@ jobs:
       - uses: ./.github/actions/test
 
   slow_tests:
+    name: slow_tests
     runs-on: ubuntu-24.04
     needs: lint
 
