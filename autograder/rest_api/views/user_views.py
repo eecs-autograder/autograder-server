@@ -189,7 +189,7 @@ class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
         return response.Response(request.user.has_perm('core.create_course'))
 
 
-class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
+class DeprecatedUserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
     _LATE_DAYS_REMAINING_BODY: Dict[ContentType, SchemaObject] = {
         'application/json': {
             'schema': {
@@ -227,7 +227,8 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
 
     schema = CustomViewSchema([APITags.courses, APITags.users], {
         'GET': {
-            'operation_id': 'getUserLateDaysRemaining',
+            'deprecated': True,
+            'operation_id': 'DeprecatedGetUserLateDaysRemaining',
             'parameters': _PARAMS,
             'responses': {
                 '200': {
@@ -237,7 +238,8 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
             }
         },
         'PUT': {
-            'operation_id': 'setUserLateDaysRemaining',
+            'deprecated': True,
+            'operation_id': 'DeprecatedSetUserLateDaysRemaining',
             'parameters': _PARAMS,
             'request': {'content': _LATE_DAYS_REMAINING_BODY},
             'responses': {
@@ -251,6 +253,10 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
 
     @method_decorator(require_query_params('course_pk'))
     def get(self, request: Request, *args, **kwargs):
+        """
+        This endpoint has moved to /api/courses/{course_pk}/late_days/{user_pk}/ and this
+        URL will be removed in a future version.
+        """
         try:
             user = get_object_or_404(User.objects, pk=int(kwargs['username_or_pk']))
         except ValueError:
@@ -265,6 +271,10 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
 
     @method_decorator(require_body_params('late_days_remaining'))
     def put(self, request: Request, *args, **kwargs):
+        """
+        This endpoint has moved to /api/courses/{course_pk}/late_days/{user_pk}/ and this
+        URL will be removed in a future version.
+        """
         try:
             user = get_object_or_404(User.objects, pk=int(kwargs['username_or_pk']))
         except ValueError:

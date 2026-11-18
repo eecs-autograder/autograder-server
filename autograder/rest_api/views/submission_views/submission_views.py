@@ -237,7 +237,7 @@ class ListCreateSubmissionView(NestedModelView):
             does_not_count_for=does_not_count_for)
 
         for user, num_late_days_used in new_late_day_usage_for:
-            ag_models.LateDayUsage.objects.validate_and_create(
+            ag_models.LateDayUsageRecord.objects.validate_and_create(
                 course=group.project.course,
                 user_pk=user.pk,
                 group_pk=group.pk,

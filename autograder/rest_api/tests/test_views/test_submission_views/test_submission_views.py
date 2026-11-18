@@ -798,7 +798,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             self.assertFalse(
                 ag_models.LateDaysRemaining.objects.filter(user=user, course=self.course).exists())
-            with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
+            with self.assertRaises(ag_models.LateDayUsageRecord.DoesNotExist):
                 self.get_most_recent_late_day_usage(user)
 
     def test_user_with_not_enough_late_days_in_group_cannot_submit_after_deadline(self):
@@ -819,7 +819,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
         actual_remaining = ag_models.LateDaysRemaining.objects.get(
             user=submitter, course=self.course)
         self.assertEqual(1, actual_remaining.late_days_remaining)
-        with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
+        with self.assertRaises(ag_models.LateDayUsageRecord.DoesNotExist):
             self.get_most_recent_late_day_usage(submitter)
 
     def test_non_submitting_member_has_no_late_days_submission_does_not_count_for_them(self):
@@ -849,7 +849,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
         non_submitter_remaining = ag_models.LateDaysRemaining.objects.get(
             user=non_submitter, course=self.course)
         self.assertEqual(0, non_submitter_remaining.late_days_remaining)
-        with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
+        with self.assertRaises(ag_models.LateDayUsageRecord.DoesNotExist):
             self.get_most_recent_late_day_usage(non_submitter)
 
     def test_non_submitting_member_has_too_few_late_days_submission_does_not_count_for_them(self):
@@ -881,7 +881,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
         self.assertEqual(1, non_submitter_remaining.late_days_remaining)
 
         self.assertNotIn(non_submitter.username, self.group.late_days_used)
-        with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
+        with self.assertRaises(ag_models.LateDayUsageRecord.DoesNotExist):
             self.get_most_recent_late_day_usage(non_submitter)
 
     def test_group_with_no_late_days_cannot_submit_past_deadline(self):
@@ -909,7 +909,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             remaining = ag_models.LateDaysRemaining.objects.get(user=user, course=self.course)
             self.assertEqual(self.num_late_days, remaining.late_days_remaining)
-            with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
+            with self.assertRaises(ag_models.LateDayUsageRecord.DoesNotExist):
                 self.get_most_recent_late_day_usage(user)
 
     def test_late_day_use_disallowed_for_project(self):
@@ -924,7 +924,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             self.assertFalse(
                 ag_models.LateDaysRemaining.objects.filter(user=user, course=self.course).exists())
-            with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
+            with self.assertRaises(ag_models.LateDayUsageRecord.DoesNotExist):
                 self.get_most_recent_late_day_usage(user)
 
     def test_late_days_allowed_but_no_closing_time(self):
@@ -941,7 +941,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             self.assertFalse(
                 ag_models.LateDaysRemaining.objects.filter(user=user, course=self.course).exists())
-            with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
+            with self.assertRaises(ag_models.LateDayUsageRecord.DoesNotExist):
                 self.get_most_recent_late_day_usage(user)
 
     def test_bonus_submission_used_on_late_day(self):
@@ -993,7 +993,7 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
 
             self.assertFalse(
                 ag_models.LateDaysRemaining.objects.filter(user=user, course=self.course).exists())
-            with self.assertRaises(ag_models.LateDayUsage.DoesNotExist):
+            with self.assertRaises(ag_models.LateDayUsageRecord.DoesNotExist):
                 self.get_most_recent_late_day_usage(user)
 
     def test_correct_num_late_days_used_after_fall_back_time_change(self):
@@ -1262,14 +1262,14 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
         remaining = ag_models.LateDaysRemaining.objects.get(user=user, course=group.project.course)
         self.assertEqual(late_days_remaining, remaining.late_days_remaining)
 
-        usage = ag_models.LateDayUsage.objects.get(
+        usage = ag_models.LateDayUsageRecord.objects.get(
             submission_pk=submission.pk,
             user_pk=user.pk,
         )
         self.assertEqual(late_days_used_on_submission, usage.num_late_days_used)
 
     def get_most_recent_late_day_usage(self, user):
-        return ag_models.LateDayUsage.objects.filter(
+        return ag_models.LateDayUsageRecord.objects.filter(
             course=self.course,
             user_pk=user.pk,
             group_pk=self.group.pk,
