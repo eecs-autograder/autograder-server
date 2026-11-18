@@ -23,7 +23,7 @@ runs:
       shell: bash
       run: |
         python -m pip install pip==24.0
-        python -m pip install pip-tools
+        python -m pip install pip-tools==7.6.2
         if test "${{ inputs.include-dev }}" = "true"; then
           pip-sync requirements.txt requirements-dev.txt
         else
