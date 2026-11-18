@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y --only-upgrade ca-certificates && rm -r
 ENV HTTPLIB2_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 ENV PIP_CERT=/etc/ssl/certs/ca-certificates.crt
 
-RUN pip install pip-tools
+RUN pip install pip-tools==7.6.2
 
 COPY ./requirements.txt .
 RUN pip-sync requirements.txt
