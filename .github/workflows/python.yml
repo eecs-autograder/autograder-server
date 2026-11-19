@@ -1,15 +1,11 @@
-name: Python package
+name: Lint & Test Autograder Server
 
 on: [push]
 
 jobs:
   lint:
+    name: lint
     runs-on: ubuntu-24.04
-
-    strategy:
-      matrix:
-        python-version: ["3.10"]
-        node-version: [16.x]
 
     services:  # Required for checking migrations and schema
       postgres:
@@ -32,29 +28,27 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python "3.10"
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
       - name: Install dependencies
         run: |
           python -m pip install pip==24.0
           python -m pip install pip-tools==7.6.2
           pip-sync requirements.txt requirements-dev.txt
           python3 generate_secrets.py
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js "16.x"
         uses: actions/setup-node@v2
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: "16.x"
       - name: Lint code style, type check, check migrations are up to date, validate schema
         run: |
           bash lint.sh
 
   test:
+    name: test
     runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        python-version: ["3.10"]
 
     services:
       postgres:
@@ -77,10 +71,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python "3.10"
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
       - name: Install dependencies
         run: |
           python -m pip install pip==24.0
@@ -92,10 +86,8 @@ jobs:
           python3 manage.py test -v2 --exclude-tag fix_on_ci --exclude-tag slow --exclude-tag sandbox
 
   slow_tests:
+    name: slow_tests
     runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        python-version: ["3.10"]
 
     services:
       postgres:
@@ -118,10 +110,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python "3.10"
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
       - name: Install dependencies
         run: |
           python -m pip install pip==24.0
