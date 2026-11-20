@@ -31,12 +31,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Yes, we're running this on each step because I couldn't figure out
-      # the quirks of uploading/downloading artifacts into the right
-      # directory
-      - name: Update version number (on dispatch only)
-        run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
-
       - name: Set up Python "3.10"
         uses: actions/setup-python@v4
         with:
@@ -81,12 +75,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Yes, we're running this on each step because I couldn't figure out
-      # the quirks of uploading/downloading artifacts into the right
-      # directory
-      - name: Update version number (on dispatch only)
-        run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
-
       - name: Set up Python "3.10"
         uses: actions/setup-python@v4
         with:
@@ -126,12 +114,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Yes, we're running this on each step because I couldn't figure out
-      # the quirks of uploading/downloading artifacts into the right
-      # directory
-      - name: Update version number (on dispatch only)
-        run: ./dev_scripts/ci/update_version_number.sh "${{ inputs.version }}"
 
       - name: Set up Python "3.10"
         uses: actions/setup-python@v4
